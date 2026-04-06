@@ -1,12 +1,11 @@
 {
   "name": "@ab-tao/share",
   "version": "1.0.0",
-  "description": "共用工具庫 — utils/libs/run",
+  "description": "共用工具庫 — utils/libs",
   "type": "module",
   "exports": {
     ".": "./lib/index.mjs",
-    "./utils": "./lib/utils.mjs",
-    "./libs": "./lib/libs.mjs",
-    "./run": "./lib/run.mjs"
+    "./utils": "./lib/utils/index.mjs",
+    "./libs": "./lib/libs/index.mjs"
   }
 }

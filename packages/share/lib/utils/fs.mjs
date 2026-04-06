@@ -1,14 +1,9 @@
 /**
- * @ab-tao/share/utils — 工具函式
- *
- * 純函式、無副作用的基礎工具。
+ * 檔案系統工具
  */
 
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-
-// ── 檔案系統 ─────────────────────────────────────────────────────
 
 /** 確保目錄存在，不存在則遞迴建立 */
 export function ensureDir(dirPath) {
@@ -47,20 +42,4 @@ export function walkFiles(dir, filter = () => true) {
     }
   }
   return results;
-}
-
-// ── Shell ────────────────────────────────────────────────────────
-
-/** 執行指令，回傳 stdout（失敗回傳 null） */
-export function exec(cmd, options = {}) {
-  try {
-    return execSync(cmd, { encoding: 'utf8', stdio: 'pipe', ...options }).trim();
-  } catch {
-    return null;
-  }
-}
-
-/** 檢查指令是否存在 */
-export function commandExists(cmd) {
-  return exec(`command -v ${cmd}`) !== null;
 }

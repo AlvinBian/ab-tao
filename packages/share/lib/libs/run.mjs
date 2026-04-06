@@ -1,5 +1,5 @@
 /**
- * 公共執行器 — 各 package 的 commands.mjs 共用
+ * 指令分發器 — 各 package 的 commands.mjs 共用
  *
  * 從 npm_lifecycle_event 解析指令，轉發到指定 package。
  */
@@ -31,5 +31,15 @@ export function run(pkg, aliases = {}) {
     execSync(full, { stdio: 'inherit' });
   } catch {
     process.exit(1);
+  }
+}
+
+/** 執行指令，繼承 stdio（互動式，支援 TTY） */
+export function execInteractive(cmd) {
+  try {
+    execSync(cmd, { stdio: 'inherit' });
+    return true;
+  } catch {
+    return false;
   }
 }
