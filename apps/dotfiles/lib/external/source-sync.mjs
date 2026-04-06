@@ -570,3 +570,37 @@ export async function writeSyncedFiles(downloaded, targetDir) {
   }
   return skipped;
 }
+
+/**
+ * 將 SKILL.md 格式的技能安裝到目標目錄
+ *
+ * 結構：targetDir/skills/{source}/{skill-name}/SKILL.md
+ * 跳過使用者自訂的技能（不含 GENERATED_MARKER）。
+ *
+ * @param {{ source: string, skills: { name: string, content: string }[] }[]} skillSources
+ * @param {string} targetDir - 目標目錄（如 ~/.claude/）
+ * @returns {Promise<string[]>} 跳過的技能名稱
+ */
+export async function writeSkillFiles(skillSources, targetDir) {
+  const skipped = [];
+  const skillsRoot = path.join(targetDir, 'skills');
+
+  for (const src of skillSources) {
+    if (!src.skills?.length) continue;
+
+    for (const skill of src.skills) {
+      const skillDir = path.join(skillsRoot, src.source, skill.name);
+      const skillPath = path.join(skillDir, 'SKILL.md');
+
+      if (isUserCustomized(skillPath)) {
+        skipped.push(`skills/${src.source}/${skill.name}`);
+        continue;
+      }
+
+      fs.mkdirSync(skillDir, { recursive: true });
+      fs.writeFileSync(skillPath, GENERATED_MARKER + skill.content, 'utf8');
+    }
+  }
+
+  return skipped;
+}

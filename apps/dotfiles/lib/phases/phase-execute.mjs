@@ -404,35 +404,20 @@ export async function phaseExecute(
                                               : `已融合 ${added} 個檔案`;
                                           }
 
-                                          // commons 已同步的 AI 來源（non-ECC）
+                                          // commons 資源由推薦流程篩選後安裝（不再全量倒入）
                                           const commSources =
                                             pipelineResult?.commonsResources?.sources || [];
-                                          let commAdded = 0;
-                                          for (const src of commSources) {
-                                            const downloaded = [
-                                              {
-                                                source: src.name,
-                                                commands: src.commands || [],
-                                                agents: src.agents || [],
-                                                rules: src.rules || [],
-                                                hooks: null,
-                                              },
-                                            ];
-                                            const claudePreview = path.join(previewDir, 'claude');
-                                            await writeSyncedFiles(downloaded, claudePreview);
-                                            if (!isManual) {
-                                              await writeSyncedFiles(
-                                                downloaded,
-                                                path.join(HOME, '.claude'),
-                                              );
-                                            }
-                                            commAdded +=
-                                              src.commands.length +
-                                              src.agents.length +
-                                              src.rules.length;
-                                          }
-                                          if (commAdded > 0) {
-                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}commons ${commAdded} 個資源`;
+                                          if (commSources.length > 0) {
+                                            const total = commSources.reduce(
+                                              (s, src) =>
+                                                s +
+                                                src.commands.length +
+                                                src.agents.length +
+                                                src.rules.length +
+                                                src.skills.length,
+                                              0,
+                                            );
+                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}${commSources.length} 個 AI 來源可用（${total} 個資源）`;
                                           }
                                           if (!sub.output) sub.output = '無 AI 資源';
                                         },
