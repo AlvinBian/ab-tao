@@ -200,7 +200,7 @@ async function main() {
       startTime,
       pipelineResult: plan._pipelineResult || null,
       projectFolders: folders,
-      selectedAiSources,
+      selectedAiSources: selectedAis,
     });
     p.outro('設定完成');
   }
