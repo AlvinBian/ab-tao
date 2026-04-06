@@ -1,3 +1,4 @@
+export { ECC_DIR, RESOURCES_DIR, TRANSLATIONS_PATH, VERSIONS_PATH } from './paths.mjs';
 export { ResourceLoader } from './resource-loader.mjs';
 export {
   sanitizeContent,

@@ -10,6 +10,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { ECC_DIR } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { getDirname } from '../lib/core/paths.mjs';
@@ -383,9 +384,9 @@ async function manageConfig(data) {
         required: false,
       });
       if (!p.isCancel(selected) && selected.length > 0) {
-        const eccDir = path.join(REPO, 'ecc', 'everything-claude-code', category);
+        const eccCategoryDir = path.join(ECC_DIR, category);
         for (const name of selected) {
-          const src = path.join(eccDir, `${name}.md`);
+          const src = path.join(eccCategoryDir, `${name}.md`);
           const dest = path.join(dir, `${name}.md`);
           if (fs.existsSync(src)) {
             fs.copyFileSync(src, dest);
@@ -476,9 +477,9 @@ async function manageConfig(data) {
         required: false,
       });
       if (!p.isCancel(selected) && selected.length > 0) {
-        const eccDir = path.join(REPO, 'ecc', 'everything-claude-code', 'rules');
+        const eccRulesDir = path.join(ECC_DIR, 'rules');
         for (const name of selected) {
-          const src = path.join(eccDir, `${name}.md`);
+          const src = path.join(eccCategoryDir, `${name}.md`);
           const dest = path.join(rulesDir, `${name}.md`);
           if (fs.existsSync(src)) {
             fs.copyFileSync(src, dest);

@@ -165,8 +165,8 @@ export async function collectFullStatus() {
 
   const usage = await scanUsage(installed.agents);
 
-  // ECC 資源
-  const eccDir = path.join(REPO_ROOT, 'ecc', 'everything-claude-code');
+  // ECC 資源（從 @ab-tao/commons 讀取）
+  const { ECC_DIR: eccDir } = await import('@ab-tao/commons/paths');
   const ecc = {
     commands: safeReadDir(path.join(eccDir, 'commands'))
       .filter((f) => f.endsWith('.md'))

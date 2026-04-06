@@ -37,3 +37,7 @@ export const CLAUDE_AGENTS_HOME = path.join(CLAUDE_HOME, CLAUDE_AGENTS_DIR);
 // ── 專案目錄 ────────────────────────────────────────────────────────
 
 export const PROJECTS_DIR = path.join(CLAUDE_HOME, 'projects');
+
+// ── Monorepo 共用資源 ────────────────────────────────────────────
+// 透過 @ab-tao/commons/paths 引用，避免硬編碼相對路徑。
+// import { ECC_DIR, RESOURCES_DIR } from '@ab-tao/commons/paths';

@@ -9,6 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { TRANSLATIONS_PATH } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { handleCancel, multiselectWithAll } from '../cli/prompts.mjs';
@@ -33,7 +34,7 @@ let _translations = null;
 function getTranslation(type, name) {
   if (!_translations) {
     const cacheT = path.resolve(__dirname, '..', '..', '.cache', 'translations.json');
-    const staticT = path.resolve(__dirname, '..', '..', 'ecc', 'translations.json');
+    const staticT = TRANSLATIONS_PATH;
     const tPath = fs.existsSync(cacheT) ? cacheT : staticT;
     try {
       _translations = JSON.parse(fs.readFileSync(tPath, 'utf8'));

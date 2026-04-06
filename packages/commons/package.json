@@ -10,7 +10,8 @@
     "./detect": "./scripts/tech-detection.mjs",
     "./loader": "./scripts/resource-loader.mjs",
     "./security": "./scripts/security-validator.mjs",
-    "./versions": "./scripts/version-tracker.mjs"
+    "./versions": "./scripts/version-tracker.mjs",
+    "./paths": "./scripts/paths.mjs"
   },
   "scripts": {
     "build": "echo 'commons build completed'",

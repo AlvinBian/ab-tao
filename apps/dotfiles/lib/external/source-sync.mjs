@@ -371,12 +371,13 @@ export async function fetchAllSources(sources, techStacks, localDir, onProgress 
         sha,
         isLocal = false;
 
-      // 優先讀本地 ecc/ 目錄（GitHub Actions 自動同步，零 API 呼叫）
-      const localEccDir = path.join(localDir, 'ecc', source.name);
-      if (fs.existsSync(localEccDir)) {
+      // 優先讀 commons 已同步的資源（pnpm run c:sync 同步）
+      const { RESOURCES_DIR } = await import('@ab-tao/commons/paths');
+      const commonsDir = path.join(RESOURCES_DIR, source.name);
+      if (fs.existsSync(commonsDir)) {
         onProgress(source.name, 'local');
-        allFiles = loadFromCache(localEccDir);
-        const versionFile = path.join(localEccDir, '.version.json');
+        allFiles = loadFromCache(commonsDir);
+        const versionFile = path.join(commonsDir, '.version.json');
         try {
           sha = JSON.parse(fs.readFileSync(versionFile, 'utf8')).sha;
         } catch {
