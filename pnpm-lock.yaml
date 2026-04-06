@@ -23,12 +23,12 @@ importers:
       '@ab-tao/commons':
         specifier: workspace:*
         version: link:../../packages/commons
+      '@ab-tao/root':
+        specifier: workspace:*
+        version: link:../..
       '@clack/prompts':
         specifier: ^0.9.1
         version: 0.9.1
-      ab-tao:
-        specifier: workspace:*
-        version: link:../..
       listr2:
         specifier: ^10.2.1
         version: 10.2.1
@@ -44,7 +44,7 @@ importers:
 
   packages/commons:
     dependencies:
-      ab-tao:
+      '@ab-tao/root':
         specifier: workspace:*
         version: link:../..
     devDependencies:

@@ -4,7 +4,7 @@
  * dotfiles 指令定義與執行
  */
 
-import { run } from 'ab-tao/run';
+import { run } from '@ab-tao/root/run';
 
 export const pkg = '@ab-tao/dotfiles';
 
