@@ -70,7 +70,8 @@ export function deploySettings(template) {
 
   return {
     path: settingsPath,
-    permissionsAdded: merged.permissions.allow.length - (existing.permissions?.allow?.length || 0),
+    permissionsAdded:
+      (merged.permissions?.allow?.length || 0) - (existing.permissions?.allow?.length || 0),
     isNew,
   };
 }

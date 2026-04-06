@@ -114,7 +114,7 @@ export async function phasePlan(plan) {
   const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ['', h])[1]);
   lines.push(...grid(hookNames, 4, 16));
   lines.push(
-    `   Permission（${g.permissions.allow.length} allow · ${g.permissions.deny.length} deny）`,
+    `   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
   );
   lines.push(`   Model: ${g.settings.model} · AutoMemory`);
 
