@@ -8,6 +8,9 @@
     "node": ">=18",
     "pnpm": ">=9"
   },
+  "exports": {
+    "./run": "./scripts/run-pkg.mjs"
+  },
   "scripts": {
     "help": "node scripts/help.mjs",
 

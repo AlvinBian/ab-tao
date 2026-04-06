@@ -26,6 +26,9 @@ importers:
       '@clack/prompts':
         specifier: ^0.9.1
         version: 0.9.1
+      ab-tao:
+        specifier: workspace:*
+        version: link:../..
       listr2:
         specifier: ^10.2.1
         version: 10.2.1
@@ -40,6 +43,10 @@ importers:
         version: 7.7.4
 
   packages/commons:
+    dependencies:
+      ab-tao:
+        specifier: workspace:*
+        version: link:../..
     devDependencies:
       commander:
         specifier: ^12.1.0

@@ -19,7 +19,9 @@
     "lint": "biome check .",
     "test": "node --test __tests__/*.test.mjs"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ab-tao": "workspace:*"
+  },
   "devDependencies": {
     "commander": "^12.1.0"
   }
