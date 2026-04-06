@@ -22,7 +22,7 @@ import {
 } from '../core/constants.mjs';
 import { analyzeRepo } from '../detect/skill-detect.mjs';
 import { callClaudeJSON } from '../external/claude-cli.mjs';
-import { loadAllCommonsResources } from '../external/commons-loader.mjs';
+import { filterByTechStack, loadAllCommonsResources } from '../external/commons-loader.mjs';
 import { fetchAllSources, filterItems } from '../external/source-sync.mjs';
 import { createAuditTrail } from './audit-trail.mjs';
 import { mergeRepoResults } from './merge-dedup.mjs';
@@ -512,6 +512,13 @@ ${batchList}
   // 保存審計鏈
   audit.save(baseDir);
 
+  // 用偵測到的技術棧篩選 commons 資源（動態匹配）
+  const allDetectedForFilter = [...categorizedTechs.values()].flatMap((m) => [...m.keys()]);
+  const filteredCommons =
+    commonsResources.sources.length > 0 && allDetectedForFilter.length > 0
+      ? filterByTechStack(commonsResources, allDetectedForFilter)
+      : commonsResources;
+
   return {
     categorizedTechs,
     perRepo,
@@ -522,7 +529,7 @@ ${batchList}
     coreCategories,
     eccFetchResult,
     eccAiPromise,
-    commonsResources,
+    commonsResources: filteredCommons,
     conflicts,
     audit,
   };
