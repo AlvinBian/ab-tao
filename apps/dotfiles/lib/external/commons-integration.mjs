@@ -1,8 +1,4 @@
-import {
-  ResourceLoader,
-  syncIfNeeded,
-  detectTechStack
-} from '@ab-tao/commons';
+import { ResourceLoader, syncIfNeeded } from '@ab-tao/commons';
 
 export class CommonsIntegration {
   constructor(config) {
@@ -23,7 +19,7 @@ export class CommonsIntegration {
       commands: resources.ecc?.commands || [],
       agents: resources.ecc?.agents || [],
       rules: resources.ecc?.rules || [],
-      skills: this.mergeSkills(resources)
+      skills: this.mergeSkills(resources),
     };
   }
 

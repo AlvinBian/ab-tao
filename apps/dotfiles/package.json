@@ -10,7 +10,7 @@
     "build": "echo 'dotfiles build completed'",
     "dev": "node bin/setup.mjs --watch",
     "lint": "biome check .",
-    "test": "node __tests__/integration.test.mjs",
+    "test": "node --test __tests__/*.test.mjs",
     "setup": "node bin/setup.mjs",
     "restore": "node bin/restore.mjs"
   }

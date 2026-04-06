@@ -1,16 +1,16 @@
 export { ResourceLoader } from './resource-loader.mjs';
+export {
+  sanitizeContent,
+  validateContent,
+  validateDirectory,
+  validateFileContent,
+} from './security-validator.mjs';
 export { syncIfNeeded } from './sync-manager.mjs';
 export {
-  validateContent,
-  validateFileContent,
-  validateDirectory,
-  sanitizeContent,
-} from './security-validator.mjs';
-export {
-  readVersions,
-  writeVersions,
-  recordSync,
-  needsSync,
   lockSource,
+  needsSync,
+  readVersions,
+  recordSync,
   unlockSource,
+  writeVersions,
 } from './version-tracker.mjs';

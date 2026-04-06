@@ -19,7 +19,7 @@ export function readVersions() {
  * @param {Record<string, object>} versions
  */
 export function writeVersions(versions) {
-  fs.writeFileSync(VERSIONS_PATH, JSON.stringify(versions, null, 2) + '\n');
+  fs.writeFileSync(VERSIONS_PATH, `${JSON.stringify(versions, null, 2)}\n`);
 }
 
 /**
@@ -34,7 +34,9 @@ export function recordSync(sourceName, sha) {
   }
 
   if (versions[sourceName].locked) {
-    console.warn(`Source "${sourceName}" is locked at ${versions[sourceName].sha}, skipping update`);
+    console.warn(
+      `Source "${sourceName}" is locked at ${versions[sourceName].sha}, skipping update`,
+    );
     return false;
   }
 

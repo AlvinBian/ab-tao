@@ -1,9 +1,13 @@
-import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { validateFileContent, validateDirectory, sanitizeContent } from '../scripts/security-validator.mjs';
+import {
+  sanitizeContent,
+  validateDirectory,
+  validateFileContent,
+} from '../scripts/security-validator.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -21,14 +25,14 @@ describe('validateFileContent', () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'malicious-eval.md'), 'utf8');
     const result = validateFileContent('malicious-eval.md', content);
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some(e => e.code === 'DANGEROUS_PATTERN'));
+    assert.ok(result.errors.some((e) => e.code === 'DANGEROUS_PATTERN'));
   });
 
   it('should block rm -rf', () => {
     const content = fs.readFileSync(path.join(FIXTURES, 'malicious-rm.md'), 'utf8');
     const result = validateFileContent('malicious-rm.md', content);
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some(e => e.code === 'DANGEROUS_PATTERN'));
+    assert.ok(result.errors.some((e) => e.code === 'DANGEROUS_PATTERN'));
   });
 
   it('should block Function()', () => {
@@ -55,24 +59,24 @@ describe('validateFileContent', () => {
     const bigContent = 'x'.repeat(101 * 1024);
     const result = validateFileContent('big.md', bigContent);
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some(e => e.code === 'FILE_TOO_LARGE'));
+    assert.ok(result.errors.some((e) => e.code === 'FILE_TOO_LARGE'));
   });
 
   it('should detect path traversal', () => {
     const result = validateFileContent('../../etc/passwd', 'harmless content');
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some(e => e.code === 'PATH_TRAVERSAL'));
+    assert.ok(result.errors.some((e) => e.code === 'PATH_TRAVERSAL'));
   });
 
   it('should warn on zero-width characters', () => {
     const result = validateFileContent('sneaky.md', 'normal\u200Btext');
-    assert.ok(result.warnings.some(w => w.code === 'SUSPICIOUS_CHARACTERS'));
+    assert.ok(result.warnings.some((w) => w.code === 'SUSPICIOUS_CHARACTERS'));
   });
 
   it('should reject invalid filename characters', () => {
     const result = validateFileContent('bad<name>.md', 'content');
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some(e => e.code === 'INVALID_FILENAME'));
+    assert.ok(result.errors.some((e) => e.code === 'INVALID_FILENAME'));
   });
 
   it('should produce a SHA256 checksum', () => {
@@ -92,7 +96,7 @@ describe('validateDirectory', () => {
 
   it('should return error for non-existent directory', () => {
     const result = validateDirectory('/nonexistent/path');
-    assert.ok(result.errors.some(e => e.code === 'DIR_NOT_FOUND'));
+    assert.ok(result.errors.some((e) => e.code === 'DIR_NOT_FOUND'));
   });
 });
 

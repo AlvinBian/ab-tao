@@ -47,9 +47,7 @@ function validateSourceStructure(sourceName, sourcePath) {
     const items = fs.readdirSync(sourcePath);
     const hasSkills = items.some((item) => {
       const itemPath = path.join(sourcePath, item);
-      return (
-        fs.statSync(itemPath).isDirectory() && fs.existsSync(path.join(itemPath, 'SKILL.md'))
-      );
+      return fs.statSync(itemPath).isDirectory() && fs.existsSync(path.join(itemPath, 'SKILL.md'));
     });
 
     // Agent-skills format may not always have SKILL.md — just warn

@@ -1,8 +1,8 @@
-import { detectTechStack } from './tech-detection.mjs';
-import { validateFileContent } from './security-validator.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validateFileContent } from './security-validator.mjs';
+import { detectTechStack } from './tech-detection.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources');
@@ -30,21 +30,25 @@ export class ResourceLoader {
   async determineNeededSources() {
     const techDetectionContext = {
       githubRepos: this.config.githubRepos || [],
-      localPaths: this.config.localPaths || ['.']
+      localPaths: this.config.localPaths || ['.'],
     };
 
     const techStackResult = await detectTechStack(techDetectionContext);
-    const detectedTechStack = techStackResult.technologies.map(t => t.name);
+    const detectedTechStack = techStackResult.technologies.map((t) => t.name);
 
     const sources = ['ecc'];
 
-    if (detectedTechStack.some(tech =>
-      ['typescript', 'javascript', 'react', 'vue'].includes(tech.toLowerCase()))) {
+    if (
+      detectedTechStack.some((tech) =>
+        ['typescript', 'javascript', 'react', 'vue'].includes(tech.toLowerCase()),
+      )
+    ) {
       sources.push('superpowers', 'anthropic');
     }
 
-    if (detectedTechStack.some(tech =>
-      ['testing', 'jest', 'vitest'].includes(tech.toLowerCase()))) {
+    if (
+      detectedTechStack.some((tech) => ['testing', 'jest', 'vitest'].includes(tech.toLowerCase()))
+    ) {
       sources.push('letta');
     }
 
@@ -57,7 +61,7 @@ export class ResourceLoader {
         return {
           commands: this.loadDirectory(path.join(sourcePath, 'commands')),
           agents: this.loadDirectory(path.join(sourcePath, 'agents')),
-          rules: this.loadDirectory(path.join(sourcePath, 'rules'))
+          rules: this.loadDirectory(path.join(sourcePath, 'rules')),
         };
       default:
         return this.loadAgentSkills(sourcePath);
@@ -67,16 +71,19 @@ export class ResourceLoader {
   loadDirectory(dirPath) {
     if (!fs.existsSync(dirPath)) return [];
 
-    return fs.readdirSync(dirPath)
-      .filter(file => file.endsWith('.md'))
-      .map(file => {
+    return fs
+      .readdirSync(dirPath)
+      .filter((file) => file.endsWith('.md'))
+      .map((file) => {
         const filePath = path.join(dirPath, file);
         const content = fs.readFileSync(filePath, 'utf8');
         const relativePath = path.relative(this.resourcesPath, filePath);
 
         const validation = validateFileContent(relativePath, content);
         if (!validation.valid) {
-          console.warn(`Skipping ${relativePath}: ${validation.errors.map(e => e.message).join(', ')}`);
+          console.warn(
+            `Skipping ${relativePath}: ${validation.errors.map((e) => e.message).join(', ')}`,
+          );
           return null;
         }
 
@@ -105,7 +112,9 @@ export class ResourceLoader {
 
       const validation = validateFileContent(relativePath, content);
       if (!validation.valid) {
-        console.warn(`Skipping skill ${item}: ${validation.errors.map(e => e.message).join(', ')}`);
+        console.warn(
+          `Skipping skill ${item}: ${validation.errors.map((e) => e.message).join(', ')}`,
+        );
         continue;
       }
 
@@ -120,5 +129,5 @@ export class ResourceLoader {
   }
 }
 
-export { syncIfNeeded } from './sync-manager.mjs';
 export { validateContent, validateFileContent } from './security-validator.mjs';
+export { syncIfNeeded } from './sync-manager.mjs';

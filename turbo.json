@@ -36,7 +36,11 @@
     "validate": {
       "dependsOn": ["sync"],
       "outputs": [],
-      "inputs": ["scripts/validate-structure.mjs", "scripts/security-validator.mjs", "resources/**"],
+      "inputs": [
+        "scripts/validate-structure.mjs",
+        "scripts/security-validator.mjs",
+        "resources/**"
+      ],
       "cache": false
     },
     "setup": {

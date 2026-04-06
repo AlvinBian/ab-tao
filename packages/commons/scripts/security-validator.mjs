@@ -13,6 +13,7 @@ const DANGEROUS_PATTERNS = [
   { pattern: /<!--\s*(?:system|hidden|ignore|secret)/gi, label: 'hidden HTML directive' },
 ];
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — security validator must detect zero-width and control characters
 const CONTROL_CHAR_REGEX = /[\u200B-\u200D\uFEFF\x00-\x08\x0B-\x0C\x0E-\x1F]/;
 
 /**
@@ -69,6 +70,7 @@ export function validateFileContent(filePath, content) {
 
   // 5. Filename validation (no special chars that could cause issues)
   const basename = path.basename(filePath);
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — detect null bytes in filenames
   if (/[<>:"|?*\x00]/.test(basename)) {
     errors.push({
       code: 'INVALID_FILENAME',
@@ -93,9 +95,12 @@ export function validateFileContent(filePath, content) {
  * @returns {string}
  */
 export function sanitizeContent(content) {
-  return content
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '');
+  return (
+    content
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strip control characters
+      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '')
+  );
 }
 
 /**
@@ -163,7 +168,9 @@ export async function validateContent(resourcePath) {
   const ok = summary.invalid === 0;
 
   if (!ok) {
-    console.error(`Security validation failed: ${summary.invalid}/${summary.total} files have issues`);
+    console.error(
+      `Security validation failed: ${summary.invalid}/${summary.total} files have issues`,
+    );
     for (const err of summary.errors) {
       console.error(`  [${err.code}] ${err.file}: ${err.message}`);
     }

@@ -1,10 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { readVersions } from './version-tracker.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources');
 const CACHE_TTL_DAYS = 7;
 
 /**

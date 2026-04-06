@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { execSync } from 'node:child_process';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateContent } from './security-validator.mjs';
-import { readVersions, recordSync, needsSync } from './version-tracker.mjs';
+import { needsSync, readVersions, recordSync } from './version-tracker.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources');
@@ -95,7 +95,7 @@ async function syncSource(sourceName, config, options = {}) {
     const { ok, summary } = await validateContent(tempDir);
     if (!ok) {
       throw new Error(
-        `Security validation failed for ${sourceName}: ${summary.errors.map((e) => e.message).join(', ')}`
+        `Security validation failed for ${sourceName}: ${summary.errors.map((e) => e.message).join(', ')}`,
       );
     }
 
@@ -188,4 +188,4 @@ if (args.includes('--source')) {
   });
 }
 
-export { syncAll, syncSource, SOURCES_CONFIG };
+export { SOURCES_CONFIG, syncAll, syncSource };
