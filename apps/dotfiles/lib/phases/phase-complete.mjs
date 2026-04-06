@@ -208,7 +208,7 @@ export async function phaseComplete(
       /* 瀏覽器開啟失敗不阻塞 */
     }
   } catch (err) {
-    p.log.warn(`報告生成失敗: ${err.message}`);
+    p.log.warn(`⚠️ 報告生成失敗（${err.message}）`);
   }
 
   // Session

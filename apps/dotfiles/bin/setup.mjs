@@ -86,7 +86,7 @@ async function main() {
   const incomplete = checkIncompleteSession();
   if (incomplete.hasIncomplete && prev) {
     const pending = incomplete.pendingTargets?.join(', ') || '';
-    p.log.warn(`上次安裝未完成（剩餘：${pending}）`);
+    p.log.warn(`⚠️ 上次安裝未完成（剩餘：${pending}）`);
   }
 
   // Splash
@@ -135,7 +135,7 @@ async function main() {
     warmupCli();
 
     // 用 session 重建 repo 物件
-    if (!sessionPrev.roles) p.log.warn('上次 session 無角色資訊，全部預設為 🔄 臨時');
+    if (!sessionPrev.roles) p.log.warn('⚠️ 上次 session 無角色資訊，全部預設為 🔄 臨時');
     const repoObjects = (sessionPrev.repos || []).map((r) => ({
       fullName: r,
       commits: 10, // quick 模式假設都是主力
@@ -195,16 +195,16 @@ async function main() {
 
   // --quick + --dry-run 衝突檢查
   if (flagQuick && flagDryRun) {
-    p.log.warn('--quick 和 --dry-run 不能同時使用，已忽略 --dry-run');
+    p.log.warn('⚠️ --quick 和 --dry-run 不能同時使用，已忽略 --dry-run');
   }
 
   // --quick：直接用上次 session 重裝，跳過所有互動
   if (flagQuick) {
     if (!prev) {
-      p.log.error('無歷史記錄，無法 --quick。請先執行 pnpm setup。');
+      p.log.error('❌ 無歷史記錄，無法 --quick。請先執行 pnpm run d:setup');
       process.exit(1);
     }
-    p.log.info(`Quick 模式：重放上次安裝（${prev.repos?.length} repos）`);
+    p.log.info(`⚡ Quick 模式：重放上次安裝（${prev.repos?.length} repos）`);
     await runQuickInstall({
       prev,
       flagManual,
@@ -246,7 +246,7 @@ async function main() {
         const { openInBrowser } = await import('../lib/report.mjs');
         await openInBrowser(reportPath);
       } else {
-        p.log.warn('找不到上次報告');
+        p.log.warn('⚠️ 找不到上次報告');
       }
       p.outro('已關閉');
       process.exit(0);
@@ -449,7 +449,7 @@ async function main() {
       zsh: '修改 ~/.zshrc 和 ~/.zsh/',
       slack: '設定 Slack 通知頻道',
     };
-    p.log.info(`選擇了：${riskySelected.map((f) => `${f}（${hints[f]}）`).join('、')}`);
+    p.log.info(`✔️ 選擇了：${riskySelected.map((f) => `${f}（${hints[f]}）`).join('、')}`);
     const ok = handleCancel(await p.confirm({ message: '確認繼續？', initialValue: true }));
     if (ok === BACK || !ok) {
       p.outro('已取消');
@@ -665,7 +665,7 @@ async function main() {
             };
             analyzeSuccess = true;
           } catch (err) {
-            p.log.error(`分析失敗：${err.message}`);
+            p.log.error(`❌ 分析失敗（${err.message}）`);
             const action = handleCancel(
               await p.select({
                 message: '如何繼續？',
@@ -763,7 +763,7 @@ async function main() {
 
     // --dry-run
     if (flagDryRun) {
-      p.log.success(pc.yellow('Dry Run 完成 — 未寫入任何檔案'));
+      p.log.success('🔄 Dry Run 完成 — 未寫入任何檔案');
       p.outro('Dry Run 結束');
       return;
     }
@@ -816,6 +816,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  p.log.error(e?.message ?? String(e));
+  p.log.error(`❌ ${e?.message ?? String(e)}`);
   process.exit(1);
 });
