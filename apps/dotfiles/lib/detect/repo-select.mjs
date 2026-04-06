@@ -125,61 +125,25 @@ export async function interactiveRepoSelect(session = null) {
   }
   s1.stop(`找到 ${pc.green(allRepos.length)} 個倉庫（${selectedSources.join(' + ')}）`);
 
-  // 5. 分析貢獻度（先同步取 commit 搜尋，再異步取詳細計數）
-  // 跨多個 org/個人帳號搜尋，不加 org/user qualifier，讓結果涵蓋所有選中的 source
-  // 搜尋所有有貢獻的 repo（不限時間，relevance 排序覆蓋更廣）
-  const quickContribRaw = ghSync(
-    `search/commits?q=author:${username}&per_page=${GH_PER_PAGE}`,
-    '.items[].repository.full_name',
-  );
-  const contributedRepos = uniq((quickContribRaw || '').split('\n').filter(Boolean));
-  // 補充：對列表中有但 search 沒覆蓋到的 repo，直接查 contributors API
-  const uncheckedRepos = allRepos
-    .filter((r) => !contributedRepos.includes(r.fullName))
-    .map((r) => r.fullName);
-
+  // 5. 分析貢獻度 — 直接查每個 repo 的 contributors（全時間，無遺漏）
   const s2 = p.spinner();
-  s2.start(`📊 分析 ${pc.cyan(username)} 的貢獻度（${contributedRepos.length} 個 repo）...`);
+  s2.start(`📊 分析 ${pc.cyan(username)} 的貢獻度（${allRepos.length} 個 repo）...`);
 
-  if (contributedRepos.length > 0) {
-    // GitHub API 限流（GH_CONCURRENCY=8），防止 403
-    await pMap(
-      contributedRepos,
-      async (repo) => {
-        try {
-          const count = await ghAsync(
-            `repos/${repo}/contributors?per_page=${GH_PER_PAGE}`,
-            `.[] | select(.login=="${username}") | .contributions`,
-          );
-          const match = allRepos.find((x) => x.fullName === repo);
-          if (match) match.commits = parseInt(count, 10) || 0;
-        } catch {
-          /* skip failed repos */
-        }
-      },
-      { concurrency: GH_CONCURRENCY },
-    );
-  }
-
-  // 補查 search 未覆蓋的 repo（全時間 contributors）
-  if (uncheckedRepos.length > 0) {
-    await pMap(
-      uncheckedRepos,
-      async (repo) => {
-        try {
-          const count = await ghAsync(
-            `repos/${repo}/contributors?per_page=5`,
-            `.[] | select(.login=="${username}") | .contributions`,
-          );
-          const match = allRepos.find((x) => x.fullName === repo);
-          if (match && count) match.commits = parseInt(count, 10) || 0;
-        } catch {
-          /* skip */
-        }
-      },
-      { concurrency: GH_CONCURRENCY },
-    );
-  }
+  await pMap(
+    allRepos,
+    async (repo) => {
+      try {
+        const count = await ghAsync(
+          `repos/${repo.fullName}/contributors?per_page=5`,
+          `.[] | select(.login=="${username}") | .contributions`,
+        );
+        if (count) repo.commits = parseInt(count, 10) || 0;
+      } catch {
+        /* skip failed repos */
+      }
+    },
+    { concurrency: GH_CONCURRENCY },
+  );
 
   const totalCommits = allRepos.reduce((sum, r) => sum + r.commits, 0);
   if (totalCommits > 0) {
