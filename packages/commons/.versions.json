@@ -1,8 +1,8 @@
 {
   "ecc": {
-    "sha": "",
+    "sha": "7dfdbe0b1704a79669a6e24e2dbe76433caf5795",
     "source": "https://github.com/affaan-m/everything-claude-code",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
@@ -14,23 +14,23 @@
     "type": "ai"
   },
   "superpowers": {
-    "sha": "",
+    "sha": "b7a8f76985f1e93e75dd2f2a3b424dc731bd9d37",
     "source": "https://github.com/obra/superpowers",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
   "ui-ux-pro": {
-    "sha": "",
+    "sha": "b7e3af80f6e331f6fb456667b82b12cade7c9d35",
     "source": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
   "claude-plugins": {
-    "sha": "",
+    "sha": "104d39be10b7b1380b2ae23a387a11a297b599c3",
     "source": "https://github.com/anthropics/claude-plugins-official",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
