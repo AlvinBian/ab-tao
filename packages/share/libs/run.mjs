@@ -28,7 +28,7 @@ export function run(pkg, aliases = {}) {
   }
 
   try {
-    execSync(full, { stdio: 'inherit' });
+    execSync(full, { stdio: 'inherit', env: process.env });
   } catch {
     process.exit(1);
   }
@@ -37,7 +37,7 @@ export function run(pkg, aliases = {}) {
 /** 執行指令，繼承 stdio（互動式，支援 TTY） */
 export function execInteractive(cmd) {
   try {
-    execSync(cmd, { stdio: 'inherit' });
+    execSync(cmd, { stdio: 'inherit', env: process.env });
     return true;
   } catch {
     return false;

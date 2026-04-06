@@ -31,6 +31,16 @@ const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '..');
 const PREVIEW_DIR = path.join(REPO, 'dist', 'preview');
 
+// 早期檢查 HOME 環境變數
+if (!process.env.HOME) {
+  console.error('❌ 致命錯誤：HOME 環境變數未設置');
+  console.error(
+    '   請確認 shell 環境正常、PATH 已設置。若使用 macOS，可嘗試：',
+  );
+  console.error('   export HOME=$(eval echo ~)');
+  process.exit(1);
+}
+
 function loadConfig() {
   const cfgPath = path.join(REPO, 'config.json');
   return fs.existsSync(cfgPath) ? JSON.parse(fs.readFileSync(cfgPath, 'utf8')) : { targets: {} };
@@ -118,6 +128,7 @@ async function main() {
     sources: srcs,
     targets: tgts,
     projectFolders: folders,
+    selectedAiSources: selectedAis = [],
   }) {
     if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
 
@@ -146,7 +157,7 @@ async function main() {
     const plan = await phaseAnalyze({
       repos: repoObjects,
       sources: srcs,
-      selectedAiSources: [],
+      selectedAiSources: selectedAis,
       baseDir: REPO,
       projectFolders: folders,
     });
@@ -189,6 +200,7 @@ async function main() {
       startTime,
       pipelineResult: plan._pipelineResult || null,
       projectFolders: folders,
+      selectedAiSources,
     });
     p.outro('設定完成');
   }
@@ -211,6 +223,7 @@ async function main() {
       sources,
       targets,
       projectFolders,
+      selectedAiSources,
     });
     return;
   }
@@ -386,6 +399,7 @@ async function main() {
         sources,
         targets,
         projectFolders,
+        selectedAiSources,
       });
       return;
     }
@@ -463,7 +477,8 @@ async function main() {
   const needsRepos = hasProject;
 
   // ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
-  let selectedAiSources = [];
+  // 優先用 session 保存的選擇（重新安裝時），再讓用戶選擇新的
+  let selectedAiSources = prev?.selectedAiSources || [];
   if (hasProject || has('claude')) {
     const { selectAiSources } = await import('../lib/external/ai-source-select.mjs');
     const { BACK: B } = await import('../lib/cli/prompts.mjs');
@@ -797,6 +812,7 @@ async function main() {
       startTime,
       pipelineResult: confirmedPlan._pipelineResult || null,
       projectFolders,
+      selectedAiSources,
     });
 
     break;

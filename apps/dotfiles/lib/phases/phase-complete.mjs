@@ -30,11 +30,12 @@ import { generateReport, openInBrowser, saveReport } from '../report.mjs';
  * @param {number} opts.startTime - 安裝開始時間戳（Date.now()）
  * @param {Object|null} opts.pipelineResult - runAnalysisPipeline 產出（用於報告中的技術棧與 reasoning）
  * @param {Array} opts.projectFolders - 專案文件夾映射（儲存到 session）
+ * @param {Array} opts.selectedAiSources - 用戶選擇的 AI 來源名稱陣列（儲存到 session）
  * @returns {Promise<void>}
  */
 export async function phaseComplete(
   plan,
-  { repoDir, installSelections, syncResult, startTime, pipelineResult, projectFolders },
+  { repoDir, installSelections, syncResult, startTime, pipelineResult, projectFolders, selectedAiSources },
 ) {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const isManual = plan.mode === 'manual';
@@ -233,6 +234,7 @@ export async function phaseComplete(
     ),
     techStacks: plan.techStacks,
     projectFolders: projectFolders || [],
+    selectedAiSources: selectedAiSources || [],
     eccSelections: (plan.ecc?.length ?? 0) > 0 ? { recommended: plan.ecc } : null,
     install: {
       commands: installSelections.commands || [],

@@ -33,7 +33,7 @@ function backupIfExists(src, dest) {
 
 function _run(cmd, cwd = REPO) {
   try {
-    execSync(cmd, { stdio: 'inherit', cwd });
+    execSync(cmd, { stdio: 'inherit', cwd, env: process.env });
     return true;
   } catch {
     return false;
