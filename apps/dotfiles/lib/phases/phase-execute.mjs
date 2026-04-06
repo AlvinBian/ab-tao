@@ -375,84 +375,95 @@ export async function phaseExecute(
                                             (plan.ecc?.length ?? 0) > 0 &&
                                             fetchedSources?.sources?.length > 0
                                           ) {
-                                            const eccTypeMap = fetchedSources.eccTypeMap || {};
-                                            const eccByType = {
-                                              commands: new Set(),
-                                              agents: new Set(),
-                                              rules: new Set(),
-                                            };
-                                            for (const name of plan.ecc) {
-                                              const type =
-                                                eccTypeMap[name.replace('.md', '')] || 'commands';
-                                              eccByType[type]?.add(name);
-                                            }
-                                            syncResult = buildSyncResult(fetchedSources, eccByType);
-                                            const claudePreview = path.join(previewDir, 'claude');
-                                            await writeSyncedFiles(
-                                              syncResult.downloaded,
-                                              claudePreview,
-                                            );
-                                            let skipped = [];
-                                            if (!isManual)
-                                              skipped = await writeSyncedFiles(
-                                                syncResult.downloaded,
-                                                path.join(HOME, '.claude'),
+                                            try {
+                                              const eccTypeMap = fetchedSources.eccTypeMap || {};
+                                              const eccByType = {
+                                                commands: new Set(),
+                                                agents: new Set(),
+                                                rules: new Set(),
+                                              };
+                                              for (const name of plan.ecc) {
+                                                const type =
+                                                  eccTypeMap[name.replace('.md', '')] || 'commands';
+                                                eccByType[type]?.add(name);
+                                              }
+                                              syncResult = buildSyncResult(
+                                                fetchedSources,
+                                                eccByType,
                                               );
-                                            const added = syncResult.downloaded?.length || 0;
-                                            sub.output = skipped.length
-                                              ? `已融合 ${added} 個檔案（跳過 ${skipped.length} 個用戶自訂：${skipped.join('、')}）`
-                                              : `已融合 ${added} 個檔案`;
+                                              const claudePreview = path.join(previewDir, 'claude');
+                                              await writeSyncedFiles(
+                                                syncResult.downloaded,
+                                                claudePreview,
+                                              );
+                                              let skipped = [];
+                                              if (!isManual)
+                                                skipped = await writeSyncedFiles(
+                                                  syncResult.downloaded,
+                                                  path.join(HOME, '.claude'),
+                                                );
+                                              const added = syncResult.downloaded?.length || 0;
+                                              sub.output = skipped.length
+                                                ? `ECC 已融合 ${added} 個（跳過 ${skipped.length} 個自訂）`
+                                                : `ECC 已融合 ${added} 個`;
+                                            } catch (eccErr) {
+                                              sub.output = `ECC 融合失敗（${eccErr.message?.slice(0, 60)}）`;
+                                            }
                                           }
 
                                           // 安裝 commons 篩選後的資源（技術棧匹配）
                                           const commSources =
                                             pipelineResult?.commonsResources?.sources || [];
-                                          if (commSources.length > 0) {
-                                            // 安裝 commands/agents/rules
-                                            const downloaded = commSources.map((src) => ({
-                                              source: src.name,
-                                              commands: src.commands || [],
-                                              agents: src.agents || [],
-                                              rules: src.rules || [],
-                                              hooks: null,
-                                            }));
-                                            const claudePreview = path.join(previewDir, 'claude');
-                                            await writeSyncedFiles(downloaded, claudePreview);
-                                            if (!isManual) {
-                                              await writeSyncedFiles(
-                                                downloaded,
-                                                path.join(HOME, '.claude'),
-                                              );
-                                            }
-
-                                            // 安裝 skills（SKILL.md 格式）
-                                            const skillSources = commSources.filter(
-                                              (s) => s.skills?.length > 0,
-                                            );
-                                            if (skillSources.length > 0) {
-                                              await writeSkillFiles(
-                                                skillSources,
-                                                path.join(previewDir, 'claude'),
-                                              );
+                                          if (commSources.length > 0)
+                                            try {
+                                              // 過濾掉 name 或 content 為空的資源
+                                              const validFile = (f) => f && f.name && f.content;
+                                              const downloaded = commSources.map((src) => ({
+                                                source: src.name,
+                                                commands: (src.commands || []).filter(validFile),
+                                                agents: (src.agents || []).filter(validFile),
+                                                rules: (src.rules || []).filter(validFile),
+                                                hooks: null,
+                                              }));
+                                              const claudePreview = path.join(previewDir, 'claude');
+                                              await writeSyncedFiles(downloaded, claudePreview);
                                               if (!isManual) {
-                                                await writeSkillFiles(
-                                                  skillSources,
+                                                await writeSyncedFiles(
+                                                  downloaded,
                                                   path.join(HOME, '.claude'),
                                                 );
                                               }
-                                            }
 
-                                            const commTotal = commSources.reduce(
-                                              (s, src) =>
-                                                s +
-                                                src.commands.length +
-                                                src.agents.length +
-                                                src.rules.length +
-                                                src.skills.length,
-                                              0,
-                                            );
-                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}已安裝 ${commSources.length} 個 AI 來源（${commTotal} 個資源）`;
-                                          }
+                                              // 安裝 skills（SKILL.md 格式）
+                                              const skillSources = commSources.filter(
+                                                (s) => s.skills?.length > 0,
+                                              );
+                                              if (skillSources.length > 0) {
+                                                await writeSkillFiles(
+                                                  skillSources,
+                                                  path.join(previewDir, 'claude'),
+                                                );
+                                                if (!isManual) {
+                                                  await writeSkillFiles(
+                                                    skillSources,
+                                                    path.join(HOME, '.claude'),
+                                                  );
+                                                }
+                                              }
+
+                                              const commTotal = commSources.reduce(
+                                                (s, src) =>
+                                                  s +
+                                                  src.commands.length +
+                                                  src.agents.length +
+                                                  src.rules.length +
+                                                  src.skills.length,
+                                                0,
+                                              );
+                                              sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}已安裝 ${commSources.length} 個 AI 來源（${commTotal} 個資源）`;
+                                            } catch (commErr) {
+                                              sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}commons 安裝失敗（${commErr.message?.slice(0, 60)}）`;
+                                            }
                                           if (!sub.output) sub.output = '無 AI 資源';
                                         },
                                       },
