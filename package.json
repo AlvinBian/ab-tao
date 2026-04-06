@@ -10,6 +10,7 @@
   },
   "scripts": {
     "help": "node scripts/help.mjs",
+
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -17,10 +18,22 @@
     "format": "biome format --write .",
     "check": "biome check --write .",
     "check:ci": "biome check .",
-    "sync": "turbo run sync --filter=@ab-tao/commons",
-    "validate": "turbo run validate --filter=@ab-tao/commons",
-    "setup": "pnpm --filter @ab-tao/dotfiles run setup",
     "clean": "turbo clean && rm -rf node_modules",
+
+    "dotfiles:setup": "pnpm --filter @ab-tao/dotfiles run setup",
+    "dotfiles:scan": "pnpm --filter @ab-tao/dotfiles run scan",
+    "dotfiles:doctor": "pnpm --filter @ab-tao/dotfiles run doctor",
+    "dotfiles:status": "pnpm --filter @ab-tao/dotfiles run status",
+    "dotfiles:report": "pnpm --filter @ab-tao/dotfiles run report",
+    "dotfiles:restore": "pnpm --filter @ab-tao/dotfiles run restore",
+    "dotfiles:hooks": "pnpm --filter @ab-tao/dotfiles run hooks",
+    "dotfiles:uninstall": "pnpm --filter @ab-tao/dotfiles run uninstall",
+
+    "commons:sync": "pnpm --filter @ab-tao/commons run sync",
+    "commons:sync:select": "pnpm --filter @ab-tao/commons run sync -- --select",
+    "commons:sync:all": "pnpm --filter @ab-tao/commons run sync -- --all",
+    "commons:validate": "pnpm --filter @ab-tao/commons run validate",
+
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm run build && changeset publish"
