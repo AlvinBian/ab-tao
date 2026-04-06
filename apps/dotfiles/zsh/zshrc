@@ -1,0 +1,38 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  ~/.zshrc — 模組化入口                                          ║
+# ║  由 ab-dotfiles 自動生成，修改請至 zsh/modules/ 對應檔案        ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+# ── 工具函式（模組共用）──────────────────────────────────────────
+_command_exists() { command -v "$1" &>/dev/null; }
+_safe_source()    { [[ -s "$1" ]] && source "$1"; }
+
+# ── 標準使用者二進制路徑 ─────────────────────────────────────────
+# ~/.local/bin: Claude Code 官方安裝器、pipx、cargo install 等
+[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+
+# ── Homebrew ──────────────────────────────────────────────────────
+if _command_exists brew; then
+  export BREW_PREFIX=$(brew --prefix)
+else
+  export BREW_PREFIX="/usr/local"
+fi
+
+# ── pyenv ─────────────────────────────────────────────────────────
+if _command_exists pyenv; then
+  export PYENV_ROOT="$HOME/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+  eval "$(pyenv init - zsh)"
+fi
+
+# ── 動態載入 ~/.zsh/modules/ 所有模組（字母順序）────────────────
+# 載入順序：aliases → completion → fzf → git → history →
+#           keybindings → nvm → plugins → pnpm → tools
+for _zsh_module in ~/.zsh/modules/*.zsh(N); do
+  source "$_zsh_module"
+done
+unset _zsh_module
+
+# ── 個人設定（不會被 ab-dotfiles 覆蓋）────────────────────────
+# 環境變數、PATH、alias 等個人設定請放在 ~/.zshrc.local
+_safe_source "$HOME/.zshrc.local"

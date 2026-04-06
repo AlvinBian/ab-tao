@@ -42,6 +42,9 @@ pnpm run test
 | `pnpm run sync` | 同步外部 AI 資源 |
 | `pnpm run validate` | 驗證資源結構 + 安全檢查 |
 | `pnpm run setup` | 執行 dotfiles 環境部署 |
+| `pnpm run scan` | 技術棧掃描 + 技能庫生成 |
+| `pnpm run doctor` | 環境診斷 |
+| `pnpm run status` | 配置狀態儀表板 |
 | `pnpm run changeset` | 建立變更記錄 |
 
 ## packages/commons
@@ -56,12 +59,14 @@ pnpm run test
 
 ## apps/dotfiles
 
-環境配置層（從 [ab-dotfiles](https://github.com/AlvinBian/ab-dotfiles) 遷移中）：
+環境配置層（從 [ab-dotfiles](https://github.com/AlvinBian/ab-dotfiles) v2.1.0 遷入）：
 
-- AI 驅動的技術棧偵測
-- Claude Code 技能庫生成
-- ZSH 環境模組配置
-- 互動式安裝引導
+- **互動式安裝精靈** — 5 階段部署（分析 → 規劃 → 執行 → 完成）
+- **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢
+- **Claude Code 配置生成** — 27 commands + 22 agents + rules + hooks
+- **ZSH 模組化環境** — 10 個模組（aliases, git, fzf, nvm, completion...）
+- **ECC 資源整合** — everything-claude-code 外部資源同步與翻譯
+- **Pipeline 架構** — Tier 1 並行抓取 → Tier 2 AI 分類 → 合併去重 → 推薦
 
 ## CI/CD
 

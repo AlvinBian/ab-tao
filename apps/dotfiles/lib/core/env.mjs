@@ -1,0 +1,72 @@
+/**
+ * .env 載入（不依賴 dotenv）
+ *
+ * 職責：
+ *   讀取專案根目錄的 .env 檔案，注入到 process.env。
+ *   已存在的環境變數不會被覆蓋。
+ *   只載入一次（idempotent）。
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { getDirname } from './paths.mjs';
+
+const __dirname = getDirname(import.meta);
+const ENV_PATH = path.resolve(__dirname, '../..', '.env');
+
+const TEMPLATE_PATH = path.resolve(__dirname, '../..', '.env.template');
+
+let _loaded = false;
+
+/**
+ * 載入 .env 檔案到 process.env（只執行一次）
+ *
+ * 解析規則：
+ * - 跳過空行與 # 開頭的註解行
+ * - 等號左側為 key，右側為 value（去除前後引號）
+ * - 已存在於 process.env 的 key 不覆蓋
+ * - .env 不存在但 .env.template 存在時自動複製 template
+ *
+ * @returns {void}
+ */
+export function loadEnv() {
+  if (_loaded) return;
+  // .env 不存在但 template 存在時，自動從 template 建立
+  if (!fs.existsSync(ENV_PATH) && fs.existsSync(TEMPLATE_PATH)) {
+    fs.copyFileSync(TEMPLATE_PATH, ENV_PATH);
+  }
+  if (!fs.existsSync(ENV_PATH)) return;
+  for (const line of fs.readFileSync(ENV_PATH, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    // 去除 value 前後相符的成對引號（單引號或雙引號）
+    const raw = trimmed.slice(eq + 1).trim();
+    const val =
+      (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))
+        ? raw.slice(1, -1)
+        : raw;
+    if (!process.env[key]) process.env[key] = val;
+  }
+  _loaded = true;
+}
+
+/**
+ * 讀取環境變數，帶型別轉換
+ * @param {string} key
+ * @param {*} fallback - 預設值（也決定型別轉換：number → parseInt, boolean → 'true'）
+ * @returns {*}
+ */
+export function env(key, fallback) {
+  loadEnv();
+  const val = process.env[key];
+  if (val === undefined || val === '') return fallback;
+  if (typeof fallback === 'number') {
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? fallback : n;
+  }
+  if (typeof fallback === 'boolean') return val === 'true' || val === '1';
+  return val;
+}
