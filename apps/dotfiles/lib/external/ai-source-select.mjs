@@ -74,7 +74,11 @@ export async function selectAiSources() {
     }
   }
 
-  p.log.success(`AI 來源：${selected.map((s) => pc.cyan(s)).join(', ')}`);
+  const lines = selected.map((name, i) => {
+    const config = SOURCES_CONFIG[name];
+    return `  ${i + 1}. ${config.icon} ${pc.cyan(name)} — ${config.description}`;
+  });
+  p.log.success(`已選擇 ${selected.length} 個 AI 來源：\n${lines.join('\n')}`);
 
   return selected;
 }
