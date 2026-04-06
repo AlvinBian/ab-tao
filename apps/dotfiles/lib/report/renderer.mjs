@@ -7,6 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { getDescription } from '../config/descriptions.mjs';
 import {
@@ -27,9 +28,27 @@ import {
  * 渲染 Tab 概覽頁籤
  */
 function renderTabOverview(data) {
+  const installed = data.installed || {};
+  const cmdCount = installed.commands?.length || 0;
+  const agentCount = installed.agents?.length || 0;
+  const ruleCount = installed.rules?.length || 0;
+  const moduleCount = installed.modules?.length || 0;
+  const stackCount = data.stacks?.length || 0;
+  const repoCount = (data.repos || []).length;
+
   return `
 <div id="tab-overview" class="tab-content active">
   ${renderOverview(data)}
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px">
+      <h2 class="section-title">安裝概覽</h2>
+      <div id="chart-overview-pie" style="height:260px"></div>
+    </div>
+    <div style="flex:1;min-width:280px">
+      <h2 class="section-title">數量統計</h2>
+      <div id="chart-overview-bar" style="height:260px"></div>
+    </div>
+  </div>
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">概覽顯示安裝的總體統計。使用頂部 Tab 導航查看技術棧、專案、安裝詳情、審計日誌。</p>
   </div>
@@ -129,7 +148,7 @@ function renderTabRepos(data) {
       }
 
       const localPath = roleInfo.localPath
-        ? roleInfo.localPath.replace(process.env.HOME, '~')
+        ? roleInfo.localPath.replace(process.env.HOME || os.homedir(), '~')
         : '未找到';
       const claudeMd = proj ? typeLabel[proj.claudeMdType] || '—' : '—';
       const roleDesc =
@@ -219,6 +238,7 @@ function renderCharts(data) {
   const stacks = data.stacks || [];
   const perRepoReasoning = data.perRepoReasoning || {};
   const repos = data.repos || [];
+  const installed = data.installed || {};
 
   const stackRepoCount = {};
   if (repos.length > 0) {
@@ -238,13 +258,26 @@ function renderCharts(data) {
     .slice(0, topCount);
 
   const chartConfig = {
-    techFreq: topStacks.map(([name, count]) => ({
-      name,
-      value: count,
-    })),
+    techFreq: topStacks.map(([name, count]) => ({ name, value: count })),
+    overview: [
+      { name: 'Commands', value: installed.commands?.length || 0 },
+      { name: 'Agents', value: installed.agents?.length || 0 },
+      { name: 'Rules', value: installed.rules?.length || 0 },
+      { name: 'ZSH 模組', value: installed.modules?.length || 0 },
+      { name: '技術棧', value: stacks.length },
+      { name: 'Repos', value: repos.length },
+    ].filter((d) => d.value > 0),
+    eccInstall: [
+      ...(data.ecc?.sources || []).map((s) => ({
+        name: s.name,
+        added:
+          (s.added?.commands?.length || 0) +
+          (s.added?.agents?.length || 0) +
+          (s.added?.rules?.length || 0),
+        skipped: Object.values(s.skipped || {}).reduce((a, b) => a + (b?.length || 0), 0),
+      })),
+    ],
   };
-
-  if (stacks.length === 0 && repos.length === 0) return '';
 
   return `
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
@@ -293,20 +326,71 @@ function initTechFreqChart() {
 
 function initEccInstallChart() {
   const dom = document.getElementById('chart-ecc-install');
-  if (!dom || !dom.offsetParent) return;
+  if (!dom || !dom.offsetParent || dom._echarts) return;
+  if (!chartConfig.eccInstall || chartConfig.eccInstall.length === 0) return;
   const chart = echarts.init(dom);
+  dom._echarts = chart;
   const option = {
     backgroundColor: 'transparent',
     textStyle: { color: '#8b949e' },
     tooltip: { trigger: 'item' },
+    legend: { bottom: 0, textStyle: { color: '#8b949e' } },
     series: [{
       type: 'pie',
-      radius: '50%',
-      data: [{ value: 1, name: 'ECC Source' }],
-      itemStyle: { color: '#3fb950' }
+      radius: ['30%', '55%'],
+      data: chartConfig.eccInstall.map(s => ({ value: s.added, name: s.name + ' (+' + s.added + ')' })),
+      label: { color: '#c9d1d9' },
+      itemStyle: { borderColor: '#0d1117', borderWidth: 2 }
     }]
   };
   chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+}
+
+function initOverviewPie() {
+  const dom = document.getElementById('chart-overview-pie');
+  if (!dom || dom._echarts) return;
+  const chart = echarts.init(dom);
+  dom._echarts = chart;
+  const colors = ['#58a6ff','#bc8cff','#3fb950','#f0883e','#f778ba','#79c0ff'];
+  const option = {
+    backgroundColor: 'transparent',
+    textStyle: { color: '#8b949e' },
+    tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '60%'],
+      data: chartConfig.overview,
+      label: { color: '#c9d1d9', formatter: '{b}\\n{c}' },
+      itemStyle: { borderColor: '#0d1117', borderWidth: 2 },
+      color: colors
+    }]
+  };
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+}
+
+function initOverviewBar() {
+  const dom = document.getElementById('chart-overview-bar');
+  if (!dom || dom._echarts) return;
+  const chart = echarts.init(dom);
+  dom._echarts = chart;
+  const option = {
+    backgroundColor: 'transparent',
+    textStyle: { color: '#8b949e' },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 80, right: 20, top: 10, bottom: 30 },
+    xAxis: { type: 'value', axisLabel: { color: '#8b949e' } },
+    yAxis: { type: 'category', data: chartConfig.overview.map(d => d.name), axisLabel: { color: '#8b949e' } },
+    series: [{
+      type: 'bar',
+      data: chartConfig.overview.map(d => d.value),
+      itemStyle: { color: '#58a6ff' },
+      label: { show: true, position: 'right', color: '#8b949e' }
+    }]
+  };
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
 }
 
 // 搜尋功能
@@ -331,8 +415,9 @@ if (searchInput) {
   });
 }
 
-// 初始化概覽 Tab 圖表
-initTechFreqChart();
+// 初始化概覽 Tab 圖表（首屏）
+initOverviewPie();
+initOverviewBar();
 </script>`;
 }
 
