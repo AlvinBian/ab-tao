@@ -403,9 +403,39 @@ export async function phaseExecute(
                                             sub.output = skipped.length
                                               ? `已融合 ${added} 個檔案（跳過 ${skipped.length} 個用戶自訂：${skipped.join('、')}）`
                                               : `已融合 ${added} 個檔案`;
-                                          } else {
-                                            sub.output = '無 ECC 資源';
                                           }
+
+                                          // commons 已同步的 AI 來源（non-ECC）
+                                          const commSources =
+                                            pipelineResult?.commonsResources?.sources || [];
+                                          let commAdded = 0;
+                                          for (const src of commSources) {
+                                            const downloaded = [
+                                              {
+                                                source: src.name,
+                                                commands: src.commands || [],
+                                                agents: src.agents || [],
+                                                rules: src.rules || [],
+                                                hooks: null,
+                                              },
+                                            ];
+                                            const claudePreview = path.join(previewDir, 'claude');
+                                            await writeSyncedFiles(downloaded, claudePreview);
+                                            if (!isManual) {
+                                              await writeSyncedFiles(
+                                                downloaded,
+                                                path.join(HOME, '.claude'),
+                                              );
+                                            }
+                                            commAdded +=
+                                              src.commands.length +
+                                              src.agents.length +
+                                              src.rules.length;
+                                          }
+                                          if (commAdded > 0) {
+                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}commons ${commAdded} 個資源`;
+                                          }
+                                          if (!sub.output) sub.output = '無 AI 資源';
                                         },
                                       },
                                       {
