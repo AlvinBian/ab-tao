@@ -342,15 +342,21 @@ async function doUpgrade(legacyInfo) {
 }
 
 async function doClean() {
-  // 先保存 permissions（用戶在 Claude Code 中逐步授權的，必須保留）
-  let savedPermissions = null;
+  // 先保存用戶自訂設定（permissions、hooks、skipDangerousModePermissionPrompt 等）
+  let savedUserSettings = null;
   const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
   if (fs.existsSync(settingsPath)) {
     try {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      if (settings.permissions) {
-        savedPermissions = settings.permissions;
-      }
+      // 保留所有用戶自訂欄位（ab-dotfiles 只管 env 和 autoMemoryEnabled）
+      savedUserSettings = {};
+      if (settings.permissions) savedUserSettings.permissions = settings.permissions;
+      if (settings.hooks) savedUserSettings.hooks = settings.hooks;
+      if (settings.skipDangerousModePermissionPrompt !== undefined)
+        savedUserSettings.skipDangerousModePermissionPrompt =
+          settings.skipDangerousModePermissionPrompt;
+      if (settings.autoMemoryEnabled !== undefined)
+        savedUserSettings.autoMemoryEnabled = settings.autoMemoryEnabled;
     } catch {
       /* settings.json 格式錯誤則略過 */
     }
@@ -390,14 +396,16 @@ async function doClean() {
     }
   }
 
-  // 還原 permissions 到空的 settings.json
-  if (savedPermissions) {
+  // 還原用戶自訂設定
+  if (savedUserSettings && Object.keys(savedUserSettings).length > 0) {
     fs.mkdirSync(CLAUDE_DIR, { recursive: true });
-    fs.writeFileSync(
-      settingsPath,
-      `${JSON.stringify({ permissions: savedPermissions }, null, 2)}\n`,
-    );
-    p.log.success(`已保留 ${savedPermissions.allow?.length || 0} 條 permissions 規則`);
+    fs.writeFileSync(settingsPath, `${JSON.stringify(savedUserSettings, null, 2)}\n`);
+    const parts = [];
+    if (savedUserSettings.permissions)
+      parts.push(`${savedUserSettings.permissions.allow?.length || 0} 條權限`);
+    if (savedUserSettings.hooks) parts.push('hooks');
+    if (savedUserSettings.skipDangerousModePermissionPrompt) parts.push('bypass 模式');
+    p.log.success(`已保留用戶設定：${parts.join(' · ')}`);
   }
 
   // 清除 .env 中的 Slack 設定（全部清除應重新配置）
