@@ -187,7 +187,7 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
     const selCats = await multiselectWithAll({
       message: '選擇技術棧分類',
       options: catOpts,
-      initialValues: preselectedCats,
+      initialValues: [],
     });
 
     for (const cat of selCats) {
@@ -211,7 +211,7 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
         ...(await multiselectWithAll({
           message: `${cat} (${items.length})`,
           options: itemOpts,
-          initialValues: pre,
+          initialValues: [],
         })),
       );
     }

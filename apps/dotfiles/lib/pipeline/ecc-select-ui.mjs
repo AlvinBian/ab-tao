@@ -235,7 +235,7 @@ export async function selectEcc({
       const chosen = await multiselectWithAll({
         message: `${typeLabels[type]}（${items.length}）${pc.cyan(' * = AI 推薦')}`,
         options: opts,
-        initialValues: initVals,
+        initialValues: [],
       });
       selNames[type] = new Set(chosen);
     }
