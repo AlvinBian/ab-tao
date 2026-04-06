@@ -463,6 +463,13 @@ async function main() {
   const hasProject = has('project') || has('claudemd') || has('ecc');
   const needsRepos = hasProject;
 
+  // ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
+  let selectedAiSources = [];
+  if (hasProject || has('claude')) {
+    const { selectAiSources } = await import('../lib/external/ai-source-select.mjs');
+    selectedAiSources = await selectAiSources();
+  }
+
   // ── 外部服務設定 ──
   const setupResults = [];
 
