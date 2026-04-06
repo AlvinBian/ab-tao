@@ -236,7 +236,9 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
 
   if (selected.length > 0) {
     // 所有路徑最終確認
-    p.log.success(`✅ 技術棧：${selected.length} 個`);
+    const techLines = selected.slice(0, 20).map((t, i) => `  ${i + 1}. ${t}`);
+    const more = selected.length > 20 ? `\n  ... 另有 ${selected.length - 20} 個` : '';
+    p.log.success(`✅ 技術棧：${selected.length} 個\n${techLines.join('\n')}${more}`);
     const finalOk = handleCancel(
       await p.confirm({
         message: `✅ 確認 ${selected.length} 個技術棧？`,

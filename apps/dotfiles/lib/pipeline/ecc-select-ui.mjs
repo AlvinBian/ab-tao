@@ -265,12 +265,12 @@ export async function selectEcc({
   if (total === 0) return null;
 
   const parts = [];
-  if (selNames.commands.size) parts.push(`${selNames.commands.size} cmd`);
-  if (selNames.agents.size) parts.push(`${selNames.agents.size} agent`);
-  if (selNames.rules.size) parts.push(`${selNames.rules.size} rule`);
+  if (selNames.commands.size) parts.push(`${selNames.commands.size} 指令`);
+  if (selNames.agents.size) parts.push(`${selNames.agents.size} 代理`);
+  if (selNames.rules.size) parts.push(`${selNames.rules.size} 規則`);
   const ok = handleCancel(
     await p.confirm({
-      message: `✅ 確認安裝 ${total} 個 ECC？（${parts.join(' + ')}）`,
+      message: `✅ 確認安裝 ${total} 個 AI 資源？（${parts.join(' + ')}）`,
       initialValue: true,
     }),
   );

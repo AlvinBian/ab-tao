@@ -296,7 +296,8 @@ export async function interactiveRepoSelect(session = null) {
       }
       selected = allSelected;
       if (selected.length > 0) {
-        p.log.success(`${selectTitle}：${selected.length} 個`);
+        const lines = selected.map((r, i) => `  ${i + 1}. ${r}`);
+        p.log.success(`${selectTitle}：${selected.length} 個\n${lines.join('\n')}`);
       }
     }
   } else {
