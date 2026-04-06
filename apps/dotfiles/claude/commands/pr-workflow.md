@@ -3,6 +3,7 @@ name: pr-workflow
 description: >
   PR 全流程：分支建立 → commit → 自我 review → changeset → 發 PR → ready。
   Use when: "發 PR", "open PR", "pull request", "commit", "開分支", "create branch", "pr flow".
+disable-model-invocation: true
 metadata:
   version: 2.0.0
 matchWhen:

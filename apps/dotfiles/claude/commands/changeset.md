@@ -3,6 +3,7 @@ name: changeset
 description: >
   自動分析 git diff 生成 changeset 檔案。
   Use when: "changeset", "版本", "changelog", "新增 changeset".
+disable-model-invocation: true
 metadata:
   version: 1.0.0
 matchWhen:
@@ -47,7 +48,7 @@ ID=$(node -e "console.log(Math.random().toString(36).slice(2,10))")
 
 ```markdown
 ---
-"ab-dotfiles": {type}
+"ab-tao": {type}
 ---
 
 {一句話摘要}
@@ -58,7 +59,7 @@ ID=$(node -e "console.log(Math.random().toString(36).slice(2,10))")
 範例：
 ```markdown
 ---
-"ab-dotfiles": minor
+"ab-tao": minor
 ---
 
 新增 ECC 繁體中文翻譯 + AI 推薦優化

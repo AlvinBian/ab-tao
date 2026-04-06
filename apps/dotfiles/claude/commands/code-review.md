@@ -3,6 +3,7 @@ name: code-review
 description: >
   程式碼審查，按嚴重度分級。自動載入匹配的技術棧 checklist。
   Use when: "review", "審查", "幫我看", "merge 前檢查", "code review", "check this".
+context: fork
 metadata:
   version: 1.0.0
 matchWhen:

@@ -3,6 +3,7 @@ name: test-coverage
 description: >
   測試覆蓋率分析，找出低覆蓋區域並補測試。
   Use when: "coverage", "覆蓋率", "測試覆蓋", "哪裡沒測", "test coverage".
+context: fork
 metadata:
   version: 1.0.0
 matchWhen:

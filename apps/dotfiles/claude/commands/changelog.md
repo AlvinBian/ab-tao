@@ -3,6 +3,7 @@ name: changelog
 description: >
   從 git log 自動生成人讀 CHANGELOG，按類型分組，過濾無意義 commit。
   Use when: "生成 changelog", "changelog", "release notes", "版本記錄", "發版說明".
+disable-model-invocation: true
 metadata:
   version: 1.0.0
 matchWhen:

@@ -3,6 +3,7 @@ name: quality-gate
 description: >
   上線前品質閘門，自動執行 build + types + lint + tests + security 全套檢查。
   Use when: "merge 前", "上線前", "quality check", "品質檢查", "pre-release".
+disable-model-invocation: true
 metadata:
   version: 1.0.0
 matchWhen:

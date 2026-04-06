@@ -3,6 +3,7 @@ name: e2e
 description: >
   End-to-End 測試生成與執行（Playwright）。
   Use when: "e2e", "端對端", "playwright", "整合測試", "E2E test".
+paths: ["**/*.spec.ts", "**/*.test.ts", "playwright.config.*"]
 metadata:
   version: 1.0.0
 matchWhen:

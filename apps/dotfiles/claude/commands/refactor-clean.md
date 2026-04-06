@@ -3,6 +3,7 @@ name: refactor-clean
 description: >
   死代碼清理：未使用的 export、重複邏輯、過時的 TODO。
   Use when: "清理", "dead code", "unused", "重複代碼", "refactor clean".
+context: fork
 metadata:
   version: 1.0.0
 matchWhen:

@@ -3,6 +3,7 @@ name: simplify
 description: >
   審查已修改代碼的複雜度，找出可簡化的部分。
   Use when: "simplify", "簡化", "太複雜了", "精簡", "review changed code".
+context: fork
 metadata:
   version: 1.0.0
 matchWhen:

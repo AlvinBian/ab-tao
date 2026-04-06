@@ -3,6 +3,7 @@ name: onboarding
 description: >
   新人 / 新 session 專案快速上手：掃描架構 → 產出理解路徑 → 生成提問清單。
   Use when: "幫我了解這個專案", "onboarding", "專案說明", "從哪開始看", "架構導覽", "新人引導".
+context: fork
 metadata:
   version: 1.0.0
 matchWhen:
