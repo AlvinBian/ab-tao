@@ -12,7 +12,7 @@ import { SOURCES_CONFIG } from '@ab-tao/commons/sync';
 import { readVersions } from '@ab-tao/commons/versions';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
-import { handleCancel } from '../cli/prompts.mjs';
+import { BACK, handleCancel } from '../cli/prompts.mjs';
 
 /**
  * 互動式選擇 AI 來源
@@ -46,8 +46,9 @@ export async function selectAiSources() {
     }),
   );
 
+  if (selected === BACK) return BACK;
   if (!selected || selected.length === 0) {
-    p.log.info('已跳過 AI 來源同步');
+    p.log.info('⏭️ 已跳過 AI 來源');
     return [];
   }
 

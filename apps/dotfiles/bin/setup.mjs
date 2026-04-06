@@ -414,32 +414,30 @@ async function main() {
   const featureChoices = [
     {
       value: 'claude',
-      label: '🤖 Claude Code 開發配置',
-      hint: 'commands · agents · rules · hooks · settings',
+      label: `🤖 Claude Code 開發配置 ${pc.dim('commands · agents · rules · hooks · settings')}`,
     },
     {
       value: 'project',
-      label: '📁 專案配置（repos + AI）',
-      hint: 'CLAUDE.md + ECC + 技術棧 · 需選 repos',
+      label: `📁 專案配置（repos + AI）${pc.dim('CLAUDE.md + AI 資源 + 技術棧')}`,
     },
     {
       value: 'zsh',
-      label: '🐚 ZSH 環境模組',
-      hint: 'aliases · fzf · git · tools · history',
+      label: `🐚 ZSH 環境模組 ${pc.dim('aliases · fzf · git · tools · history')}`,
     },
-    { value: 'slack', label: '💬 Slack 通知', hint: 'Channel / DM' },
+    {
+      value: 'slack',
+      label: `💬 Slack 通知 ${pc.dim('Channel / DM')}`,
+    },
   ];
-  // 首次安裝只預選核心 claude，避免誤覆蓋用戶現有 zsh/Slack 配置
-  const prevFeatures = prev?.features || ['claude'];
   const features = handleCancel(
     await p.multiselect({
-      message: '選擇安裝項目（Space 切換，Enter 確認）',
+      message: '選擇安裝項目（Space 切換，Enter 確認，直接 Enter 跳過）',
       options: featureChoices,
-      initialValues: prevFeatures,
-      required: true,
+      initialValues: [],
+      required: false,
     }),
   );
-  if (features === BACK) {
+  if (features === BACK || !features || features.length === 0) {
     p.outro('已取消');
     return;
   }
@@ -468,7 +466,13 @@ async function main() {
   let selectedAiSources = [];
   if (hasProject || has('claude')) {
     const { selectAiSources } = await import('../lib/external/ai-source-select.mjs');
-    selectedAiSources = await selectAiSources();
+    const { BACK: B } = await import('../lib/cli/prompts.mjs');
+    const result = await selectAiSources();
+    if (result === B) {
+      p.outro('已取消');
+      return;
+    }
+    selectedAiSources = result;
   }
 
   // ── 外部服務設定 ──
