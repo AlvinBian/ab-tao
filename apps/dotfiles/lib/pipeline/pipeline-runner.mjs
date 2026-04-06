@@ -98,6 +98,7 @@ function extractEccDesc(content, fallbackName) {
 export async function runAnalysisPipeline({
   repos,
   sources = [],
+  selectedAiSources = [],
   baseDir,
   aiConfig = {},
   onPhase = () => {},
@@ -112,11 +113,18 @@ export async function runAnalysisPipeline({
     message: hasEcc ? '分析 repos + 取得 AI 資源...' : '分析 repos...',
   });
 
-  // 載入 commons 已同步的所有 AI 來源（本地，零 API）
-  const commonsResources = loadAllCommonsResources();
-  if (commonsResources.stats.loaded > 0) {
+  // 載入 commons 已同步的 AI 來源（僅使用者選擇的，本地零 API）
+  const allCommons = loadAllCommonsResources();
+  const commonsResources =
+    selectedAiSources.length > 0
+      ? {
+          ...allCommons,
+          sources: allCommons.sources.filter((s) => selectedAiSources.includes(s.name)),
+        }
+      : allCommons;
+  if (commonsResources.sources.length > 0) {
     onPhase('commons', {
-      message: `已載入 ${commonsResources.stats.loaded} 個 AI 來源（${commonsResources.stats.resources} 個資源）`,
+      message: `已載入 ${commonsResources.sources.length} 個 AI 來源（${commonsResources.sources.reduce((sum, s) => sum + s.commands.length + s.agents.length + s.rules.length + s.skills.length, 0)} 個資源）`,
     });
   }
 

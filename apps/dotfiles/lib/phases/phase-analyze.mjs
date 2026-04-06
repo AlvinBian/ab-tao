@@ -38,7 +38,13 @@ import { generateProfile } from '../pipeline/profile-generator.mjs';
  * @param {Array} [opts.projectFolders] - 專案文件夾映射（name → localPath）
  * @returns {Promise<Object>} plan - 完整安裝計畫，附帶 _pipelineResult 和 _fetchedSources
  */
-export async function phaseAnalyze({ repos, sources, baseDir, projectFolders }) {
+export async function phaseAnalyze({
+  repos,
+  sources,
+  selectedAiSources = [],
+  baseDir,
+  projectFolders,
+}) {
   let pipelineResult = null;
   let detectResult = { paths: {}, roleOverrides: {} };
   let profile = null;
@@ -58,6 +64,7 @@ export async function phaseAnalyze({ repos, sources, baseDir, projectFolders }) 
                   pipelineResult = await runAnalysisPipeline({
                     repos: repos.map((r) => r.fullName),
                     sources,
+                    selectedAiSources,
                     baseDir,
                     aiConfig: {
                       model: AI_REPO_MODEL,

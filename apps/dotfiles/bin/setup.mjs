@@ -146,6 +146,7 @@ async function main() {
     const plan = await phaseAnalyze({
       repos: repoObjects,
       sources: srcs,
+      selectedAiSources: [],
       baseDir: REPO,
       projectFolders: folders,
     });
@@ -653,6 +654,7 @@ async function main() {
               plan: await phaseAnalyze({
                 repos,
                 sources,
+                selectedAiSources,
                 baseDir: REPO,
                 projectFolders,
               }),
