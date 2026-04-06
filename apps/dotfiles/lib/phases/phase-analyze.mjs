@@ -48,12 +48,12 @@ export async function phaseAnalyze({ repos, sources, baseDir, projectFolders }) 
     [
       // ── 步驟 1：AI 分析 + 路徑偵測（並行，互不依賴）──
       {
-        title: '🔍 Repos + ECC fetch / 偵測本機路徑',
+        title: '🔍 Repos + AI 資源 / 偵測本機路徑',
         task: (_, task) =>
           task.newListr(
             [
               {
-                title: '📡 Repos + ECC fetch',
+                title: '📡 Repos + AI 資源',
                 task: async (_, subtask) => {
                   pipelineResult = await runAnalysisPipeline({
                     repos: repos.map((r) => r.fullName),

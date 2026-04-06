@@ -137,7 +137,7 @@ export function renderOverview(data) {
     { label: '模式', value: data.mode === 'auto' ? '自動' : '手動' },
     { label: 'Repos', value: data.repos?.length ?? 0 },
     { label: '技術棧', value: data.stacks?.length ?? 0 },
-    { label: 'ECC 融合', value: `+${eccAdded}` },
+    { label: 'AI 資源融合', value: `+${eccAdded}` },
   ];
   const inner = items
     .map(
@@ -149,7 +149,7 @@ export function renderOverview(data) {
 }
 
 /**
- * 渲染 ECC 融合區塊
+ * 渲染 AI 資源融合區塊
  */
 export function renderEcc(ecc) {
   if (!ecc?.sources?.length) return '';
@@ -173,7 +173,7 @@ export function renderEcc(ecc) {
   }
   return section(
     'Source 融合',
-    '<p class="section-desc">ECC（Everything Claude Code）外部社群資源。「新增」表示本地沒有的項目已融合，「跳過」表示本地已有同名項目優先保留。</p>' +
+    '<p class="section-desc">AI 外部資源（ECC + Anthropic + Superpowers 等）。「新增」表示本地沒有的項目已融合，「跳過」表示本地已有同名項目優先保留。</p>' +
       inner,
   );
 }

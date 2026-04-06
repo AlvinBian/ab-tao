@@ -1,5 +1,5 @@
 /**
- * ECC 外部資源選擇互動 UI
+ * AI 外部資源選擇互動 UI
  *
  * 流程：AI 推薦摘要 → 確認/調整/查看全部/跳過
  *
@@ -79,7 +79,7 @@ function extractDesc(content, fallbackName, type) {
 }
 
 /**
- * ECC 外部資源選擇互動 UI
+ * AI 外部資源選擇互動 UI
  *
  * 根據偵測到的技術棧過濾候選項目，等待 AI 推薦結果後
  * 顯示推薦摘要，讓用戶選擇安裝哪些外部資源。
@@ -179,10 +179,10 @@ export async function selectEcc({
     }
     const restCount = totalEcc - aiTotal;
     p.log.info(
-      `🤖 AI 推薦 ${aiTotal} 個 ECC（另有 ${restCount} 個可選）：\n${previewLines.join('\n')}`,
+      `🤖 AI 推薦 ${aiTotal} 個 AI 資源（另有 ${restCount} 個可選）：\n${previewLines.join('\n')}`,
     );
   } else {
-    p.log.info(`🔗 ECC 匹配 ${totalEcc} 個（AI 未推薦，需手動選擇）`);
+    p.log.info(`🌐 匹配 ${totalEcc} 個 AI 資源（AI 未推薦，需手動選擇）`);
   }
 
   // 選擇操作
@@ -204,9 +204,9 @@ export async function selectEcc({
     label: `📂 瀏覽全部 (${totalEcc})`,
     hint: '逐類型選擇',
   });
-  options.push({ value: 'skip', label: '⏭️ 跳過 ECC' });
+  options.push({ value: 'skip', label: '⏭️ 跳過' });
 
-  const action = handleCancel(await p.select({ message: '🔗 ECC 外部資源', options }));
+  const action = handleCancel(await p.select({ message: '🌐 AI 外部資源', options }));
 
   if (action === 'skip') return null;
 

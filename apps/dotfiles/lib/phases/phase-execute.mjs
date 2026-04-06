@@ -359,9 +359,9 @@ export async function phaseExecute(
                         task: (_, task) =>
                           task.newListr(
                             [
-                              // [4] ECC 外部資源 + 技術棧 Stacks
+                              // [4] AI 外部資源 + 技術棧 Stacks
                               {
-                                title: `🔗 ECC（${plan.ecc?.length ?? 0}）+ Stacks（${plan.techStacks?.length ?? 0}）`,
+                                title: `🌐 AI 資源（${plan.ecc?.length ?? 0}）+ Stacks（${plan.techStacks?.length ?? 0}）`,
                                 enabled: () =>
                                   has('ecc') &&
                                   ((plan.ecc?.length ?? 0) > 0 ||
@@ -370,7 +370,7 @@ export async function phaseExecute(
                                   subtask.newListr(
                                     [
                                       {
-                                        title: `🔗 ECC 融合 — ${plan.ecc?.length ?? 0} 個外部 commands/agents/rules`,
+                                        title: `🌐 AI 資源融合 — ${plan.ecc?.length ?? 0} 個外部 commands/agents/rules`,
                                         task: async (_, sub) => {
                                           if (
                                             (plan.ecc?.length ?? 0) > 0 &&

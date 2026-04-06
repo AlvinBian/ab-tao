@@ -5,7 +5,7 @@
  * 流程：repos fetch + AI 資源載入（並行）→ per-repo AI（並行）→ merge → AI 推薦
  *
  * 各階段說明：
- *   TIER 1：repos fetch（GitHub API 分析）+ commons 資源載入（本地）+ ECC fetch 並行執行
+ *   TIER 1：repos fetch（GitHub API 分析）+ AI 資源載入（commons 本地 + ECC 遠端）並行執行
  *   TIER 2：per-repo AI 分類，以 AI_CONCURRENCY 控制並行數量
  *   MERGE：mergeRepoResults 跨 repo 去重 + 仲裁
  *   ECC：規則匹配推薦（即時）+ 背景 AI 翻譯（不阻塞主流程）

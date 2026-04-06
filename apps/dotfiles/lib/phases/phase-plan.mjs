@@ -143,9 +143,8 @@ export async function phasePlan(plan) {
     }
   }
 
-  // 5. ECC（帶描述，按 type 分組）
+  // 5. AI 外部資源（ECC + commons 已同步的所有來源）
   if (plan.ecc.length > 0) {
-    // 從 fetchedSources 或本地目錄判斷 type
     const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
     const eccByType = { commands: [], agents: [], rules: [] };
     for (const name of plan.ecc) {
@@ -157,7 +156,7 @@ export async function phasePlan(plan) {
         'commands';
       eccByType[type].push(clean);
     }
-    lines.push(`5. ECC 外部資源（${plan.ecc.length} 個）`);
+    lines.push(`5. 🌐 AI 外部資源（${plan.ecc.length} 個）`);
     if (eccByType.commands.length) {
       lines.push(`   5.1 Commands（${eccByType.commands.length}）`);
       lines.push(...eccByType.commands.map((n) => descBullet(n, 'commands', claudeDir)));
@@ -224,7 +223,7 @@ export async function phasePlan(plan) {
  * 讓用戶逐步調整計畫中的各個項目：
  *   1. 調整各 repo 的角色（main/temp）
  *   2. 選擇全局 commands / agents / rules
- *   3. 選擇 ECC 外部資源
+ *   3. 選擇 AI 外部資源
  *   4. 選擇 ZSH 模組
  *
  * @param {Object} originalPlan - 原始計畫（不直接修改，使用 cloneDeep 複製）
@@ -296,7 +295,7 @@ async function detailConfirm(originalPlan) {
       hint: '',
     }));
     const selectedEcc = await smartSelect({
-      title: '🔗 ECC 外部資源',
+      title: '🌐 AI 外部資源',
       items: eccItems,
       preselected: plan.ecc,
       autoSelectThreshold: 0,

@@ -30,32 +30,39 @@ const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources');
 const SOURCES_CONFIG = {
   ecc: {
     url: 'https://github.com/affaan-m/everything-claude-code.git',
+    icon: '🌐',
     description: 'Claude Code 社群資源（commands/agents/rules/skills）',
     validatePaths: ['commands', 'agents', 'rules', 'skills'],
   },
   anthropic: {
     url: 'https://github.com/anthropics/skills.git',
+    icon: '🤖',
     description: 'Anthropic 官方 Skills（claude-api/doc-coauthoring/...）',
     validatePaths: ['skills'],
   },
   superpowers: {
     url: 'https://github.com/obra/superpowers.git',
+    icon: '⚡',
     description: 'Claude Superpowers — 進階 agent 能力',
   },
   'ui-ux-pro': {
     url: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git',
+    icon: '🎨',
     description: 'UI/UX Pro Max Skill — 設計與前端最佳實踐',
   },
   'claude-plugins': {
     url: 'https://github.com/anthropics/claude-plugins-official.git',
+    icon: '🔌',
     description: 'Anthropic 官方 Plugins',
   },
   letta: {
     url: 'https://github.com/letta-ai/skills.git',
+    icon: '🧠',
     description: 'Letta AI Skills（Slack/Google/Obsidian 整合）',
   },
   'context-engineering': {
     url: 'https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git',
+    icon: '📐',
     description: 'Context Engineering Skills（context 優化/壓縮/評估）',
   },
 };
@@ -197,7 +204,7 @@ async function syncSelected(sourceNames, options = {}) {
       console.error(`未知的來源: ${name}`);
       continue;
     }
-    console.log(`[${name}] ${config.description}`);
+    console.log(`${config.icon} [${name}] ${config.description}`);
     try {
       const result = await syncSource(name, config, options);
       results.push({ source: name, ...result });
@@ -219,29 +226,61 @@ async function syncSelected(sourceNames, options = {}) {
   return results;
 }
 
+/** 統計單一來源的資源數量 */
+function countResources(sourceName) {
+  const sourceDir = path.join(RESOURCES_PATH, sourceName);
+  if (!fs.existsSync(sourceDir)) return null;
+  const count = (sub) => {
+    const dir = path.join(sourceDir, sub);
+    if (!fs.existsSync(dir)) return 0;
+    return fs.readdirSync(dir).filter((f) => f.endsWith('.md')).length;
+  };
+  const commands = count('commands');
+  const agents = count('agents');
+  const rules = count('rules');
+  // skills: 子目錄含 SKILL.md
+  let skills = 0;
+  const skillsDir = path.join(sourceDir, 'skills');
+  if (fs.existsSync(skillsDir)) {
+    for (const d of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+      if (d.isDirectory() && fs.existsSync(path.join(skillsDir, d.name, 'SKILL.md'))) skills++;
+    }
+  }
+  return { commands, agents, rules, skills };
+}
+
 /** 列出所有可用來源及狀態 */
 function listSources() {
   const versions = readVersions();
   const names = Object.keys(SOURCES_CONFIG);
 
-  console.log(`\n  可用的 AI 資源來源（共 ${names.length} 個）\n`);
+  console.log(`\n📦 可用的 AI 資源來源（共 ${names.length} 個）`);
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
     const config = SOURCES_CONFIG[name];
     const ver = versions[name];
-    const synced = ver?.sha ? `✔ ${ver.sha.slice(0, 8)} (${ver.date})` : '✗ 尚未同步';
     const locked = ver?.locked ? ' 🔒' : '';
-    console.log(`  ${i + 1}. ${name}${locked}`);
-    console.log(`     ${config.description}`);
-    console.log(`     ${synced}\n`);
+    const synced = ver?.sha ? `✔ ${ver.sha.slice(0, 8)} (${ver.date})` : '✗ 尚未同步';
+    console.log(`  ${i + 1}. ${config.icon} ${name}${locked} — ${config.description}`);
+    const stats = countResources(name);
+    if (stats) {
+      const parts = [];
+      if (stats.commands) parts.push(`${stats.commands} commands`);
+      if (stats.agents) parts.push(`${stats.agents} agents`);
+      if (stats.rules) parts.push(`${stats.rules} rules`);
+      if (stats.skills) parts.push(`${stats.skills} skills`);
+      console.log(`     ${synced} · ${parts.join(' · ') || '空'}`);
+    } else {
+      console.log(`     ${synced}`);
+    }
   }
 
-  console.log('  用法:');
-  console.log('    pnpm -F commons sync -- --all            同步全部');
-  console.log('    pnpm -F commons sync -- --pick ecc,anthropic  同步指定來源');
-  console.log('    pnpm -F commons sync -- --select         互動式選擇');
-  console.log('    pnpm -F commons sync -- --source <name>  同步單一來源');
-  console.log('    加上 --force 強制同步  --dry-run 模擬\n');
+  console.log(`\n📋 用法:`);
+  console.log(`  pnpm run c:sync:all                  同步全部`);
+  console.log(`  pnpm run c:sync:select               互動式選擇`);
+  console.log(`  pnpm run c:sync -- --pick ecc,anthropic  同步指定來源`);
+  console.log(`  pnpm run c:sync -- --source <name>   同步單一來源`);
+  console.log(`  加上 --force 強制同步 --dry-run 模擬`);
 }
 
 /** 互動式選擇來源 */
@@ -249,13 +288,13 @@ async function interactiveSelect() {
   const names = Object.keys(SOURCES_CONFIG);
   const versions = readVersions();
 
-  console.log('\n  選擇要同步的 AI 來源（輸入編號，逗號分隔，直接 Enter 跳過）\n');
+  console.log('\n📦 選擇要同步的 AI 來源（輸入編號，逗號分隔，直接 Enter 跳過）');
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
     const config = SOURCES_CONFIG[name];
     const ver = versions[name];
     const tag = ver?.sha ? `✔ ${ver.date}` : '✗';
-    console.log(`  ${i + 1}. ${name} — ${config.description} [${tag}]`);
+    console.log(`  ${i + 1}. ${config.icon} ${name} — ${config.description} [${tag}]`);
   }
 
   const answer = await prompt('\n  選擇 (例: 1,2,3 或 all 或 Enter 跳過): ');
