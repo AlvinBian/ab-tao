@@ -12,6 +12,42 @@ const TECH_SIGNATURES = {
   testing: [],
 };
 
+/**
+ * Maps technology/framework names to their canonical language directory names.
+ * Used for filtering language-specific resources (e.g., rules/{lang}/).
+ */
+export const TECH_TO_LANG = {
+  typescript: 'typescript',
+  javascript: 'typescript',
+  vue: 'typescript',
+  vitest: 'typescript',
+  nuxt: 'typescript',
+  react: 'typescript',
+  nextjs: 'typescript',
+  angular: 'typescript',
+  svelte: 'typescript',
+  php: 'php',
+  laravel: 'php',
+  wordpress: 'php',
+  python: 'python',
+  django: 'python',
+  flask: 'python',
+  fastapi: 'python',
+  golang: 'golang',
+  go: 'golang',
+  rust: 'rust',
+  swift: 'swift',
+  kotlin: 'kotlin',
+  android: 'kotlin',
+  java: 'java',
+  spring: 'java',
+  cpp: 'cpp',
+  'c++': 'cpp',
+  csharp: 'csharp',
+  dotnet: 'csharp',
+  perl: 'perl',
+};
+
 const PACKAGE_TECH_MAP = {
   react: 'react',
   'react-dom': 'react',

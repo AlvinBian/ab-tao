@@ -32,7 +32,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { validateFileContent } from '@ab-tao/commons/security';
+import { TECH_TO_LANG, validateFileContent } from '@ab-tao/commons';
 import { uniq } from 'lodash-es';
 import { gh } from './github.mjs';
 
@@ -40,38 +40,7 @@ import { gh } from './github.mjs';
 const CACHE_TTL = 60 * 60 * 1000; // 1 小時（毫秒）
 const BATCH_SIZE = 10; // 並行下載批次大小
 
-// ── 技術棧 → 語言目錄映射 ────────────────────────────────────────
-const TECH_TO_LANG = {
-  typescript: 'typescript',
-  javascript: 'typescript',
-  vue: 'typescript',
-  vitest: 'typescript',
-  nuxt: 'typescript',
-  react: 'typescript',
-  nextjs: 'typescript',
-  angular: 'typescript',
-  svelte: 'typescript',
-  php: 'php',
-  laravel: 'php',
-  wordpress: 'php',
-  python: 'python',
-  django: 'python',
-  flask: 'python',
-  fastapi: 'python',
-  golang: 'golang',
-  go: 'golang',
-  rust: 'rust',
-  swift: 'swift',
-  kotlin: 'kotlin',
-  android: 'kotlin',
-  java: 'java',
-  spring: 'java',
-  cpp: 'cpp',
-  'c++': 'cpp',
-  csharp: 'csharp',
-  dotnet: 'csharp',
-  perl: 'perl',
-};
+// ── 語言前綴（用於過濾語言特定資源）────────────────────────────────
 const LANG_PREFIXES = uniq(Object.values(TECH_TO_LANG))
   .map((l) => `${l}-`)
   .concat(['cpp-', 'go-']);
