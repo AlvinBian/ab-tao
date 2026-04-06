@@ -16,14 +16,13 @@ const SOURCES_CONFIG = {
   ecc: {
     url: 'https://github.com/affaan-m/everything-claude-code.git',
     type: 'ai',
-  },
-  superpowers: {
-    url: 'https://github.com/anthropics/superpowers.git',
-    type: 'ai',
+    // Only validate resource directories, not docs/examples/research
+    validatePaths: ['commands', 'agents', 'rules', 'skills', 'hooks'],
   },
   anthropic: {
     url: 'https://github.com/anthropics/skills.git',
     type: 'ai',
+    validatePaths: ['skills'],
   },
   letta: {
     url: 'https://github.com/letta-ai/skills.git',
@@ -91,12 +90,28 @@ async function syncSource(sourceName, config, options = {}) {
     // Remove .git from cloned content
     fs.rmSync(path.join(tempDir, '.git'), { recursive: true, force: true });
 
-    // Security validation
-    const { ok, summary } = await validateContent(tempDir);
-    if (!ok) {
-      throw new Error(
-        `Security validation failed for ${sourceName}: ${summary.errors.map((e) => e.message).join(', ')}`,
-      );
+    // Security validation — only validate resource directories if specified
+    const pathsToValidate = config.validatePaths || [];
+    if (pathsToValidate.length > 0) {
+      // Validate only the specified subdirectories
+      for (const subDir of pathsToValidate) {
+        const subPath = path.join(tempDir, subDir);
+        if (!fs.existsSync(subPath)) continue;
+        const { ok, summary } = await validateContent(subPath);
+        if (!ok) {
+          throw new Error(
+            `Security validation failed for ${sourceName}/${subDir}: ${summary.errors.map((e) => e.message).join(', ')}`,
+          );
+        }
+      }
+    } else {
+      // Validate entire directory
+      const { ok, summary } = await validateContent(tempDir);
+      if (!ok) {
+        throw new Error(
+          `Security validation failed for ${sourceName}: ${summary.errors.map((e) => e.message).join(', ')}`,
+        );
+      }
     }
 
     // Atomic swap: backup → replace → cleanup

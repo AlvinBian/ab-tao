@@ -84,8 +84,8 @@ describe('buildSyncResult', () => {
     assert.deepEqual(result.results[0].added.commands, ['plan.md']);
     assert.deepEqual(result.results[0].added.agents, ['coder.md']);
     assert.deepEqual(result.results[0].skipped.commands, ['tdd.md']);
-    assert.ok(result.eccTypeMap['plan'] === 'commands');
-    assert.ok(result.eccTypeMap['coder'] === 'agents');
+    assert.ok(result.eccTypeMap.plan === 'commands');
+    assert.ok(result.eccTypeMap.coder === 'agents');
   });
 });
 

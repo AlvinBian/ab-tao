@@ -29,7 +29,7 @@ describe('version-tracker', () => {
     const { readVersions } = await loadTracker();
     const versions = readVersions();
     assert.ok(versions.ecc);
-    assert.ok(versions.superpowers);
+    assert.ok(versions.anthropic);
     assert.equal(versions.ecc.locked, false);
   });
 

@@ -6,31 +6,24 @@
     "locked": false,
     "type": "ai"
   },
-  "superpowers": {
-    "sha": "",
-    "source": "https://github.com/anthropics/superpowers",
-    "date": "",
-    "locked": false,
-    "type": "ai"
-  },
   "anthropic": {
-    "sha": "",
+    "sha": "98669c11ca63e9c81c11501e1437e5c47b556621",
     "source": "https://github.com/anthropics/skills",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
   "letta": {
-    "sha": "",
+    "sha": "5fa6cc2e796daa92dbc06004577dda54a6cf6d4c",
     "source": "https://github.com/letta-ai/skills",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   },
   "context-engineering": {
-    "sha": "",
+    "sha": "3ab8c948898908e4acc083c32f0390f0caafe3e4",
     "source": "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering",
-    "date": "",
+    "date": "2026-04-06",
     "locked": false,
     "type": "ai"
   }

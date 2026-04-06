@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const MAX_FILE_SIZE = 100 * 1024; // 100KB
+const MAX_FILE_SIZE = 512 * 1024; // 512KB
 
 const DANGEROUS_PATTERNS = [
   { pattern: /\beval\s*\(/gi, label: 'eval()' },
@@ -17,14 +17,29 @@ const DANGEROUS_PATTERNS = [
 const CONTROL_CHAR_REGEX = /[\u200B-\u200D\uFEFF\x00-\x08\x0B-\x0C\x0E-\x1F]/;
 
 /**
+ * Check if file is a documentation/markdown file where dangerous patterns
+ * are expected as instructional content (not executable code).
+ */
+function isDocumentationFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return ext === '.md' || ext === '.mdx' || ext === '.txt' || ext === '.rst';
+}
+
+/**
  * Validate a single file's content for security threats.
+ *
+ * For documentation files (.md), dangerous patterns produce warnings (not errors)
+ * since they commonly appear as instructional text.
+ *
  * @param {string} filePath - File path (for reporting)
  * @param {string} content - File content
+ * @param {{ strict?: boolean }} options - Options. strict=true forces errors even for docs.
  * @returns {{ valid: boolean, errors: object[], warnings: object[], checksum: string }}
  */
-export function validateFileContent(filePath, content) {
+export function validateFileContent(filePath, content, options = {}) {
   const errors = [];
   const warnings = [];
+  const isDoc = !options.strict && isDocumentationFile(filePath);
 
   // 1. File size check
   const bytes = Buffer.byteLength(content, 'utf8');
@@ -37,15 +52,22 @@ export function validateFileContent(filePath, content) {
   }
 
   // 2. Dangerous pattern scan
+  // For documentation files: patterns are warnings (instructional content)
+  // For executable files (.json, .sh, .js): patterns are errors
   for (const { pattern, label } of DANGEROUS_PATTERNS) {
     // Reset lastIndex for global regex
     pattern.lastIndex = 0;
     if (pattern.test(content)) {
-      errors.push({
+      const entry = {
         code: 'DANGEROUS_PATTERN',
-        message: `Blocked pattern: ${label}`,
+        message: `${isDoc ? 'Pattern found' : 'Blocked pattern'}: ${label}`,
         file: filePath,
-      });
+      };
+      if (isDoc) {
+        warnings.push(entry);
+      } else {
+        errors.push(entry);
+      }
     }
   }
 

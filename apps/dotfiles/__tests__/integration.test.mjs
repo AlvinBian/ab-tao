@@ -19,9 +19,15 @@ describe('commons-integration bridge', () => {
     assert.ok(safe.valid);
     assert.ok(safe.checksum);
 
-    const dangerous = validateFileContent('test.md', 'eval("alert(1)")');
-    assert.ok(!dangerous.valid);
-    assert.ok(dangerous.errors.length > 0);
+    // .md files: dangerous patterns produce warnings (not errors)
+    const mdWithPattern = validateFileContent('test.md', 'eval("alert(1)")');
+    assert.ok(mdWithPattern.valid); // .md → still valid
+    assert.ok(mdWithPattern.warnings.length > 0);
+
+    // Non-doc files: dangerous patterns produce errors
+    const jsWithPattern = validateFileContent('test.js', 'eval("alert(1)")');
+    assert.ok(!jsWithPattern.valid);
+    assert.ok(jsWithPattern.errors.length > 0);
   });
 
   it('should re-export tech detection', () => {
