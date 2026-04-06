@@ -10,7 +10,7 @@
     "pnpm": ">=9"
   },
   "dependencies": {
-    "@ab-tao/shared": "workspace:*",
+    "@ab-tao/share": "workspace:*",
     "@ab-tao/commons": "workspace:*",
     "@clack/prompts": "^0.9.1",
     "listr2": "^10.2.1",

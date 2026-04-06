@@ -4,7 +4,7 @@
  * commons 指令定義與執行
  */
 
-import { run } from '@ab-tao/shared/run';
+import { run } from '@ab-tao/share/run';
 
 export const pkg = '@ab-tao/commons';
 

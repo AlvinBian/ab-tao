@@ -1,5 +1,5 @@
 /**
- * @ab-tao/shared/libs — 功能庫
+ * @ab-tao/share/libs — 功能庫
  *
  * 有狀態或有副作用的功能模組（日誌、互動式 shell 等）。
  */

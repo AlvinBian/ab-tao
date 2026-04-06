@@ -1,5 +1,5 @@
 /**
- * @ab-tao/shared/utils — 工具函式
+ * @ab-tao/share/utils — 工具函式
  *
  * 純函式、無副作用的基礎工具。
  */

@@ -20,7 +20,7 @@
     "test": "node --test __tests__/*.test.mjs"
   },
   "dependencies": {
-    "@ab-tao/shared": "workspace:*"
+    "@ab-tao/share": "workspace:*"
   },
   "devDependencies": {
     "commander": "^12.1.0"
