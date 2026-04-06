@@ -171,6 +171,25 @@ export async function phasePlan(plan) {
     }
   }
 
+  // 5b. commons 匹配的 AI 來源（按技術棧篩選後）
+  const commSources = plan._pipelineResult?.commonsResources?.sources || [];
+  if (commSources.length > 0) {
+    const commTotal = commSources.reduce(
+      (s, src) =>
+        s + src.commands.length + src.agents.length + src.rules.length + src.skills.length,
+      0,
+    );
+    lines.push(`   🤖 技術棧匹配 AI 資源（${commSources.length} 個來源 · ${commTotal} 個資源）`);
+    for (const src of commSources) {
+      const parts = [];
+      if (src.commands.length) parts.push(`${src.commands.length} 指令`);
+      if (src.agents.length) parts.push(`${src.agents.length} 代理`);
+      if (src.rules.length) parts.push(`${src.rules.length} 規則`);
+      if (src.skills.length) parts.push(`${src.skills.length} 技能`);
+      if (parts.length) lines.push(`       · ${src.name} — ${parts.join(' · ')}`);
+    }
+  }
+
   // 6. zsh（帶描述）
   if (plan.zshModules.length > 0) {
     lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
