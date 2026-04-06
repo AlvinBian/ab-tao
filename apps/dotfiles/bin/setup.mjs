@@ -91,6 +91,7 @@ async function main() {
   const flagDryRun = args.includes('--dry-run');
   let prev = loadSession();
   let projectFolders = loadProjectFolders(config, prev);
+  let selectedAiSources = prev?.selectedAiSources || [];
 
   // 斷點續裝偵測
   const incomplete = checkIncompleteSession();
@@ -478,7 +479,6 @@ async function main() {
 
   // ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
   // 優先用 session 保存的選擇（重新安裝時），再讓用戶選擇新的
-  let selectedAiSources = prev?.selectedAiSources || [];
   if (hasProject || has('claude')) {
     const { selectAiSources } = await import('../lib/external/ai-source-select.mjs');
     const { BACK: B } = await import('../lib/cli/prompts.mjs');

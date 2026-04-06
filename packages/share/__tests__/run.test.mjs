@@ -11,15 +11,14 @@ describe('run.mjs 環境變數傳遞', () => {
   it('應正確繼承 process.env（特別是 HOME）', () => {
     // 設定測試環境變數
     const testEnv = { ...process.env, TEST_VAR: 'test-value-123' };
-    const originalHome = process.env.HOME;
 
     // 驗證 HOME 存在
-    assert.ok(originalHome, 'HOME 環境變數應存在');
+    assert.ok(process.env.HOME, 'HOME 環境變數應存在');
 
-    // 模擬 execSync 呼叫（使用 env 選項）
+    // 模擬 execSync 呼叫（使用 env 選項傳遞完整環境）
     const output = execSync('echo $TEST_VAR', {
       encoding: 'utf8',
-      env: process.env,
+      env: testEnv,
     }).trim();
 
     // 驗證環境變數被傳遞
