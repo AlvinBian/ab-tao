@@ -177,9 +177,18 @@ export async function ensureEnvironment() {
       failLabel: '未安裝',
       actionLabel: '安裝 Claude CLI',
     },
+    {
+      name: 'RTK',
+      ok: has('rtk'),
+      ver: ver('rtk'),
+      failLabel: '未安裝（推薦）',
+      actionLabel: '安裝 RTK（token 壓縮）',
+      optional: true,
+    },
   ];
 
-  const missing = checks.filter((c) => !c.ok);
+  const missing = checks.filter((c) => !c.ok && !c.optional);
+  const missingOptional = checks.filter((c) => !c.ok && c.optional);
 
   // 全部通過
   if (missing.length === 0) {
@@ -195,26 +204,47 @@ export async function ensureEnvironment() {
   // 顯示狀態
   const checkLines = checks
     .map((c) => {
-      const icon = c.ok ? pc.green('✔') : pc.red('✘');
-      const info = c.ok ? pc.dim(c.ver?.slice(0, 25) || 'OK') : pc.red(c.failLabel);
+      let icon;
+      let info;
+      if (c.ok) {
+        icon = pc.green('✔');
+        info = pc.dim(c.ver?.slice(0, 25) || 'OK');
+      } else if (c.optional) {
+        icon = pc.yellow('◯');
+        info = pc.yellow(c.failLabel);
+      } else {
+        icon = pc.red('✘');
+        info = pc.red(c.failLabel);
+      }
       return `  ${icon} ${c.name.padEnd(12)} ${info}`;
     })
     .join('\n');
   p.log.info(`🔍 環境檢查\n${checkLines}`);
 
-  const confirm = await p.confirm({
-    message: `⚙️ 需要處理 ${missing.map((m) => m.actionLabel).join('、')}，繼續？  Y 確認 · n 取消`,
-    initialValue: true,
-  });
-  if (p.isCancel(confirm) || !confirm) {
-    p.log.warn('請手動安裝後重新執行');
-    p.outro(pc.red('環境準備失敗'));
-    process.exit(1);
+  // 若有必須安裝的項目，確認安裝
+  if (missing.length > 0) {
+    const confirm = await p.confirm({
+      message: `⚙️ 需要處理 ${missing.map((m) => m.actionLabel).join('、')}，繼續？  Y 確認 · n 取消`,
+      initialValue: true,
+    });
+    if (p.isCancel(confirm) || !confirm) {
+      p.log.warn('請手動安裝後重新執行');
+      p.outro(pc.red('環境準備失敗'));
+      process.exit(1);
+    }
+  }
+
+  // 若有可選項未安裝，顯示建議
+  if (missingOptional.length > 0) {
+    p.log.warn(
+      `💡 建議安裝可選工具以獲得更好體驗：${missingOptional.map((m) => m.actionLabel).join('、')}`,
+    );
   }
 
   // 記錄哪些工具本次被安裝（影響後續步驟的判斷）
   const justInstalled = new Set();
 
+  // 只安裝必須項目（排除可選項）
   for (const m of missing) {
     const s = p.spinner();
 
@@ -374,7 +404,7 @@ export async function ensureEnvironment() {
               `  ${pc.cyan('curl -fsSL https://claude.ai/install.sh | sh')}  # 官方安裝器（推薦）\n` +
               `  ${pc.cyan('brew install claude-code')}                       # Homebrew\n` +
               `  ${pc.cyan('pnpm add -g @anthropic-ai/claude-code')}          # pnpm 全局\n` +
-              `  ${pc.dim('安裝後請確保 ~/.local/bin 在 PATH 中（ab-dotfiles 的 ZSH 模組會自動處理）')}`,
+              `  ${pc.dim('安裝後請確保 ~/.local/bin 在 PATH 中（ab-tao 的 ZSH 模組會自動處理）')}`,
           );
           p.outro(pc.red('環境準備失敗'));
           process.exit(1);
