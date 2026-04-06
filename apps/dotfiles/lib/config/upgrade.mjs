@@ -342,14 +342,28 @@ async function doUpgrade(legacyInfo) {
 }
 
 async function doClean() {
-  // 先備份所有內容
+  // 先保存 permissions（用戶在 Claude Code 中逐步授權的，必須保留）
+  let savedPermissions = null;
+  const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.permissions) {
+        savedPermissions = settings.permissions;
+      }
+    } catch {
+      /* settings.json 格式錯誤則略過 */
+    }
+  }
+
+  // 備份所有內容
   p.log.info('🗂️ 備份現有配置...');
   await Promise.all([
     backupIfExists(path.join(CLAUDE_DIR, 'commands'), 'clean/commands'),
     backupIfExists(path.join(CLAUDE_DIR, 'agents'), 'clean/agents'),
     backupIfExists(path.join(CLAUDE_DIR, 'rules'), 'clean/rules'),
     backupIfExists(path.join(CLAUDE_DIR, 'hooks.json'), 'clean/hooks.json'),
-    backupIfExists(path.join(CLAUDE_DIR, 'settings.json'), 'clean/settings.json'),
+    backupIfExists(settingsPath, 'clean/settings.json'),
     backupIfExists(path.join(CLAUDE_DIR, 'keybindings.json'), 'clean/keybindings.json'),
   ]);
 
@@ -374,6 +388,16 @@ async function doClean() {
       fs.unlinkSync(filePath);
       removed++;
     }
+  }
+
+  // 還原 permissions 到空的 settings.json
+  if (savedPermissions) {
+    fs.mkdirSync(CLAUDE_DIR, { recursive: true });
+    fs.writeFileSync(
+      settingsPath,
+      `${JSON.stringify({ permissions: savedPermissions }, null, 2)}\n`,
+    );
+    p.log.success(`已保留 ${savedPermissions.allow?.length || 0} 條 permissions 規則`);
   }
 
   // 清除 .env 中的 Slack 設定（全部清除應重新配置）
