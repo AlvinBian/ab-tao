@@ -9,6 +9,7 @@
     "pnpm": ">=9"
   },
   "scripts": {
+    "help": "node scripts/help.mjs",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
