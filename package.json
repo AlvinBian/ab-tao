@@ -1,0 +1,32 @@
+{
+  "name": "ab-tao",
+  "private": true,
+  "description": "ab-tao: Unified monorepo for dotfiles and shared commons",
+  "type": "module",
+  "packageManager": "pnpm@9.15.5",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "sync": "turbo run sync --filter=@ab-tao/commons",
+    "validate": "turbo run validate --filter=@ab-tao/commons",
+    "setup": "turbo run setup --filter=@ab-tao/dotfiles",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "check:ci": "biome check .",
+    "clean": "turbo clean && rm -rf node_modules",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@changesets/cli": "^2.29.0",
+    "turbo": "^2.0.0"
+  }
+}

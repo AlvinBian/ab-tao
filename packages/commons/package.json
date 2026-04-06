@@ -1,0 +1,26 @@
+{
+  "name": "@ab-tao/commons",
+  "version": "1.0.0",
+  "description": "Tools, Libraries, Logic Layer (動、工具、程式庫)",
+  "type": "module",
+  "exports": {
+    ".": "./scripts/index.mjs",
+    "./sync": "./scripts/sync-sources.mjs",
+    "./validate": "./scripts/validate-structure.mjs",
+    "./detect": "./scripts/tech-detection.mjs",
+    "./loader": "./scripts/resource-loader.mjs",
+    "./security": "./scripts/security-validator.mjs",
+    "./versions": "./scripts/version-tracker.mjs"
+  },
+  "scripts": {
+    "build": "echo 'commons build completed'",
+    "sync": "node scripts/sync-sources.mjs",
+    "validate": "node scripts/validate-structure.mjs",
+    "lint": "biome check .",
+    "test": "node --test __tests__/*.test.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "commander": "^12.1.0"
+  }
+}

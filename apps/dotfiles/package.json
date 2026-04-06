@@ -1,0 +1,17 @@
+{
+  "name": "@ab-tao/dotfiles",
+  "version": "2.0.0",
+  "description": "Environment, Configuration, System Layer (靜、配置、環境)",
+  "type": "module",
+  "dependencies": {
+    "@ab-tao/commons": "workspace:*"
+  },
+  "scripts": {
+    "build": "echo 'dotfiles build completed'",
+    "dev": "node bin/setup.mjs --watch",
+    "lint": "biome check .",
+    "test": "node __tests__/integration.test.mjs",
+    "setup": "node bin/setup.mjs",
+    "restore": "node bin/restore.mjs"
+  }
+}

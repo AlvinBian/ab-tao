@@ -1,0 +1,37 @@
+{
+  "ecc": {
+    "sha": "",
+    "source": "https://github.com/affaan-m/everything-claude-code",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "superpowers": {
+    "sha": "",
+    "source": "https://github.com/anthropics/superpowers",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "anthropic": {
+    "sha": "",
+    "source": "https://github.com/anthropics/skills",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "letta": {
+    "sha": "",
+    "source": "https://github.com/letta-ai/skills",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "context-engineering": {
+    "sha": "",
+    "source": "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  }
+}
