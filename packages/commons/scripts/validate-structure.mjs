@@ -14,7 +14,6 @@ const EXPECTED_STRUCTURES = {
     required: ['commands', 'agents', 'rules'],
     format: 'ecc',
   },
-  superpowers: { required: [], format: 'agent-skills' },
   anthropic: { required: [], format: 'agent-skills' },
   letta: { required: [], format: 'agent-skills' },
   'context-engineering': { required: [], format: 'agent-skills' },
@@ -25,24 +24,24 @@ function validateSourceStructure(sourceName, sourcePath) {
   const config = EXPECTED_STRUCTURES[sourceName];
 
   if (!config) {
-    errors.push(`Unknown source: ${sourceName}`);
+    errors.push(`未知的來源: ${sourceName}`);
     return errors;
   }
 
   if (!fs.existsSync(sourcePath)) {
-    errors.push(`Source directory missing: ${sourcePath}`);
+    errors.push(`來源目錄不存在: ${sourcePath}`);
     return errors;
   }
 
-  // Check required subdirectories
+  // 檢查必要子目錄
   for (const dir of config.required) {
     const dirPath = path.join(sourcePath, dir);
     if (!fs.existsSync(dirPath)) {
-      errors.push(`Missing required directory: ${sourceName}/${dir}`);
+      errors.push(`缺少必要目錄: ${sourceName}/${dir}`);
     }
   }
 
-  // Format-specific checks
+  // 格式專屬檢查
   if (config.format === 'agent-skills') {
     const items = fs.readdirSync(sourcePath);
     const hasSkills = items.some((item) => {
@@ -50,9 +49,9 @@ function validateSourceStructure(sourceName, sourcePath) {
       return fs.statSync(itemPath).isDirectory() && fs.existsSync(path.join(itemPath, 'SKILL.md'));
     });
 
-    // Agent-skills format may not always have SKILL.md — just warn
+    // agent-skills 格式不一定都有 SKILL.md — 僅警告
     if (!hasSkills && items.length > 0) {
-      console.warn(`  Warning: No SKILL.md found in ${sourceName} (may be expected)`);
+      console.warn(`  警告: ${sourceName} 中未找到 SKILL.md（可能正常）`);
     }
   }
 
@@ -60,7 +59,7 @@ function validateSourceStructure(sourceName, sourcePath) {
 }
 
 async function validateAll() {
-  console.log('Validating resource structure...\n');
+  console.log('正在驗證資源結構...\n');
 
   const versions = readVersions();
   let totalErrors = 0;
@@ -69,31 +68,31 @@ async function validateAll() {
     const sourcePath = path.join(RESOURCES_PATH, sourceName);
 
     if (!fs.existsSync(sourcePath)) {
-      console.log(`[${sourceName}] Not synced yet, skipping`);
+      console.log(`[${sourceName}] 尚未同步，跳過`);
       continue;
     }
 
     console.log(`[${sourceName}]`);
 
-    // Structure check
+    // 結構檢查
     const structErrors = validateSourceStructure(sourceName, sourcePath);
     for (const err of structErrors) {
-      console.error(`  Structure: ${err}`);
+      console.error(`  結構: ${err}`);
     }
 
-    // Security check
+    // 安全檢查
     const { ok, summary } = await validateContent(sourcePath);
     if (!ok) {
       for (const err of summary.errors) {
-        console.error(`  Security [${err.code}]: ${err.file} — ${err.message}`);
+        console.error(`  安全 [${err.code}]: ${err.file} — ${err.message}`);
       }
     }
 
     const sourceErrors = structErrors.length + (ok ? 0 : summary.errors.length);
     if (sourceErrors === 0) {
       const version = versions[sourceName];
-      const sha = version?.sha ? version.sha.slice(0, 8) : 'unknown';
-      console.log(`  OK (${summary.total} files, SHA: ${sha})`);
+      const sha = version?.sha ? version.sha.slice(0, 8) : '未知';
+      console.log(`  通過 (${summary.total} 個檔案, SHA: ${sha})`);
     }
 
     totalErrors += sourceErrors;
@@ -101,11 +100,11 @@ async function validateAll() {
   }
 
   if (totalErrors > 0) {
-    console.error(`Validation failed with ${totalErrors} errors`);
+    console.error(`驗證失敗，共 ${totalErrors} 個錯誤`);
     process.exit(1);
   }
 
-  console.log('All validations passed');
+  console.log('所有驗證通過');
 }
 
 validateAll().catch((err) => {

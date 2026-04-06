@@ -17,15 +17,14 @@ afterEach(() => {
   fs.writeFileSync(VERSIONS_PATH, originalContent);
 });
 
-// Dynamic import to get fresh module state
+// 動態載入以取得全新模組狀態
 async function loadTracker() {
   const timestamp = Date.now();
-  // Bust module cache by using query param
   return import(`../scripts/version-tracker.mjs?t=${timestamp}`);
 }
 
 describe('version-tracker', () => {
-  it('should read existing versions', async () => {
+  it('應讀取現有版本', async () => {
     const { readVersions } = await loadTracker();
     const versions = readVersions();
     assert.ok(versions.ecc);
@@ -33,7 +32,7 @@ describe('version-tracker', () => {
     assert.equal(versions.ecc.locked, false);
   });
 
-  it('should record a sync with SHA and date', async () => {
+  it('應記錄同步的 SHA 與日期', async () => {
     const { recordSync, readVersions } = await loadTracker();
     const sha = 'abc123def456';
     const result = recordSync('ecc', sha);
@@ -44,7 +43,7 @@ describe('version-tracker', () => {
     assert.ok(versions.ecc.date);
   });
 
-  it('should not update locked sources', async () => {
+  it('不應更新已鎖定的來源', async () => {
     const { lockSource, recordSync, readVersions } = await loadTracker();
     lockSource('ecc');
     const result = recordSync('ecc', 'new-sha');
@@ -54,26 +53,26 @@ describe('version-tracker', () => {
     assert.notEqual(versions.ecc.sha, 'new-sha');
   });
 
-  it('should throw on unknown source', async () => {
+  it('未知來源應拋出錯誤', async () => {
     const { recordSync } = await loadTracker();
-    assert.throws(() => recordSync('unknown-source', 'sha'), /Unknown source/);
+    assert.throws(() => recordSync('unknown-source', 'sha'), /未知的來源/);
   });
 
-  it('should detect when sync is needed', async () => {
+  it('應偵測是否需要同步', async () => {
     const { needsSync, recordSync } = await loadTracker();
 
-    // Empty SHA → needs sync
+    // 空 SHA → 需要同步
     assert.equal(needsSync('ecc', 'remote-sha'), true);
 
-    // After recording → same SHA means no sync needed
+    // 記錄後 → 相同 SHA 不需同步
     recordSync('ecc', 'remote-sha');
     assert.equal(needsSync('ecc', 'remote-sha'), false);
 
-    // Different SHA → needs sync
+    // 不同 SHA → 需要同步
     assert.equal(needsSync('ecc', 'different-sha'), true);
   });
 
-  it('should lock and unlock sources', async () => {
+  it('應能鎖定與解鎖來源', async () => {
     const { lockSource, unlockSource, needsSync, readVersions } = await loadTracker();
 
     lockSource('ecc');

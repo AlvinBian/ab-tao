@@ -16,19 +16,19 @@ describe('detectTechStack', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('should detect JavaScript from package.json', async () => {
+  it('應從 package.json 偵測 JavaScript', async () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"test"}', 'utf8');
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.ok(result.technologies.some((t) => t.name === 'javascript'));
   });
 
-  it('should detect TypeScript from tsconfig.json', async () => {
+  it('應從 tsconfig.json 偵測 TypeScript', async () => {
     fs.writeFileSync(path.join(tmpDir, 'tsconfig.json'), '{}', 'utf8');
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.ok(result.technologies.some((t) => t.name === 'typescript'));
   });
 
-  it('should detect React from package.json dependencies', async () => {
+  it('應從 package.json 依賴偵測 React', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({ dependencies: { react: '^18.0.0' } }),
@@ -38,25 +38,25 @@ describe('detectTechStack', () => {
     assert.ok(result.technologies.some((t) => t.name === 'react'));
   });
 
-  it('should detect Python from requirements.txt', async () => {
+  it('應從 requirements.txt 偵測 Python', async () => {
     fs.writeFileSync(path.join(tmpDir, 'requirements.txt'), 'flask==2.0', 'utf8');
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.ok(result.technologies.some((t) => t.name === 'python'));
   });
 
-  it('should detect Go from go.mod', async () => {
+  it('應從 go.mod 偵測 Go', async () => {
     fs.writeFileSync(path.join(tmpDir, 'go.mod'), 'module example.com/app', 'utf8');
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.ok(result.technologies.some((t) => t.name === 'go'));
   });
 
-  it('should detect Rust from Cargo.toml', async () => {
+  it('應從 Cargo.toml 偵測 Rust', async () => {
     fs.writeFileSync(path.join(tmpDir, 'Cargo.toml'), '[package]', 'utf8');
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.ok(result.technologies.some((t) => t.name === 'rust'));
   });
 
-  it('should detect testing frameworks from devDependencies', async () => {
+  it('應從 devDependencies 偵測測試框架', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({ devDependencies: { vitest: '^1.0.0' } }),
@@ -66,7 +66,7 @@ describe('detectTechStack', () => {
     assert.ok(result.technologies.some((t) => t.name === 'testing'));
   });
 
-  it('should return sorted by confidence descending', async () => {
+  it('應按信心度由高到低排序', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({ dependencies: { react: '^18', typescript: '^5' } }),
@@ -79,7 +79,7 @@ describe('detectTechStack', () => {
     }
   });
 
-  it('should return empty for directory with no tech signatures', async () => {
+  it('無技術特徵的目錄應回傳空陣列', async () => {
     const result = await detectTechStack({ localPaths: [tmpDir] });
     assert.equal(result.technologies.length, 0);
   });

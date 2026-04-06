@@ -1,8 +1,8 @@
 /**
- * Bridge module — exposes @ab-tao/commons capabilities to dotfiles.
+ * 橋接模組 — 將 @ab-tao/commons 的能力暴露給 dotfiles。
  *
- * Re-exports commons' security validation, version tracking, and tech detection
- * so dotfiles modules can import from a single local entry point.
+ * 重新匯出 commons 的安全驗證、版本追蹤與技術偵測，
+ * 讓 dotfiles 模組可從單一本地入口匯入。
  */
 import {
   detectTechStack,
@@ -21,10 +21,6 @@ import {
   writeVersions,
 } from '@ab-tao/commons';
 
-// ── Security ─────────────────────────────────────────────────────
-// ── Version Tracking ─────────────────────────────────────────────
-// ── Resource Loading ─────────────────────────────────────────────
-// ── Tech Detection ───────────────────────────────────────────────
 export {
   detectTechStack,
   lockSource,
@@ -43,9 +39,9 @@ export {
 };
 
 /**
- * Initialize commons resources — sync if stale, then load.
- * @param {object} config - ResourceLoader config
- * @returns {Promise<object>} Integrated resources
+ * 初始化 commons 資源 — 若過期則同步，然後載入。
+ * @param {object} config - ResourceLoader 設定
+ * @returns {Promise<object>} 整合後的資源
  */
 export async function initializeCommons(config = {}) {
   const syncResult = await syncIfNeeded();

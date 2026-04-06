@@ -3,8 +3,8 @@ import { readVersions } from './version-tracker.mjs';
 const CACHE_TTL_DAYS = 7;
 
 /**
- * Check if resources need syncing and trigger if needed.
- * Called at runtime by dotfiles during setup.
+ * 檢查資源是否需要同步，若需要則觸發同步。
+ * 由 dotfiles 在 setup 時呼叫。
  */
 export async function syncIfNeeded() {
   const versions = readVersions();
@@ -13,13 +13,13 @@ export async function syncIfNeeded() {
   for (const [name, entry] of Object.entries(versions)) {
     if (entry.locked) continue;
 
-    // No date or no SHA → needs sync
+    // 無日期或無 SHA → 需要同步
     if (!entry.date || !entry.sha) {
       stale.push(name);
       continue;
     }
 
-    // Check TTL
+    // 檢查 TTL
     const lastSync = new Date(entry.date);
     const now = new Date();
     const daysSince = (now - lastSync) / (1000 * 60 * 60 * 24);
@@ -30,10 +30,10 @@ export async function syncIfNeeded() {
   }
 
   if (stale.length === 0) {
-    return { synced: false, reason: 'all sources up to date' };
+    return { synced: false, reason: '所有來源皆為最新' };
   }
 
-  // Lazy import to avoid circular dependency at load time
+  // 延遲載入以避免循環依賴
   const { syncSource, SOURCES_CONFIG } = await import('./sync-sources.mjs');
 
   const results = [];
@@ -43,7 +43,7 @@ export async function syncIfNeeded() {
       const result = await syncSource(name, SOURCES_CONFIG[name]);
       results.push({ source: name, ...result });
     } catch (err) {
-      console.warn(`Runtime sync failed for ${name}: ${err.message}`);
+      console.warn(`${name} 執行期同步失敗: ${err.message}`);
       results.push({ source: name, success: false, error: err.message });
     }
   }

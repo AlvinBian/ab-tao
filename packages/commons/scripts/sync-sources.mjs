@@ -16,8 +16,8 @@ const SOURCES_CONFIG = {
   ecc: {
     url: 'https://github.com/affaan-m/everything-claude-code.git',
     type: 'ai',
-    // Only validate resource directories, not docs/examples/research
-    validatePaths: ['commands', 'agents', 'rules', 'skills', 'hooks'],
+    // 僅驗證資源目錄，跳過 docs/examples/research
+    validatePaths: ['commands', 'agents', 'rules', 'skills'],
   },
   anthropic: {
     url: 'https://github.com/anthropics/skills.git',
@@ -49,72 +49,70 @@ function getRemoteHead(url) {
 async function syncSource(sourceName, config, options = {}) {
   const targetPath = path.join(RESOURCES_PATH, sourceName);
 
-  // Check version lock
+  // 檢查版本鎖定
   const versions = readVersions();
   if (versions[sourceName]?.locked) {
-    console.log(`  Locked, skipping ${sourceName}`);
+    console.log(`  已鎖定，跳過 ${sourceName}`);
     return { skipped: true, reason: 'locked' };
   }
 
-  // Check if sync is needed
+  // 檢查是否需要同步
   if (!options.force) {
     const remoteSha = getRemoteHead(config.url);
     if (remoteSha && !needsSync(sourceName, remoteSha)) {
-      console.log(`  Up to date, skipping ${sourceName}`);
+      console.log(`  已是最新，跳過 ${sourceName}`);
       return { skipped: true, reason: 'up-to-date' };
     }
   }
 
   if (options.dryRun) {
-    console.log(`  [dry-run] Would sync ${sourceName} from ${config.url}`);
+    console.log(`  [模擬] 將從 ${config.url} 同步 ${sourceName}`);
     return { dryRun: true };
   }
 
-  // Use secure temp directory
+  // 使用安全暫存目錄
   const tempDir = await mkdtemp(path.join(tmpdir(), `ab-tao-sync-${sourceName}-`));
 
   try {
-    // Clone
+    // 克隆
     execSync(`git clone --depth 1 ${config.url} ${tempDir}`, {
       stdio: 'pipe',
       timeout: 60000,
     });
 
-    // Get commit SHA
+    // 取得 commit SHA
     const sha = execSync('git rev-parse HEAD', {
       cwd: tempDir,
       encoding: 'utf8',
       stdio: 'pipe',
     }).trim();
 
-    // Remove .git from cloned content
+    // 移除克隆的 .git
     fs.rmSync(path.join(tempDir, '.git'), { recursive: true, force: true });
 
-    // Security validation — only validate resource directories if specified
+    // 安全驗證 — 僅驗證指定的資源子目錄
     const pathsToValidate = config.validatePaths || [];
     if (pathsToValidate.length > 0) {
-      // Validate only the specified subdirectories
       for (const subDir of pathsToValidate) {
         const subPath = path.join(tempDir, subDir);
         if (!fs.existsSync(subPath)) continue;
         const { ok, summary } = await validateContent(subPath);
         if (!ok) {
           throw new Error(
-            `Security validation failed for ${sourceName}/${subDir}: ${summary.errors.map((e) => e.message).join(', ')}`,
+            `${sourceName}/${subDir} 安全驗證失敗: ${summary.errors.map((e) => e.message).join(', ')}`,
           );
         }
       }
     } else {
-      // Validate entire directory
       const { ok, summary } = await validateContent(tempDir);
       if (!ok) {
         throw new Error(
-          `Security validation failed for ${sourceName}: ${summary.errors.map((e) => e.message).join(', ')}`,
+          `${sourceName} 安全驗證失敗: ${summary.errors.map((e) => e.message).join(', ')}`,
         );
       }
     }
 
-    // Atomic swap: backup → replace → cleanup
+    // 原子替換：備份 → 替換 → 清理
     const backupPath = `${targetPath}.bak`;
 
     if (fs.existsSync(targetPath)) {
@@ -125,15 +123,15 @@ async function syncSource(sourceName, config, options = {}) {
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       fs.cpSync(tempDir, targetPath, { recursive: true });
 
-      // Record version
+      // 記錄版本
       recordSync(sourceName, sha);
 
-      // Cleanup backup
+      // 清理備份
       if (fs.existsSync(backupPath)) {
         fs.rmSync(backupPath, { recursive: true, force: true });
       }
     } catch (err) {
-      // Rollback on failure
+      // 失敗時回滾
       if (fs.existsSync(backupPath)) {
         if (fs.existsSync(targetPath)) {
           fs.rmSync(targetPath, { recursive: true, force: true });
@@ -145,7 +143,7 @@ async function syncSource(sourceName, config, options = {}) {
 
     return { success: true, sha };
   } finally {
-    // Always cleanup temp
+    // 始終清理暫存目錄
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
@@ -153,7 +151,7 @@ async function syncSource(sourceName, config, options = {}) {
 }
 
 async function syncAll(options = {}) {
-  console.log('Syncing all external sources...\n');
+  console.log('正在同步所有外部資源...\n');
 
   const results = [];
   for (const [name, config] of Object.entries(SOURCES_CONFIG)) {
@@ -162,11 +160,11 @@ async function syncAll(options = {}) {
       const result = await syncSource(name, config, options);
       results.push({ source: name, ...result });
       if (result.success) {
-        console.log(`  Synced (${result.sha.slice(0, 8)})`);
+        console.log(`  已同步 (${result.sha.slice(0, 8)})`);
       }
     } catch (err) {
       results.push({ source: name, success: false, error: err.message });
-      console.error(`  Failed: ${err.message}`);
+      console.error(`  失敗: ${err.message}`);
     }
     console.log();
   }
@@ -174,12 +172,12 @@ async function syncAll(options = {}) {
   const succeeded = results.filter((r) => r.success).length;
   const skipped = results.filter((r) => r.skipped).length;
   const failed = results.filter((r) => r.success === false).length;
-  console.log(`Done: ${succeeded} synced, ${skipped} skipped, ${failed} failed`);
+  console.log(`完成: ${succeeded} 已同步, ${skipped} 已跳過, ${failed} 失敗`);
 
   return results;
 }
 
-// CLI entry point
+// CLI 入口
 const args = process.argv.slice(2);
 const force = args.includes('--force');
 const dryRun = args.includes('--dry-run');
@@ -188,8 +186,8 @@ if (args.includes('--source')) {
   const idx = args.indexOf('--source');
   const sourceName = args[idx + 1];
   if (!SOURCES_CONFIG[sourceName]) {
-    console.error(`Unknown source: ${sourceName}`);
-    console.error(`Available: ${Object.keys(SOURCES_CONFIG).join(', ')}`);
+    console.error(`未知的來源: ${sourceName}`);
+    console.error(`可用來源: ${Object.keys(SOURCES_CONFIG).join(', ')}`);
     process.exit(1);
   }
   syncSource(sourceName, SOURCES_CONFIG[sourceName], { force, dryRun }).catch((err) => {

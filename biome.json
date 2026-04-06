@@ -14,7 +14,7 @@
       "!build",
       "!.turbo",
       "!.cache",
-      "!**/resources/**",
+      "!**/resources",
       "!ecc",
       "!docs"
     ]

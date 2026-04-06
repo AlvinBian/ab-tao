@@ -13,12 +13,11 @@ const DANGEROUS_PATTERNS = [
   { pattern: /<!--\s*(?:system|hidden|ignore|secret)/gi, label: 'hidden HTML directive' },
 ];
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — security validator must detect zero-width and control characters
+// biome-ignore lint/suspicious/noControlCharactersInRegex: 刻意偵測零寬度與控制字元
 const CONTROL_CHAR_REGEX = /[\u200B-\u200D\uFEFF\x00-\x08\x0B-\x0C\x0E-\x1F]/;
 
 /**
- * Check if file is a documentation/markdown file where dangerous patterns
- * are expected as instructional content (not executable code).
+ * 判斷檔案是否為文件類型（.md 等），其中危險 pattern 屬於說明文字。
  */
 function isDocumentationFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -26,14 +25,14 @@ function isDocumentationFile(filePath) {
 }
 
 /**
- * Validate a single file's content for security threats.
+ * 驗證單一檔案的內容安全性。
  *
- * For documentation files (.md), dangerous patterns produce warnings (not errors)
- * since they commonly appear as instructional text.
+ * 對文件檔 (.md)，危險 pattern 產生警告（非錯誤），
+ * 因為文件中常以說明方式提及這些 pattern。
  *
- * @param {string} filePath - File path (for reporting)
- * @param {string} content - File content
- * @param {{ strict?: boolean }} options - Options. strict=true forces errors even for docs.
+ * @param {string} filePath - 檔案路徑（用於報告）
+ * @param {string} content - 檔案內容
+ * @param {{ strict?: boolean }} options - 選項。strict=true 強制對文件檔也產生錯誤。
  * @returns {{ valid: boolean, errors: object[], warnings: object[], checksum: string }}
  */
 export function validateFileContent(filePath, content, options = {}) {
@@ -41,26 +40,26 @@ export function validateFileContent(filePath, content, options = {}) {
   const warnings = [];
   const isDoc = !options.strict && isDocumentationFile(filePath);
 
-  // 1. File size check
+  // 1. 檔案大小檢查
   const bytes = Buffer.byteLength(content, 'utf8');
   if (bytes > MAX_FILE_SIZE) {
     errors.push({
       code: 'FILE_TOO_LARGE',
-      message: `${bytes} bytes exceeds ${MAX_FILE_SIZE} byte limit`,
+      message: `${bytes} bytes 超過 ${MAX_FILE_SIZE} byte 限制`,
       file: filePath,
     });
   }
 
-  // 2. Dangerous pattern scan
-  // For documentation files: patterns are warnings (instructional content)
-  // For executable files (.json, .sh, .js): patterns are errors
+  // 2. 危險 pattern 掃描
+  // 文件檔：pattern 為警告（說明文字）
+  // 可執行檔（.json, .sh, .js）：pattern 為錯誤
   for (const { pattern, label } of DANGEROUS_PATTERNS) {
-    // Reset lastIndex for global regex
+    // 重設 lastIndex（全域正則）
     pattern.lastIndex = 0;
     if (pattern.test(content)) {
       const entry = {
         code: 'DANGEROUS_PATTERN',
-        message: `${isDoc ? 'Pattern found' : 'Blocked pattern'}: ${label}`,
+        message: `${isDoc ? '發現 pattern' : '攔截 pattern'}: ${label}`,
         file: filePath,
       };
       if (isDoc) {
@@ -71,32 +70,32 @@ export function validateFileContent(filePath, content, options = {}) {
     }
   }
 
-  // 3. Path traversal check
+  // 3. 路徑遍歷檢查
   const normalized = path.normalize(filePath);
   if (normalized.includes('..')) {
     errors.push({
       code: 'PATH_TRAVERSAL',
-      message: `Path traversal detected: ${filePath}`,
+      message: `偵測到路徑遍歷: ${filePath}`,
       file: filePath,
     });
   }
 
-  // 4. Hidden/control character check
+  // 4. 隱藏/控制字元檢查
   if (CONTROL_CHAR_REGEX.test(content)) {
     warnings.push({
       code: 'SUSPICIOUS_CHARACTERS',
-      message: 'File contains hidden or control characters',
+      message: '檔案包含隱藏或控制字元',
       file: filePath,
     });
   }
 
-  // 5. Filename validation (no special chars that could cause issues)
+  // 5. 檔名驗證（不允許可能導致問題的特殊字元）
   const basename = path.basename(filePath);
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — detect null bytes in filenames
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: 刻意偵測 null byte
   if (/[<>:"|?*\x00]/.test(basename)) {
     errors.push({
       code: 'INVALID_FILENAME',
-      message: `Invalid characters in filename: ${basename}`,
+      message: `檔名包含無效字元: ${basename}`,
       file: filePath,
     });
   }
@@ -112,7 +111,7 @@ export function validateFileContent(filePath, content, options = {}) {
 }
 
 /**
- * Sanitize content by removing zero-width and control characters.
+ * 清理內容：移除零寬度字元與控制字元。
  * @param {string} content
  * @returns {string}
  */
@@ -120,14 +119,14 @@ export function sanitizeContent(content) {
   return (
     content
       .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strip control characters
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: 刻意移除控制字元
       .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '')
   );
 }
 
 /**
- * Validate all .md files in a resource directory.
- * @param {string} resourcePath - Root path of the resource
+ * 驗證資源目錄中所有 .md 與 .json 檔案。
+ * @param {string} resourcePath - 資源根目錄路徑
  * @returns {{ total: number, valid: number, invalid: number, errors: object[], warnings: object[], checksums: Record<string, string> }}
  */
 export function validateDirectory(resourcePath) {
@@ -143,7 +142,7 @@ export function validateDirectory(resourcePath) {
   if (!fs.existsSync(resourcePath)) {
     summary.errors.push({
       code: 'DIR_NOT_FOUND',
-      message: `Directory not found: ${resourcePath}`,
+      message: `目錄不存在: ${resourcePath}`,
       file: resourcePath,
     });
     return summary;
@@ -154,7 +153,7 @@ export function validateDirectory(resourcePath) {
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        // Skip hidden dirs and node_modules
+        // 跳過隱藏目錄與 node_modules
         if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
           walkDir(fullPath);
         }
@@ -181,7 +180,7 @@ export function validateDirectory(resourcePath) {
 }
 
 /**
- * Validate resource content after sync — main entry point.
+ * 驗證同步後的資源內容 — 主入口。
  * @param {string} resourcePath
  * @returns {{ ok: boolean, summary: object }}
  */
@@ -190,9 +189,7 @@ export async function validateContent(resourcePath) {
   const ok = summary.invalid === 0;
 
   if (!ok) {
-    console.error(
-      `Security validation failed: ${summary.invalid}/${summary.total} files have issues`,
-    );
+    console.error(`安全驗證失敗: ${summary.invalid}/${summary.total} 個檔案有問題`);
     for (const err of summary.errors) {
       console.error(`  [${err.code}] ${err.file}: ${err.message}`);
     }

@@ -13,8 +13,8 @@ const TECH_SIGNATURES = {
 };
 
 /**
- * Maps technology/framework names to their canonical language directory names.
- * Used for filtering language-specific resources (e.g., rules/{lang}/).
+ * 技術/框架名稱對應標準語言目錄名。
+ * 用於篩選語言專屬資源（如 rules/{lang}/）。
  */
 export const TECH_TO_LANG = {
   typescript: 'typescript',
@@ -60,7 +60,7 @@ const PACKAGE_TECH_MAP = {
 };
 
 /**
- * Detect tech stack from file system signatures.
+ * 從檔案系統特徵偵測技術棧。
  * @param {{ githubRepos?: string[], localPaths?: string[] }} context
  * @returns {Promise<{ technologies: { name: string, confidence: number }[] }>}
  */
@@ -69,7 +69,7 @@ export async function detectTechStack(context = {}) {
   const detected = new Map();
 
   for (const basePath of localPaths) {
-    // File-based detection
+    // 檔案特徵偵測
     for (const [tech, files] of Object.entries(TECH_SIGNATURES)) {
       for (const file of files) {
         const checkPath = path.join(basePath, file);
@@ -80,7 +80,7 @@ export async function detectTechStack(context = {}) {
       }
     }
 
-    // package.json dependency detection
+    // package.json 依賴偵測
     const pkgPath = path.join(basePath, 'package.json');
     if (fs.existsSync(pkgPath)) {
       try {
@@ -97,11 +97,11 @@ export async function detectTechStack(context = {}) {
           }
         }
 
-        // Always mark javascript if package.json exists
+        // 存在 package.json 則標記 javascript
         const jsConf = detected.get('javascript') || 0;
         detected.set('javascript', Math.min(jsConf + 0.5, 1.0));
       } catch {
-        // Ignore malformed package.json
+        // 忽略格式錯誤的 package.json
       }
     }
   }

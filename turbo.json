@@ -44,7 +44,7 @@
       "cache": false
     },
     "setup": {
-      "dependsOn": ["^build", "^sync"],
+      "dependsOn": ["^build"],
       "cache": false
     },
     "dev": {

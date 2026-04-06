@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VERSIONS_PATH = path.resolve(__dirname, '../.versions.json');
 
 /**
- * Read current version records.
+ * 讀取目前的版本記錄。
  * @returns {Record<string, object>}
  */
 export function readVersions() {
@@ -15,7 +15,7 @@ export function readVersions() {
 }
 
 /**
- * Write version records back to disk.
+ * 將版本記錄寫回磁碟。
  * @param {Record<string, object>} versions
  */
 export function writeVersions(versions) {
@@ -23,23 +23,19 @@ export function writeVersions(versions) {
 }
 
 /**
- * Update a single source's version after successful sync.
+ * 同步成功後更新單一來源的版本。
  * @param {string} sourceName
  * @param {string} sha - Git commit SHA
  */
 export function recordSync(sourceName, sha) {
   const versions = readVersions();
   if (!versions[sourceName]) {
-    throw new Error(`Unknown source: ${sourceName}`);
+    throw new Error(`未知的來源: ${sourceName}`);
   }
-
   if (versions[sourceName].locked) {
-    console.warn(
-      `Source "${sourceName}" is locked at ${versions[sourceName].sha}, skipping update`,
-    );
+    console.log(`來源 "${sourceName}" 已鎖定於 ${versions[sourceName].sha}，跳過更新`);
     return false;
   }
-
   versions[sourceName].sha = sha;
   versions[sourceName].date = new Date().toISOString().split('T')[0];
   writeVersions(versions);
@@ -47,9 +43,9 @@ export function recordSync(sourceName, sha) {
 }
 
 /**
- * Check if a source needs syncing (SHA changed or empty).
+ * 檢查來源是否需要同步（SHA 變更或為空）。
  * @param {string} sourceName
- * @param {string} remoteSha - Current remote HEAD SHA
+ * @param {string} remoteSha - 目前遠端 HEAD SHA
  * @returns {boolean}
  */
 export function needsSync(sourceName, remoteSha) {
@@ -62,26 +58,26 @@ export function needsSync(sourceName, remoteSha) {
 }
 
 /**
- * Lock a source at its current version.
+ * 鎖定來源於目前版本。
  * @param {string} sourceName
  */
 export function lockSource(sourceName) {
   const versions = readVersions();
   if (!versions[sourceName]) {
-    throw new Error(`Unknown source: ${sourceName}`);
+    throw new Error(`未知的來源: ${sourceName}`);
   }
   versions[sourceName].locked = true;
   writeVersions(versions);
 }
 
 /**
- * Unlock a source to allow syncing.
+ * 解鎖來源以允許同步。
  * @param {string} sourceName
  */
 export function unlockSource(sourceName) {
   const versions = readVersions();
   if (!versions[sourceName]) {
-    throw new Error(`Unknown source: ${sourceName}`);
+    throw new Error(`未知的來源: ${sourceName}`);
   }
   versions[sourceName].locked = false;
   writeVersions(versions);

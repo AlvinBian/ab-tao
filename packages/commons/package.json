@@ -1,7 +1,7 @@
 {
   "name": "@ab-tao/commons",
   "version": "1.0.0",
-  "description": "Tools, Libraries, Logic Layer (動、工具、程式庫)",
+  "description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
   "type": "module",
   "exports": {
     ".": "./scripts/index.mjs",
