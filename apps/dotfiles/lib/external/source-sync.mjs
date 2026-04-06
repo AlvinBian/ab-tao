@@ -32,6 +32,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { validateFileContent } from '@ab-tao/commons/security';
 import { uniq } from 'lodash-es';
 import { gh } from './github.mjs';
 
@@ -244,7 +245,15 @@ async function batchDownload(repo, files) {
     const settled = await Promise.allSettled(
       batch.map(async (f) => {
         const content = await downloadFile(repo, f.path);
-        return content ? { name: f.name, content } : null;
+        if (!content) return null;
+        const validation = validateFileContent(f.name, content);
+        if (!validation.valid) {
+          console.warn(
+            `[security] skipped ${f.name}: ${validation.errors.map((e) => e.message).join(', ')}`,
+          );
+          return null;
+        }
+        return { name: f.name, content };
       }),
     );
     for (const r of settled) {

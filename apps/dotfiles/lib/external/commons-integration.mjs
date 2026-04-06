@@ -1,35 +1,60 @@
-import { ResourceLoader, syncIfNeeded } from '@ab-tao/commons';
+/**
+ * Bridge module — exposes @ab-tao/commons capabilities to dotfiles.
+ *
+ * Re-exports commons' security validation, version tracking, and tech detection
+ * so dotfiles modules can import from a single local entry point.
+ */
+import {
+  detectTechStack,
+  lockSource,
+  needsSync,
+  ResourceLoader,
+  readVersions,
+  recordSync,
+  sanitizeContent,
+  syncIfNeeded,
+  unlockSource,
+  validateContent,
+  validateDirectory,
+  validateFileContent,
+  writeVersions,
+} from '@ab-tao/commons';
 
-export class CommonsIntegration {
-  constructor(config) {
-    this.config = config;
-    this.loader = new ResourceLoader(config);
-  }
+// ── Security ─────────────────────────────────────────────────────
+// ── Version Tracking ─────────────────────────────────────────────
+// ── Resource Loading ─────────────────────────────────────────────
+// ── Tech Detection ───────────────────────────────────────────────
+export {
+  detectTechStack,
+  lockSource,
+  needsSync,
+  ResourceLoader,
+  readVersions,
+  recordSync,
+  sanitizeContent,
+  syncIfNeeded,
+  unlockSource,
+  validateContent,
+  validateDirectory,
+  validateFileContent,
+  writeVersions,
+};
 
-  async initialize() {
-    await syncIfNeeded();
+/**
+ * Initialize commons resources — sync if stale, then load.
+ * @param {object} config - ResourceLoader config
+ * @returns {Promise<object>} Integrated resources
+ */
+export async function initializeCommons(config = {}) {
+  const syncResult = await syncIfNeeded();
+  const loader = new ResourceLoader(config);
+  const resources = await loader.loadResources();
 
-    const resources = await this.loader.loadResources();
-
-    return this.integrate(resources);
-  }
-
-  integrate(resources) {
-    return {
-      commands: resources.ecc?.commands || [],
-      agents: resources.ecc?.agents || [],
-      rules: resources.ecc?.rules || [],
-      skills: this.mergeSkills(resources),
-    };
-  }
-
-  mergeSkills(resources) {
-    const skills = [];
-    Object.entries(resources).forEach(([source, data]) => {
-      if (source !== 'ecc' && Array.isArray(data)) {
-        skills.push(...data);
-      }
-    });
-    return skills;
-  }
+  return {
+    syncResult,
+    resources,
+    commands: resources.ecc?.commands || [],
+    agents: resources.ecc?.agents || [],
+    rules: resources.ecc?.rules || [],
+  };
 }

@@ -6,6 +6,7 @@ export {
   validateFileContent,
 } from './security-validator.mjs';
 export { syncIfNeeded } from './sync-manager.mjs';
+export { detectTechStack } from './tech-detection.mjs';
 export {
   lockSource,
   needsSync,
