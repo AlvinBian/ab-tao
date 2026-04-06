@@ -23,9 +23,9 @@ importers:
       '@ab-tao/commons':
         specifier: workspace:*
         version: link:../../packages/commons
-      '@ab-tao/root':
+      '@ab-tao/shared':
         specifier: workspace:*
-        version: link:../..
+        version: link:../../packages/shared
       '@clack/prompts':
         specifier: ^0.9.1
         version: 0.9.1
@@ -44,13 +44,15 @@ importers:
 
   packages/commons:
     dependencies:
-      '@ab-tao/root':
+      '@ab-tao/shared':
         specifier: workspace:*
-        version: link:../..
+        version: link:../shared
     devDependencies:
       commander:
         specifier: ^12.1.0
         version: 12.1.0
+
+  packages/shared: {}
 
 packages:
 

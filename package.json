@@ -1,5 +1,5 @@
 {
-  "name": "@ab-tao/root",
+  "name": "ab-tao",
   "private": true,
   "description": "ab-tao: 統一 monorepo — dotfiles 環境管理 + 共用資源庫",
   "type": "module",
@@ -7,12 +7,6 @@
   "engines": {
     "node": ">=18",
     "pnpm": ">=9"
-  },
-  "exports": {
-    "./run": "./scripts/run-pkg.mjs",
-    "./fs": "./scripts/shared/fs.mjs",
-    "./log": "./scripts/shared/log.mjs",
-    "./shell": "./scripts/shared/shell.mjs"
   },
   "scripts": {
     "help": "node scripts/help.mjs",
