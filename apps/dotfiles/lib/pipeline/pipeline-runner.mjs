@@ -2,10 +2,10 @@
  * 分析 Pipeline Orchestrator
  *
  * 取代 setup.mjs 中 200+ 行的內聯分析邏輯。
- * 流程：repos fetch + ECC fetch（並行）→ per-repo AI（並行）→ merge → ECC AI 推薦
+ * 流程：repos fetch + AI 資源載入（並行）→ per-repo AI（並行）→ merge → AI 推薦
  *
  * 各階段說明：
- *   TIER 1：repos fetch（GitHub API 分析）+ ECC fetch（遠端資源下載）並行執行
+ *   TIER 1：repos fetch（GitHub API 分析）+ commons 資源載入（本地）+ ECC fetch 並行執行
  *   TIER 2：per-repo AI 分類，以 AI_CONCURRENCY 控制並行數量
  *   MERGE：mergeRepoResults 跨 repo 去重 + 仲裁
  *   ECC：規則匹配推薦（即時）+ 背景 AI 翻譯（不阻塞主流程）
@@ -22,6 +22,7 @@ import {
 } from '../core/constants.mjs';
 import { analyzeRepo } from '../detect/skill-detect.mjs';
 import { callClaudeJSON } from '../external/claude-cli.mjs';
+import { loadAllCommonsResources } from '../external/commons-loader.mjs';
 import { fetchAllSources, filterItems } from '../external/source-sync.mjs';
 import { createAuditTrail } from './audit-trail.mjs';
 import { mergeRepoResults } from './merge-dedup.mjs';
@@ -106,10 +107,18 @@ export async function runAnalysisPipeline({
   const repoNames = repos.map((r) => r.split('/')[1]);
   const hasEcc = sources.length > 0;
 
-  // ── TIER 1：repos fetch + ECC fetch（並行）──
+  // ── TIER 1：repos fetch + AI 資源載入（並行）──
   onPhase('fetch', {
-    message: hasEcc ? '分析 repos + 取得 ECC 來源...' : '分析 repos...',
+    message: hasEcc ? '分析 repos + 取得 AI 資源...' : '分析 repos...',
   });
+
+  // 載入 commons 已同步的所有 AI 來源（本地，零 API）
+  const commonsResources = loadAllCommonsResources();
+  if (commonsResources.stats.loaded > 0) {
+    onPhase('commons', {
+      message: `已載入 ${commonsResources.stats.loaded} 個 AI 來源（${commonsResources.stats.resources} 個資源）`,
+    });
+  }
 
   const t0 = Date.now();
   const [analysisResults, eccFetchResult] = await Promise.all([
@@ -505,6 +514,7 @@ ${batchList}
     coreCategories,
     eccFetchResult,
     eccAiPromise,
+    commonsResources,
     conflicts,
     audit,
   };
