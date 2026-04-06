@@ -33,26 +33,44 @@ pnpm run test
 
 ## 指令
 
+### Root（Monorepo 全局）
+
 | 指令 | 說明 |
 |------|------|
 | `pnpm run build` | 構建所有套件 |
 | `pnpm run test` | 執行測試 |
 | `pnpm run lint` | Biome lint |
 | `pnpm run format` | 格式化 |
-| `pnpm run sync` | 同步外部 AI 資源 |
-| `pnpm run validate` | 驗證資源結構 + 安全檢查 |
-| `pnpm run setup` | 執行 dotfiles 環境部署 |
-| `pnpm run scan` | 技術棧掃描 + 技能庫生成 |
-| `pnpm run doctor` | 環境診斷 |
-| `pnpm run status` | 配置狀態儀表板 |
+| `pnpm run setup` | 互動式環境部署（快捷方式） |
+| `pnpm run sync` | 同步外部 AI 資源 (commons) |
+| `pnpm run validate` | 驗證資源結構 + 安全檢查 (commons) |
 | `pnpm run changeset` | 建立變更記錄 |
+
+### dotfiles（互動式指令，需 TTY）
+
+```bash
+pnpm -F dotfiles setup      # 互動式完整部署
+pnpm -F dotfiles scan       # 技術棧掃描 + 技能庫生成
+pnpm -F dotfiles doctor     # 環境診斷
+pnpm -F dotfiles status     # 配置狀態儀表板
+pnpm -F dotfiles restore    # 還原備份
+pnpm -F dotfiles hooks      # Hook 管理
+pnpm -F dotfiles uninstall  # 移除 ab-dotfiles
+```
+
+### commons（自動化指令）
+
+```bash
+pnpm -F commons sync        # 同步外部 AI 資源
+pnpm -F commons validate    # 驗證資源結構
+```
 
 ## packages/commons
 
 共用工具層，提供：
 
-- **資源同步引擎** — 從 5 個外部 GitHub repo 同步 AI 資源（ECC、Superpowers、Anthropic Skills、Letta、Context Engineering）
-- **安全驗證器** — eval/Function/sudo/rm-rf 攔截、100KB 檔案限制、路徑遍歷檢查、SHA256 checksum
+- **資源同步引擎** — 從 4 個外部 GitHub repo 同步 AI 資源（ECC、Anthropic Skills、Letta、Context Engineering）
+- **安全驗證器** — eval/Function/sudo/rm-rf 攔截、512KB 檔案限制、路徑遍歷檢查、SHA256 checksum（文件檔為警告模式）
 - **版本追蹤** — `.versions.json` 記錄 commit SHA，支援版本鎖定
 - **技術棧偵測** — 自動偵測專案使用的技術，動態載入對應資源
 - **運行時同步** — 7 天 TTL 快取，過期自動觸發同步
