@@ -127,8 +127,7 @@ export async function phaseExecute(
                                 task: (_, subtask) =>
                                   subtask.newListr([
                                     {
-                                      title:
-                                        'settings.json — 合併 permissions + model + autoMemory',
+                                      title: '⚙️ settings.json — 合併權限、模型與自動記憶',
                                       task: async (_, sub) => {
                                         const templatePath = path.join(
                                           repoDir,

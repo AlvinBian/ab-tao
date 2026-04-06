@@ -759,7 +759,6 @@ async function main() {
     phaseHeader('📋 確認安裝計畫', 2, 3);
     const confirmedPlan = await phasePlan(planForReview);
     if (confirmedPlan === BACK) continue; // 回到 Step 1
-    if (!confirmedPlan) break;
 
     // --dry-run
     if (flagDryRun) {
