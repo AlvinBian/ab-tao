@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { TECH_TO_LANG } from '@ab-tao/commons/detect';
 import { RESOURCES_DIR } from '@ab-tao/commons/paths';
 
 /**
@@ -92,5 +93,82 @@ export function loadAllCommonsResources() {
       loaded: sources.length,
       resources: totalResources,
     },
+  };
+}
+
+// ── 語言前綴（用於篩選語言特定資源）────────────────────────────────
+const LANG_PREFIXES = [...new Set(Object.values(TECH_TO_LANG))].map((l) => `${l}-`);
+
+/**
+ * 判斷檔案名是否匹配技術棧
+ * - 無語言前綴 → 通用資源，始終匹配
+ * - 有語言前綴 → 只有技術棧對應的語言才匹配
+ */
+function matchesTechStack(fileName, matchedLangs) {
+  const name = fileName.replace('.md', '');
+  for (const prefix of LANG_PREFIXES) {
+    if (name.startsWith(prefix)) {
+      return matchedLangs.has(prefix.replace(/-$/, ''));
+    }
+  }
+  return true; // 無語言前綴 = 通用資源
+}
+
+/**
+ * 根據偵測到的技術棧過濾 commons 資源
+ *
+ * @param {{ sources: object[] }} commonsResources - loadAllCommonsResources 回傳值
+ * @param {string[]} detectedTechs - 偵測到的技術棧 ID（如 ['typescript', 'vue', 'nuxt']）
+ * @returns {{ sources: object[], stats: { filtered: number, total: number } }}
+ */
+export function filterByTechStack(commonsResources, detectedTechs) {
+  // 建立語言集合
+  const matchedLangs = new Set();
+  for (const tech of detectedTechs) {
+    const lang = TECH_TO_LANG[tech.toLowerCase()];
+    if (lang) matchedLangs.add(lang);
+  }
+
+  let filtered = 0;
+  let total = 0;
+
+  const filteredSources = commonsResources.sources.map((src) => {
+    const commands = src.commands.filter((f) => {
+      total++;
+      if (matchesTechStack(f.name, matchedLangs)) {
+        filtered++;
+        return true;
+      }
+      return false;
+    });
+    const agents = src.agents.filter((f) => {
+      total++;
+      if (matchesTechStack(f.name, matchedLangs)) {
+        filtered++;
+        return true;
+      }
+      return false;
+    });
+    const rules = src.rules.filter((f) => {
+      total++;
+      if (matchesTechStack(f.name, matchedLangs)) {
+        filtered++;
+        return true;
+      }
+      return false;
+    });
+    // skills 不按語言過濾（SKILL.md 格式更通用）
+    const skills = src.skills;
+    filtered += skills.length;
+    total += skills.length;
+
+    return { ...src, commands, agents, rules, skills };
+  });
+
+  return {
+    sources: filteredSources.filter(
+      (s) => s.commands.length + s.agents.length + s.rules.length + s.skills.length > 0,
+    ),
+    stats: { filtered, total },
   };
 }
