@@ -18,21 +18,31 @@ packages/commons/  — @ab-tao/commons  — 工具庫、AI 資源同步、技術
 
 dotfiles 依賴 commons（`@ab-tao/commons: workspace:*`），單向依賴。
 
-## 常用指令
+## 指令（簡稱：d = dotfiles · c = commons）
 
 ```bash
-pnpm install           # 安裝依賴
-pnpm run build         # 構建所有套件
-pnpm run test          # 執行測試
-pnpm run lint          # Biome lint
-pnpm run sync          # 同步外部 AI 資源
-pnpm run validate      # 驗證資源結構 + 安全檢查
-pnpm run format        # 格式化
+pnpm run help              # 指令總覽
+pnpm run build             # 構建所有套件
+pnpm run test              # 執行測試
+pnpm run lint              # Biome lint
+pnpm run format            # 格式化
+
+pnpm run d:setup           # 互動式環境部署
+pnpm run d:scan            # 技術棧掃描
+pnpm run d:doctor          # 環境診斷
+pnpm run d:status          # 配置儀表板
+pnpm run d:restore         # 還原備份
+
+pnpm run c:sync            # 列出 AI 來源（預設不同步）
+pnpm run c:sync:select     # 互動式選擇同步
+pnpm run c:sync:all        # 同步全部 7 個來源
+pnpm run c:validate        # 驗證資源結構
 ```
 
 ## 開發規範
 
-- **Commit** — Conventional Commits
-- **版本** — `pnpm changeset` 建立變更記錄，`pnpm version` 更新版本
-- **安全** — 外部資源必須通過 security-validator（eval/sudo/rm-rf 攔截 + 100KB 限制）
+- **Commit** — Conventional Commits（繁體中文）
+- **版本** — `pnpm run changeset` 建立變更記錄，`pnpm run version` 更新版本
+- **安全** — 外部資源必須通過 security-validator（eval/sudo/rm-rf 攔截 + 512KB 限制，.md 為警告模式）
 - **測試** — Node.js 原生 test runner，`node --test __tests__/*.test.mjs`
+- **註釋** — 所有程式碼註釋、說明、測試描述使用繁體中文
