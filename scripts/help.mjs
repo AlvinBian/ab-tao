@@ -1,37 +1,54 @@
 #!/usr/bin/env node
 
-const HELP = `
-\x1b[1m ab-tao 指令總覽\x1b[0m  \x1b[2md = dotfiles · c = commons\x1b[0m
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-\x1b[36m── 全局 ───────────────────────────────────────────\x1b[0m
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+
+const NAMESPACES = {
+  d: { label: 'dotfiles（互動式，需 TTY）', dir: 'apps/dotfiles', color: '\x1b[33m' },
+  c: { label: 'commons（AI 資源，7 個來源）', dir: 'packages/commons', color: '\x1b[32m' },
+};
+
+const RESET = '\x1b[0m';
+const BOLD = '\x1b[1m';
+const DIM = '\x1b[2m';
+
+console.log(`
+${BOLD} ab-tao 指令總覽${RESET}  ${DIM}d = dotfiles · c = commons${RESET}
+
+\x1b[36m── 全局 ───────────────────────────────────────────${RESET}
   pnpm run build            構建所有套件
   pnpm run test             執行測試
   pnpm run lint             Biome lint
   pnpm run format           格式化
-  pnpm run clean            清理快取與 node_modules
+  pnpm run clean            清理快取與 node_modules`);
 
-\x1b[33m── d: dotfiles（互動式，需 TTY）───────────────────\x1b[0m
-  pnpm run d:setup          完整環境部署精靈
-  pnpm run d:scan           技術棧掃描 + 技能庫生成
-  pnpm run d:doctor         環境診斷
-  pnpm run d:status         配置狀態儀表板
-  pnpm run d:report         瀏覽器 HTML Dashboard
-  pnpm run d:restore        還原備份
-  pnpm run d:hooks          Hook 管理
-  pnpm run d:uninstall      移除 ab-dotfiles
+for (const [ns, { label, dir, color }] of Object.entries(NAMESPACES)) {
+  console.log(`\n${color}── ${ns}: ${label} ──────────────────────────────${RESET}`);
 
-\x1b[32m── c: commons（AI 資源，7 個來源）────────────────\x1b[0m
-  pnpm run c:sync           列出來源與狀態
-  pnpm run c:sync:select    互動式選擇同步
-  pnpm run c:sync:all       同步全部
-  pnpm run c:validate       驗證資源結構
+  try {
+    const mod = await import(path.join(ROOT, dir, 'commands.mjs'));
+    const commands = mod.default || {};
+    const aliases = mod.aliases || {};
 
+    for (const [cmd, desc] of Object.entries(commands)) {
+      console.log(`  pnpm run ${ns}:${cmd.padEnd(16)} ${desc}`);
+    }
+    for (const [key, val] of Object.entries(aliases)) {
+      console.log(`  pnpm run ${ns}:${key.padEnd(16)} ${val.desc}`);
+    }
+  } catch {
+    console.log(`  ${DIM}（無 commands.mjs）${RESET}`);
+  }
+}
+
+console.log(`
   指定同步: pnpm run c:sync -- --pick ecc,superpowers
 
-\x1b[35m── 版本與發布 ──────────────────────────────────────\x1b[0m
+\x1b[35m── 版本與發布 ──────────────────────────────────────${RESET}
   pnpm run changeset        建立變更記錄
   pnpm run version          更新版本號
   pnpm run release          構建 + 發布
-`;
-
-console.log(HELP);
+`);
