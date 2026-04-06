@@ -5,6 +5,7 @@
  * 包括：HTML 逃逸、徽章、卡片、CSS 樣式、安裝/ECC 項目渲染。
  */
 
+import os from 'node:os';
 import path from 'node:path';
 import { sumBy } from 'lodash-es';
 import { getDescription } from '../config/descriptions.mjs';
@@ -183,7 +184,7 @@ export function renderEcc(ecc) {
  */
 export function renderInstalled(installed) {
   if (!installed) return '';
-  const HOME = process.env.HOME;
+  const HOME = process.env.HOME || os.homedir();
   const claudeDir = path.join(HOME, '.claude');
   let inner = '';
   const groups = [

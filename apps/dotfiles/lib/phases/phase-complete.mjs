@@ -10,6 +10,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { buildDescriptionCache } from '../config/descriptions.mjs';
@@ -37,7 +38,7 @@ export async function phaseComplete(
 ) {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const isManual = plan.mode === 'manual';
-  const HOME = process.env.HOME;
+  const HOME = process.env.HOME || os.homedir();
   const claudeDir = path.join(HOME, '.claude');
   const readDir = (dir) =>
     fs.existsSync(dir)
@@ -197,13 +198,17 @@ export async function phaseComplete(
     timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
   };
 
-  const html = generateReport(reportData);
-  const reportPath = saveReport(html, path.join(repoDir, 'dist'));
-  p.log.info(`📊 報告 → ${path.relative(repoDir, reportPath)}`);
   try {
-    await openInBrowser(reportPath);
-  } catch {
-    /* ignore */
+    const html = generateReport(reportData);
+    const reportPath = saveReport(html, path.join(repoDir, 'dist'));
+    p.log.info(`📊 報告 → ${path.relative(repoDir, reportPath)}`);
+    try {
+      await openInBrowser(reportPath);
+    } catch {
+      /* 瀏覽器開啟失敗不阻塞 */
+    }
+  } catch (err) {
+    p.log.warn(`報告生成失敗: ${err.message}`);
   }
 
   // Session
