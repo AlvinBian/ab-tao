@@ -30,11 +30,10 @@ export async function selectAiSources() {
     const config = SOURCES_CONFIG[name];
     const ver = versions[name];
     const synced = ver?.sha;
-    const tag = synced ? pc.green('✔ 已同步') : pc.dim('✗ 未同步');
+    const tag = synced ? pc.green('✔') : pc.dim('✗');
     return {
       value: name,
-      label: `${name} ${tag}`,
-      hint: config.description,
+      label: `${config.icon} ${name} ${tag} ${pc.dim(config.description)}`,
     };
   });
 
