@@ -9,7 +9,7 @@ const HELP = `
   pnpm run lint           Biome lint
   pnpm run format         格式化
   pnpm run setup          互動式環境部署（→ dotfiles）
-  pnpm run sync           同步外部 AI 資源（→ commons）
+  pnpm run sync           列出 AI 來源（預設不同步）
   pnpm run validate       驗證資源結構（→ commons）
 
 \x1b[33m── dotfiles 互動式（需 TTY）──────────────────────\x1b[0m
@@ -22,9 +22,13 @@ const HELP = `
   pnpm -F dotfiles hooks      Hook 管理
   pnpm -F dotfiles uninstall  移除 ab-dotfiles
 
-\x1b[32m── commons 自動化 ──────────────────────────────────\x1b[0m
-  pnpm -F commons sync        同步 4 個外部 AI 資源
-  pnpm -F commons validate    驗證資源結構 + 安全檢查
+\x1b[32m── commons AI 資源同步（7 個來源）───────────────────\x1b[0m
+  pnpm -F commons sync                    列出所有來源與狀態
+  pnpm -F commons sync -- --select        互動式選擇同步
+  pnpm -F commons sync -- --all           同步全部（7 個）
+  pnpm -F commons sync -- --pick ecc,anthropic  同步指定來源
+  pnpm -F commons sync -- --source <name> 同步單一來源
+  pnpm -F commons validate                驗證資源結構 + 安全檢查
 
 \x1b[35m── 版本與發布 ──────────────────────────────────────\x1b[0m
   pnpm run changeset      建立變更記錄

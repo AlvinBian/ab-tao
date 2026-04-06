@@ -13,6 +13,27 @@
     "locked": false,
     "type": "ai"
   },
+  "superpowers": {
+    "sha": "",
+    "source": "https://github.com/obra/superpowers",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "ui-ux-pro": {
+    "sha": "",
+    "source": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
+  "claude-plugins": {
+    "sha": "",
+    "source": "https://github.com/anthropics/claude-plugins-official",
+    "date": "",
+    "locked": false,
+    "type": "ai"
+  },
   "letta": {
     "sha": "5fa6cc2e796daa92dbc06004577dda54a6cf6d4c",
     "source": "https://github.com/letta-ai/skills",

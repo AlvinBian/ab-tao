@@ -10,11 +10,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources');
 
 const EXPECTED_STRUCTURES = {
-  ecc: {
-    required: ['commands', 'agents', 'rules'],
-    format: 'ecc',
-  },
+  ecc: { required: ['commands', 'agents', 'rules'], format: 'ecc' },
   anthropic: { required: [], format: 'agent-skills' },
+  superpowers: { required: [], format: 'agent-skills' },
+  'ui-ux-pro': { required: [], format: 'agent-skills' },
+  'claude-plugins': { required: [], format: 'agent-skills' },
   letta: { required: [], format: 'agent-skills' },
   'context-engineering': { required: [], format: 'agent-skills' },
 };
