@@ -42,7 +42,7 @@ export async function selectAiSources() {
     await p.multiselect({
       message: 'AI 來源（Space 切換，Enter 確認，直接 Enter 跳過）',
       options,
-      initialValues: sourceNames.filter((n) => versions[n]?.sha),
+      initialValues: [],
       required: false,
     }),
   );
