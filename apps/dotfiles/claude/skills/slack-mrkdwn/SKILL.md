@@ -1,9 +1,7 @@
 ---
 name: slack-mrkdwn
-description: >
-  Slack mrkdwn 格式規範：禁止語法、對照表、結構規範。
-matchWhen:
-  targets: ["slack"]
+description: Slack mrkdwn 格式規範：禁止語法、對照表、結構規範。
+user-invocable: false
 ---
 
 # Slack mrkdwn 格式規範

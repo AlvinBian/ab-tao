@@ -20,7 +20,7 @@ import { handleInstallModules } from './install-modules.mjs';
  * 依序執行 config.json 中 target 的所有 steps，
  * 根據 step.type 分派到對應的 handler。
  *
- * @param {string} repoDir - ab-dotfiles 根目錄
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
  * @param {string} previewDir - dist/preview 路徑
  * @param {string} key - target 鍵名（如 'claude-dev'、'zsh'）
  * @param {Object} def - config.json 中的 target 定義（含 label、steps）

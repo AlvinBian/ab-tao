@@ -51,14 +51,14 @@ pnpm run help              # 查看所有指令
 
 | 指令 | 說明 |
 |------|------|
-| `pnpm run d:setup` | 完整環境部署精靈 |
+| `pnpm run d:setup` | 互動式環境部署 + 第三方工具推薦 |
 | `pnpm run d:scan` | 技術棧掃描 + 技能庫生成 |
 | `pnpm run d:doctor` | 環境診斷 |
 | `pnpm run d:status` | 配置狀態儀表板 |
 | `pnpm run d:report` | 瀏覽器 HTML Dashboard |
 | `pnpm run d:restore` | 還原備份 |
 | `pnpm run d:hooks` | Hook 管理 |
-| `pnpm run d:uninstall` | 移除 ab-dotfiles |
+| `pnpm run d:uninstall` | 移除 ab-tao |
 
 ### c: commons（AI 資源同步）
 
@@ -103,7 +103,7 @@ pnpm run release          # 構建 + 發布
 
 ## apps/dotfiles
 
-環境配置層（從 [ab-dotfiles](https://github.com/AlvinBian/ab-dotfiles) v2.1.0 遷入）：
+環境配置層（ab-tao v2.1.0）：
 
 - **互動式安裝精靈** — 5 階段部署（分析 → 規劃 → 執行 → 完成）
 - **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢
@@ -111,6 +111,14 @@ pnpm run release          # 構建 + 發布
 - **ZSH 模組化環境** — 10 個模組（aliases, git, fzf, nvm, completion...）
 - **智能資源篩選** — 從 commons 資源池中按技術棧動態匹配，只安裝需要的
 - **Pipeline 架構** — Tier 1 並行抓取 → Tier 2 AI 分類 → 技術棧篩選 → 推薦安裝
+
+## 推薦的第三方工具
+
+setup 完成後會推薦安裝以下工具：
+
+- **RTK** — Bash 輸出壓縮 -89%（`curl -fsSL https://rtk.sh | bash`）
+- **Claude-Mem** — 跨會話記憶（`npx claude-mem install`）
+- **官方 Plugins** — 在 Claude Code 中執行 `/plugin`（code-review · commit-commands · feature-dev · simplify）
 
 ## CI/CD
 

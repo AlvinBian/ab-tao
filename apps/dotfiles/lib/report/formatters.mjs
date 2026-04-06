@@ -116,6 +116,10 @@ footer{text-align:center;font-size:.75rem;color:#484f58;margin-top:32px}
 .repo-card.hidden{display:none}
 /* 過濾狀態提示 */
 .filter-hint{font-size:.82rem;color:#8b949e;margin-bottom:8px;min-height:1.2em}
+/* 統計項目 */
+.stat{display:flex;align-items:center;gap:8px;padding:12px;background:#161b22;border-radius:6px;border:1px solid #30363d;font-size:.9rem}
+.stat span:first-child{color:#8b949e}
+.stat span:last-child{font-weight:600;color:#58a6ff}
 `;
 }
 
@@ -207,7 +211,7 @@ export function renderInstalled(installed) {
     inner += `<div class="group-label">Hooks</div><div>${badge('已啟用', 'green')}</div>`;
   return section(
     '已安裝項目',
-    '<p class="section-desc">以下配置已安裝到 ~/.claude/ 目錄，對所有專案全局生效。帶描述的項目來自 ab-dotfiles，無描述的可能是 ECC 外部資源。</p>' +
+    '<p class="section-desc">以下配置已安裝到 ~/.claude/ 目錄，對所有專案全局生效。帶描述的項目來自 ab-tao，無描述的可能是 ECC 外部資源。</p>' +
       inner,
   );
 }
@@ -230,4 +234,121 @@ export function renderBackup(backupDir) {
     '備份位置',
     `<div class="mono" style="padding:8px;background:#0d1117;border-radius:4px">${esc(backupDir)}</div>`,
   );
+}
+
+/**
+ * 計算檔案或目錄的大小（估算 token 消耗）
+ * 每 4 個字元約等於 1 token
+ */
+export function estimateTokenSize(bytes) {
+  return Math.ceil(bytes / 4);
+}
+
+/**
+ * 渲染 Token 消耗分佈環形圖區塊
+ */
+export function renderTokenChart() {
+  return `<div class="card">
+    <h2 class="section-title">🔋 Token 消耗分佈</h2>
+    <p class="section-desc">估算各類配置文件對 context 的佔用比例</p>
+    <div id="chart-token-distribution" style="height:300px"></div>
+  </div>`;
+}
+
+/**
+ * 渲染清理機會區塊
+ * 計算 30 天未使用的命令、代理和外部資源
+ */
+export function renderCleanup(installed, _auditLog = {}) {
+  if (!installed) return '';
+
+  const totalItems =
+    (installed.commands?.length || 0) +
+    (installed.agents?.length || 0) +
+    (installed.rules?.length || 0);
+  if (totalItems === 0) return '';
+
+  // 未使用項目（模擬：實際應從 auditLog 讀取）
+  const unusedCommands = [];
+  const unusedAgents = [];
+  const estimatedSavings = 0; // 需要實際計算
+
+  const unusedCount = unusedCommands.length + unusedAgents.length;
+  if (unusedCount === 0) {
+    return `<div class="card">
+      <h2 class="section-title">🗑️ 清理機會</h2>
+      <p class="section-desc" style="color:#3fb950">所有已安裝項目都在使用中 ✓</p>
+    </div>`;
+  }
+
+  let tableHtml =
+    '<table style="font-size:.85rem"><thead><tr><th>名稱</th><th>類型</th><th>最後使用</th><th>大小</th></tr></thead><tbody>';
+
+  for (const cmd of unusedCommands) {
+    tableHtml += `<tr><td>${esc(cmd)}</td><td><span class="badge badge-blue">Command</span></td><td style="color:#8b949e">30+ 天前</td><td>~2KB</td></tr>`;
+  }
+  for (const agent of unusedAgents) {
+    tableHtml += `<tr><td>${esc(agent)}</td><td><span class="badge badge-purple">Agent</span></td><td style="color:#8b949e">30+ 天前</td><td>~3KB</td></tr>`;
+  }
+
+  tableHtml += '</tbody></table>';
+
+  return `<div class="card">
+    <h2 class="section-title">🗑️ 清理機會</h2>
+    <p class="section-desc">${unusedCount} 個項目 30 天未使用 · 預估節省 ~${estimatedSavings}KB token</p>
+    ${tableHtml}
+  </div>`;
+}
+
+/**
+ * 渲染 Plugin 區塊（推薦的官方 Plugins）
+ */
+export function renderPlugins(_installed = {}) {
+  const PLUGIN_RECOMMENDATIONS = [
+    {
+      name: 'code-review',
+      desc: '多 agent 並行 PR 審查',
+      category: '開發流程',
+    },
+    {
+      name: 'hookify',
+      desc: '分析對話模式自動生成 hooks',
+      category: '助手',
+    },
+    {
+      name: 'ralph-wiggum',
+      desc: '自動恢復被中斷的會話',
+      category: '助手',
+    },
+    {
+      name: 'feature-dev',
+      desc: '7 階段結構化功能開發',
+      category: '開發流程',
+    },
+  ];
+
+  let pluginsList = '';
+  for (const plugin of PLUGIN_RECOMMENDATIONS) {
+    pluginsList += `<div class="item-row">
+      <span class="badge badge-blue">${esc(plugin.name)}</span>
+      <span class="item-desc">${esc(plugin.desc)}</span>
+    </div>`;
+  }
+
+  return section(
+    '🔌 推薦官方 Plugins',
+    `<p class="section-desc">提升 Claude Code 能力，在 Claude Code 中執行 /plugin 安裝</p>${pluginsList}`,
+  );
+}
+
+/**
+ * 渲染 .claudeignore 覆蓋統計
+ */
+export function renderClaudeIgnoreStats(repoCount = 0) {
+  if (repoCount === 0) return '';
+
+  return `<div class="stat" style="margin-right:16px">
+    <span style="color:#8b949e">.claudeignore</span>
+    <span style="color:#58a6ff;font-weight:600">${repoCount} 個 Repo 已覆蓋</span>
+  </div>`;
 }

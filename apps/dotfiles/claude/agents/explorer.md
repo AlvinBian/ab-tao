@@ -15,12 +15,16 @@ description: >
   assistant: "讓 explorer agent 搜尋所有引用。"
   </example>
 
+deprecated: true
+replacement: "官方 Explore subagent"
 model: haiku
 color: cyan
 tools: ["Read", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：官方 Explore subagent
 
 # Explorer Agent
 

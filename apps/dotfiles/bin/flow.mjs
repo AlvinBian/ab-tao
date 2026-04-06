@@ -189,7 +189,7 @@ function generateHTML(charts) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ab-dotfiles — 流程圖</title>
+  <title>ab-tao — 流程圖</title>
   <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
   <style>
     :root {
@@ -278,7 +278,7 @@ function generateHTML(charts) {
 <body>
   <div class="container">
     <nav class="sidebar">
-      <h1>ab-dotfiles v2.1</h1>
+      <h1>ab-tao v2.1</h1>
       <div class="subtitle">${charts.length} 張流程圖</div>
       ${navItems}
     </nav>

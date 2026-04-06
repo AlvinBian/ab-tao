@@ -18,7 +18,7 @@ import { stripAnsi } from '../cli/progress.mjs';
  * 階段名稱（phases 陣列）更新 spinner 訊息；
  * 打包失敗時以 warn 記錄但不中斷流程。
  *
- * @param {string} repoDir - ab-dotfiles 根目錄（腳本執行目錄）
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄（腳本執行目錄）
  * @param {Object} step - config.json 中的 step 定義
  * @param {string} step.script - 要執行的 shell 指令
  * @param {string[]} [step.phases] - 要追蹤的階段名稱陣列

@@ -20,7 +20,7 @@ import { BACK, smartSelect } from '../cli/prompts.mjs';
 /**
  * 執行 install-modules 步驟
  *
- * @param {string} repoDir - ab-dotfiles 根目錄
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
  * @param {string} previewDir - dist/preview 路徑
  * @param {Object} step - config.json 中的 step 定義
  * @param {string} stepLabel - 步驟前綴標籤（如 '[3/3] '）

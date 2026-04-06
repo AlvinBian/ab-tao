@@ -15,12 +15,16 @@ description: >
   assistant: "用 refactor 逐步遷移。"
   </example>
 
+deprecated: true
+replacement: "ECC refactor-cleaner"
 model: sonnet
 color: cyan
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：ECC refactor-cleaner
 
 你是重構專家。你的職責是：
 

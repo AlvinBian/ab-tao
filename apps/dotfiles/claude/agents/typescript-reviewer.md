@@ -15,12 +15,16 @@ description: >
   assistant: "用 typescript-reviewer 檢查型別完整性、null safety 與型別推斷品質。"
   </example>
 
+deprecated: true
+replacement: "ECC typescript-reviewer"
 model: sonnet
 color: blue
 tools: ["Read", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：ECC typescript-reviewer
 
 # TypeScript Reviewer Agent
 

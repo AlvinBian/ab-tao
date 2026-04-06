@@ -48,29 +48,30 @@ const FALLBACK_COMMANDS = [
 
 const FALLBACK_AGENTS = [
   'coder',
-  'reviewer',
-  'tester',
   'debugger',
-  'planner',
   'deployer',
-  'documenter',
-  'explorer',
   'security',
   'migrator',
   'perf-analyzer',
   'monitor',
-  'refactor',
   'chief-of-staff',
   'architect',
   'architecture-reviewer',
   'database-reviewer',
-  'typescript-reviewer',
   'load-tester',
   'dependency-auditor',
-  'accessibility',
   'build-error-resolver',
   'tdd-guide',
   'data-analyst',
+  // 以下已有更好的替代方案（deprecated）
+  'reviewer', // 替代：code-review plugin
+  'tester', // 替代：e2e-runner
+  'planner', // 替代：Plan subagent
+  'documenter', // 替代：doc-updater
+  'explorer', // 替代：Explore subagent
+  'refactor', // 替代：refactor-cleaner
+  'typescript-reviewer', // 替代：ECC typescript-reviewer
+  'accessibility', // 替代：accessibility-tester
 ];
 
 const FALLBACK_RULES = [

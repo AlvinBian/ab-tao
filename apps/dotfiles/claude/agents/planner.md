@@ -15,12 +15,16 @@ description: >
   assistant: "用 planner 分析現狀並規劃重構步驟。"
   </example>
 
+deprecated: true
+replacement: "官方 Plan subagent"
 model: opus
 color: yellow
 tools: ["Read", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：官方 Plan subagent
 
 你是架構規劃專家。你的職責是：
 

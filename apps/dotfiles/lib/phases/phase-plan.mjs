@@ -12,9 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { cloneDeep } from 'lodash-es';
+import { buildPlanSummary } from '../cli/plan-view.mjs';
 import { BACK, handleCancel, smartSelect } from '../cli/prompts.mjs';
 import { generateMinimalPlan } from '../config/auto-plan.mjs';
-import { descBullet } from '../config/descriptions.mjs';
 
 /**
  * 展示安裝計畫並讓用戶確認
@@ -41,177 +41,9 @@ export async function phasePlan(plan) {
     hasHooks: fs.existsSync(path.join(claudeDir, 'hooks.json')),
   };
 
-  // 網格排列：固定列寬，每行多個項目
-  const grid = (items, cols = 4, colWidth = 18, indent = '   ') => {
-    const rows = [];
-    for (let i = 0; i < items.length; i += cols) {
-      const row = items
-        .slice(i, i + cols)
-        .map((s) => s.padEnd(colWidth))
-        .join('');
-      rows.push(`${indent}${row.trimEnd()}`);
-    }
-    return rows;
-  };
-  // 短列表 inline
-  const _inline = (items, max = 8) => {
-    if (items.length <= max) return items.join('、');
-    return `${items.slice(0, max).join('、')}… +${items.length - max}`;
-  };
-
-  // 組裝計畫（摘要模式，細節在「逐項確認」中展開）
-  const lines = [];
-  const g = plan.global;
-
-  // 現有狀態
-  const existTotal = existing.commands.length + existing.agents.length + existing.rules.length;
-  if (existTotal > 0) {
-    const parts = [];
-    if (existing.commands.length) parts.push(`${existing.commands.length} cmd`);
-    if (existing.agents.length) parts.push(`${existing.agents.length} agent`);
-    if (existing.rules.length) parts.push(`${existing.rules.length} rule`);
-    const extras = [];
-    if (existing.hasSettings) extras.push('settings');
-    if (existing.hasHooks) extras.push('hooks');
-
-    lines.push(
-      `現有 ~/.claude/：${parts.join(' · ')}${extras.length ? ` · ${extras.join(' · ')}` : ''}`,
-    );
-  }
-  if (plan.profile) {
-    lines.push(`${plan.profile.role || '開發者'} — ${plan.profile.coreSkills?.join(' · ') || ''}`);
-  }
-  lines.push('');
-
-  // 1. Repos — 按組織分組
-  lines.push(
-    `1. Repos（${plan.mainCount} ⭐ 主力 · ${plan.tempCount} 🔄 臨時${plan.toolCount ? ` · ${plan.toolCount} 🔧 工具` : ''}）`,
-  );
-  const byOrg = {};
-  for (const r of plan.repos) {
-    const org = r.fullName.split('/')[0];
-    if (!byOrg[org]) byOrg[org] = [];
-    byOrg[org].push(r);
-  }
-  for (const [org, repos] of Object.entries(byOrg)) {
-    lines.push(`   ${org}`);
-    for (const r of repos) {
-      const icon = r.role === 'main' ? '⭐' : r.role === 'tool' ? '🔧' : '🔄';
-      const loc = r.localPath ? `~/${path.relative(HOME, r.localPath)}` : '未找到';
-      lines.push(`     ${icon} ${r.fullName.split('/')[1]}  ${loc}`);
-    }
-  }
-
-  // 2. 全局配置（grid 排列）
-  lines.push(`2. 全局配置 → ~/.claude/`);
-  lines.push(`   Commands（${g.commands.length}）`);
-  lines.push(...grid(g.commands));
-  lines.push(`   Agents（${g.agents.length}）`);
-  lines.push(...grid(g.agents));
-  lines.push(`   Rules（${g.rules.length}）`);
-  lines.push(...grid(g.rules, 3, 24));
-  lines.push(`   Hooks（${g.hooks.length}）`);
-  const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ['', h])[1]);
-  lines.push(...grid(hookNames, 4, 16));
-  lines.push(
-    `   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
-  );
-  lines.push(`   Model: ${g.settings.model} · AutoMemory`);
-
-  // 3. CLAUDE.md
-  if (plan.projects.length > 0) {
-    const mainPrj = plan.projects.filter((proj) => proj.claudeMdType === 'full');
-    const tempPrj = plan.projects.filter((proj) => proj.claudeMdType === 'concise');
-    const parts = [];
-    if (mainPrj.length) parts.push(`${mainPrj.length} AI 生成`);
-    if (tempPrj.length) parts.push(`${tempPrj.length} 靜態模板`);
-    lines.push(`3. CLAUDE.md（${parts.join(' + ')}）→ ~/.claude/projects/`);
-  }
-
-  // 4. Stacks（分類 + grid）
-  if (plan.techStacks.length > 0) {
-    const categorized = plan._pipelineResult?.categorizedTechs;
-    if (categorized instanceof Map && categorized.size > 0) {
-      lines.push(`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`);
-      for (const [cat, techMap] of categorized) {
-        const techs = [...techMap.keys()];
-        lines.push(`   ${cat}（${techs.length}）：${techs.join('、')}`);
-      }
-    } else {
-      lines.push(`4. 技術棧（${plan.techStacks.length}）`);
-      lines.push(...grid(plan.techStacks, 5, 16));
-    }
-  }
-
-  // 5. AI 外部資源（ECC + commons 已同步的所有來源）
-  if (plan.ecc.length > 0) {
-    const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
-    const eccByType = { commands: [], agents: [], rules: [] };
-    for (const name of plan.ecc) {
-      const clean = name.replace('.md', '');
-      const type =
-        eccTypeMap[clean] ||
-        (fs.existsSync(path.join(claudeDir, 'agents', `${clean}.md`)) ? 'agents' : null) ||
-        (fs.existsSync(path.join(claudeDir, 'rules', `${clean}.md`)) ? 'rules' : null) ||
-        'commands';
-      eccByType[type].push(clean);
-    }
-    lines.push(`5. 🌐 AI 外部資源（${plan.ecc.length} 個）`);
-    if (eccByType.commands.length) {
-      lines.push(`   5.1 Commands（${eccByType.commands.length}）`);
-      lines.push(...eccByType.commands.map((n) => descBullet(n, 'commands', claudeDir)));
-    }
-    if (eccByType.agents.length) {
-      lines.push(`   5.2 Agents（${eccByType.agents.length}）`);
-      lines.push(...eccByType.agents.map((n) => descBullet(n, 'agents', claudeDir)));
-    }
-    if (eccByType.rules.length) {
-      lines.push(`   5.3 Rules（${eccByType.rules.length}）`);
-      lines.push(...eccByType.rules.map((n) => descBullet(n, 'rules', claudeDir)));
-    }
-  }
-
-  // 5b. commons 匹配的 AI 來源（按技術棧篩選後）
-  const commSources = plan._pipelineResult?.commonsResources?.sources || [];
-  if (commSources.length > 0) {
-    const commTotal = commSources.reduce(
-      (s, src) =>
-        s + src.commands.length + src.agents.length + src.rules.length + src.skills.length,
-      0,
-    );
-    lines.push(`   🤖 技術棧匹配 AI 資源（${commSources.length} 個來源 · ${commTotal} 個資源）`);
-    for (const src of commSources) {
-      const parts = [];
-      if (src.commands.length) parts.push(`${src.commands.length} 指令`);
-      if (src.agents.length) parts.push(`${src.agents.length} 代理`);
-      if (src.rules.length) parts.push(`${src.rules.length} 規則`);
-      if (src.skills.length) parts.push(`${src.skills.length} 技能`);
-      if (parts.length) lines.push(`       · ${src.name} — ${parts.join(' · ')}`);
-    }
-  }
-
-  // 6. zsh（帶描述）
-  if (plan.zshModules.length > 0) {
-    lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
-    lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
-  }
-
-  // 變更 + 費用（一行）
-  const changes = [];
-  const newCmds = g.commands.filter((c) => !existing.commands.includes(c));
-  const newAgents = g.agents.filter((a) => !existing.agents.includes(a));
-  const newRules = g.rules.filter((r) => !existing.rules.includes(r));
-  if (newCmds.length) changes.push(`+${newCmds.length} cmd`);
-  if (newAgents.length) changes.push(`+${newAgents.length} agent`);
-  if (newRules.length) changes.push(`+${newRules.length} rule`);
-  if (!existing.hasSettings) changes.push('+settings');
-  else changes.push('合併 settings');
-  if (!existing.hasHooks) changes.push('+hooks');
-  else changes.push('合併 hooks');
-  lines.push('');
-  lines.push(`變更：${changes.join(' · ')} · AI ~$${plan.aiCost.total.toFixed(2)}`);
-
-  p.log.info(`安裝計畫\n${lines.join('\n')}`);
+  // 組裝計畫摘要
+  const summary = buildPlanSummary(plan, existing, HOME, claudeDir);
+  p.log.info(`安裝計畫\n${summary}`);
 
   // 選擇
   const action = handleCancel(

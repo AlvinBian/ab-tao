@@ -1,10 +1,7 @@
 ---
 name: tooling
-description: >
-  工具選擇與 Agent 編排：決策框架、何時用 Agent、並行 vs 串行。
-  極度精簡版，移除所有長篇幅範例。
-matchWhen:
-  always: true
+description: 工具選擇與 Agent 編排：決策框架、何時用 Agent、並行 vs 串行。
+user-invocable: false
 ---
 
 # Tooling

@@ -277,7 +277,7 @@ export async function interactiveRepoSelect(session = null) {
         const orgResult = await multiselectWithAll({
           message: `${org}（${oi + 1}/${repoOrgs.length}）`,
           options: orgItems,
-          initialValues: [],
+          initialValues: orgPre,
           required: false,
         });
         if (orgResult === BACK) return BACK;

@@ -3,7 +3,7 @@
 set -e
 
 cd "$(dirname "$0")/.."
-echo "=== ab-dotfiles Verification ==="
+echo "=== ab-tao Verification ==="
 
 # 1. JSON 合法性
 echo ""

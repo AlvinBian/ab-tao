@@ -12,6 +12,9 @@ import { BACK, smartSelect } from '../cli/prompts.mjs';
 /**
  * 通用選擇流程：發現項目 → smartSelect → 回傳選中清單
  *
+ * deprecated 項目在 flagAll 模式時被排除（不自動安裝），
+ * 但在互動模式下保留在可選列表中（讓用戶手動勾選）。
+ *
  * @param {string} repoDir
  * @param {Object} def - { dir, ext, filter, selectLabel }
  * @param {string} key - 選項 key（如 'commands'）
@@ -31,7 +34,10 @@ export async function selectItems(
   const items = discoverItems(repoDir, def.dir, def.ext, def.filter);
   if (items.length === 0) return [];
 
-  if (flagAll) return items.map((i) => i.value);
+  // flagAll 時排除 deprecated 項目（不自動安裝）
+  if (flagAll) {
+    return items.filter((i) => !i.deprecated).map((i) => i.value);
+  }
 
   const result = await smartSelect({
     title: `${stepLabel}${def.selectLabel || key}`,

@@ -14,7 +14,13 @@ import { ECC_DIR } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import { getDirname } from '../lib/core/paths.mjs';
-import { collectFullStatus, formatBytes, humanizeProjectPath } from '../lib/core/usage-scanner.mjs';
+import {
+  collectFullStatus,
+  estimateTokenSavings,
+  formatBytes,
+  humanizeProjectPath,
+  scanUsageStats,
+} from '../lib/core/usage-scanner.mjs';
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '..');
@@ -23,7 +29,7 @@ const CLAUDE_DIR = path.join(HOME, '.claude');
 const isReport = process.argv.includes('--report');
 
 async function main() {
-  p.intro(pc.bold('ab-dotfiles 配置管理中心'));
+  p.intro(pc.bold('ab-tao 配置管理中心'));
   const spinner = p.spinner();
   spinner.start('掃描使用數據（首次可能需要 10-30 秒）…');
   const data = await collectFullStatus();
@@ -153,6 +159,7 @@ async function showDetail(data) {
       },
       { value: 'plugins', label: `📦 Plugins (${data.plugins.length})` },
       { value: 'sessions', label: `📈 Sessions (${data.sessions.total})` },
+      { value: 'cleanup', label: `⏱️ 清理未使用配置（30天+）` },
       { value: 'env', label: `🔧 環境變數健康檢查` },
       { value: 'disk', label: `💾 備份與磁碟` },
       { value: 'back', label: '← 返回' },
@@ -270,6 +277,103 @@ async function showDetail(data) {
         console.log(`  ${pc.dim(humanizeProjectPath(proj))}  ${count} sessions`);
       }
       break;
+    case 'cleanup': {
+      console.log();
+      p.log.step(pc.bold('📊 清理建議 — 30天未使用'));
+      const spinner = p.spinner();
+      spinner.start('掃描使用統計…');
+      const usageStats = await scanUsageStats();
+      spinner.stop('掃描完成');
+
+      // 分類未使用項目
+      const staleItems = Array.from(usageStats.values()).filter((item) => item.stale);
+      const staleCommands = staleItems.filter((item) => item.type === 'command');
+      const staleAgents = staleItems.filter((item) => item.type === 'agent');
+
+      if (staleItems.length === 0) {
+        console.log(pc.green('✔ 沒有 30 天未使用的項目'));
+        break;
+      }
+
+      console.log();
+      console.log(`  未使用 (30天+)`);
+      if (staleCommands.length > 0)
+        console.log(`    ${pc.cyan('Commands:')} ${staleCommands.length} 個`);
+      if (staleAgents.length > 0) console.log(`    ${pc.cyan('Agents:')} ${staleAgents.length} 個`);
+      console.log();
+
+      // 估算節省
+      const savings = estimateTokenSavings(staleItems);
+      console.log(`  預估節省：${pc.cyan(`~${savings.kb} KB`)} token 消耗/session`);
+      console.log();
+
+      // 提示用戶是否要清理
+      const startCleanup = await p.confirm({
+        message: '要清理這些項目嗎？',
+      });
+
+      if (startCleanup) {
+        // 使用 multiselectWithAll 選擇要刪除的項目
+        const selected = await p.multiselect({
+          message: '選擇要刪除的項目（空格選擇，Enter 確認）',
+          options: [
+            ...staleCommands.map((item) => ({
+              value: `cmd:${item.name}`,
+              label: `${pc.cyan('⌨️')} /${item.name}  ${pc.dim(`${item.callCount} 次 · 最後: ${(item.lastUsed || '').slice(0, 10)}`)}`,
+            })),
+            ...staleAgents.map((item) => ({
+              value: `agent:${item.name}`,
+              label: `${pc.cyan('🤖')} @${item.name}  ${pc.dim(`${item.callCount} 次 · 最後: ${(item.lastUsed || '').slice(0, 10)}`)}`,
+            })),
+          ],
+          required: false,
+        });
+
+        if (!p.isCancel(selected) && selected.length > 0) {
+          // 顯示確認對話
+          const confirm = await p.confirm({
+            message: `確認刪除 ${selected.length} 個項目？（將備份到 dist/backup/）`,
+          });
+
+          if (confirm) {
+            const backupDir = path.join(
+              REPO,
+              'dist',
+              'backup',
+              `cleanup-${new Date().toISOString().slice(0, 10)}`,
+            );
+            fs.mkdirSync(backupDir, { recursive: true });
+
+            const commandsDir = path.join(CLAUDE_DIR, 'commands');
+            const agentsDir = path.join(CLAUDE_DIR, 'agents');
+
+            for (const item of selected) {
+              const [type, name] = item.split(':');
+              const sourceDir = type === 'cmd' ? commandsDir : agentsDir;
+              const sourceFile = path.join(sourceDir, `${name}.md`);
+
+              if (fs.existsSync(sourceFile)) {
+                // 備份
+                const backupFile = path.join(
+                  backupDir,
+                  `${type === 'cmd' ? 'cmd' : 'agent'}-${name}.md`,
+                );
+                fs.copyFileSync(sourceFile, backupFile);
+
+                // 刪除
+                fs.unlinkSync(sourceFile);
+                p.log.success(`已刪除並備份 ${type === 'cmd' ? '/' : '@'}${name}`);
+              }
+            }
+
+            console.log();
+            p.log.info(`備份位置：${backupDir}`);
+            p.log.success(`已清理 ${selected.length} 個項目`);
+          }
+        }
+      }
+      break;
+    }
     case 'env':
       console.log();
       p.log.step(pc.bold('🔧 環境變數健康檢查'));
@@ -479,7 +583,7 @@ async function manageConfig(data) {
       if (!p.isCancel(selected) && selected.length > 0) {
         const eccRulesDir = path.join(ECC_DIR, 'rules');
         for (const name of selected) {
-          const src = path.join(eccCategoryDir, `${name}.md`);
+          const src = path.join(eccRulesDir, `${name}.md`);
           const dest = path.join(rulesDir, `${name}.md`);
           if (fs.existsSync(src)) {
             fs.copyFileSync(src, dest);
@@ -757,7 +861,7 @@ async function generateHtmlReport(data) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ab-dotfiles 配置管理中心</title>
+<title>ab-tao 配置管理中心</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -780,7 +884,7 @@ async function generateHtmlReport(data) {
 </style>
 </head>
 <body class="p-6 max-w-7xl mx-auto">
-<h1 class="text-3xl font-bold mb-2">🛠️ ab-dotfiles 配置管理中心</h1>
+<h1 class="text-3xl font-bold mb-2">🛠️ ab-tao 配置管理中心</h1>
 <p class="text-gray-400 mb-6">掃描時間：${new Date().toLocaleString('zh-TW')}</p>
 
 <!-- 1. 總覽 -->

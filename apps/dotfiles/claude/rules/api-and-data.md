@@ -4,13 +4,19 @@ description: >
   API、資料庫、TypeScript 規範：條件式載入，只在相關路徑出現時載入。
 matchWhen:
   paths:
-    - "**/*.ts"
-    - "**/*.tsx"
+    - "src/api/**"
+    - "routes/**"
+    - "pages/api/**"
+    - "**/prisma/**"
+    - "**/drizzle/**"
+    - "**/*.entity.ts"
+    - "**/*.dto.ts"
+    - "**/*.entity.tsx"
+    - "**/*.dto.tsx"
     - "**/*.sql"
     - "**/migrations/**"
-    - "**/api/**"
-    - "**/routes/**"
-    - "**/schema*"
+    - "**/schema.ts"
+    - "**/schema.tsx"
 ---
 
 # API & Data Conventions

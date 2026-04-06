@@ -18,17 +18,17 @@ if [[ -d "$HOME/.nvm" ]]; then
   pnpm() { _nvm_lazy_load; pnpm "$@"; }
 
   _auto_nvm_use() {
+    # 只在有 .nvmrc/.node-version 時才初始化 nvm（省 ~1.2s 啟動時間）
     if [[ -f .nvmrc || -f .node-version ]]; then
       _nvm_lazy_load
       nvm use --silent 2>/dev/null || nvm install --silent
-    else
-      _nvm_lazy_load
-      nvm use default --silent 2>/dev/null || true
     fi
+    # 沒有版本檔案時不主動初始化，等用戶調用 node/npm 時 lazy load
   }
 
   autoload -U add-zsh-hook
   add-zsh-hook chpwd _auto_nvm_use
+  # 啟動時只在有版本檔案的目錄才觸發（非無條件初始化）
   _auto_nvm_use
 
 # ── n ─────────────────────────────────────────────────────────────

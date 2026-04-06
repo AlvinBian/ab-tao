@@ -77,7 +77,7 @@ export async function mergeHooksWithExisting(newHooks, settingsPath) {
           label: '合併（保留雙方，衝突用新版覆蓋）',
           hint: '推薦',
         },
-        { value: 'overwrite', label: '覆蓋（只用 ab-dotfiles 的 hooks）' },
+        { value: 'overwrite', label: '覆蓋（只用 ab-tao 的 hooks）' },
         { value: 'skip', label: '跳過（保留現有 hooks 不變）' },
       ],
     }),
