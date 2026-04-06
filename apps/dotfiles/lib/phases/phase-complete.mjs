@@ -188,6 +188,13 @@ export async function phaseComplete(
         }
       : null,
     installed,
+    commonsResources: (pipelineResult?.commonsResources?.sources || []).map((src) => ({
+      name: src.name,
+      commands: src.commands?.length || 0,
+      agents: src.agents?.length || 0,
+      rules: src.rules?.length || 0,
+      skills: src.skills?.length || 0,
+    })),
     stacks: plan.techStacks,
     projects: plan.projects || [],
     repoRoles: Object.fromEntries(
