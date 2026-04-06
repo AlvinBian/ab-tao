@@ -42,7 +42,11 @@ PROJECTS_DIR="$HOME/.claude/projects"
 IGNORE_FILE=""
 if [ -L "$PROJECTS_DIR/$ENCODED" ]; then
   TARGET=$(readlink "$PROJECTS_DIR/$ENCODED")
-  IGNORE_FILE="$PROJECTS_DIR/$TARGET/.claudeignore"
+  RESOLVED="$PROJECTS_DIR/$TARGET"
+  # 防止路徑穿越：確保解析後仍在 PROJECTS_DIR 內
+  case "$(cd "$RESOLVED" 2>/dev/null && pwd)" in
+    "$PROJECTS_DIR"*) IGNORE_FILE="$RESOLVED/.claudeignore" ;;
+  esac
 elif [ -d "$PROJECTS_DIR/$ENCODED" ]; then
   IGNORE_FILE="$PROJECTS_DIR/$ENCODED/.claudeignore"
 fi

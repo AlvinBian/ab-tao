@@ -23,7 +23,6 @@ import { Listr } from 'listr2';
 import { backupIfExists } from '../core/backup.mjs';
 import { updateSessionProgress } from '../core/session.mjs';
 import { generateAllRepoIndex } from '../deploy/deploy-index.mjs';
-import { deployAllClaudeignore } from '../deploy/deploy-project.mjs';
 import { buildClaudeTasks } from './execute/claude-tasks.mjs';
 import { buildPluginTasks } from './execute/install-plugin.mjs';
 import { buildZshTasks } from './execute/install-zsh.mjs';
@@ -110,40 +109,28 @@ export async function phaseExecute(
       {
         task: (_, outerTask) =>
           outerTask.newListr([...claudeTasks, ...pluginTasks, ...zshTasks], {
-            concurrent: false,
+            concurrent: true,
+            exitOnError: false,
           }),
       },
 
       // [1] .claudeignore + 預索引（合併一次迭代）
       {
-        title: `🚫 .claudeignore + 📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
+        title: `📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
         enabled: () => (plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
         task: async (_, subtask) => {
           const repos = (plan.repos || [])
             .filter((r) => r.localPath)
             .map((r) => ({ localPath: r.localPath, repo: r.fullName }));
 
-          // 合併執行：一次迭代同時部署 .claudeignore 和預索引
-          let claudeignoreCount = 0;
+          // .claudeignore 已由 deployAllProjectClaudeMd 內部處理，這裡只做預索引
           const indexedRepos = [];
-
           for (const { localPath, repo } of repos) {
-            // 部署 .claudeignore
-            const claudeignoreResult = deployAllClaudeignore([{ localPath, repo }]);
-            if (claudeignoreResult.count > 0) claudeignoreCount++;
-
-            // 生成預索引
             const indexResult = generateAllRepoIndex([{ localPath, repo }]);
             if (indexResult.count > 0) indexedRepos.push(repo.split('/').pop());
           }
 
-          // 組裝輸出訊息
           const parts = [];
-          if (claudeignoreCount > 0) {
-            parts.push(`🚫 .claudeignore：${claudeignoreCount} 個 repo`);
-          } else {
-            parts.push('🚫 .claudeignore：全部跳過（用戶自訂或無需忽略）');
-          }
 
           if (indexedRepos.length > 0) {
             parts.push(`📑 預索引：${indexedRepos.length} 個 repo`);

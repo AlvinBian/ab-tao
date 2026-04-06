@@ -70,13 +70,21 @@ function isGenerated(content) {
  * @param {string} repoFullName - org/repo 名稱（如 AlvinBian/ab-tao）
  * @returns {{ deployed: boolean, path: string, repoDeployed: boolean, skipped?: string }}
  */
-export function deployProjectClaudeMd(localPath, claudeMdContent, repoFullName) {
-  if (!localPath || !claudeMdContent || !repoFullName) {
+export function deployProjectClaudeMd(localPath, claudeMdContent, repoFullName = '') {
+  if (!localPath || !claudeMdContent) {
     return { deployed: false, repoDeployed: false, path: '', skipped: 'no content' };
   }
 
-  // 1. 寫入 ~/.claude/projects/{org}/{repo}/
-  const projectDir = ensureProjectDir(localPath, repoFullName);
+  // 1. 寫入 ~/.claude/projects/
+  let projectDir;
+  if (repoFullName) {
+    projectDir = ensureProjectDir(localPath, repoFullName);
+  } else {
+    // fallback：無 repoFullName 時用 path-encoded 格式
+    const encoded = encodeProjectPath(localPath);
+    projectDir = path.join(PROJECTS_DIR, encoded);
+    fs.mkdirSync(projectDir, { recursive: true });
+  }
   const claudeMdPath = path.join(projectDir, 'CLAUDE.md');
 
   if (fs.existsSync(claudeMdPath)) {

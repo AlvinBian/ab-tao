@@ -10,9 +10,12 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
-MODEL=$(echo "$input" | jq -r '.model.display_name // "?"' 2>/dev/null)
-PCT=$(echo "$input" | jq -r '.context_window.used_percentage // 0' 2>/dev/null | cut -d. -f1)
-COST=$(echo "$input" | jq -r '.cost.total_cost_usd // 0' 2>/dev/null)
+# 單次 jq 調用提取所有欄位（省 2 次進程啟動 ~120ms）
+read -r MODEL PCT COST <<< "$(echo "$input" | jq -r '
+  (.model.display_name // "?") + " " +
+  ((.context_window.used_percentage // 0) | floor | tostring) + " " +
+  ((.cost.total_cost_usd // 0) | tostring)
+' 2>/dev/null)"
 
 # 防禦：確保 PCT 是整數
 PCT="${PCT:-0}"
@@ -30,5 +33,5 @@ BAR=""
 [ "$FILLED" -gt 0 ] && printf -v F "%${FILLED}s" && BAR="${F// /█}"
 [ "$EMPTY" -gt 0 ] && printf -v E "%${EMPTY}s" && BAR="${BAR}${E// /░}"
 
-COST_FMT=$(printf '$%.2f' "$COST")
+COST_FMT=$(printf '$%.2f' "${COST:-0}")
 printf "%b" "[$MODEL] ${C}${BAR}${R} ${PCT}% | ${COST_FMT}"

@@ -11,16 +11,21 @@ if [[ -d "$HOME/.nvm" ]]; then
     # 有 default alias → 解析版本號
     _NVM_DEFAULT_VER=$(cat "$_NVM_DEFAULT_DIR" | tr -d '[:space:]')
   fi
-  # 找到實際的 node 二進制路徑
+  # 找到實際的 node 二進制路徑（用 glob 遍歷替代 sort -V，省 200ms）
   _NVM_NODE_DIR=""
   if [[ -n "$_NVM_DEFAULT_VER" ]]; then
-    # 嘗試精確匹配
-    _NVM_NODE_DIR=$(ls -d "$NVM_DIR/versions/node/v${_NVM_DEFAULT_VER}"* 2>/dev/null | sort -V | tail -1)
+    # 嘗試精確匹配 default alias
+    for _d in "$NVM_DIR/versions/node/v${_NVM_DEFAULT_VER}"*(N); do
+      [[ -d "$_d/bin" ]] && _NVM_NODE_DIR="$_d"
+    done
   fi
   if [[ -z "$_NVM_NODE_DIR" ]]; then
-    # 沒有 default → 取最新已安裝版本
-    _NVM_NODE_DIR=$(ls -d "$NVM_DIR/versions/node"/v* 2>/dev/null | sort -V | tail -1)
+    # 沒有 default → 取最新已安裝版本（glob 自動按字母排序，最後一個即最新）
+    for _d in "$NVM_DIR/versions/node"/v*(N); do
+      [[ -d "$_d/bin" ]] && _NVM_NODE_DIR="$_d"
+    done
   fi
+  unset _d
   if [[ -n "$_NVM_NODE_DIR" && -d "$_NVM_NODE_DIR/bin" ]]; then
     # 直接加 PATH，不需要 source nvm.sh（省 ~1s）
     [[ ":$PATH:" != *":$_NVM_NODE_DIR/bin:"* ]] && export PATH="$_NVM_NODE_DIR/bin:$PATH"
