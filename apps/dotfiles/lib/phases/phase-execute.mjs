@@ -32,7 +32,7 @@ import { updateSessionProgress } from '../core/session.mjs';
 import { deploySettings } from '../deploy/deploy-global.mjs';
 import { deployAllProjectClaudeMd } from '../deploy/deploy-project.mjs';
 import { generateClaudeMd } from '../deploy/generate-claude-md.mjs';
-import { buildSyncResult, writeSyncedFiles } from '../external/source-sync.mjs';
+import { buildSyncResult, writeSkillFiles, writeSyncedFiles } from '../external/source-sync.mjs';
 import { runTarget } from '../install/index.mjs';
 
 /**
@@ -404,11 +404,45 @@ export async function phaseExecute(
                                               : `已融合 ${added} 個檔案`;
                                           }
 
-                                          // commons 資源由推薦流程篩選後安裝（不再全量倒入）
+                                          // 安裝 commons 篩選後的資源（技術棧匹配）
                                           const commSources =
                                             pipelineResult?.commonsResources?.sources || [];
                                           if (commSources.length > 0) {
-                                            const total = commSources.reduce(
+                                            // 安裝 commands/agents/rules
+                                            const downloaded = commSources.map((src) => ({
+                                              source: src.name,
+                                              commands: src.commands || [],
+                                              agents: src.agents || [],
+                                              rules: src.rules || [],
+                                              hooks: null,
+                                            }));
+                                            const claudePreview = path.join(previewDir, 'claude');
+                                            await writeSyncedFiles(downloaded, claudePreview);
+                                            if (!isManual) {
+                                              await writeSyncedFiles(
+                                                downloaded,
+                                                path.join(HOME, '.claude'),
+                                              );
+                                            }
+
+                                            // 安裝 skills（SKILL.md 格式）
+                                            const skillSources = commSources.filter(
+                                              (s) => s.skills?.length > 0,
+                                            );
+                                            if (skillSources.length > 0) {
+                                              await writeSkillFiles(
+                                                skillSources,
+                                                path.join(previewDir, 'claude'),
+                                              );
+                                              if (!isManual) {
+                                                await writeSkillFiles(
+                                                  skillSources,
+                                                  path.join(HOME, '.claude'),
+                                                );
+                                              }
+                                            }
+
+                                            const commTotal = commSources.reduce(
                                               (s, src) =>
                                                 s +
                                                 src.commands.length +
@@ -417,7 +451,7 @@ export async function phaseExecute(
                                                 src.skills.length,
                                               0,
                                             );
-                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}${commSources.length} 個 AI 來源可用（${total} 個資源）`;
+                                            sub.output = `${sub.output || ''}${sub.output ? ' · ' : ''}已安裝 ${commSources.length} 個 AI 來源（${commTotal} 個資源）`;
                                           }
                                           if (!sub.output) sub.output = '無 AI 資源';
                                         },
