@@ -2,13 +2,9 @@
 
 /**
  * dotfiles 指令定義與執行
- *
- * 用途：
- *   1. 被 root package.json 直接呼叫（"d:setup": "node apps/dotfiles/commands.mjs"）
- *   2. 被 help.mjs 匯入讀取指令清單
  */
 
-import { execSync } from 'node:child_process';
+import { run } from '../../scripts/run-pkg.mjs';
 
 export const pkg = '@ab-tao/dotfiles';
 
@@ -25,17 +21,4 @@ export const commands = {
 
 export const aliases = {};
 
-// ── 直接執行時，從 npm_lifecycle_event 解析指令 ──────────────────
-const event = process.env.npm_lifecycle_event;
-if (event?.includes(':')) {
-  const cmd = event.slice(event.indexOf(':') + 1);
-  const extra = process.argv.slice(2).join(' ');
-  const full = extra
-    ? `pnpm --filter ${pkg} run ${cmd} -- ${extra}`
-    : `pnpm --filter ${pkg} run ${cmd}`;
-  try {
-    execSync(full, { stdio: 'inherit' });
-  } catch {
-    process.exit(1);
-  }
-}
+run(pkg, aliases);
