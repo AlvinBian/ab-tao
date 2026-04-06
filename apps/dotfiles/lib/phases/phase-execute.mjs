@@ -580,7 +580,7 @@ export async function phaseExecute(
                   ),
               },
             ],
-            { concurrent: true },
+            { concurrent: false },
           ),
       },
 
