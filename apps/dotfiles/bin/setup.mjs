@@ -478,26 +478,14 @@ async function main() {
   // ── 外部服務設定 ──
   const setupResults = [];
 
-  // Slack 通知設定
+  // Slack 通知設定（先暫存，安裝成功後才寫入 .env）
+  let pendingSlackConfig = null;
   if (has('slack')) {
     p.log.step(pc.bold('Slack 通知設定'));
     const { setupSlackNotify } = await import('../lib/external/slack-setup.mjs');
     const slackResult = await setupSlackNotify(prev);
     if (slackResult) {
-      const envPath = path.join(REPO, '.env');
-      let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
-      envContent = envContent
-        .replace(/^SLACK_[A-Z_]+=.*/gm, '') // 清除所有 SLACK_ 開頭變數（含舊版）
-        .replace(/^CLAUDE_SLACK_MIN_SESSION_SECS=.*/gm, '') // 清除 session 閾值（重寫）
-        .replace(/\n{3,}/g, '\n\n') // 清除連續空行
-        .trim();
-      envContent += `\nSLACK_NOTIFY_CHANNEL=${slackResult.channelId}\nSLACK_NOTIFY_MODE=${slackResult.mode}`;
-      if (slackResult.channelName)
-        envContent += `\nSLACK_NOTIFY_CHANNEL_NAME=${slackResult.channelName}`;
-      if (slackResult.userId) envContent += `\nSLACK_NOTIFY_USER_ID=${slackResult.userId}`;
-      envContent += `\nCLAUDE_SLACK_MIN_SESSION_SECS=${env('CLAUDE_SLACK_MIN_SESSION_SECS', '300')}`;
-      envContent += '\n';
-      fs.writeFileSync(envPath, envContent);
+      pendingSlackConfig = slackResult;
       if (!prev) prev = {};
       prev.slackChannel = slackResult.channelId;
       prev.slackChannelName = slackResult.channelName || '';
@@ -780,6 +768,25 @@ async function main() {
       pipelineResult: confirmedPlan._pipelineResult || null,
       fetchedSources: confirmedPlan._fetchedSources || null,
     });
+
+    // 安裝成功 — 寫入暫存的 Slack 配置
+    if (pendingSlackConfig) {
+      const envPath = path.join(REPO, '.env');
+      let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+      envContent = envContent
+        .replace(/^SLACK_[A-Z_]+=.*/gm, '')
+        .replace(/^CLAUDE_SLACK_MIN_SESSION_SECS=.*/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      envContent += `\nSLACK_NOTIFY_CHANNEL=${pendingSlackConfig.channelId}\nSLACK_NOTIFY_MODE=${pendingSlackConfig.mode}`;
+      if (pendingSlackConfig.channelName)
+        envContent += `\nSLACK_NOTIFY_CHANNEL_NAME=${pendingSlackConfig.channelName}`;
+      if (pendingSlackConfig.userId)
+        envContent += `\nSLACK_NOTIFY_USER_ID=${pendingSlackConfig.userId}`;
+      envContent += `\nCLAUDE_SLACK_MIN_SESSION_SECS=${env('CLAUDE_SLACK_MIN_SESSION_SECS', '300')}`;
+      envContent += '\n';
+      fs.writeFileSync(envPath, envContent);
+    }
 
     // Step 3：完成
     phaseHeader('✅ 完成', 3, 3);
