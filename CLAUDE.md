@@ -12,11 +12,12 @@ Turborepo monorepo — dotfiles 環境管理 + 共用資源庫。
 ## 架構
 
 ```
-apps/dotfiles/     — @ab-tao/dotfiles — 環境配置、系統部署
-packages/commons/  — @ab-tao/commons  — 工具庫、AI 資源同步、技術偵測
+apps/dotfiles/      — @ab-tao/dotfiles  — 智能篩選、互動安裝、動態配置
+packages/commons/   — @ab-tao/commons   — 純資源池：同步、驗證、提供 API
+packages/share/     — @ab-tao/share     — 共用工具庫：utils/libs
 ```
 
-dotfiles 依賴 commons（`@ab-tao/commons: workspace:*`），單向依賴。
+職責分離：commons 只同步資源 → dotfiles 按技術棧篩選 → 只安裝匹配的。
 
 ## 指令（簡稱：d = dotfiles · c = commons）
 

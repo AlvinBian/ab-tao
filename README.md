@@ -81,12 +81,12 @@ pnpm run release          # 構建 + 發布
 
 ## packages/commons
 
-共用工具層，提供：
+**純資源池** — 只負責同步、驗證、提供 API，不直接安裝到 `~/.claude/`：
 
 - **資源同步引擎** — 7 個外部 AI 來源，支援多選 / 全選 / 跳過
-- **安全驗證器** — eval/Function/sudo/rm-rf 攔截、512KB 檔案限制、路徑遍歷檢查、SHA256 checksum（文件檔為警告模式）
+- **安全驗證器** — eval/Function/sudo/rm-rf 攔截、512KB 檔案限制、SHA256 checksum（文件檔為警告模式）
 - **版本追蹤** — `.versions.json` 記錄 commit SHA，支援版本鎖定
-- **技術棧偵測** — 自動偵測專案使用的技術，動態載入對應資源
+- **技術棧偵測** — TECH_TO_LANG 映射，供 dotfiles 篩選匹配資源
 - **運行時同步** — 7 天 TTL 快取，過期自動觸發同步
 
 ### AI 資源來源
@@ -109,8 +109,8 @@ pnpm run release          # 構建 + 發布
 - **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢
 - **Claude Code 配置生成** — 29 commands + 24 agents + rules + hooks
 - **ZSH 模組化環境** — 10 個模組（aliases, git, fzf, nvm, completion...）
-- **ECC 資源整合** — everything-claude-code 外部資源同步與翻譯
-- **Pipeline 架構** — Tier 1 並行抓取 → Tier 2 AI 分類 → 合併去重 → 推薦
+- **智能資源篩選** — 從 commons 資源池中按技術棧動態匹配，只安裝需要的
+- **Pipeline 架構** — Tier 1 並行抓取 → Tier 2 AI 分類 → 技術棧篩選 → 推薦安裝
 
 ## CI/CD
 
