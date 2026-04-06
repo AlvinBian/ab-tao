@@ -9,7 +9,10 @@
     "pnpm": ">=9"
   },
   "exports": {
-    "./run": "./scripts/run-pkg.mjs"
+    "./run": "./scripts/run-pkg.mjs",
+    "./fs": "./scripts/shared/fs.mjs",
+    "./log": "./scripts/shared/log.mjs",
+    "./shell": "./scripts/shared/shell.mjs"
   },
   "scripts": {
     "help": "node scripts/help.mjs",
