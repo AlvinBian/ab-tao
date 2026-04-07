@@ -80,6 +80,7 @@ pnpm run help              # 查看所有指令
 |------|------|
 | `pnpm run cheatsheet:update` | 從原站同步最新版並轉換繁體中文 |
 | `pnpm run cheatsheet:force` | 強制更新（忽略版本比對） |
+| `pnpm run cheatsheet:open` | 在瀏覽器開啟本地 HTML 版本 |
 
 ### 版本與發布
 
