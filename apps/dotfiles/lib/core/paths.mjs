@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 /**
  * HOME 目錄 — 唯一取得來源，所有模組統一由此匯入
  */
-export const HOME = process.env.HOME || os.homedir();
+export const HOME = os.homedir();
 
 /**
  * 取得 ESM 模組所在目錄的絕對路徑（取代 CommonJS 的 __dirname）

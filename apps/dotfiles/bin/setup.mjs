@@ -49,7 +49,8 @@ async function ensureSetupEnvironment() {
 
 	// 環境檢查 + 預熱 CLI
 	phaseHeader("🔍 環境檢查");
-	await ensureEnvironment();
+	const envReady = await ensureEnvironment();
+	if (!envReady) return;
 	warmupCli();
 }
 

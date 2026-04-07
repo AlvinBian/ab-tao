@@ -218,9 +218,10 @@ export async function smartSelect({
 	}
 	options.push({ value: "back", label: `← 上一步  ${pc.dim("ESC 也可以")}` });
 
+	const shortTitle = title.length > 50 ? `${title.slice(0, 47)}...` : title;
 	const action = await handleCancel(
 		await p.select({
-			message: `${title}  ↑↓ 選擇 · Enter 確認 · ESC 上一步`,
+			message: `${shortTitle}  ↑↓ 選擇 · Enter 確認 · ESC 上一步`,
 			options,
 		}),
 	);

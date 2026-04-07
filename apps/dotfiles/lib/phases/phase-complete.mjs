@@ -44,6 +44,24 @@ function detectClaudeMem() {
 	}
 }
 
+/** 可選增強工具配置（模組級常數） */
+const ENHANCERS = [
+	{
+		name: "RTK",
+		desc: "壓縮 Bash 輸出 -89% token，安裝後自動生效，無需改變操作習慣",
+		install: `export PATH="$HOME/.local/bin:$PATH" && curl -fsSL https://rtk.sh | bash && rtk init -g`,
+		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
+		detect: detectRtk,
+	},
+	{
+		name: "Claude-Mem",
+		desc: "跨會話記憶，開新視窗也記得你的背景與偏好",
+		install: "pnpm add -g claude-mem && claude-mem install",
+		doneHint: "已就緒，執行 claude-mem save 可儲存對話記憶",
+		detect: detectClaudeMem,
+	},
+];
+
 /**
  * 執行安裝完成後的收尾工作
  *
@@ -218,6 +236,7 @@ export async function phaseComplete(
 	const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
 
 	// 第一層：Token 優化（強烈推薦）
+	const [rtk, claudeMem] = ENHANCERS;
 	const tier1 = [
 		"  ── Token 優化（強烈推薦）──",
 		"  Claude 每次對話都有 token 上限，以下兩個工具可大幅降低消耗、加快回應、節省費用",
@@ -226,13 +245,13 @@ export async function phaseComplete(
 		"    問題：git log、npm install、grep 等指令輸出動輒數千行，讓 Claude 讀完浪費大量 token",
 		"    效果：自動截短並摘要 100+ 常用命令輸出，平均壓縮 -89% token 消耗",
 		"    使用：安裝後自動生效，無需改變任何操作習慣",
-		"    安裝：curl -fsSL https://rtk.sh | bash && rtk init -g",
+		`    安裝：${rtk.install}`,
 		"",
 		"  ● Claude-Mem（跨會話記憶管理器）",
 		"    問題：每次開新視窗 Claude 都完全「失憶」，重複解釋背景、偏好設定耗費時間與 token",
 		"    效果：自動儲存對話關鍵點，下次啟動時語義搜索載入相關記憶，維持持續工作背景",
 		"    使用：claude-mem save 儲存記憶，Claude 啟動時自動讀取",
-		"    安裝：pnpm add -g claude-mem && claude-mem install",
+		`    安裝：${claudeMem.install}`,
 	];
 
 	// 第二層：官方 Plugins
@@ -269,22 +288,6 @@ export async function phaseComplete(
 	p.log.info(recommendationLines.join("\n"));
 
 	// 增強工具：RTK / Claude-Mem — 偵測未安裝的項目，提供多選安裝
-	const ENHANCERS = [
-		{
-			name: "RTK",
-			desc: "壓縮 Bash 輸出 -89% token，安裝後自動生效，無需改變操作習慣",
-			install: "curl -fsSL https://rtk.sh | bash && rtk init -g",
-			doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
-			detect: detectRtk,
-		},
-		{
-			name: "Claude-Mem",
-			desc: "跨會話記憶，開新視窗也記得你的背景與偏好",
-			install: "pnpm add -g claude-mem && claude-mem install",
-			doneHint: "已就緒，執行 claude-mem save 可儲存對話記憶",
-			detect: detectClaudeMem,
-		},
-	];
 	const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
 
 	if (!isEmpty(missingEnhancers)) {
@@ -316,7 +319,7 @@ export async function phaseComplete(
 				try {
 					execSync(tool.install, {
 						stdio: "pipe",
-						timeout: 60000,
+						timeout: 180000,
 						shell: true,
 					});
 					s.stop(`${pc.green("✔")} ${tool.name} ${tool.doneHint}`);
@@ -328,6 +331,8 @@ export async function phaseComplete(
 					);
 				}
 			}
+		} else if (toInstall !== BACK) {
+			p.log.info("已跳過增強工具");
 		}
 	}
 

@@ -144,7 +144,7 @@ export async function interactiveRepoSelect(session = null) {
 	}
 	if (isEmpty(allRepos)) {
 		s1.stop("無法取得倉庫列表");
-		return [];
+		return BACK;
 	}
 	s1.stop(
 		`找到 ${pc.green(allRepos.length)} 個倉庫（${selectedSources.join(" + ")}）`,
@@ -185,7 +185,7 @@ export async function interactiveRepoSelect(session = null) {
 
 	if (isEmpty(allRepos)) {
 		p.log.warn("沒有找到倉庫");
-		return [];
+		return BACK;
 	}
 
 	// 6. 按組織分組，組內按貢獻度排序

@@ -59,7 +59,7 @@ function ver(cmd, flag = "--version") {
 
 function run(cmd) {
 	try {
-		execSync(cmd, { stdio: "inherit" });
+		execSync(cmd, { stdio: "inherit", shell: true, timeout: 300000 });
 		return true;
 	} catch {
 		return false;
@@ -198,8 +198,11 @@ export async function ensureEnvironment() {
 	if (isEmpty(missing)) {
 		const cleanVer = (v) => v?.match(/[\d.]+/)?.[0] || "";
 		const info = checks
-			.filter((c) => c.ver)
-			.map((c) => `${c.name} ${pc.dim(cleanVer(c.ver))}`)
+			.map((c) =>
+				c.ver
+					? `${c.name} ${pc.dim(cleanVer(c.ver))}`
+					: `${c.name} ${pc.dim("✔")}`,
+			)
 			.join(" · ");
 		p.log.success(`✅ 環境檢查通過  ${info}`);
 		return true;
