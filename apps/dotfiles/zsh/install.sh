@@ -166,16 +166,25 @@ if [[ -f ~/.zshrc ]]; then
   if ! diff -q ~/.zshrc "$ZSH_DIR/zshrc" > /dev/null 2>&1; then
     cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
     info "原 .zshrc 已備份"
+
+    # 讀取 .env 的 BACKUP_MAX_COUNT（與 JS 層共用同一個設定，預設 10）
+    local _max_count=10
+    local _env_file="$REPO_DIR/.env"
+    if [[ -f "$_env_file" ]]; then
+      local _val
+      _val=$(grep -E '^BACKUP_MAX_COUNT=[0-9]+$' "$_env_file" | cut -d= -f2)
+      [[ -n "$_val" ]] && _max_count=$_val
+    fi
+
+    # 超出 BACKUP_MAX_COUNT 時刪除最舊的備份
+    local _backups=("${(@f)$(ls -t "$HOME"/.zshrc.backup.* 2>/dev/null)}")
+    if (( ${#_backups[@]} > _max_count )); then
+      local _to_delete=(${_backups[@]:$_max_count})
+      rm -f "${_to_delete[@]}"
+      info ".zshrc 備份已清理（上限 ${_max_count} 份，刪除 ${#_to_delete[@]} 份）"
+    fi
   else
     info "~/.zshrc 無變更，略過備份"
-  fi
-
-  # 過期清理：刪除 30 天以前的備份（防止意外殘留）
-  local _expired
-  _expired=$(find "$HOME" -maxdepth 1 -name '.zshrc.backup.*' -mtime +30 2>/dev/null)
-  if [[ -n "$_expired" ]]; then
-    echo "$_expired" | xargs rm -f
-    info "已清理 30 天前過期備份"
   fi
 
   # 自動遷移：從舊 .zshrc 提取個人設定到 ~/.zshrc.local（不會被覆蓋）
