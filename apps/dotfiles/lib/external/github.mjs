@@ -154,6 +154,48 @@ export function ghSync(apiPath, jqExpr = null) {
 }
 
 /**
+ * 取得特定用戶在 repo 的 commit 總數（單次 API 呼叫）
+ *
+ * 利用 per_page=1 + Link header 的 last 頁碼推算總數，
+ * 無需分頁抓取，精確且高效。
+ *
+ * @param {string} repoFullName - 'owner/repo' 格式
+ * @param {string} username - GitHub 用戶名
+ * @returns {Promise<number>} commit 總數，查詢失敗返回 0
+ */
+export async function getAuthorCommitCount(repoFullName, username) {
+	const token = await getToken();
+	if (!token) return 0;
+	try {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+		const res = await fetch(
+			`https://api.github.com/repos/${repoFullName}/commits?author=${encodeURIComponent(username)}&per_page=1`,
+			{
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: "application/vnd.github+json",
+				},
+				signal: controller.signal,
+			},
+		);
+		clearTimeout(timer);
+		if (!res.ok) return 0;
+
+		// Link: <...?page=N>; rel="last" → N 即總數
+		const link = res.headers.get("link") || "";
+		const match = link.match(/[?&]page=(\d+)>;\s*rel="last"/);
+		if (match) return parseInt(match[1], 10);
+
+		// 無 Link header 代表只有一頁，直接數 body 長度
+		const data = await res.json();
+		return Array.isArray(data) ? data.length : 0;
+	} catch {
+		return 0;
+	}
+}
+
+/**
  * GitHub API 同步封裝（自動翻頁，抓取所有資料）
  *
  * 使用 --paginate 抓取所有分頁，適用於 repo 列表等可能超過 100 筆的資料。

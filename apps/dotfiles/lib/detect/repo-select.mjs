@@ -29,8 +29,11 @@ import {
 	GH_CONCURRENCY,
 	GH_PER_PAGE,
 } from "../core/constants.mjs";
-import { ghSync, ghSyncPaginate } from "../external/github.mjs";
-import { ghAsync } from "./skill-detect.mjs";
+import {
+	getAuthorCommitCount,
+	ghSync,
+	ghSyncPaginate,
+} from "../external/github.mjs";
 
 /**
  * 互動式選擇 GitHub 倉庫
@@ -159,15 +162,7 @@ export async function interactiveRepoSelect(session = null) {
 	await pMap(
 		allRepos,
 		async (repo) => {
-			try {
-				const raw = await ghAsync(
-					`repos/${repo.fullName}/commits?author=${username}&per_page=100`,
-					"length",
-				);
-				if (raw) repo.commits = parseInt(raw, 10) || 0;
-			} catch {
-				/* skip failed repos */
-			}
+			repo.commits = await getAuthorCommitCount(repo.fullName, username);
 		},
 		{ concurrency: GH_CONCURRENCY },
 	);
