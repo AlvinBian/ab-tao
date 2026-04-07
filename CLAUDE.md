@@ -13,6 +13,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ```
 apps/dotfiles/      — @ab-tao/dotfiles  — 智能篩選、互動安裝、動態配置
+apps/cheatsheet/    — Claude Code 快速參考表（繁體中文 GitHub Pages）
 packages/commons/   — @ab-tao/commons   — 純資源池：同步、驗證、提供 API
 packages/share/     — @ab-tao/share     — 共用工具庫：utils/libs
 ```
@@ -31,13 +32,20 @@ pnpm run format            # 格式化
 pnpm run d:setup           # 互動式環境部署
 pnpm run d:scan            # 技術棧掃描
 pnpm run d:doctor          # 環境診斷
-pnpm run d:status          # 配置儀表板（含使用監控 + 清理）
+pnpm run d:status          # 配置儀表板
+pnpm run d:report          # 瀏覽器 HTML Dashboard
 pnpm run d:restore         # 還原備份
+pnpm run d:hooks           # Hook 管理
+pnpm run d:uninstall       # 移除 ab-tao
 
 pnpm run c:sync            # 列出 AI 來源（預設不同步）
 pnpm run c:sync:select     # 互動式選擇同步
 pnpm run c:sync:all        # 同步全部 7 個來源
 pnpm run c:validate        # 驗證資源結構
+
+pnpm run cheatsheet:update # 從原站同步最新版
+pnpm run cheatsheet:force  # 強制更新（忽略版本比對）
+pnpm run cheatsheet:open   # 在瀏覽器開啟本地 HTML 版本
 ```
 
 ## v1.0.0 架構：智能配置精靈 + 最佳輪子編排

@@ -1,7 +1,5 @@
 # ab-tao
 
-[English](README_EN.md) | [简体中文](README_CN.md) | **繁體中文**
-
 Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ## 架構
@@ -12,10 +10,11 @@ ab-tao/
 │   ├── dotfiles/          @ab-tao/dotfiles — 環境配置、系統部署
 │   └── cheatsheet/        Claude Code 快速參考表（繁體中文 GitHub Pages）
 └── packages/
-    └── commons/           @ab-tao/commons  — 工具庫、AI 資源同步、技術偵測
+    ├── commons/           @ab-tao/commons  — AI 資源同步、安全驗證、技術偵測
+    └── share/             @ab-tao/share    — 共用工具庫（utils/libs/run/log）
 ```
 
-`dotfiles` 依賴 `commons`（`workspace:*`），單向依賴，職責分離。
+`dotfiles` 依賴 `commons` 與 `share`（`workspace:*`），單向依賴，職責分離。
 
 ## 技術棧
 
@@ -104,7 +103,6 @@ pnpm run release          # 構建 + 發布
 | 資源 | 說明 |
 |------|------|
 | [Claude Code 快速參考表（繁體中文）](https://alvinbian.github.io/ab-tao/) | 完整快速參考表網頁版，每日自動同步 |
-| [claude-code-cheatsheet.md](apps/dotfiles/docs/claude-code-cheatsheet.md) | 快速參考表 Markdown 版（備用） |
 | [原始來源 cc.storyfox.cz](https://cc.storyfox.cz/) | 英文原版，by @phasE89 |
 
 ### 整合指南
@@ -159,7 +157,7 @@ pnpm run release          # 構建 + 發布
 
 環境配置層（v1.0.0）：
 
-- **互動式安裝精靈** — 5 階段部署（分析 → 規劃 → 執行 → 完成）
+- **互動式安裝精靈** — 5 階段部署（環境檢查 → 分析 → 確認計畫 → 執行 → 完成）
 - **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢
 - **Claude Code 配置生成** — 29 commands + 24 agents + rules + hooks
 - **ZSH 模組化環境** — 10 個模組（aliases, git, fzf, nvm, completion...）
@@ -205,10 +203,9 @@ git checkout main && git checkout -b hotfix/xxx
 
 | Workflow | 觸發 | 說明 |
 |----------|------|------|
-| **CI** | push/PR → main | lint + build + test |
+| **CI** | push → main | lint + build + test + 資源同步驗證 |
 | **GitFlow** | PR + push + tag | 分支校驗 + PR 來源校驗 + commit 校驗 + Release |
 | **Sync** | 每週一 03:00 UTC | 自動同步外部 AI 資源 |
-| **Translate** | README.md 變更 | 自動翻譯 EN + zh-CN |
 | **Cheatsheet** | 每日 03:00 UTC | 同步 Claude Code 快速參考表並部署至 GitHub Pages |
 
 ## License
