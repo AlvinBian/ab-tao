@@ -103,7 +103,7 @@ pnpm run release          # 構建 + 發布
 
 ## apps/dotfiles
 
-環境配置層（ab-tao v2.1.0）：
+環境配置層（v1.0.0）：
 
 - **互動式安裝精靈** — 5 階段部署（分析 → 規劃 → 執行 → 完成）
 - **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢

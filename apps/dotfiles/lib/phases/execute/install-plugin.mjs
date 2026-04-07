@@ -32,7 +32,7 @@ export function buildPluginTasks(plan, { repoDir }) {
                     cwd: repoDir,
                   });
                   child.on('close', (code) =>
-                    code === 0 ? resolve() : reject(new Error(`exit ${code}`)),
+                    code === 0 ? resolve() : reject(new Error(`執行失敗（代碼 ${code}）`)),
                   );
                   child.on('error', reject);
                 });
@@ -45,7 +45,7 @@ export function buildPluginTasks(plan, { repoDir }) {
                 await new Promise((resolve, reject) => {
                   const child = spawn('bash', ['scripts/build-slack-plugin.sh'], { cwd: repoDir });
                   child.on('close', (code) =>
-                    code === 0 ? resolve() : reject(new Error(`exit ${code}`)),
+                    code === 0 ? resolve() : reject(new Error(`執行失敗（代碼 ${code}）`)),
                   );
                   child.on('error', reject);
                 });

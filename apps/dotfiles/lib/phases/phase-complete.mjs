@@ -152,14 +152,6 @@ export async function phaseComplete(
 
   // 三層推薦系統 — 根據 techStacks 動態生成 LSP 推薦
   const buildLspRecommendations = (techStacks = []) => {
-    const lspMap = {
-      typescript: 'TypeScript LSP',
-      javascript: 'TypeScript LSP',
-      python: 'Python (Pyright) LSP',
-      go: 'Go (gopls) LSP',
-      rust: 'Rust (rust-analyzer) LSP',
-    };
-
     const recommended = [];
     if (techStacks.some((s) => s.includes('typescript') || s.includes('javascript'))) {
       recommended.push('TypeScript LSP');

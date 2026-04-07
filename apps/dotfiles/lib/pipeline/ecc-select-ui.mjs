@@ -231,7 +231,6 @@ export async function selectEcc({
           label: `${badge}${typePrefixes[type]}${item.name.replace('.md', '')}  ${pc.dim(desc)}`,
         };
       });
-      const initVals = aiByType[type].map((i) => i.name);
       const chosen = await multiselectWithAll({
         message: `${typeLabels[type]}（${items.length}）${pc.cyan(' * = AI 推薦')}`,
         options: opts,

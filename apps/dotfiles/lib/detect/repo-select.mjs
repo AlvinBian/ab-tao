@@ -15,7 +15,7 @@
 
 import { execSync } from 'node:child_process';
 import * as p from '@clack/prompts';
-import { orderBy, uniq } from 'lodash-es';
+import { orderBy } from 'lodash-es';
 import pc from 'picocolors';
 import { BACK, handleCancel, multiselectWithAll, smartSelect } from '../cli/prompts.mjs';
 import { pMap } from '../core/concurrency.mjs';

@@ -796,7 +796,7 @@ async function main() {
     if (flagManual) confirmedPlan.mode = 'manual';
 
     // 執行安裝管線
-    const { installSelections, syncResult, startTime } = await runInstallPipeline(confirmedPlan, {
+    await runInstallPipeline(confirmedPlan, {
       repoDir: REPO,
       previewDir: PREVIEW_DIR,
       targets,

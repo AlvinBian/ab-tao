@@ -11,8 +11,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { deploySettings } from '../../deploy/deploy-global.mjs';
-import { generateAllRepoIndex } from '../../deploy/deploy-index.mjs';
-import { deployAllClaudeignore, deployAllProjectClaudeMd } from '../../deploy/deploy-project.mjs';
+import { deployAllProjectClaudeMd } from '../../deploy/deploy-project.mjs';
 import { generateClaudeMd } from '../../deploy/generate-claude-md.mjs';
 import { buildSyncResult, writeSkillFiles, writeSyncedFiles } from '../../external/source-sync.mjs';
 import { runTarget } from '../../install/index.mjs';
@@ -278,7 +277,7 @@ export function buildClaudeTasks(
                                 if (commSources.length > 0)
                                   try {
                                     // 過濾掉 name 或 content 為空的資源
-                                    const validFile = (f) => f && f.name && f.content;
+                                    const validFile = (f) => f?.name && f.content;
                                     const downloaded = commSources.map((src) => ({
                                       source: src.name,
                                       commands: (src.commands || []).filter(validFile),

@@ -71,7 +71,9 @@ export async function handleBuildPlugin(repoDir, step, stepLabel) {
         }
       });
       child.stderr.on('data', () => {});
-      child.on('close', (code) => (code !== 0 ? reject(new Error(`exit ${code}`)) : resolve()));
+      child.on('close', (code) =>
+        code !== 0 ? reject(new Error(`執行失敗（代碼 ${code}）`)) : resolve(),
+      );
     });
 
     const phaseLines =

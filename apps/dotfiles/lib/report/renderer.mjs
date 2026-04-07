@@ -34,11 +34,6 @@ import {
  */
 function renderTabOverview(data) {
   const installed = data.installed || {};
-  const cmdCount = installed.commands?.length || 0;
-  const agentCount = installed.agents?.length || 0;
-  const ruleCount = installed.rules?.length || 0;
-  const moduleCount = installed.modules?.length || 0;
-  const stackCount = data.stacks?.length || 0;
   const repoCount = (data.repos || []).length;
 
   // 計算 .claudeignore 覆蓋統計

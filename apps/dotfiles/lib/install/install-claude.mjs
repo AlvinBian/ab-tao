@@ -244,7 +244,7 @@ export async function handleInstallClaude(
   // 執行安裝
   for (const [key, values] of Object.entries(selected)) {
     if (values?.some((v) => /[;&|`$]/.test(v))) {
-      throw new Error(`Invalid characters in ${key} selection`);
+      throw new Error(`選項 ${key} 中包含無效字元`);
     }
   }
   p.log.info(`${stepLabel}安裝 ${summaryParts.join(' · ')}${hooksLabel} → ~/.claude/`);
