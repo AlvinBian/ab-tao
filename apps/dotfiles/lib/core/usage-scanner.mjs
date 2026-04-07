@@ -41,6 +41,8 @@ export async function scanUsage(installedAgentNames = null) {
 		.readdirSync(PROJECTS_DIR, { withFileTypes: true })
 		.filter((d) => d.isDirectory());
 
+	// 收集所有 JSONL 路徑，並行掃描（JS 單執行緒安全，Map 操作無競爭）
+	const allJsonlTasks = [];
 	for (const projectDir of projectDirs) {
 		const projectPath = path.join(PROJECTS_DIR, projectDir.name);
 		const jsonlFiles = fs
@@ -51,10 +53,18 @@ export async function scanUsage(installedAgentNames = null) {
 		sessions.total += jsonlFiles.length;
 
 		for (const file of jsonlFiles) {
-			const filePath = path.join(projectPath, file);
-			await scanJsonlFile(filePath, commands, agents, sessions, agentFilter);
+			allJsonlTasks.push(
+				scanJsonlFile(
+					path.join(projectPath, file),
+					commands,
+					agents,
+					sessions,
+					agentFilter,
+				),
+			);
 		}
 	}
+	await Promise.all(allJsonlTasks);
 
 	return { commands, agents, sessions };
 }
@@ -574,6 +584,8 @@ export async function scanUsageStats() {
 		.readdirSync(PROJECTS_DIR, { withFileTypes: true })
 		.filter((d) => d.isDirectory());
 
+	// 收集所有路徑並行掃描
+	const allStatsTasks = [];
 	for (const projectDir of projectDirs) {
 		const projectPath = path.join(PROJECTS_DIR, projectDir.name);
 		const jsonlFiles = fs
@@ -581,10 +593,12 @@ export async function scanUsageStats() {
 			.filter((f) => f.endsWith(".jsonl") && !f.includes("subagent"));
 
 		for (const file of jsonlFiles) {
-			const filePath = path.join(projectPath, file);
-			await scanJsonlFileForStats(filePath, stats);
+			allStatsTasks.push(
+				scanJsonlFileForStats(path.join(projectPath, file), stats),
+			);
 		}
 	}
+	await Promise.all(allStatsTasks);
 
 	// 標記 stale 項目（30天未使用）
 	for (const item of stats.values()) {
@@ -601,26 +615,26 @@ export async function scanUsageStats() {
  * 若檔案超過 5MB，只讀最後 1000 行
  */
 async function scanJsonlFileForStats(filePath, stats) {
-	return new Promise((resolve) => {
-		try {
-			const stat = fs.statSync(filePath);
-			const fileSizeBytes = stat.size;
-			const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+	try {
+		const stat = fs.statSync(filePath);
+		const fileSizeBytes = stat.size;
+		const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-			let input;
+		let input;
 
-			if (fileSizeBytes > MAX_FILE_SIZE) {
-				// 檔案太大，只讀最後 1000 行
-				const fileContent = fs.readFileSync(filePath, "utf8");
-				const allLines = fileContent.split("\n");
-				const linesToProcess = allLines.slice(
-					Math.max(0, allLines.length - 1000),
-				);
-				input = Readable.from(linesToProcess);
-			} else {
-				input = fs.createReadStream(filePath, { encoding: "utf8" });
-			}
+		if (fileSizeBytes > MAX_FILE_SIZE) {
+			// 檔案太大，只讀最後 1000 行（async 讀取避免阻塞 event loop）
+			const fileContent = await fs.promises.readFile(filePath, "utf8");
+			const allLines = fileContent.split("\n");
+			const linesToProcess = allLines.slice(
+				Math.max(0, allLines.length - 1000),
+			);
+			input = Readable.from(linesToProcess);
+		} else {
+			input = fs.createReadStream(filePath, { encoding: "utf8" });
+		}
 
+		await new Promise((resolve) => {
 			const rl = readline.createInterface({
 				input,
 				crlfDelay: Infinity,
@@ -695,10 +709,10 @@ async function scanJsonlFileForStats(filePath, stats) {
 
 			rl.on("close", resolve);
 			rl.on("error", resolve);
-		} catch {
-			resolve();
-		}
-	});
+		});
+	} catch {
+		/* 檔案讀取失敗（可能已被刪除），略過 */
+	}
 }
 
 /**

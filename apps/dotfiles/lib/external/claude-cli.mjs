@@ -108,7 +108,10 @@ export function warmupCli() {
 	);
 
 	// 不等結果，只要啟動就行
-	child.on("error", () => {});
+	child.on("error", (e) => {
+		// warmup 失敗不影響功能，僅 DEBUG 模式記錄
+		if (process.env.DEBUG) process.stderr.write(`[warmupCli] ${e.message}\n`);
+	});
 	child.unref(); // 不阻止 Node 退出
 }
 
@@ -384,8 +387,10 @@ export function callClaudeJSONStream(
 			}
 		});
 
-		child.on("error", () => {
+		child.on("error", (e) => {
 			clearTimeout(timer);
+			if (process.env.DEBUG)
+				process.stderr.write(`[callClaudeJSONStream] ${e.message}\n`);
 			resolve(null);
 		});
 	});

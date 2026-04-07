@@ -534,8 +534,9 @@ ${batchList}
 						}
 					})
 					.catch((e) => {
-						logger?.warn(
-							`ECC 自動翻譯失敗（已跳過）：${e?.message ?? String(e)}`,
+						// logger 在此作用域不可用，降級使用 stderr
+						process.stderr.write(
+							`[pipeline] ECC 自動翻譯失敗（已跳過）：${e?.message ?? String(e)}\n`,
 						);
 					});
 			}

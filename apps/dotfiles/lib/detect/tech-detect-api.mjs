@@ -358,7 +358,8 @@ export async function identifySignificantTechs(
 	}
 
 	// 並行查詢所有生態（npm + PHP + Python + Go 同時進行）
-	const [npmTechs, phpTechs, pyTechs, goTechs] = await Promise.all([
+	// 用 allSettled 確保單一生態分析失敗不影響其他生態結果
+	const ecoResults = await Promise.allSettled([
 		!isEmpty(npmAllDeps)
 			? analyzeNpmDeps(Object.keys(npmAllDeps), deps, devDeps)
 			: new Map(),
@@ -366,6 +367,9 @@ export async function identifySignificantTechs(
 		!isEmpty(pyDeps) ? analyzePythonDeps(pyDeps) : new Map(),
 		!isEmpty(goDeps) ? analyzeGoDeps(goDeps) : new Map(),
 	]);
+	const [npmTechs, phpTechs, pyTechs, goTechs] = ecoResults.map((r) =>
+		r.status === "fulfilled" ? r.value : new Map(),
+	);
 
 	// 合併
 	for (const source of [npmTechs, phpTechs, pyTechs, goTechs]) {

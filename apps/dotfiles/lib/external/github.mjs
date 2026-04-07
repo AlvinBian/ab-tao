@@ -83,8 +83,8 @@ async function ghFetch(apiPath, retries = 2) {
 				const retryAfter = parseInt(res.headers.get("Retry-After") || "0", 10);
 				const wait =
 					retryAfter > 0
-						? retryAfter * 1000
-						: Math.min(1000 * 2 ** attempt, 10000);
+						? retryAfter * 1000 // 尊重 GitHub 的 Retry-After（不設上限）
+						: Math.min(1000 * 2 ** attempt, 60000); // 指數退避，最多 60s
 				if (attempt < retries) {
 					await new Promise((r) => setTimeout(r, wait));
 					continue;
