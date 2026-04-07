@@ -16,9 +16,9 @@ import { isEmpty } from 'lodash-es';
 import { buildDescriptionCache } from '../config/descriptions.mjs';
 import { BACKUP_DIR } from '../core/backup.mjs';
 import { BACKUP_MAX_COUNT } from '../core/constants.mjs';
+import { HOME } from '../core/paths.mjs';
 import { clearSessionProgress, saveSession } from '../core/session.mjs';
 import { generateReport, openInBrowser, saveReport } from '../report.mjs';
-import { HOME } from '../core/paths.mjs';
 
 /**
  * 執行安裝完成後的收尾工作

@@ -11,12 +11,12 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { isEmpty } from 'lodash-es';
+import { HOME } from '../../core/paths.mjs';
 import { deploySettings } from '../../deploy/deploy-global.mjs';
 import { deployAllProjectClaudeMd } from '../../deploy/deploy-project.mjs';
 import { generateClaudeMd } from '../../deploy/generate-claude-md.mjs';
 import { buildSyncResult, writeSkillFiles, writeSyncedFiles } from '../../external/source-sync.mjs';
 import { runTarget } from '../../install/index.mjs';
-import { HOME } from '../../core/paths.mjs';
 
 /**
  * 構建 Claude 安裝任務陣列

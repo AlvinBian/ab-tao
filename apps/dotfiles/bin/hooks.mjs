@@ -10,6 +10,7 @@ import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
 import { getDescription } from '../lib/config/descriptions.mjs';
 import { HOME } from '../lib/core/paths.mjs';
+
 const HOOKS_PATH = path.join(HOME, '.claude', 'hooks.json');
 const HOOKS_BACKUP = path.join(HOME, '.claude', 'hooks.json.bak');
 

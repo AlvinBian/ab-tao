@@ -12,6 +12,7 @@ import path from 'node:path';
 import * as p from '@clack/prompts';
 import { ALL_AGENTS, ALL_COMMANDS, ALL_RULES } from '../lib/config/config-classifier.mjs';
 import { HOME } from '../lib/core/paths.mjs';
+
 const CLAUDE_DIR = path.join(HOME, '.claude');
 
 function removeManaged(dir, names) {

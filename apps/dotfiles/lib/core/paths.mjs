@@ -29,4 +29,3 @@ export const getDirname = (importMeta) => path.dirname(fileURLToPath(importMeta.
  * @returns {string} 專案根目錄的絕對路徑
  */
 export const getRepoRoot = (importMeta) => path.resolve(getDirname(importMeta), '..', '..');
-

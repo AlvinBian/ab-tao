@@ -159,9 +159,7 @@ function renderTabRepos(data) {
           .join('')}</div>`;
       }
 
-      const localPath = roleInfo.localPath
-        ? roleInfo.localPath.replace(HOME, '~')
-        : '未找到';
+      const localPath = roleInfo.localPath ? roleInfo.localPath.replace(HOME, '~') : '未找到';
       const claudeMd = proj ? typeLabel[proj.claudeMdType] || '—' : '—';
       const roleDesc =
         role === 'main' ? '完整 AI 分析 + 技術棧上下文' : role === 'tool' ? '最小配置' : '精簡模板';
