@@ -1,0 +1,26 @@
+name: 自動翻譯 README
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+  workflow_dispatch:
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 生成简体中文版 README
+        uses: dephraiim/translate-readme@main
+        with:
+          LANG: zh-CN
+
+      - name: 生成英文版 README
+        uses: dephraiim/translate-readme@main
+        with:
+          LANG: en

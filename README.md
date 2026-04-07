@@ -1,5 +1,7 @@
 # ab-tao
 
+**繁體中文** | [简体中文](README-zh-CN.md) | [English](README-en.md)
+
 Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ## 架構
@@ -205,6 +207,7 @@ git checkout main && git checkout -b hotfix/xxx
 |----------|------|------|
 | **CI** | push → main | lint + build + test + 資源同步驗證 |
 | **GitFlow** | PR + push + tag | 分支校驗 + PR 來源校驗 + commit 校驗 + Release |
+| **Translate** | README.md 變更 → main | 自動翻譯 zh-CN + EN |
 | **Sync** | 每週一 03:00 UTC | 自動同步外部 AI 資源 |
 | **Cheatsheet** | 每日 03:00 UTC | 同步 Claude Code 快速參考表並部署至 GitHub Pages |
 
