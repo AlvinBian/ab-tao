@@ -48,7 +48,7 @@ const ENHANCERS = [
 	{
 		name: "RTK",
 		desc: "壓縮 Bash 輸出 -89% token，安裝後自動生效，無需改變操作習慣",
-		// 優先 brew，不可用時 fallback curl；最後統一執行 rtk init -g
+		// 優先 brew install（推薦）；brew 不可用時 fallback curl
 		install: `if command -v brew &>/dev/null; then brew install rtk; else export PATH="$HOME/.local/bin:$PATH" && curl -fsSL https://rtk.sh | bash; fi && rtk init -g`,
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",

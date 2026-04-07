@@ -1,9 +1,9 @@
-name: 更新 Claude Code 快速參考手冊
+name: 更新 Claude Code 快速參考表（繁體中文）
 
 on:
   schedule:
-    # 每週一 03:00 UTC（與 sync.yml 相同時區）
-    - cron: '0 3 * * 1'
+    # 每日 03:00 UTC（跟隨原站每日更新節奏）
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       force:
@@ -16,23 +16,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── 1. 抓取 + 簡轉繁 ──────────────────────────────────────────────────────
   update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
+    outputs:
+      changed: ${{ steps.update.outputs.changed }}
+      version: ${{ steps.update.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - name: 執行更新腳本
         id: update
@@ -41,40 +39,44 @@ jobs:
           if [ "${{ inputs.force }}" = "true" ]; then
             ARGS="--force"
           fi
-          node apps/dotfiles/scripts/update-cheatsheet.mjs $ARGS
-        env:
-          GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+          node apps/cheatsheet/update.mjs $ARGS
 
-      - name: 建立 PR（若有更新）
+      - name: Commit 並推送（若有變更）
         if: steps.update.outputs.changed == 'true'
         run: |
           VERSION="${{ steps.update.outputs.version }}"
-          TODAY="${{ steps.update.outputs.updated }}"
-          BRANCH="chore/update-cheatsheet-${VERSION//./-}"
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/cheatsheet/index.html
+          git commit -m "docs: 同步 Claude Code 快速參考表 v${VERSION}"
+          git push
 
-          git checkout -b "$BRANCH"
-          git add apps/dotfiles/docs/claude-code-cheatsheet.md
-          git commit -m "docs: 更新 Claude Code 快速參考手冊 ${VERSION}（${TODAY}）"
-          git push origin "$BRANCH"
+  # ── 2. 部署至 GitHub Pages ────────────────────────────────────────────────
+  deploy:
+    needs: update
+    if: needs.update.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-          gh pr create \
-            --title "docs: 更新 Claude Code 快速參考手冊 ${VERSION}" \
-            --body "$(cat <<EOF
-          ## 自動更新
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
-          - **來源**：https://cc.storyfox.cz/
-          - **版本**：${VERSION}
-          - **更新日期**：${TODAY}
+      - name: 設定 Pages
+        uses: actions/configure-pages@v4
 
-          此 PR 由 GitHub Actions 自動建立，定期同步 Claude Code Cheat Sheet 最新版本並翻譯為繁體中文。
+      - name: 上傳 Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/cheatsheet
 
-          > 若版本號未更新但內容有變動，可手動觸發 workflow 並勾選「強制更新」。
-          EOF
-          )" \
-            --base develop \
-            --label "documentation,automated"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 部署至 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

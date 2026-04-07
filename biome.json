@@ -17,7 +17,8 @@
 			"!.cache",
 			"!**/resources",
 			"!ecc",
-			"!docs"
+			"!docs",
+			"!apps/cheatsheet/index.html"
 		]
 	}
 }

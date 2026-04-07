@@ -118,7 +118,7 @@ pnpm run release          # 構建 + 發布
 
 setup 完成後會推薦安裝以下工具：
 
-- **RTK** — Bash 輸出壓縮 -89%（`curl -fsSL https://rtk.sh | bash`）
+- **RTK** — Bash 輸出壓縮 -89%（`brew install rtk`）
 - **Claude-Mem** — 跨會話記憶（`npx claude-mem install`）
 - **官方 Plugins** — 在 Claude Code 中執行 `/plugin`（code-review · commit-commands · feature-dev · simplify）
 

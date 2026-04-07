@@ -56,7 +56,7 @@ pnpm run c:validate        # 驗證資源結構
 
 推薦安裝層（第三方輪子）：
 ```
-  Token 優化            — RTK（Bash 輸出 -89%）· Claude-Mem（跨會話記憶）
+  Token 優化            — RTK（Bash 輸出 -89%，brew install rtk）· Claude-Mem（跨會話記憶）
   官方 Plugins          — code-review · commit-commands · feature-dev · simplify
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
   監控與診斷            — statusline（自動部署）· doctor（環境診斷）
