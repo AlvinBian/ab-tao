@@ -166,15 +166,6 @@ if [[ -f ~/.zshrc ]]; then
   if ! diff -q ~/.zshrc "$ZSH_DIR/zshrc" > /dev/null 2>&1; then
     cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
     info "原 .zshrc 已備份"
-
-    # 保留上限：只保留最近 3 份，超出的刪除最舊的
-    local _keep=3
-    local _backups=("${(@f)$(ls -t "$HOME"/.zshrc.backup.* 2>/dev/null)}")
-    if (( ${#_backups[@]} > _keep )); then
-      local _to_delete=(${_backups[@]:$_keep})
-      rm -f "${_to_delete[@]}"
-      info "舊備份已清理（保留最近 ${_keep} 份，刪除 ${#_to_delete[@]} 份）"
-    fi
   else
     info "~/.zshrc 無變更，略過備份"
   fi
