@@ -264,7 +264,9 @@ export function formatZshModules(plan) {
 	const lines = [];
 
 	if (!isEmpty(plan.zshModules)) {
-		lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
+		lines.push(
+			`ZSH 模組 → ~/.zshrc.d/（${plan.zshModules.length} 可選 + 2 恆常 + sheldon 插件）`,
+		);
 		lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
 	}
 
@@ -339,46 +341,58 @@ export function formatChanges(plan, existing) {
  */
 export function buildPlanSummary(plan, existing, HOME, claudeDir) {
 	const lines = [];
+	const feats = new Set(plan.features || []);
+	const has = (f) => feats.has(f);
 
 	// 現有狀態
 	lines.push(...formatExistingState(existing));
 
-	// 角色與技能
-	if (plan.profile) {
+	// 角色與技能（僅 claude 相關）
+	if (has("claude") && plan.profile) {
 		lines.push(
 			`${plan.profile.role || "開發者"} — ${plan.profile.coreSkills?.join(" · ") || ""}`,
 		);
 	}
 	lines.push("");
 
-	// 1. Repos
-	lines.push(
-		...formatRepos(
-			plan.repos,
-			plan.mainCount,
-			plan.tempCount,
-			plan.toolCount,
-			HOME,
-		),
-	);
+	// 1. Repos（僅 project 相關）
+	if (has("project") || has("claudemd") || has("ecc")) {
+		lines.push(
+			...formatRepos(
+				plan.repos,
+				plan.mainCount,
+				plan.tempCount,
+				plan.toolCount,
+				HOME,
+			),
+		);
+	}
 
-	// 2. 全局配置
-	lines.push(...formatGlobalConfig(plan.global));
+	// 2. 全局配置（僅 claude 相關）
+	if (has("claude")) {
+		lines.push(...formatGlobalConfig(plan.global));
+	}
 
-	// 3. CLAUDE.md
-	lines.push(...formatClaudeMd(plan));
+	// 3. CLAUDE.md（僅 project 相關）
+	if (has("project") || has("claudemd")) {
+		lines.push(...formatClaudeMd(plan));
+	}
 
-	// 4. 技術棧
-	lines.push(...formatTechStacks(plan));
+	// 4. 技術棧（僅 project 相關）
+	if (has("project")) {
+		lines.push(...formatTechStacks(plan));
+	}
 
-	// 5. ECC 資源
-	lines.push(...formatEccResources(plan, claudeDir));
+	// 5. ECC 資源（僅 project 相關）
+	if (has("project") || has("ecc")) {
+		lines.push(...formatEccResources(plan, claudeDir));
+		lines.push(...formatCommonsResources(plan));
+	}
 
-	// 5b. Commons 資源
-	lines.push(...formatCommonsResources(plan));
-
-	// 6. ZSH 模組
-	lines.push(...formatZshModules(plan));
+	// 6. ZSH 模組（僅 zsh 相關）
+	if (has("zsh")) {
+		lines.push(...formatZshModules(plan));
+	}
 
 	// 變更 + 費用
 	lines.push(...formatChanges(plan, existing));

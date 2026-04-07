@@ -91,18 +91,7 @@ const SETTINGS_PRESETS = {
 
 // ── ZSH 模組 ──
 
-const ALL_ZSH_MODULES = [
-	"aliases",
-	"completion",
-	"fzf",
-	"git",
-	"history",
-	"keybindings",
-	"nvm",
-	"plugins",
-	"pnpm",
-	"tools",
-];
+const ALL_ZSH_MODULES = ["history", "keys", "aliases", "git", "tools"];
 
 /**
  * 生成完整安裝計畫

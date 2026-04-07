@@ -851,11 +851,38 @@ async function main() {
 		let planForReview = analyzeCache?.plan;
 		if (planForReview) {
 			planForReview = cloneDeep(planForReview);
+
+			// ── 功能隔離：未選擇的功能清零 ──
+			if (!has("claude")) {
+				// 未選 Claude → 清空全局配置
+				if (planForReview.global) {
+					planForReview.global.commands = [];
+					planForReview.global.agents = [];
+					planForReview.global.rules = [];
+					planForReview.global.hooks = [];
+					planForReview.global.permissions = null;
+					planForReview.global.model = null;
+				}
+				planForReview.targets = (planForReview.targets || []).filter(
+					(t) => t !== "claude-dev",
+				);
+			}
 			if (!hasProject) {
 				planForReview.ecc = [];
 				planForReview.projects = [];
 			}
-			if (!has("zsh")) planForReview.zshModules = [];
+			if (!has("slack")) {
+				planForReview.targets = (planForReview.targets || []).filter(
+					(t) => t !== "slack",
+				);
+			}
+			if (!has("zsh")) {
+				planForReview.zshModules = [];
+				planForReview.targets = (planForReview.targets || []).filter(
+					(t) => t !== "zsh",
+				);
+			}
+
 			// 展開 project → claudemd + ecc 給下游
 			const expandedFeatures = [...features];
 			if (hasProject && !expandedFeatures.includes("claudemd"))

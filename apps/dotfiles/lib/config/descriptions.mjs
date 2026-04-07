@@ -128,17 +128,12 @@ const AB_DESCRIPTIONS = {
 	hooks: "Hooks 配置規範",
 	patterns: "設計模式規範",
 
-	// ── ZSH 模組 ──
-	aliases: "編輯器偵測 + 通用命令縮寫",
-	completion: "zsh 自動補全（menu select）",
-	fzf: "模糊搜尋（Ctrl+R 歷史 / Ctrl+T 檔案）",
-	git: "Git aliases + delta + lazygit 整合",
-	history: "歷史記錄（50K + 去重 + 專案分離）",
-	keybindings: "Alt/Ctrl 方向鍵快捷操作",
-	nvm: "Node 版本管理（lazy load 加速啟動）",
-	plugins: "autosuggestions + syntax-highlighting",
-	pnpm: "PNPM PATH 設定",
-	tools: "bat/eza/zoxide/fd/ripgrep/tldr 工具集",
+	// ── ZSH 模組（~/.zshrc.d/ + sheldon）──
+	history: "歷史記錄（50K + 去重 + 專案歷史自動切換）",
+	keys: "按鍵綁定（Option+←/→ 跳單詞 · ↑↓ 前綴搜尋）",
+	aliases: "編輯器偵測 + gh / uv + 通用命令縮寫",
+	git: "Git aliases + delta diff + lazygit 整合",
+	tools: "bat/eza/zoxide/fd/rg/tldr + FZF 環境（sheldon 管理插件）",
 };
 
 // ── 快取（ECC/第三方描述，setup 時建立）──
