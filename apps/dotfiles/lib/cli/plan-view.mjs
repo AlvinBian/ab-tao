@@ -344,8 +344,10 @@ export function buildPlanSummary(plan, existing, HOME, claudeDir) {
 	const feats = new Set(plan.features || []);
 	const has = (f) => feats.has(f);
 
-	// 現有狀態
-	lines.push(...formatExistingState(existing));
+	// 現有狀態（僅選了 claude 時顯示）
+	if (has("claude")) {
+		lines.push(...formatExistingState(existing));
+	}
 
 	// 角色與技能（僅 claude 相關）
 	if (has("claude") && plan.profile) {
@@ -394,8 +396,10 @@ export function buildPlanSummary(plan, existing, HOME, claudeDir) {
 		lines.push(...formatZshModules(plan));
 	}
 
-	// 變更 + 費用
-	lines.push(...formatChanges(plan, existing));
+	// 變更 + 費用（僅有 claude 相關變更時顯示）
+	if (has("claude")) {
+		lines.push(...formatChanges(plan, existing));
+	}
 
 	return lines.join("\n");
 }

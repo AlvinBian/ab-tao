@@ -88,20 +88,33 @@ export async function phaseExecute(
 				title: "🗂️ 備份現有配置 → dist/backup/",
 				task: async (_, subtask) => {
 					const cd = path.join(HOME, ".claude");
+					const feats = new Set(plan.features || []);
+					const has = (f) => feats.has(f);
 					const backupTasks = [
-						// Claude 配置
-						...["commands", "agents", "rules"].map((sub) =>
-							backupIfExists(path.join(cd, sub), `claude/${sub}`),
-						),
-						backupIfExists(path.join(cd, "hooks.json"), "claude/hooks.json"),
-						backupIfExists(
-							path.join(cd, "settings.json"),
-							"claude/settings.json",
-						),
-						// ZSH 配置
-						backupIfExists(path.join(HOME, ".zshrc"), "zshrc"),
-						backupIfExists(path.join(HOME, ".zshrc.d"), "zshrc.d"),
-						backupIfExists(path.join(HOME, ".ripgreprc"), "ripgreprc"),
+						// Claude 配置（僅選了 claude 或 slack 時備份）
+						...(has("claude") || has("slack")
+							? [
+									...["commands", "agents", "rules"].map((sub) =>
+										backupIfExists(path.join(cd, sub), `claude/${sub}`),
+									),
+									backupIfExists(
+										path.join(cd, "hooks.json"),
+										"claude/hooks.json",
+									),
+									backupIfExists(
+										path.join(cd, "settings.json"),
+										"claude/settings.json",
+									),
+								]
+							: []),
+						// ZSH 配置（僅選了 zsh 時備份）
+						...(has("zsh")
+							? [
+									backupIfExists(path.join(HOME, ".zshrc"), "zshrc"),
+									backupIfExists(path.join(HOME, ".zshrc.d"), "zshrc.d"),
+									backupIfExists(path.join(HOME, ".ripgreprc"), "ripgreprc"),
+								]
+							: []),
 					];
 					const results = (await Promise.all(backupTasks)).filter(Boolean);
 					subtask.output = !isEmpty(results)
@@ -128,7 +141,9 @@ export async function phaseExecute(
 			// [1] .claudeignore + 預索引（合併一次迭代）
 			{
 				title: `📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
-				enabled: () => (plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
+				enabled: () =>
+					(has("project") || has("claudemd")) &&
+					(plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
 				task: async (_, subtask) => {
 					const repos = (plan.repos || [])
 						.filter((r) => r.localPath)
@@ -174,21 +189,24 @@ export async function phaseExecute(
 										}
 									}
 								};
-								if (installSelections.commands?.length)
-									checkDir(
-										path.join(HOME, ".claude/commands"),
-										installSelections.commands,
-									);
-								if (installSelections.agents?.length)
-									checkDir(
-										path.join(HOME, ".claude/agents"),
-										installSelections.agents,
-									);
-								if (installSelections.rules?.length)
-									checkDir(
-										path.join(HOME, ".claude/rules"),
-										installSelections.rules,
-									);
+								// Claude 檔案驗證（僅選了 claude 時）
+								if (has("claude")) {
+									if (installSelections.commands?.length)
+										checkDir(
+											path.join(HOME, ".claude/commands"),
+											installSelections.commands,
+										);
+									if (installSelections.agents?.length)
+										checkDir(
+											path.join(HOME, ".claude/agents"),
+											installSelections.agents,
+										);
+									if (installSelections.rules?.length)
+										checkDir(
+											path.join(HOME, ".claude/rules"),
+											installSelections.rules,
+										);
+								}
 
 								// 驗證 settings.json（有 Claude 或 Slack 才檢查）
 								if (has("claude") || has("slack")) {
@@ -211,8 +229,11 @@ export async function phaseExecute(
 									}
 								}
 
-								// 驗證 CLAUDE.md
-								if (plan.projects?.length) {
+								// 驗證 CLAUDE.md（僅選了 project 時）
+								if (
+									(has("project") || has("claudemd")) &&
+									plan.projects?.length
+								) {
 									const { encodeProjectPath } = await import(
 										"../config/config-classifier.mjs"
 									);

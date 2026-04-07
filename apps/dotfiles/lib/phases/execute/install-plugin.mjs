@@ -2,8 +2,8 @@
  * Branch B: Plugin 打包
  *
  * 包含：
- *   - ab-claude-dev.plugin 打包
- *   - ab-slack-message.plugin 打包
+ *   - ab-claude-dev.plugin 打包（僅選了 claude 時）
+ *   - ab-slack-message.plugin 打包（僅選了 slack 時）
  */
 
 import { spawn } from "node:child_process";
@@ -17,23 +17,26 @@ import { spawn } from "node:child_process";
  * @returns {Array} Listr2 task 陣列
  */
 export function buildPluginTasks(plan, { repoDir }) {
+	const feats = new Set(plan.features || []);
+	const has = (f) => feats.has(f);
+
 	return [
 		{
 			title: "🔌 Plugin 打包 → dist/release/",
+			enabled: () => has("claude") || has("slack"),
 			task: (_, subtask) =>
 				subtask.newListr(
 					[
 						{
 							title: "ab-claude-dev.plugin",
-							enabled: () => plan.targets.includes("claude-dev"),
+							enabled: () =>
+								has("claude") && plan.targets.includes("claude-dev"),
 							task: async () => {
 								await new Promise((resolve, reject) => {
 									const child = spawn(
 										"bash",
 										["scripts/build-claude-dev-plugin.sh"],
-										{
-											cwd: repoDir,
-										},
+										{ cwd: repoDir },
 									);
 									child.on("close", (code) =>
 										code === 0
@@ -46,7 +49,7 @@ export function buildPluginTasks(plan, { repoDir }) {
 						},
 						{
 							title: "ab-slack-message.plugin",
-							enabled: () => plan.targets.includes("slack"),
+							enabled: () => has("slack") && plan.targets.includes("slack"),
 							task: async () => {
 								await new Promise((resolve, reject) => {
 									const child = spawn(

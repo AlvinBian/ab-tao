@@ -745,87 +745,106 @@ async function main() {
 				.map((r) => `${r.fullName}:${r._roleOverride}`)
 				.sort()
 				.join(",");
+			const needsAnalysis = has("claude") || has("project");
 			if (!analyzeCache || analyzeCache.key !== reposKey) {
-				phaseHeader("🔬 自動分析");
-				p.log.info(
-					"掃描技術棧、偵測本機路徑、生成個人化安裝計畫（約 10–30 秒）",
-				);
-				let analyzeSuccess = false;
-				while (!analyzeSuccess) {
-					try {
-						analyzeCache = {
-							key: reposKey,
-							plan: await phaseAnalyze({
-								repos,
-								sources,
-								selectedAiSources,
-								baseDir: REPO,
-								projectFolders,
-							}),
-						};
-						analyzeSuccess = true;
-					} catch (err) {
-						p.log.error(
-							`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:doctor 診斷環境`,
-						);
-						const action = handleCancel(
-							await p.select({
-								message: "如何繼續？",
-								options: [
-									{ value: "retry", label: "🔄 重試", hint: "重新執行分析" },
-									{
-										value: "skip",
-										label: "⏭️ 跳過",
-										hint: "跳過 AI 分析，使用基礎配置",
-									},
-									{ value: "back", label: "← 上一步", hint: "返回選擇倉庫" },
-								],
-							}),
-						);
-						if (action === "back" || action === BACK) break; // break inner, continue outer while
-						if (action === "skip") {
-							const { generateInstallPlan } = await import(
-								"../lib/config/auto-plan.mjs"
-							);
+				if (needsAnalysis) {
+					phaseHeader("🔬 自動分析");
+					p.log.info(
+						"掃描技術棧、偵測本機路徑、生成個人化安裝計畫（約 10–30 秒）",
+					);
+					let analyzeSuccess = false;
+					while (!analyzeSuccess) {
+						try {
 							analyzeCache = {
 								key: reposKey,
-								plan: generateInstallPlan({
+								plan: await phaseAnalyze({
 									repos,
-									pipelineResult: null,
-									eccResult: { recommended: [] },
-									localPaths: {},
-									roleOverrides: {},
-									profile: null,
+									sources,
+									selectedAiSources,
+									baseDir: REPO,
+									projectFolders,
 								}),
 							};
 							analyzeSuccess = true;
+						} catch (err) {
+							p.log.error(
+								`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:doctor 診斷環境`,
+							);
+							const action = handleCancel(
+								await p.select({
+									message: "如何繼續？",
+									options: [
+										{ value: "retry", label: "🔄 重試", hint: "重新執行分析" },
+										{
+											value: "skip",
+											label: "⏭️ 跳過",
+											hint: "跳過 AI 分析，使用基礎配置",
+										},
+										{ value: "back", label: "← 上一步", hint: "返回選擇倉庫" },
+									],
+								}),
+							);
+							if (action === "back" || action === BACK) break; // break inner, continue outer while
+							if (action === "skip") {
+								const { generateInstallPlan } = await import(
+									"../lib/config/auto-plan.mjs"
+								);
+								analyzeCache = {
+									key: reposKey,
+									plan: generateInstallPlan({
+										repos,
+										pipelineResult: null,
+										eccResult: { recommended: [] },
+										localPaths: {},
+										roleOverrides: {},
+										profile: null,
+									}),
+								};
+								analyzeSuccess = true;
+							}
+							// 'retry' — loop again
 						}
-						// 'retry' — loop again
 					}
+					if (!analyzeSuccess) continue; // BACK — restart outer while loop
+					// 應用用戶角色覆蓋
+					for (const r of analyzeCache.plan.repos) {
+						const src = repos.find((s) => s.fullName === r.fullName);
+						if (src?._roleOverride) r.role = src._roleOverride;
+					}
+					// 重算計數
+					const roleCounts2 = countBy(analyzeCache.plan.repos, "role");
+					analyzeCache.plan.mainCount = roleCounts2.main || 0;
+					analyzeCache.plan.tempCount = roleCounts2.temp || 0;
+					analyzeCache.plan.toolCount = roleCounts2.tool || 0;
+					// 更新 projects（只有找到 localPath 的才生成 CLAUDE.md）
+					const { getClaudeMdType } = await import(
+						"../lib/config/config-classifier.mjs"
+					);
+					analyzeCache.plan.projects = analyzeCache.plan.repos
+						.filter((r) => r.localPath)
+						.map((r) => ({
+							repo: r.fullName,
+							role: r.role,
+							localPath: r.localPath,
+							claudeMdType: getClaudeMdType(r.role),
+						}));
 				}
-				if (!analyzeSuccess) continue; // BACK — restart outer while loop
-				// 應用用戶角色覆蓋
-				for (const r of analyzeCache.plan.repos) {
-					const src = repos.find((s) => s.fullName === r.fullName);
-					if (src?._roleOverride) r.role = src._roleOverride;
-				}
-				// 重算計數
-				const roleCounts2 = countBy(analyzeCache.plan.repos, "role");
-				analyzeCache.plan.mainCount = roleCounts2.main || 0;
-				analyzeCache.plan.tempCount = roleCounts2.temp || 0;
-				analyzeCache.plan.toolCount = roleCounts2.tool || 0;
-				// 更新 projects（只有找到 localPath 的才生成 CLAUDE.md）
-				const { getClaudeMdType } = await import(
-					"../lib/config/config-classifier.mjs"
+			} else {
+				// 不需要 AI 分析（只選了 ZSH / Slack）→ 直接生成最小 plan
+				const { generateInstallPlan } = await import(
+					"../lib/config/auto-plan.mjs"
 				);
-				analyzeCache.plan.projects = analyzeCache.plan.repos
-					.filter((r) => r.localPath)
-					.map((r) => ({
-						repo: r.fullName,
-						role: r.role,
-						localPath: r.localPath,
-						claudeMdType: getClaudeMdType(r.role),
-					}));
+				analyzeCache = {
+					key: reposKey || "no-analysis",
+					plan: generateInstallPlan({
+						repos: [],
+						pipelineResult: null,
+						eccResult: { recommended: [] },
+						localPaths: {},
+						roleOverrides: {},
+						profile: null,
+					}),
+				};
 			}
 		} // end if (needsRepos)
 

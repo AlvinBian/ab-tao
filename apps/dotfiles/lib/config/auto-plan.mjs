@@ -148,7 +148,7 @@ export function generateInstallPlan({
 
 	return {
 		// 基本
-		targets: ["claude-dev", "slack", "zsh"],
+		targets: ["claude-dev", "slack", "zsh"], // 由 setup.mjs 根據 features 裁剪
 		mode: "auto",
 		installMode: "full", // full | minimal
 
