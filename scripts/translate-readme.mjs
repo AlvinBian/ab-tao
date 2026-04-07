@@ -24,7 +24,7 @@ const SWITCHERS = {
 	en: "[繁體中文](README.md) | [简体中文](README-zh-CN.md) | **English**",
 };
 
-async function translate(content, targetLang, targetLangName) {
+async function translate(content, targetLangName) {
 	const res = await fetch(ENDPOINT, {
 		method: "POST",
 		headers: {
@@ -63,15 +63,11 @@ const readme = fs.readFileSync("README.md", "utf8");
 const stripped = readme.replace(/^\*\*繁體中文\*\*[^\n]*\n\n/, "");
 
 console.log("🌐 翻譯 → 简体中文...");
-const zhCN = await translate(
-	stripped,
-	"zh-CN",
-	"Simplified Chinese (简体中文)",
-);
+const zhCN = await translate(stripped, "Simplified Chinese (简体中文)");
 fs.writeFileSync("README-zh-CN.md", `${SWITCHERS["zh-CN"]}\n\n${zhCN}\n`);
 console.log("✅ README-zh-CN.md");
 
 console.log("🌐 翻譯 → English...");
-const en = await translate(stripped, "en", "English");
+const en = await translate(stripped, "English");
 fs.writeFileSync("README-en.md", `${SWITCHERS.en}\n\n${en}\n`);
 console.log("✅ README-en.md");
