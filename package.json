@@ -32,11 +32,13 @@
     "c:validate": "node packages/commons/commands.mjs",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "pnpm run build && changeset publish"
+    "release": "pnpm run build && changeset publish",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
     "@changesets/cli": "^2.29.0",
+    "lefthook": "^2.1.5",
     "turbo": "^2.0.0"
   }
 }
