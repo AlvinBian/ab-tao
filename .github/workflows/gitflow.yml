@@ -12,6 +12,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── PR 目標分支校驗（main 只允許來自 develop 或 release/* ）──
+  validate-pr-source:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校驗合併來源
+        run: |
+          SOURCE="${{ github.head_ref }}"
+          if [[ "$SOURCE" == "develop" || "$SOURCE" == release/* ]]; then
+            echo "✅ 合併來源符合規範：$SOURCE → main"
+          else
+            echo "::error::main 分支只允許從 develop 或 release/* 合併，不允許：$SOURCE"
+            echo "  正確流程：feature/* → develop → release/* → main"
+            exit 1
+          fi
+
   # ── PR 分支名校驗 ──
   validate-branch:
     if: github.event_name == 'pull_request'

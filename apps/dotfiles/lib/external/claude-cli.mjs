@@ -130,6 +130,7 @@ export async function callClaude(
 		model = AI_MODEL,
 		effort = AI_EFFORT,
 		retries = 1,
+		silent = false,
 	} = {},
 ) {
 	const cli = findCli();
@@ -158,7 +159,7 @@ export async function callClaude(
 			if (text && !text.includes("Not logged in")) return text;
 		} catch (e) {
 			// execFile timeout → e.killed === true
-			if (e.killed) {
+			if (e.killed && !silent) {
 				console.error(
 					`  ⏱ Claude CLI 超時（${timeoutMs}ms），${attempt < retries ? "重試中..." : "放棄"}`,
 				);
@@ -168,7 +169,8 @@ export async function callClaude(
 			if (out && !out.includes("Not logged in")) return out;
 			// 最後一次重試也失敗
 			if (attempt >= retries) {
-				console.error(`  ✗ Claude CLI 失敗：${e.message?.slice(0, 120)}`);
+				if (!silent)
+					console.error(`  ✗ Claude CLI 失敗：${e.message?.slice(0, 120)}`);
 				return "";
 			}
 		}

@@ -10,10 +10,10 @@
  *   解析 install.sh 的 stdout，識別 brew 工具安裝、模組複製、zshrc 部署等階段。
  */
 
-import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { discoverItems } from "../cli/files.mjs";
+import { CLACK_LOGGER } from "../cli/logger.mjs";
 import { stageModulesPreview } from "../cli/preview.mjs";
 import { runWithProgress } from "../cli/progress.mjs";
 import { BACK, smartSelect } from "../cli/prompts.mjs";
@@ -28,6 +28,7 @@ import { BACK, smartSelect } from "../cli/prompts.mjs";
  * @param {boolean} flagAll - 是否全自動安裝（跳過互動）
  * @param {boolean} [manual=false] - 是否為手動模式（只生成 preview，不部署）
  * @param {Object|null} [session=null] - 上次 session（用於預選模組）
+ * @param {Object} [logger] - Logger 介面（CLACK_LOGGER 或 listrLogger）
  * @returns {Promise<{ modules: string[] } | undefined>} 已安裝的模組名稱列表
  */
 export async function handleInstallModules(
@@ -38,6 +39,7 @@ export async function handleInstallModules(
 	flagAll,
 	manual = false,
 	session = null,
+	logger = CLACK_LOGGER,
 ) {
 	const def = Object.values(step.selectable)[0];
 	const key = Object.keys(step.selectable)[0];
@@ -80,17 +82,17 @@ export async function handleInstallModules(
 				`  ${pc.green("✔")} ${pc.dim(`[${i + 1}/${moduleItems.length}]`)} ${item}`,
 		)
 		.join("\n");
-	p.log.info(
+	logger?.info(
 		`${stepLabel}生成 ${selectedModules.length}/${items.length} 個 ${key} → dist/preview/zsh/\n${fileLines}`,
 	);
 
 	if (manual) {
-		p.log.success(`${stepLabel}✔ 已生成 → dist/preview/zsh/`);
+		logger?.success(`${stepLabel}✔ 已生成 → dist/preview/zsh/`);
 		return;
 	}
 
 	// 執行安裝
-	p.log.info(
+	logger?.info(
 		`${stepLabel}安裝 ${selectedModules.length}/${items.length} 個 ${key} → ~/.zsh/modules/`,
 	);
 	await runWithProgress(
@@ -98,6 +100,7 @@ export async function handleInstallModules(
 		{
 			cwd: repoDir,
 			total,
+			logger,
 			parseProgress(line) {
 				if (/^\s+[✔▶⚠]\s+\S+\s+已安裝/.test(line))
 					return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} ✓`;
@@ -113,7 +116,7 @@ export async function handleInstallModules(
 			},
 		},
 	);
-	p.log.success(
+	logger?.success(
 		`${stepLabel}✔ ${selectedModules.length} 個 ${key} 已安裝：${selectedModules.join("、")}`,
 	);
 	return { modules: selectedModules };

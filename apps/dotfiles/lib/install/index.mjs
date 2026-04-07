@@ -9,7 +9,7 @@
  *     - build-plugin → handleBuildPlugin
  */
 
-import * as p from "@clack/prompts";
+import { CLACK_LOGGER } from "../cli/logger.mjs";
 import { handleBuildPlugin } from "./build-plugin.mjs";
 import { handleInstallClaude } from "./install-claude.mjs";
 import { handleInstallModules } from "./install-modules.mjs";
@@ -38,9 +38,9 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
 	const total = ctx.selectedTargets.length;
 	const prefix = total > 1 ? `[${idx}/${total}] ` : "";
 	const installResults = {};
-	const silent = ctx.silent || false;
+	const logger = ctx.logger || CLACK_LOGGER;
 
-	if (!silent) p.log.info(`${prefix}${def.label || key}`);
+	logger.info(`${prefix}${def.label || key}`);
 
 	for (const step of def.steps) {
 		if (step.skipIf && ctx.completed.has(step.skipIf)) continue;
@@ -56,12 +56,13 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
 					ctx.manual,
 					ctx.skillIds,
 					ctx.session,
+					logger,
 				);
 				if (result) Object.assign(installResults, result);
 				break;
 			}
 			case "build-plugin":
-				await handleBuildPlugin(repoDir, step, prefix, { silent });
+				await handleBuildPlugin(repoDir, step, prefix, { logger });
 				break;
 			case "install-modules": {
 				const result = await handleInstallModules(
@@ -72,12 +73,13 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
 					ctx.flagAll,
 					ctx.manual,
 					ctx.session,
+					logger,
 				);
 				if (result) Object.assign(installResults, result);
 				break;
 			}
 			default:
-				p.log.warn(`  未知的 step type: ${step.type}`);
+				logger.warn(`  未知的 step type: ${step.type}`);
 		}
 	}
 

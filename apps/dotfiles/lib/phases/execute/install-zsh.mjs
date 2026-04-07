@@ -5,6 +5,7 @@
  *   - ZSH 模組安裝 → ~/.zsh/modules/
  */
 
+import { listrLogger } from "../../cli/logger.mjs";
 import { runTarget } from "../../install/index.mjs";
 
 /**
@@ -55,7 +56,7 @@ export function buildZshTasks(
 											manual: isManual,
 											skillIds: [],
 											session: prev,
-											silent: true,
+											logger: listrLogger(subtask),
 										},
 									);
 									if (result) Object.assign(installSelections, result);

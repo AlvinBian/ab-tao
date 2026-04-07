@@ -11,6 +11,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
+import { listrLogger } from "../../cli/logger.mjs";
 import { HOME } from "../../core/paths.mjs";
 import { deploySettings } from "../../deploy/deploy-global.mjs";
 import { deployAllProjectClaudeMd } from "../../deploy/deploy-project.mjs";
@@ -229,6 +230,7 @@ export function buildClaudeTasks(
 											enabled: () => has("claude"),
 											task: async (_, subtask) => {
 												const completed = new Set();
+												const taskLogger = listrLogger(subtask);
 												for (const key of (plan.targets || []).filter(
 													(t) => t !== "zsh",
 												)) {
@@ -245,7 +247,7 @@ export function buildClaudeTasks(
 															manual: isManual,
 															skillIds: plan.techStacks,
 															session: prev,
-															silent: true,
+															logger: taskLogger,
 														},
 													);
 													if (result) Object.assign(installSelections, result);
@@ -457,6 +459,7 @@ export function buildClaudeTasks(
 												(plan.projects?.length ?? 0) > 0 &&
 												!isManual,
 											task: async (_, subtask) => {
+												const aiWarnings = [];
 												const items = await Promise.all(
 													(plan.projects || []).map(async (proj) => {
 														const perRepo =
@@ -469,6 +472,7 @@ export function buildClaudeTasks(
 															reasoning: perRepo?.reasoning || "",
 															stacks: perRepo?.techStacks || {},
 															meta: { description: "" },
+															onWarn: (msg) => aiWarnings.push(msg),
 														});
 														return {
 															localPath: proj.localPath,
@@ -493,6 +497,10 @@ export function buildClaudeTasks(
 													);
 												if (result.skipped.length)
 													parts.push(`跳過：${result.skipped.join("、")}`);
+												if (aiWarnings.length)
+													parts.push(
+														`⚠️ ${aiWarnings.length} 個 AI 生成失敗（靜態模板替代）`,
+													);
 												subtask.output = parts.join("\n") || "無需生成";
 											},
 										},

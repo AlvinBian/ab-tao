@@ -12,9 +12,8 @@
  * 8. 壓縮指令（保留改動檔案、測試、未完成任務）
  */
 
-import * as p from "@clack/prompts";
 import { AI_ECC_MODEL, AI_ECC_TIMEOUT } from "../core/constants.mjs";
-import { callClaudeJSON } from "../external/claude-cli.mjs";
+import { callClaude } from "../external/claude-cli.mjs";
 
 /**
  * 生成 CLAUDE.md 內容
@@ -30,19 +29,17 @@ export async function generateClaudeMd({
 	reasoning,
 	stacks,
 	meta,
+	onWarn,
 }) {
 	try {
 		return await generateWithAI(repoName, role, reasoning, stacks, meta);
 	} catch (error) {
-		// AI 失敗，記錄診斷資訊後使用靜態模板
+		// AI 失敗，通知呼叫方後使用靜態模板（不直接寫 stdout，避免干擾 Listr2 渲染）
 		const errorMsg = error?.message || String(error);
 		const isTokenLimit =
 			errorMsg.includes("token") || errorMsg.includes("context");
-		p.log.warn(
-			`⚠️ CLAUDE.md AI 生成失敗 （${repoName} · ${role}）\n` +
-				`   原因：${errorMsg.slice(0, 100)}\n` +
-				`   Token 超限：${isTokenLimit ? "是" : "否"}\n` +
-				`   Fallback：靜態模板 (${role})`,
+		onWarn?.(
+			`${repoName} · ${role}：${errorMsg.slice(0, 80)}（Token 超限：${isTokenLimit ? "是" : "否"}）`,
 		);
 
 		if (role === "tool") return fallbackTool(repoName, meta);
@@ -134,14 +131,14 @@ ${reasoning || meta?.description || ""}
 主要開發指令或使用方式`,
 	};
 
-	const result = await callClaudeJSON(rolePrompts[role] || rolePrompts.temp, {
+	const content = await callClaude(rolePrompts[role] || rolePrompts.temp, {
 		model: AI_ECC_MODEL,
 		effort: "low",
 		timeoutMs: AI_ECC_TIMEOUT,
 		retries: 0,
+		silent: true,
 	});
 
-	const content = typeof result === "string" ? result : result?.result;
 	if (!content) throw new Error("AI generation failed");
 
 	// 檢查長度，如果超過 200 行則截斷並加警告

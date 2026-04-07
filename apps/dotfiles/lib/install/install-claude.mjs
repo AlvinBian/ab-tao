@@ -10,10 +10,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import * as p from "@clack/prompts";
 import { isEmpty, sumBy } from "lodash-es";
 import pc from "picocolors";
 import { countFiles, discoverItems } from "../cli/files.mjs";
+import { CLACK_LOGGER } from "../cli/logger.mjs";
 import { stageClaudePreview } from "../cli/preview.mjs";
 import { runWithProgress } from "../cli/progress.mjs";
 import { BACK, smartSelect } from "../cli/prompts.mjs";
@@ -107,6 +107,7 @@ async function selectHooks(repoDir, stepLabel, flagAll, session) {
  * @param {boolean} [manual=false] - 是否為手動模式（只生成 preview，不部署）
  * @param {string[]} [skillIds=[]] - 要合併的技術棧 ID 列表（用於 skill 片段注入）
  * @param {Object|null} [session=null] - 上次 session（用於預選）
+ * @param {Object} [logger] - Logger 介面（CLACK_LOGGER 或 listrLogger）
  * @returns {Promise<{ commands: string[], agents: string[], rules: string[], hooks: string[] } | undefined>}
  *   已安裝的各類型名稱列表，manual 模式返回 undefined
  */
@@ -119,6 +120,7 @@ export async function handleInstallClaude(
 	manual = false,
 	skillIds = [],
 	session = null,
+	logger = CLACK_LOGGER,
 ) {
 	const selected = {};
 
@@ -131,7 +133,7 @@ export async function handleInstallClaude(
 		});
 		if (selected[key] === BACK) return undefined;
 		if (selected[key]?.length)
-			p.log.success(
+			logger?.success(
 				`${stepLabel}${def.selectLabel || key}：${selected[key].length} 個`,
 			);
 	}
@@ -182,7 +184,7 @@ export async function handleInstallClaude(
 		total += 1; // hooks.json 是一個檔案，安裝腳本只產生一行進度
 	}
 	if (total === 0) {
-		p.log.warn(`${stepLabel}未選擇任何項目，跳過 Claude 安裝`);
+		logger?.warn(`${stepLabel}未選擇任何項目，跳過 Claude 安裝`);
 		return;
 	}
 
@@ -251,12 +253,12 @@ export async function handleInstallClaude(
 				`  ${pc.green("✔")} ${pc.dim(`[${i + 1}/${allItems.length}]`)} ${item}`,
 		)
 		.join("\n");
-	p.log.info(
+	logger?.info(
 		`${stepLabel}生成 ${summaryParts.join(" · ")}${hooksLabel} → dist/preview/claude/\n${fileLines}`,
 	);
 
 	if (manual) {
-		p.log.success(`${stepLabel}✔ 已生成 → dist/preview/claude/`);
+		logger?.success(`${stepLabel}✔ 已生成 → dist/preview/claude/`);
 		return;
 	}
 
@@ -266,25 +268,26 @@ export async function handleInstallClaude(
 			throw new Error(`選項 ${key} 中包含無效字元`);
 		}
 	}
-	p.log.info(
+	logger?.info(
 		`${stepLabel}安裝 ${summaryParts.join(" · ")}${hooksLabel} → ~/.claude/`,
 	);
 	await runWithProgress(`${step.script} ${cmdArgs.join(" ")}`, {
 		cwd: repoDir,
 		total,
+		logger,
 		parseProgress(line) {
 			const m = line.match(/^\s+[✅─⚠]\s+(\S+)/);
 			return m ? m[1].trim() : null;
 		},
 	});
-	p.log.success(
+	logger?.success(
 		`${stepLabel}✔ ${summaryParts.join(" · ")}${hooksLabel} 已安裝`,
 	);
 
 	// Gmail filter 初始化提示（僅當 chief-of-staff agent 被安裝時）
 	const hasChiefOfStaff = (selected.agents || []).includes("chief-of-staff");
 	if (hasChiefOfStaff && !flagAll) {
-		p.log.info(
+		logger?.info(
 			`已安裝 chief-of-staff agent（Gmail / Slack / 多頻道通訊管理）\n` +
 				`  若要設定 Gmail 自動分類，請依序執行：\n` +
 				`  1. ${pc.cyan("npm install -g @google/clasp")}   # 安裝 Google Clasp CLI\n` +

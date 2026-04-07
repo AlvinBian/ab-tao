@@ -16,6 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { CLACK_LOGGER } from "../cli/logger.mjs";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
 import { getDirname, HOME } from "../core/paths.mjs";
 import { loadSession, patchSession } from "../core/session.mjs";
@@ -96,6 +97,7 @@ export async function adjustClaude({ flagAll = false, manual = false } = {}) {
 		manual,
 		[],
 		session,
+		CLACK_LOGGER,
 	);
 	if (result)
 		await patchSession({
@@ -238,6 +240,7 @@ export async function adjustZsh({ flagAll = false, manual = false } = {}) {
 		flagAll,
 		manual,
 		session,
+		CLACK_LOGGER,
 	);
 	if (result)
 		await patchSession({

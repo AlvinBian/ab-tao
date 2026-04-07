@@ -4,7 +4,6 @@
 
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
-import pc from "picocolors";
 
 // ANSI escape sequence 正則：包含 CSI 控制序列（\x1B[...）與 OSC 序列（\x1B]...\x07）
 // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences require control characters
@@ -34,9 +33,10 @@ export const stripAnsi = (s) => s.replace(ANSI_RE, "").replace(/\r/g, "");
  * @param {string} [opts.cwd] - 工作目錄
  * @param {number} opts.total - 預期的總 item 數
  * @param {Function} opts.parseProgress - 行解析回調 (cleanLine) => result
+ * @param {Object} [opts.logger] - Logger 介面（CLACK_LOGGER 或 listrLogger）
  * @returns {Promise<void>}
  */
-export function runWithProgress(cmd, { cwd, total, parseProgress }) {
+export function runWithProgress(cmd, { cwd, total, parseProgress, logger }) {
 	return new Promise((resolve, reject) => {
 		let current = 0;
 
@@ -58,9 +58,7 @@ export function runWithProgress(cmd, { cwd, total, parseProgress }) {
 				} else if (current < total) {
 					current++;
 					const label = typeof result === "string" ? result : result.label;
-					console.log(
-						`  ${pc.green("✔")} ${pc.dim(`[${current}/${total}]`)} ${label}`,
-					);
+					logger?.progress(current, total, label);
 				}
 			}
 		});
@@ -70,19 +68,13 @@ export function runWithProgress(cmd, { cwd, total, parseProgress }) {
 
 		child.on("close", (code) => {
 			if (code !== 0) {
-				console.log(
-					`  ${pc.red("✗")} ${pc.dim(`[${current}/${total}]`)} ${pc.red("失敗")}`,
-				);
+				logger?.failure(current, total);
 				const stderr = Buffer.concat(stderrChunks).toString().trim();
 				reject(
 					new Error(`執行失敗（代碼 ${code}）${stderr ? `\n${stderr}` : ""}`),
 				);
 			} else {
-				if (current < total) {
-					console.log(
-						`  ${pc.green("✔")} ${pc.dim(`[${total}/${total}]`)} 完成`,
-					);
-				}
+				if (current < total) logger?.done(total);
 				resolve();
 			}
 		});

@@ -7,7 +7,6 @@
 
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
-import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { stripAnsi } from "../cli/progress.mjs";
@@ -31,13 +30,12 @@ export async function handleBuildPlugin(
 	repoDir,
 	step,
 	stepLabel,
-	{ silent = false } = {},
+	{ logger } = {},
 ) {
 	const phases = step.phases || [];
 	const seen = new Set();
 
-	// silent 模式（在 listr2 內）：不使用 clack spinner，避免渲染衝突
-	const spinner = silent ? null : p.spinner();
+	const spinner = logger?.createSpinner();
 	spinner?.start(`${stepLabel}打包 plugin...`);
 
 	try {
@@ -79,7 +77,7 @@ export async function handleBuildPlugin(
 			`${stepLabel}✔ ${step.successMsg || "打包完成"}${phaseLines}`,
 		);
 	} catch (e) {
-		if (silent) throw e;
-		p.log.warn(`${stepLabel}打包失敗：${e.message.slice(0, 60)}`);
+		if (logger?.throwOnError) throw e;
+		logger?.warn(`${stepLabel}打包失敗：${e.message.slice(0, 60)}`);
 	}
 }
