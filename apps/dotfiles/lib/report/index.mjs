@@ -7,24 +7,24 @@
  */
 
 export {
-  badge,
-  badgeWithDesc,
-  esc,
-  estimateTokenSize,
-  getStyles,
-  renderBackup,
-  renderClaudeIgnoreStats,
-  renderCleanup,
-  renderEcc,
-  renderInstalled,
-  renderOverview,
-  renderPlugins,
-  renderStacks,
-  renderTokenChart,
-  section,
-} from './formatters.mjs';
+	badge,
+	badgeWithDesc,
+	esc,
+	estimateTokenSize,
+	getStyles,
+	renderBackup,
+	renderClaudeIgnoreStats,
+	renderCleanup,
+	renderEcc,
+	renderInstalled,
+	renderOverview,
+	renderPlugins,
+	renderStacks,
+	renderTokenChart,
+	section,
+} from "./formatters.mjs";
 export {
-  generateReport,
-  openInBrowser,
-  saveReport,
-} from './renderer.mjs';
+	generateReport,
+	openInBrowser,
+	saveReport,
+} from "./renderer.mjs";

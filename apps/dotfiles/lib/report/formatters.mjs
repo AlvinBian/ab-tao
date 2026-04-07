@@ -5,10 +5,10 @@
  * 包括：HTML 逃逸、徽章、卡片、CSS 樣式、安裝/ECC 項目渲染。
  */
 
-import path from 'node:path';
-import { sumBy } from 'lodash-es';
-import { getDescription } from '../config/descriptions.mjs';
-import { HOME } from '../core/paths.mjs';
+import path from "node:path";
+import { sumBy } from "lodash-es";
+import { getDescription } from "../config/descriptions.mjs";
+import { HOME } from "../core/paths.mjs";
 
 // ── HTML 轉義及元件 ──────────────────────────────────────────────
 
@@ -16,37 +16,37 @@ import { HOME } from '../core/paths.mjs';
  * 逃逸 HTML 特殊字元
  */
 export function esc(str) {
-  if (typeof str !== 'string') return String(str ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+	if (typeof str !== "string") return String(str ?? "");
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
 }
 
 /**
  * 產生徽章 HTML
  */
-export function badge(text, variant = 'blue', desc = '') {
-  const tooltip = desc ? ` title="${esc(desc)}"` : '';
-  return `<span class="badge badge-${variant}"${tooltip}>${esc(text)}</span>`;
+export function badge(text, variant = "blue", desc = "") {
+	const tooltip = desc ? ` title="${esc(desc)}"` : "";
+	return `<span class="badge badge-${variant}"${tooltip}>${esc(text)}</span>`;
 }
 
 /**
  * 產生帶描述的徽章
  */
 export function badgeWithDesc(name, variant, type, claudeDir) {
-  const desc = getDescription(name, type, claudeDir);
-  return desc
-    ? `<div class="item-row"><span class="badge badge-${variant}">${esc(name)}</span><span class="item-desc">${esc(desc)}</span></div>`
-    : `<span class="badge badge-${variant}">${esc(name)}</span>`;
+	const desc = getDescription(name, type, claudeDir);
+	return desc
+		? `<div class="item-row"><span class="badge badge-${variant}">${esc(name)}</span><span class="item-desc">${esc(desc)}</span></div>`
+		: `<span class="badge badge-${variant}">${esc(name)}</span>`;
 }
 
 /**
  * 產生卡片容器
  */
 export function section(title, content) {
-  return `<div class="card"><h2 class="section-title">${esc(title)}</h2>${content}</div>`;
+	return `<div class="card"><h2 class="section-title">${esc(title)}</h2>${content}</div>`;
 }
 
 // ── CSS 樣式 ──────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ export function section(title, content) {
  * 取得完整 CSS 樣式表
  */
 export function getStyles() {
-  return `
+	return `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   background:#0d1117;color:#c9d1d9;line-height:1.6;padding:24px 16px}
@@ -129,109 +129,117 @@ footer{text-align:center;font-size:.75rem;color:#484f58;margin-top:32px}
  * 渲染概覽區塊
  */
 export function renderOverview(data) {
-  const eccAdded = sumBy(
-    data.ecc?.sources || [],
-    (r) =>
-      (r.added?.commands?.length || 0) +
-      (r.added?.agents?.length || 0) +
-      (r.added?.rules?.length || 0),
-  );
-  const items = [
-    { label: '使用者', value: esc(data.username) },
-    { label: '組織', value: esc(data.org) },
-    { label: '模式', value: data.mode === 'auto' ? '自動' : '手動' },
-    { label: 'Repos', value: data.repos?.length ?? 0 },
-    { label: '技術棧', value: data.stacks?.length ?? 0 },
-    { label: 'AI 資源融合', value: `+${eccAdded}` },
-  ];
-  const inner = items
-    .map(
-      (i) =>
-        `<div class="item"><div class="value">${i.value}</div><div class="label">${i.label}</div></div>`,
-    )
-    .join('');
-  return `<div class="card"><div class="overview">${inner}</div></div>`;
+	const eccAdded = sumBy(
+		data.ecc?.sources || [],
+		(r) =>
+			(r.added?.commands?.length || 0) +
+			(r.added?.agents?.length || 0) +
+			(r.added?.rules?.length || 0),
+	);
+	const items = [
+		{ label: "使用者", value: esc(data.username) },
+		{ label: "組織", value: esc(data.org) },
+		{ label: "模式", value: data.mode === "auto" ? "自動" : "手動" },
+		{ label: "Repos", value: data.repos?.length ?? 0 },
+		{ label: "技術棧", value: data.stacks?.length ?? 0 },
+		{ label: "AI 資源融合", value: `+${eccAdded}` },
+	];
+	const inner = items
+		.map(
+			(i) =>
+				`<div class="item"><div class="value">${i.value}</div><div class="label">${i.label}</div></div>`,
+		)
+		.join("");
+	return `<div class="card"><div class="overview">${inner}</div></div>`;
 }
 
 /**
  * 渲染 AI 資源融合區塊
  */
 export function renderEcc(ecc) {
-  if (!ecc?.sources?.length) return '';
-  const claudeDir = path.join(HOME, '.claude');
-  let inner = '';
-  for (const src of ecc.sources) {
-    inner += `<div class="source-header">
+	if (!ecc?.sources?.length) return "";
+	const claudeDir = path.join(HOME, ".claude");
+	let inner = "";
+	for (const src of ecc.sources) {
+		inner += `<div class="source-header">
       <span class="name">${esc(src.name)}</span>
-      <span class="meta">${esc(src.repo)} · ${src.version || '?'}${src.cached ? ' · 快取' : ''}</span>
+      <span class="meta">${esc(src.repo)} · ${src.version || "?"}${src.cached ? " · 快取" : ""}</span>
     </div>`;
-    for (const [key, arr] of Object.entries(src.added || {})) {
-      if (!arr?.length) continue;
-      inner += `<div class="group-label">+ ${esc(key)}（${arr.length}）</div><div>${arr.map((v) => badgeWithDesc(v, 'green', key, claudeDir)).join('')}</div>`;
-    }
-    const skippedTotal = sumBy(Object.values(src.skipped || {}), (a) => a?.length || 0);
-    if (skippedTotal > 0) {
-      inner += `<div class="group-label" style="color:#8b949e">跳過（本地優先）${skippedTotal} 個</div>`;
-    }
-    inner += '<hr style="border:none;border-top:1px solid #21262d;margin:12px 0">';
-  }
-  return section(
-    'Source 融合',
-    '<p class="section-desc">AI 外部資源（ECC + Anthropic + Superpowers 等）。「新增」表示本地沒有的項目已融合，「跳過」表示本地已有同名項目優先保留。</p>' +
-      inner,
-  );
+		for (const [key, arr] of Object.entries(src.added || {})) {
+			if (!arr?.length) continue;
+			inner += `<div class="group-label">+ ${esc(key)}（${arr.length}）</div><div>${arr.map((v) => badgeWithDesc(v, "green", key, claudeDir)).join("")}</div>`;
+		}
+		const skippedTotal = sumBy(
+			Object.values(src.skipped || {}),
+			(a) => a?.length || 0,
+		);
+		if (skippedTotal > 0) {
+			inner += `<div class="group-label" style="color:#8b949e">跳過（本地優先）${skippedTotal} 個</div>`;
+		}
+		inner +=
+			'<hr style="border:none;border-top:1px solid #21262d;margin:12px 0">';
+	}
+	return section(
+		"Source 融合",
+		'<p class="section-desc">AI 外部資源（ECC + Anthropic + Superpowers 等）。「新增」表示本地沒有的項目已融合，「跳過」表示本地已有同名項目優先保留。</p>' +
+			inner,
+	);
 }
 
 /**
  * 渲染已安裝項目區塊
  */
 export function renderInstalled(installed) {
-  if (!installed) return '';
-  const claudeDir = path.join(HOME, '.claude');
-  let inner = '';
-  const groups = [
-    ['Commands', installed.commands, 'blue', 'commands'],
-    ['Agents', installed.agents, 'purple', 'agents'],
-    ['Rules', installed.rules, 'blue', 'rules'],
-    ['Zsh Modules', installed.modules, 'pink', null],
-  ];
-  for (const [label, items, variant, type] of groups) {
-    if (!items?.length) continue;
-    inner += `<div class="group-label">${label}（${items.length}）</div><div>`;
-    if (type) {
-      inner += items.map((v) => badgeWithDesc(v, variant, type, claudeDir)).join('');
-    } else {
-      inner += items.map((v) => badge(v, variant)).join('');
-    }
-    inner += '</div>';
-  }
-  if (installed.hooks)
-    inner += `<div class="group-label">Hooks</div><div>${badge('已啟用', 'green')}</div>`;
-  return section(
-    '已安裝項目',
-    '<p class="section-desc">以下配置已安裝到 ~/.claude/ 目錄，對所有專案全局生效。帶描述的項目來自 ab-tao，無描述的可能是 ECC 外部資源。</p>' +
-      inner,
-  );
+	if (!installed) return "";
+	const claudeDir = path.join(HOME, ".claude");
+	let inner = "";
+	const groups = [
+		["Commands", installed.commands, "blue", "commands"],
+		["Agents", installed.agents, "purple", "agents"],
+		["Rules", installed.rules, "blue", "rules"],
+		["Zsh Modules", installed.modules, "pink", null],
+	];
+	for (const [label, items, variant, type] of groups) {
+		if (!items?.length) continue;
+		inner += `<div class="group-label">${label}（${items.length}）</div><div>`;
+		if (type) {
+			inner += items
+				.map((v) => badgeWithDesc(v, variant, type, claudeDir))
+				.join("");
+		} else {
+			inner += items.map((v) => badge(v, variant)).join("");
+		}
+		inner += "</div>";
+	}
+	if (installed.hooks)
+		inner += `<div class="group-label">Hooks</div><div>${badge("已啟用", "green")}</div>`;
+	return section(
+		"已安裝項目",
+		'<p class="section-desc">以下配置已安裝到 ~/.claude/ 目錄，對所有專案全局生效。帶描述的項目來自 ab-tao，無描述的可能是 ECC 外部資源。</p>' +
+			inner,
+	);
 }
 
 /**
  * 渲染技術棧統計區塊
  */
 export function renderStacks(stacks) {
-  if (!stacks?.length) return '';
-  const stackList = stacks.map((s) => badge(s, 'blue', getDescription(s))).join('');
-  return section('技術棧總覽', stackList);
+	if (!stacks?.length) return "";
+	const stackList = stacks
+		.map((s) => badge(s, "blue", getDescription(s)))
+		.join("");
+	return section("技術棧總覽", stackList);
 }
 
 /**
  * 渲染備份區塊
  */
 export function renderBackup(backupDir) {
-  if (!backupDir) return '';
-  return section(
-    '備份位置',
-    `<div class="mono" style="padding:8px;background:#0d1117;border-radius:4px">${esc(backupDir)}</div>`,
-  );
+	if (!backupDir) return "";
+	return section(
+		"備份位置",
+		`<div class="mono" style="padding:8px;background:#0d1117;border-radius:4px">${esc(backupDir)}</div>`,
+	);
 }
 
 /**
@@ -239,14 +247,14 @@ export function renderBackup(backupDir) {
  * 每 4 個字元約等於 1 token
  */
 export function estimateTokenSize(bytes) {
-  return Math.ceil(bytes / 4);
+	return Math.ceil(bytes / 4);
 }
 
 /**
  * 渲染 Token 消耗分佈環形圖區塊
  */
 export function renderTokenChart() {
-  return `<div class="card">
+	return `<div class="card">
     <h2 class="section-title">🔋 Token 消耗分佈</h2>
     <p class="section-desc">估算各類配置文件對 context 的佔用比例</p>
     <div id="chart-token-distribution" style="height:300px"></div>
@@ -258,40 +266,40 @@ export function renderTokenChart() {
  * 計算 30 天未使用的命令、代理和外部資源
  */
 export function renderCleanup(installed, _auditLog = {}) {
-  if (!installed) return '';
+	if (!installed) return "";
 
-  const totalItems =
-    (installed.commands?.length || 0) +
-    (installed.agents?.length || 0) +
-    (installed.rules?.length || 0);
-  if (totalItems === 0) return '';
+	const totalItems =
+		(installed.commands?.length || 0) +
+		(installed.agents?.length || 0) +
+		(installed.rules?.length || 0);
+	if (totalItems === 0) return "";
 
-  // 未使用項目（模擬：實際應從 auditLog 讀取）
-  const unusedCommands = [];
-  const unusedAgents = [];
-  const estimatedSavings = 0; // 需要實際計算
+	// 未使用項目（模擬：實際應從 auditLog 讀取）
+	const unusedCommands = [];
+	const unusedAgents = [];
+	const estimatedSavings = 0; // 需要實際計算
 
-  const unusedCount = unusedCommands.length + unusedAgents.length;
-  if (unusedCount === 0) {
-    return `<div class="card">
+	const unusedCount = unusedCommands.length + unusedAgents.length;
+	if (unusedCount === 0) {
+		return `<div class="card">
       <h2 class="section-title">🗑️ 清理機會</h2>
       <p class="section-desc" style="color:#3fb950">所有已安裝項目都在使用中 ✓</p>
     </div>`;
-  }
+	}
 
-  let tableHtml =
-    '<table style="font-size:.85rem"><thead><tr><th>名稱</th><th>類型</th><th>最後使用</th><th>大小</th></tr></thead><tbody>';
+	let tableHtml =
+		'<table style="font-size:.85rem"><thead><tr><th>名稱</th><th>類型</th><th>最後使用</th><th>大小</th></tr></thead><tbody>';
 
-  for (const cmd of unusedCommands) {
-    tableHtml += `<tr><td>${esc(cmd)}</td><td><span class="badge badge-blue">Command</span></td><td style="color:#8b949e">30+ 天前</td><td>~2KB</td></tr>`;
-  }
-  for (const agent of unusedAgents) {
-    tableHtml += `<tr><td>${esc(agent)}</td><td><span class="badge badge-purple">Agent</span></td><td style="color:#8b949e">30+ 天前</td><td>~3KB</td></tr>`;
-  }
+	for (const cmd of unusedCommands) {
+		tableHtml += `<tr><td>${esc(cmd)}</td><td><span class="badge badge-blue">Command</span></td><td style="color:#8b949e">30+ 天前</td><td>~2KB</td></tr>`;
+	}
+	for (const agent of unusedAgents) {
+		tableHtml += `<tr><td>${esc(agent)}</td><td><span class="badge badge-purple">Agent</span></td><td style="color:#8b949e">30+ 天前</td><td>~3KB</td></tr>`;
+	}
 
-  tableHtml += '</tbody></table>';
+	tableHtml += "</tbody></table>";
 
-  return `<div class="card">
+	return `<div class="card">
     <h2 class="section-title">🗑️ 清理機會</h2>
     <p class="section-desc">${unusedCount} 個項目 30 天未使用 · 預估節省 ~${estimatedSavings}KB token</p>
     ${tableHtml}
@@ -302,50 +310,50 @@ export function renderCleanup(installed, _auditLog = {}) {
  * 渲染 Plugin 區塊（推薦的官方 Plugins）
  */
 export function renderPlugins(_installed = {}) {
-  const PLUGIN_RECOMMENDATIONS = [
-    {
-      name: 'code-review',
-      desc: '多 agent 並行 PR 審查',
-      category: '開發流程',
-    },
-    {
-      name: 'hookify',
-      desc: '分析對話模式自動生成 hooks',
-      category: '助手',
-    },
-    {
-      name: 'ralph-wiggum',
-      desc: '自動恢復被中斷的會話',
-      category: '助手',
-    },
-    {
-      name: 'feature-dev',
-      desc: '7 階段結構化功能開發',
-      category: '開發流程',
-    },
-  ];
+	const PLUGIN_RECOMMENDATIONS = [
+		{
+			name: "code-review",
+			desc: "多 agent 並行 PR 審查",
+			category: "開發流程",
+		},
+		{
+			name: "hookify",
+			desc: "分析對話模式自動生成 hooks",
+			category: "助手",
+		},
+		{
+			name: "ralph-wiggum",
+			desc: "自動恢復被中斷的會話",
+			category: "助手",
+		},
+		{
+			name: "feature-dev",
+			desc: "7 階段結構化功能開發",
+			category: "開發流程",
+		},
+	];
 
-  let pluginsList = '';
-  for (const plugin of PLUGIN_RECOMMENDATIONS) {
-    pluginsList += `<div class="item-row">
+	let pluginsList = "";
+	for (const plugin of PLUGIN_RECOMMENDATIONS) {
+		pluginsList += `<div class="item-row">
       <span class="badge badge-blue">${esc(plugin.name)}</span>
       <span class="item-desc">${esc(plugin.desc)}</span>
     </div>`;
-  }
+	}
 
-  return section(
-    '🔌 推薦官方 Plugins',
-    `<p class="section-desc">提升 Claude Code 能力，在 Claude Code 中執行 /plugin 安裝</p>${pluginsList}`,
-  );
+	return section(
+		"🔌 推薦官方 Plugins",
+		`<p class="section-desc">提升 Claude Code 能力，在 Claude Code 中執行 /plugin 安裝</p>${pluginsList}`,
+	);
 }
 
 /**
  * 渲染 .claudeignore 覆蓋統計
  */
 export function renderClaudeIgnoreStats(repoCount = 0) {
-  if (repoCount === 0) return '';
+	if (repoCount === 0) return "";
 
-  return `<div class="stat" style="margin-right:16px">
+	return `<div class="stat" style="margin-right:16px">
     <span style="color:#8b949e">.claudeignore</span>
     <span style="color:#58a6ff;font-weight:600">${repoCount} 個 Repo 已覆蓋</span>
   </div>`;

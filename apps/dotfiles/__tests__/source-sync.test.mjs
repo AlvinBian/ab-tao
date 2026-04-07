@@ -1,166 +1,183 @@
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { afterEach, beforeEach, describe, it } from 'node:test';
-import { buildSyncResult, filterItems, writeSyncedFiles } from '../lib/external/source-sync.mjs';
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import {
+	buildSyncResult,
+	filterItems,
+	writeSyncedFiles,
+} from "../lib/external/source-sync.mjs";
 
-describe('filterItems', () => {
-  const index = {
-    commands: [
-      { name: 'plan.md', path: 'commands/plan.md' },
-      { name: 'tdd.md', path: 'commands/tdd.md' },
-      { name: 'rust-build.md', path: 'commands/rust-build.md' },
-      { name: 'go-test.md', path: 'commands/go-test.md' },
-      { name: 'python-review.md', path: 'commands/python-review.md' },
-    ],
-    agents: [
-      { name: 'coder.md', path: 'agents/coder.md' },
-      { name: 'rust-reviewer.md', path: 'agents/rust-reviewer.md' },
-    ],
-    rules: [{ name: 'security.md', path: 'rules/security.md' }],
-  };
+describe("filterItems", () => {
+	const index = {
+		commands: [
+			{ name: "plan.md", path: "commands/plan.md" },
+			{ name: "tdd.md", path: "commands/tdd.md" },
+			{ name: "rust-build.md", path: "commands/rust-build.md" },
+			{ name: "go-test.md", path: "commands/go-test.md" },
+			{ name: "python-review.md", path: "commands/python-review.md" },
+		],
+		agents: [
+			{ name: "coder.md", path: "agents/coder.md" },
+			{ name: "rust-reviewer.md", path: "agents/rust-reviewer.md" },
+		],
+		rules: [{ name: "security.md", path: "rules/security.md" }],
+	};
 
-  it('應保留語言無關的項目', () => {
-    const result = filterItems(index, ['typescript'], new Set());
-    assert.ok(result.commands.some((f) => f.name === 'plan.md'));
-    assert.ok(result.commands.some((f) => f.name === 'tdd.md'));
-    assert.ok(result.agents.some((f) => f.name === 'coder.md'));
-  });
+	it("應保留語言無關的項目", () => {
+		const result = filterItems(index, ["typescript"], new Set());
+		assert.ok(result.commands.some((f) => f.name === "plan.md"));
+		assert.ok(result.commands.some((f) => f.name === "tdd.md"));
+		assert.ok(result.agents.some((f) => f.name === "coder.md"));
+	});
 
-  it('應過濾不匹配的語言前綴', () => {
-    const result = filterItems(index, ['typescript'], new Set());
-    assert.ok(!result.commands.some((f) => f.name === 'rust-build.md'));
-    assert.ok(!result.commands.some((f) => f.name === 'go-test.md'));
-    assert.ok(!result.commands.some((f) => f.name === 'python-review.md'));
-    assert.ok(!result.agents.some((f) => f.name === 'rust-reviewer.md'));
-  });
+	it("應過濾不匹配的語言前綴", () => {
+		const result = filterItems(index, ["typescript"], new Set());
+		assert.ok(!result.commands.some((f) => f.name === "rust-build.md"));
+		assert.ok(!result.commands.some((f) => f.name === "go-test.md"));
+		assert.ok(!result.commands.some((f) => f.name === "python-review.md"));
+		assert.ok(!result.agents.some((f) => f.name === "rust-reviewer.md"));
+	});
 
-  it('應包含匹配的語言前綴', () => {
-    const result = filterItems(index, ['rust'], new Set());
-    assert.ok(result.commands.some((f) => f.name === 'rust-build.md'));
-    assert.ok(result.agents.some((f) => f.name === 'rust-reviewer.md'));
-  });
+	it("應包含匹配的語言前綴", () => {
+		const result = filterItems(index, ["rust"], new Set());
+		assert.ok(result.commands.some((f) => f.name === "rust-build.md"));
+		assert.ok(result.agents.some((f) => f.name === "rust-reviewer.md"));
+	});
 
-  it('應排除已存在的項目', () => {
-    const existing = new Set(['plan.md', 'coder.md']);
-    const result = filterItems(index, ['typescript', 'rust'], existing);
-    assert.ok(!result.commands.some((f) => f.name === 'plan.md'));
-    assert.ok(!result.agents.some((f) => f.name === 'coder.md'));
-  });
+	it("應排除已存在的項目", () => {
+		const existing = new Set(["plan.md", "coder.md"]);
+		const result = filterItems(index, ["typescript", "rust"], existing);
+		assert.ok(!result.commands.some((f) => f.name === "plan.md"));
+		assert.ok(!result.agents.some((f) => f.name === "coder.md"));
+	});
 });
 
-describe('buildSyncResult', () => {
-  it('應僅選取指定名稱的項目', () => {
-    const fetched = {
-      sources: [
-        {
-          name: 'test-source',
-          repo: 'test/repo',
-          version: 'abc12345',
-          cached: false,
-          allFiles: {
-            commands: [
-              { name: 'plan.md', content: '# Plan' },
-              { name: 'tdd.md', content: '# TDD' },
-            ],
-            agents: [{ name: 'coder.md', content: '# Coder' }],
-            rules: [],
-            hooks: null,
-          },
-        },
-      ],
-      localNames: new Set(),
-    };
+describe("buildSyncResult", () => {
+	it("應僅選取指定名稱的項目", () => {
+		const fetched = {
+			sources: [
+				{
+					name: "test-source",
+					repo: "test/repo",
+					version: "abc12345",
+					cached: false,
+					allFiles: {
+						commands: [
+							{ name: "plan.md", content: "# Plan" },
+							{ name: "tdd.md", content: "# TDD" },
+						],
+						agents: [{ name: "coder.md", content: "# Coder" }],
+						rules: [],
+						hooks: null,
+					},
+				},
+			],
+			localNames: new Set(),
+		};
 
-    const selected = {
-      commands: new Set(['plan.md']),
-      agents: new Set(['coder.md']),
-      rules: new Set(),
-    };
+		const selected = {
+			commands: new Set(["plan.md"]),
+			agents: new Set(["coder.md"]),
+			rules: new Set(),
+		};
 
-    const result = buildSyncResult(fetched, selected);
-    assert.equal(result.results.length, 1);
-    assert.deepEqual(result.results[0].added.commands, ['plan.md']);
-    assert.deepEqual(result.results[0].added.agents, ['coder.md']);
-    assert.deepEqual(result.results[0].skipped.commands, ['tdd.md']);
-    assert.ok(result.eccTypeMap.plan === 'commands');
-    assert.ok(result.eccTypeMap.coder === 'agents');
-  });
+		const result = buildSyncResult(fetched, selected);
+		assert.equal(result.results.length, 1);
+		assert.deepEqual(result.results[0].added.commands, ["plan.md"]);
+		assert.deepEqual(result.results[0].added.agents, ["coder.md"]);
+		assert.deepEqual(result.results[0].skipped.commands, ["tdd.md"]);
+		assert.ok(result.eccTypeMap.plan === "commands");
+		assert.ok(result.eccTypeMap.coder === "agents");
+	});
 });
 
-describe('writeSyncedFiles', () => {
-  let tmpDir;
+describe("writeSyncedFiles", () => {
+	let tmpDir;
 
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-test-'));
-  });
+	beforeEach(() => {
+		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-test-"));
+	});
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
+	afterEach(() => {
+		fs.rmSync(tmpDir, { recursive: true, force: true });
+	});
 
-  it('應寫入帶生成標記的檔案', async () => {
-    const downloaded = [
-      {
-        source: 'test',
-        commands: [{ name: 'plan.md', content: '# Plan' }],
-        agents: [],
-        rules: [],
-        hooks: null,
-      },
-    ];
+	it("應寫入帶生成標記的檔案", async () => {
+		const downloaded = [
+			{
+				source: "test",
+				commands: [{ name: "plan.md", content: "# Plan" }],
+				agents: [],
+				rules: [],
+				hooks: null,
+			},
+		];
 
-    await writeSyncedFiles(downloaded, tmpDir);
+		await writeSyncedFiles(downloaded, tmpDir);
 
-    const content = fs.readFileSync(path.join(tmpDir, 'commands', 'plan.md'), 'utf8');
-    assert.ok(content.startsWith('<!-- generated by ab-tao -->'));
-    assert.ok(content.includes('# Plan'));
-  });
+		const content = fs.readFileSync(
+			path.join(tmpDir, "commands", "plan.md"),
+			"utf8",
+		);
+		assert.ok(content.startsWith("<!-- generated by ab-tao -->"));
+		assert.ok(content.includes("# Plan"));
+	});
 
-  it('應跳過使用者自訂的檔案', async () => {
-    // 預先建立使用者自訂的檔案（無生成標記）
-    fs.mkdirSync(path.join(tmpDir, 'commands'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, 'commands', 'plan.md'), '# 我的自訂 Plan', 'utf8');
+	it("應跳過使用者自訂的檔案", async () => {
+		// 預先建立使用者自訂的檔案（無生成標記）
+		fs.mkdirSync(path.join(tmpDir, "commands"), { recursive: true });
+		fs.writeFileSync(
+			path.join(tmpDir, "commands", "plan.md"),
+			"# 我的自訂 Plan",
+			"utf8",
+		);
 
-    const downloaded = [
-      {
-        source: 'test',
-        commands: [{ name: 'plan.md', content: '# Plan from ECC' }],
-        agents: [],
-        rules: [],
-        hooks: null,
-      },
-    ];
+		const downloaded = [
+			{
+				source: "test",
+				commands: [{ name: "plan.md", content: "# Plan from ECC" }],
+				agents: [],
+				rules: [],
+				hooks: null,
+			},
+		];
 
-    const skipped = await writeSyncedFiles(downloaded, tmpDir);
-    assert.ok(skipped.includes('commands/plan.md'));
+		const skipped = await writeSyncedFiles(downloaded, tmpDir);
+		assert.ok(skipped.includes("commands/plan.md"));
 
-    // 內容不應被覆蓋
-    const content = fs.readFileSync(path.join(tmpDir, 'commands', 'plan.md'), 'utf8');
-    assert.equal(content, '# 我的自訂 Plan');
-  });
+		// 內容不應被覆蓋
+		const content = fs.readFileSync(
+			path.join(tmpDir, "commands", "plan.md"),
+			"utf8",
+		);
+		assert.equal(content, "# 我的自訂 Plan");
+	});
 
-  it('應覆蓋先前自動生成的檔案', async () => {
-    fs.mkdirSync(path.join(tmpDir, 'agents'), { recursive: true });
-    fs.writeFileSync(
-      path.join(tmpDir, 'agents', 'coder.md'),
-      '<!-- generated by ab-tao -->\n# 舊版 Coder',
-      'utf8',
-    );
+	it("應覆蓋先前自動生成的檔案", async () => {
+		fs.mkdirSync(path.join(tmpDir, "agents"), { recursive: true });
+		fs.writeFileSync(
+			path.join(tmpDir, "agents", "coder.md"),
+			"<!-- generated by ab-tao -->\n# 舊版 Coder",
+			"utf8",
+		);
 
-    const downloaded = [
-      {
-        source: 'test',
-        commands: [],
-        agents: [{ name: 'coder.md', content: '# 新版 Coder' }],
-        rules: [],
-        hooks: null,
-      },
-    ];
+		const downloaded = [
+			{
+				source: "test",
+				commands: [],
+				agents: [{ name: "coder.md", content: "# 新版 Coder" }],
+				rules: [],
+				hooks: null,
+			},
+		];
 
-    await writeSyncedFiles(downloaded, tmpDir);
-    const content = fs.readFileSync(path.join(tmpDir, 'agents', 'coder.md'), 'utf8');
-    assert.ok(content.includes('# 新版 Coder'));
-  });
+		await writeSyncedFiles(downloaded, tmpDir);
+		const content = fs.readFileSync(
+			path.join(tmpDir, "agents", "coder.md"),
+			"utf8",
+		);
+		assert.ok(content.includes("# 新版 Coder"));
+	});
 });

@@ -5,142 +5,148 @@
  * 只有 CLAUDE.md 按 repo 角色差異化 → ~/.claude/projects/{path}/
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { isEmpty } from 'lodash-es';
-import { getDirname } from '../core/paths.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import { isEmpty } from "lodash-es";
+import { getDirname } from "../core/paths.mjs";
 
 const __dirname = getDirname(import.meta);
-const CLAUDE_DIR = path.resolve(__dirname, '..', '..', 'claude');
+const CLAUDE_DIR = path.resolve(__dirname, "..", "..", "claude");
 
 // ── 靜態 fallback（當動態掃描結果為空時使用）──
 
 const FALLBACK_COMMANDS = [
-  'code-review',
-  'pr-workflow',
-  'tdd',
-  'build-fix',
-  'simplify',
-  'refactor-clean',
-  'changeset',
-  'e2e',
-  'multi-frontend',
-  'test-coverage',
-  'auto-setup',
-  'draft-slack',
-  'review-slack',
-  'slack-formatting',
-  'quality-gate',
-  'verify',
-  'context-budget',
-  'prompt-optimize',
-  'plan',
-  'aside',
-  'multi-plan',
-  'changelog',
-  'adr',
-  'runbook',
-  'api-design',
-  'db-migration',
-  'test-gen',
-  'onboarding',
-  'incident',
+	"code-review",
+	"pr-workflow",
+	"tdd",
+	"build-fix",
+	"simplify",
+	"refactor-clean",
+	"changeset",
+	"e2e",
+	"multi-frontend",
+	"test-coverage",
+	"auto-setup",
+	"draft-slack",
+	"review-slack",
+	"slack-formatting",
+	"quality-gate",
+	"verify",
+	"context-budget",
+	"prompt-optimize",
+	"plan",
+	"aside",
+	"multi-plan",
+	"changelog",
+	"adr",
+	"runbook",
+	"api-design",
+	"db-migration",
+	"test-gen",
+	"onboarding",
+	"incident",
 ];
 
 const FALLBACK_AGENTS = [
-  'coder',
-  'debugger',
-  'deployer',
-  'security',
-  'migrator',
-  'perf-analyzer',
-  'monitor',
-  'chief-of-staff',
-  'architect',
-  'architecture-reviewer',
-  'database-reviewer',
-  'load-tester',
-  'dependency-auditor',
-  'build-error-resolver',
-  'tdd-guide',
-  'data-analyst',
-  // 以下已有更好的替代方案（deprecated）
-  'reviewer', // 替代：code-review plugin
-  'tester', // 替代：e2e-runner
-  'planner', // 替代：Plan subagent
-  'documenter', // 替代：doc-updater
-  'explorer', // 替代：Explore subagent
-  'refactor', // 替代：refactor-cleaner
-  'typescript-reviewer', // 替代：ECC typescript-reviewer
-  'accessibility', // 替代：accessibility-tester
+	"coder",
+	"debugger",
+	"deployer",
+	"security",
+	"migrator",
+	"perf-analyzer",
+	"monitor",
+	"chief-of-staff",
+	"architect",
+	"architecture-reviewer",
+	"database-reviewer",
+	"load-tester",
+	"dependency-auditor",
+	"build-error-resolver",
+	"tdd-guide",
+	"data-analyst",
+	// 以下已有更好的替代方案（deprecated）
+	"reviewer", // 替代：code-review plugin
+	"tester", // 替代：e2e-runner
+	"planner", // 替代：Plan subagent
+	"documenter", // 替代：doc-updater
+	"explorer", // 替代：Explore subagent
+	"refactor", // 替代：refactor-cleaner
+	"typescript-reviewer", // 替代：ECC typescript-reviewer
+	"accessibility", // 替代：accessibility-tester
 ];
 
 const FALLBACK_RULES = [
-  'code-style',
-  'git-workflow',
-  'project-conventions',
-  'testing',
-  'performance',
-  'slack-mrkdwn',
-  'tool-selection',
-  'agent-orchestration',
-  'api-conventions',
-  'context-management',
-  'error-handling',
-  'security-baseline',
-  'observability',
-  'typescript-conventions',
-  'database-conventions',
+	"code-style",
+	"git-workflow",
+	"project-conventions",
+	"testing",
+	"performance",
+	"slack-mrkdwn",
+	"tool-selection",
+	"agent-orchestration",
+	"api-conventions",
+	"context-management",
+	"error-handling",
+	"security-baseline",
+	"observability",
+	"typescript-conventions",
+	"database-conventions",
 ];
 
 // ── 動態掃描 claude/ 子目錄 ──
 
 function scanClaudeDir(subdir) {
-  const dir = path.join(CLAUDE_DIR, subdir);
-  try {
-    return fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.md'))
-      .map((f) => f.replace(/\.md$/, ''));
-  } catch {
-    return [];
-  }
+	const dir = path.join(CLAUDE_DIR, subdir);
+	try {
+		return fs
+			.readdirSync(dir)
+			.filter((f) => f.endsWith(".md"))
+			.map((f) => f.replace(/\.md$/, ""));
+	} catch {
+		return [];
+	}
 }
 
 const _scanned = {
-  commands: scanClaudeDir('commands'),
-  agents: scanClaudeDir('agents'),
-  rules: scanClaudeDir('rules'),
+	commands: scanClaudeDir("commands"),
+	agents: scanClaudeDir("agents"),
+	rules: scanClaudeDir("rules"),
 };
 
 // ── 全部配置（統一安裝到 ~/.claude/）──
 
-export const ALL_COMMANDS = !isEmpty(_scanned.commands) ? _scanned.commands : FALLBACK_COMMANDS;
-export const ALL_AGENTS = !isEmpty(_scanned.agents) ? _scanned.agents : FALLBACK_AGENTS;
-export const ALL_RULES = !isEmpty(_scanned.rules) ? _scanned.rules : FALLBACK_RULES;
+export const ALL_COMMANDS = !isEmpty(_scanned.commands)
+	? _scanned.commands
+	: FALLBACK_COMMANDS;
+export const ALL_AGENTS = !isEmpty(_scanned.agents)
+	? _scanned.agents
+	: FALLBACK_AGENTS;
+export const ALL_RULES = !isEmpty(_scanned.rules)
+	? _scanned.rules
+	: FALLBACK_RULES;
 
 // 舊版時這些是專案級（現在全部統一到全局，但 upgrade.mjs 需要知道舊的分類來清理）
 export const LEGACY_PROJECT_COMMANDS = [
-  'e2e',
-  'multi-frontend',
-  'test-coverage',
-  'auto-setup',
-  'draft-slack',
-  'review-slack',
-  'slack-formatting',
+	"e2e",
+	"multi-frontend",
+	"test-coverage",
+	"auto-setup",
+	"draft-slack",
+	"review-slack",
+	"slack-formatting",
 ];
 export const LEGACY_PROJECT_AGENTS = [
-  'security',
-  'migrator',
-  'perf-analyzer',
-  'monitor',
-  'refactor',
+	"security",
+	"migrator",
+	"perf-analyzer",
+	"monitor",
+	"refactor",
 ];
 export const LEGACY_PROJECT_RULES = [
-  'project-conventions',
-  'testing',
-  'performance',
-  'slack-mrkdwn',
+	"project-conventions",
+	"testing",
+	"performance",
+	"slack-mrkdwn",
 ];
 
 // ── 角色閾值 ──
@@ -159,8 +165,8 @@ export const MAIN_REPO_MIN_COMMITS = 3;
  * @returns {'main'|'temp'} repo 角色
  */
 export function determineRole(repo) {
-  if (repo.commits >= MAIN_REPO_MIN_COMMITS) return 'main';
-  return 'temp';
+	if (repo.commits >= MAIN_REPO_MIN_COMMITS) return "main";
+	return "temp";
 }
 
 // ── 路徑編碼（Claude Code 原生格式）──
@@ -175,7 +181,7 @@ export function determineRole(repo) {
  * @returns {string} 編碼後的 key 字串
  */
 export function encodeProjectPath(localPath) {
-  return localPath.replace(/\//g, '-');
+	return localPath.replace(/\//g, "-");
 }
 
 // ── CLAUDE.md 模板類型（按角色）──
@@ -190,12 +196,12 @@ export function encodeProjectPath(localPath) {
  *   - minimal: 一行描述（工具型 repo）
  */
 export function getClaudeMdType(role) {
-  switch (role) {
-    case 'main':
-      return 'full'; // AI 生成完整版
-    case 'temp':
-      return 'concise'; // 靜態精簡模板
-    default:
-      return 'minimal'; // 一行描述
-  }
+	switch (role) {
+		case "main":
+			return "full"; // AI 生成完整版
+		case "temp":
+			return "concise"; // 靜態精簡模板
+		default:
+			return "minimal"; // 一行描述
+	}
 }
