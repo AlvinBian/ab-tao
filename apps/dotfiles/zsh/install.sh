@@ -162,8 +162,13 @@ done
 # ── 部署 ~/.zshrc ─────────────────────────────────────────────────
 step "部署 ~/.zshrc"
 if [[ -f ~/.zshrc ]]; then
-  cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
-  info "原 .zshrc 已備份"
+  # 只有在新 zshrc 與現有內容不同時才備份（避免重複執行產生大量備份）
+  if ! diff -q ~/.zshrc "$ZSH_DIR/zshrc" > /dev/null 2>&1; then
+    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
+    info "原 .zshrc 已備份"
+  else
+    info "~/.zshrc 無變更，略過備份"
+  fi
 
   # 自動遷移：從舊 .zshrc 提取個人設定到 ~/.zshrc.local（不會被覆蓋）
   if [[ ! -f ~/.zshrc.local ]]; then
