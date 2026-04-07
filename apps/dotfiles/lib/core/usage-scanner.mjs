@@ -435,7 +435,7 @@ function safeReadDir(dir) {
 	}
 }
 
-function dirSize(dir) {
+function _dirSize(dir) {
 	try {
 		if (!fs.existsSync(dir)) return 0;
 		const output = execFileSync("du", ["-sk", dir], {

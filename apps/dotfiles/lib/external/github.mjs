@@ -456,7 +456,7 @@ export async function scanDir(repo, branch, dirPath, target, depth = 0) {
 		const results = await Promise.allSettled(
 			fileEntries.map((e) =>
 				fetchFileContent(repo, branch, `${dirPath}/${e.name}`)
-					.catch((e) => {
+					.catch((_e) => {
 						// 單個檔案讀取失敗時沉默處理（可能是權限或檔案在掃描期間移除）
 						// 但在 debug 層級記錄以便診斷
 						return null;
@@ -471,7 +471,7 @@ export async function scanDir(repo, branch, dirPath, target, depth = 0) {
 		for (const e of dirEntries) {
 			await scanDir(repo, branch, `${dirPath}/${e.name}`, target, depth + 1);
 		}
-	} catch (err) {
+	} catch {
 		// 目錄層級錯誤（無法讀取該目錄），沉默略過
 		// 這是正常的行為：可能是私有目錄、權限不足、分支移除等
 	}
