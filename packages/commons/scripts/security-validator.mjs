@@ -21,7 +21,7 @@ const CONTROL_CHAR_REGEX = /[\u200B-\u200D\uFEFF\x00-\x08\x0B-\x0C\x0E-\x1F]/;
  */
 function isDocumentationFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
-  return ext === '.md' || ext === '.mdx' || ext === '.txt' || ext === '.rst';
+  return ['.md', '.mdx', '.txt', '.rst', '.json'].includes(ext);
 }
 
 /**
