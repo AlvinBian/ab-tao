@@ -29,7 +29,7 @@ import {
 	GH_CONCURRENCY,
 	GH_PER_PAGE,
 } from "../core/constants.mjs";
-import { ghSync } from "../external/github.mjs";
+import { ghSync, ghSyncPaginate } from "../external/github.mjs";
 import { ghAsync } from "./skill-detect.mjs";
 
 /**
@@ -114,12 +114,12 @@ export async function interactiveRepoSelect(session = null) {
 		const isPersonal = selectedSource === username;
 		const repoJq = isPersonal
 			? '.[] | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv'
-			: '.[] | select(.archived == false and .fork == false and .size > 0) | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv';
+			: '.[] | select(.archived == false and .fork == false) | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv';
 		const repoUrl = isPersonal
 			? `user/repos?sort=pushed&per_page=${GH_PER_PAGE}&affiliation=owner`
 			: `orgs/${selectedSource}/repos?sort=pushed&per_page=${GH_PER_PAGE}`;
 
-		const reposRaw = ghSync(repoUrl, repoJq);
+		const reposRaw = ghSyncPaginate(repoUrl, repoJq);
 		if (reposRaw) {
 			allRepos.push(
 				...reposRaw

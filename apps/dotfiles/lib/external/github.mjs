@@ -154,6 +154,29 @@ export function ghSync(apiPath, jqExpr = null) {
 }
 
 /**
+ * GitHub API 同步封裝（自動翻頁，抓取所有資料）
+ *
+ * 使用 --paginate 抓取所有分頁，適用於 repo 列表等可能超過 100 筆的資料。
+ *
+ * @param {string} apiPath - API 路徑
+ * @param {string|null} [jqExpr=null] - jq 篩選表達式（每頁套用）
+ * @returns {string|null} 所有分頁合併後的文字，失敗返回 null
+ */
+export function ghSyncPaginate(apiPath, jqExpr = null) {
+	try {
+		const args = ["api", "--paginate", apiPath];
+		if (jqExpr) args.push("--jq", jqExpr);
+		return execFileSync("gh", args, {
+			encoding: "utf8",
+			timeout: GH_API_TIMEOUT * 5, // 多頁需要更長時間
+			stdio: ["pipe", "pipe", "pipe"],
+		}).trim();
+	} catch {
+		return null;
+	}
+}
+
+/**
  * 抓取 GitHub repo 中單一檔案的原始內容（base64 解碼）
  *
  * @param {string} repo - 'owner/repo' 格式
