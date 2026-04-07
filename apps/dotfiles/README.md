@@ -10,7 +10,7 @@
 bin/          — CLI 入口（setup / scan / doctor / status / report / restore / hooks / uninstall）
 lib/          — 核心邏輯（分析、配置生成、部署、技術棧偵測）
 claude/       — Claude Code 資源（commands / agents / rules / hooks / skills）
-zsh/          — ZSH 模組（10 個：aliases / git / fzf / nvm / completion...）
+zsh/          — ZSH 環境（~/.zshrc.d/ + sheldon 插件管理，7 個模組）
 docs/         — 流程圖（Mermaid）、整合指南
 ```
 

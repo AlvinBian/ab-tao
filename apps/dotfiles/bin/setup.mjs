@@ -486,7 +486,7 @@ async function main() {
 		},
 		{
 			value: "zsh",
-			label: `🐚 ZSH 環境模組 ${pc.dim("aliases · fzf · git · tools · history")}`,
+			label: `🐚 ZSH 環境模組 ${pc.dim("history · keys · aliases · git · tools + sheldon 插件")}`,
 		},
 		{
 			value: "slack",
@@ -511,7 +511,7 @@ async function main() {
 	const riskySelected = features.filter((f) => ["zsh", "slack"].includes(f));
 	if (!isEmpty(riskySelected)) {
 		const hints = {
-			zsh: "修改 ~/.zshrc 和 ~/.zsh/",
+			zsh: "在 ~/.zshrc 追加 loader + 部署 ~/.zshrc.d/",
 			slack: "設定 Slack 通知頻道",
 		};
 		p.log.info(
