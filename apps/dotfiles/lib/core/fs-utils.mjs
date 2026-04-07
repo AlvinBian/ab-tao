@@ -59,15 +59,3 @@ export function listMdFiles(dir) {
 		.filter((name) => name.endsWith(".md"))
 		.map((name) => name.replace(/\.md$/, ""));
 }
-
-/**
- * 確保目錄存在
- *
- * @param {string} dir - 目錄路徑
- * @returns {void}
- */
-export function ensureDir(dir) {
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir, { recursive: true });
-	}
-}

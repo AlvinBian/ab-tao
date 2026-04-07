@@ -26,6 +26,9 @@ export function loadSession() {
 	try {
 		return JSON.parse(fs.readFileSync(SESSION_PATH, "utf8"));
 	} catch (e) {
+		// ENOENT = 首次執行，檔案尚未建立，屬正常情況，靜默忽略
+		if (e.code === "ENOENT") return null;
+		// 其他錯誤（JSON 解析失敗等）才是真正的損壞
 		process.stderr.write(`⚠️ session 檔案損壞，已重置（${e.message}）\n`);
 		return null;
 	}
