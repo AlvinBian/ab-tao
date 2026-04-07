@@ -164,8 +164,10 @@ step "部署 ~/.zshrc"
 if [[ -f ~/.zshrc ]]; then
   # 只有在新 zshrc 與現有內容不同時才備份（避免重複執行產生大量備份）
   if ! diff -q ~/.zshrc "$ZSH_DIR/zshrc" > /dev/null 2>&1; then
-    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
-    info "原 .zshrc 已備份"
+    local _backup_dir="$HOME/.zsh-backups"
+    mkdir -p "$_backup_dir"
+    cp ~/.zshrc "$_backup_dir/zshrc.$(date +%Y%m%d_%H%M%S)"
+    info "原 .zshrc 已備份至 ~/.zsh-backups/"
 
     # 讀取 .env 的 BACKUP_MAX_COUNT（與 JS 層共用同一個設定，預設 10）
     local _max_count=10
@@ -177,7 +179,7 @@ if [[ -f ~/.zshrc ]]; then
     fi
 
     # 超出 BACKUP_MAX_COUNT 時刪除最舊的備份
-    local _backups=("${(@f)$(ls -t "$HOME"/.zshrc.backup.* 2>/dev/null)}")
+    local _backups=("${(@f)$(ls -t "$_backup_dir"/zshrc.* 2>/dev/null)}")
     if (( ${#_backups[@]} > _max_count )); then
       local _to_delete=(${_backups[@]:$_max_count})
       rm -f "${_to_delete[@]}"
@@ -204,7 +206,7 @@ if [[ -f ~/.zshrc ]]; then
     if [[ -s ~/.zshrc.local ]]; then
       echo "" >> ~/.zshrc.local
       echo "# ── 以上由 ab-tao 從舊 .zshrc 自動遷移 ──" >> ~/.zshrc.local
-      echo "# 如有遺漏請查看備份：ls ~/.zshrc.backup.*" >> ~/.zshrc.local
+      echo "# 如有遺漏請查看備份：ls ~/.zsh-backups/" >> ~/.zshrc.local
       info "個人設定已遷移到 ~/.zshrc.local（$(wc -l < ~/.zshrc.local | tr -d ' ') 行）"
     else
       rm -f ~/.zshrc.local  # 沒有可遷移的設定，不建立空檔案

@@ -153,7 +153,8 @@ fi
 if [[ "$ZSHRC_CHANGED" -gt 0 ]]; then
   info "更新 ~/.zshrc"
   if [[ -f ~/.zshrc ]]; then
-    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$HOME/.zsh-backups"
+    cp ~/.zshrc "$HOME/.zsh-backups/zshrc.$(date +%Y%m%d_%H%M%S)"
     # 自動遷移個人設定到 ~/.zshrc.local（不會被覆蓋）
     if [[ ! -f ~/.zshrc.local ]]; then
       grep -E '^\s*(export |alias |path\+|PATH=|eval |source )' ~/.zshrc \
