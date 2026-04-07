@@ -113,11 +113,17 @@ export async function phaseExecute(
 
 			// ── 並行安裝：Branch A（Claude）、Branch B（Plugin）、Branch C（ZSH）──
 			{
-				task: (_, outerTask) =>
-					outerTask.newListr([...claudeTasks, ...pluginTasks, ...zshTasks], {
-						concurrent: true,
-						exitOnError: false,
-					}),
+				task: (_, outerTask) => {
+					// 確保 syncResult 在並行任務開始前已初始化（避免 undefined 競爭）
+					shared.syncResult = null;
+					return outerTask.newListr(
+						[...claudeTasks, ...pluginTasks, ...zshTasks],
+						{
+							concurrent: true,
+							exitOnError: false,
+						},
+					);
+				},
 			},
 
 			// [1] .claudeignore + 預索引（合併一次迭代）

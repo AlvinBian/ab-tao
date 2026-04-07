@@ -72,14 +72,14 @@ describe("validateFileContent", () => {
 		assert.ok(result.errors.some((e) => e.message.includes("rm -rf")));
 	});
 
-	it("json 檔中的 dynamic import 應為警告（配置檔非可執行）", () => {
+	it("json 檔中的 dynamic import 應為錯誤（json 非純文件，採嚴格模式）", () => {
 		const result = validateFileContent(
 			"hooks.json",
 			'{"cmd": "import(\\"evil\\")"}',
 		);
-		assert.equal(result.valid, true);
+		assert.equal(result.valid, false);
 		assert.ok(
-			result.warnings.some((w) => w.message.includes("dynamic import/require")),
+			result.errors.some((e) => e.message.includes("dynamic import/require")),
 		);
 	});
 

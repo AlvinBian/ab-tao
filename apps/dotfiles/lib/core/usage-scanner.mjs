@@ -5,7 +5,7 @@
  * 只統計 human 角色的訊息，提取 /command 和 @agent 調用。
  */
 
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
@@ -320,11 +320,16 @@ export async function collectFullStatus() {
 		}
 	}
 
-	// 磁碟佔用
+	// 磁碟佔用（並行執行）
+	const [cacheSize, distSize, claudeSize] = await Promise.all([
+		dirSizeAsync(path.join(REPO_ROOT, ".cache")),
+		dirSizeAsync(distDir),
+		dirSizeAsync(PROJECTS_DIR),
+	]);
 	const diskUsage = {
-		cache: dirSize(path.join(REPO_ROOT, ".cache")),
-		dist: dirSize(distDir),
-		claudeProjects: dirSize(PROJECTS_DIR),
+		cache: cacheSize,
+		dist: distSize,
+		claudeProjects: claudeSize,
 	};
 
 	// 環境變數健康檢查
@@ -441,6 +446,21 @@ function dirSize(dir) {
 	} catch {
 		return 0;
 	}
+}
+
+function dirSizeAsync(dir) {
+	return new Promise((resolve) => {
+		if (!fs.existsSync(dir)) return resolve(0);
+		execFile(
+			"du",
+			["-sk", dir],
+			{ encoding: "utf8", timeout: 5000 },
+			(err, stdout) => {
+				if (err) return resolve(0);
+				resolve(parseInt(stdout.trim().split("\t")[0], 10) * 1024);
+			},
+		);
+	});
 }
 
 function formatBytes(bytes) {

@@ -487,10 +487,6 @@ export function buildClaudeTasks(
 													parts.push(
 														`已生成：${result.deployed.map((r) => r.split("/").pop()).join("、")}`,
 													);
-												if (result.repoDeployed.length)
-													parts.push(
-														`寫入 repo 根目錄：${result.repoDeployed.map((r) => r.split("/").pop()).join("、")}`,
-													);
 												if (result.claudeignoreCount > 0)
 													parts.push(
 														`.claudeignore：${result.claudeignoreCount} 個 repo`,

@@ -32,8 +32,12 @@ async function main() {
 	p.intro(pc.bold("ab-tao 配置管理中心"));
 	const spinner = p.spinner();
 	spinner.start("掃描使用數據（首次可能需要 10-30 秒）…");
-	const data = await collectFullStatus();
-	spinner.stop("掃描完成");
+	let data;
+	try {
+		data = await collectFullStatus();
+	} finally {
+		spinner.stop("掃描完成");
+	}
 
 	if (isReport) {
 		await generateHtmlReport(data);
@@ -78,8 +82,11 @@ async function terminalMode(data) {
 			if (changed) {
 				const spinner = p.spinner();
 				spinner.start("重新掃描…");
-				currentData = await collectFullStatus();
-				spinner.stop("已更新");
+				try {
+					currentData = await collectFullStatus();
+				} finally {
+					spinner.stop("已更新");
+				}
 				showOverview(currentData);
 			}
 		}
@@ -87,8 +94,11 @@ async function terminalMode(data) {
 		if (action === "refresh") {
 			const spinner = p.spinner();
 			spinner.start("重新掃描…");
-			currentData = await collectFullStatus();
-			spinner.stop("已更新");
+			try {
+				currentData = await collectFullStatus();
+			} finally {
+				spinner.stop("已更新");
+			}
 			showOverview(currentData);
 		}
 	}
@@ -294,8 +304,12 @@ async function showDetail(data) {
 			p.log.step(pc.bold("📊 清理建議 — 30天未使用"));
 			const spinner = p.spinner();
 			spinner.start("掃描使用統計…");
-			const usageStats = await scanUsageStats();
-			spinner.stop("掃描完成");
+			let usageStats;
+			try {
+				usageStats = await scanUsageStats();
+			} finally {
+				spinner.stop("掃描完成");
+			}
 
 			// 分類未使用項目
 			const staleItems = Array.from(usageStats.values()).filter(

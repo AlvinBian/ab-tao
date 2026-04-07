@@ -46,6 +46,11 @@ export function runWithProgress(cmd, { cwd, total, parseProgress, logger }) {
 		const stderrChunks = [];
 		const decoder = new StringDecoder("utf8");
 
+		child.on("error", (error) => {
+			logger?.failure(current, total);
+			reject(new Error(`執行失敗：${error.message}`));
+		});
+
 		child.stdout.on("data", (chunk) => {
 			buf += decoder.write(chunk);
 			const lines = buf.split("\n");

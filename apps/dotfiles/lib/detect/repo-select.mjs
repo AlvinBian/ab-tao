@@ -115,34 +115,39 @@ export async function interactiveRepoSelect(session = null) {
 	// 並行加載所有 org 的 repos
 	const repoResults = await Promise.all(
 		selectedSources.map(async (selectedSource) => {
-			const isPersonal = selectedSource === username;
-			const repoJq = isPersonal
-				? '.[] | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv'
-				: '.[] | select(.archived == false and .fork == false) | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv';
-			const repoUrl = isPersonal
-				? `user/repos?sort=pushed&per_page=${GH_PER_PAGE}&affiliation=owner`
-				: `orgs/${selectedSource}/repos?sort=pushed&per_page=${GH_PER_PAGE}`;
+			try {
+				const isPersonal = selectedSource === username;
+				const repoJq = isPersonal
+					? '.[] | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv'
+					: '.[] | select(.archived == false and .fork == false) | [.full_name, .description // "", .pushed_at[:10], (.stargazers_count|tostring), (.open_issues_count|tostring), (.size|tostring)] | @tsv';
+				const repoUrl = isPersonal
+					? `user/repos?sort=pushed&per_page=${GH_PER_PAGE}&affiliation=owner`
+					: `orgs/${selectedSource}/repos?sort=pushed&per_page=${GH_PER_PAGE}`;
 
-			const reposRaw = await ghPaginate(repoUrl, repoJq);
-			if (!reposRaw) return [];
+				const reposRaw = await ghPaginate(repoUrl, repoJq);
+				if (!reposRaw) return [];
 
-			return reposRaw
-				.split("\n")
-				.filter(Boolean)
-				.map((line) => {
-					const [fullName, desc, pushedAt, stars, issues, size] =
-						line.split("\t");
-					return {
-						fullName,
-						desc: desc?.slice(0, DESC_MAX_LENGTH),
-						pushedAt,
-						stars: parseInt(stars, 10) || 0,
-						issues: parseInt(issues, 10) || 0,
-						size: parseInt(size, 10) || 0,
-						commits: 0,
-						pct: 0,
-					};
-				});
+				return reposRaw
+					.split("\n")
+					.filter(Boolean)
+					.map((line) => {
+						const [fullName, desc, pushedAt, stars, issues, size] =
+							line.split("\t");
+						return {
+							fullName,
+							desc: desc?.slice(0, DESC_MAX_LENGTH),
+							pushedAt,
+							stars: parseInt(stars, 10) || 0,
+							issues: parseInt(issues, 10) || 0,
+							size: parseInt(size, 10) || 0,
+							commits: 0,
+							pct: 0,
+						};
+					});
+			} catch (err) {
+				p.log.warn(`載入 ${selectedSource} 的倉庫失敗：${err.message}`);
+				return [];
+			}
 		}),
 	);
 

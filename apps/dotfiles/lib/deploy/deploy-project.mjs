@@ -60,16 +60,13 @@ function isGenerated(content) {
 /**
  * 部署單個 repo 的 CLAUDE.md
  *
- * 同時寫入兩個位置：
- *   1. ~/.claude/projects/{org}/{repo}/CLAUDE.md — Claude Code 個人專案配置
- *   2. {localPath}/CLAUDE.md                    — repo 根目錄，可 commit 供團隊共用
- *
+ * 寫入 ~/.claude/projects/{org}/{repo}/CLAUDE.md（Claude Code 個人專案配置）
  * 以 GENERATED_MARKER 判斷是否為自動生成，用戶手寫的不覆蓋。
  *
- * @param {string} localPath - repo 本機路徑
+ * @param {string} localPath - repo 本機路徑（用於校驗，不寫入）
  * @param {string} claudeMdContent - CLAUDE.md 內容
  * @param {string} repoFullName - org/repo 名稱（如 AlvinBian/ab-tao）
- * @returns {{ deployed: boolean, path: string, repoDeployed: boolean, skipped?: string }}
+ * @returns {{ deployed: boolean, path: string, skipped?: string }}
  */
 export function deployProjectClaudeMd(
 	localPath,
@@ -79,7 +76,6 @@ export function deployProjectClaudeMd(
 	if (!localPath || !claudeMdContent) {
 		return {
 			deployed: false,
-			repoDeployed: false,
 			path: "",
 			skipped: "no content",
 		};
@@ -102,7 +98,6 @@ export function deployProjectClaudeMd(
 		if (!isGenerated(existing)) {
 			return {
 				deployed: false,
-				repoDeployed: false,
 				path: claudeMdPath,
 				skipped: "用戶自訂",
 			};
@@ -112,20 +107,7 @@ export function deployProjectClaudeMd(
 	fs.mkdirSync(projectDir, { recursive: true });
 	fs.writeFileSync(claudeMdPath, GENERATED_MARKER + claudeMdContent);
 
-	// 2. 同步寫入 repo 根目錄（供團隊共用）
-	let repoDeployed = false;
-	const repoClaude = path.join(localPath, "CLAUDE.md");
-	if (fs.existsSync(localPath)) {
-		const repoExisting = fs.existsSync(repoClaude)
-			? fs.readFileSync(repoClaude, "utf8")
-			: null;
-		if (!repoExisting || isGenerated(repoExisting)) {
-			fs.writeFileSync(repoClaude, GENERATED_MARKER + claudeMdContent);
-			repoDeployed = true;
-		}
-	}
-
-	return { deployed: true, repoDeployed, path: claudeMdPath };
+	return { deployed: true, path: claudeMdPath };
 }
 
 // ── .claudeignore：掃描 repo 目錄自動偵測，減少 Claude 掃描的 token 消耗 ──
@@ -226,7 +208,7 @@ function generateClaudeignore(localPath) {
  * 不碰項目目錄，完全在 ~/.claude/ 內完成。
  * 配合 PreToolUse hook 攔截匹配的文件讀取。
  *
- * @param {string} localPath - repo 本機路徑
+ * @param {string} localPath - repo 本機路徑（用於掃描規則，不寫入）
  * @param {string} [repoFullName] - org/repo 名（如 AlvinBian/ab-tao）
  * @returns {boolean} 是否有寫入
  */
@@ -237,25 +219,17 @@ export function deployClaudeignore(localPath, repoFullName) {
 	if (!content) return false;
 
 	// 部署到 ~/.claude/projects/{org}/{repo}/.claudeignore（不碰項目目錄）
-	if (repoFullName) {
-		const projectDir = path.resolve(PROJECTS_DIR, repoFullName);
-		if (!projectDir.startsWith(PROJECTS_DIR)) return false; // 路徑穿越防護
-		fs.mkdirSync(projectDir, { recursive: true });
-		const ignorePath = path.join(projectDir, ".claudeignore");
-		if (fs.existsSync(ignorePath)) {
-			const existing = fs.readFileSync(ignorePath, "utf8");
-			if (!existing.startsWith(CLAUDEIGNORE_MARKER)) return false;
-		}
-		fs.writeFileSync(ignorePath, content);
-	} else {
-		// fallback：無 repoFullName 時放 repo 根目錄
-		const ignorePath = path.join(localPath, ".claudeignore");
-		if (fs.existsSync(ignorePath)) {
-			const existing = fs.readFileSync(ignorePath, "utf8");
-			if (!existing.startsWith(CLAUDEIGNORE_MARKER)) return false;
-		}
-		fs.writeFileSync(ignorePath, content);
+	if (!repoFullName) return false; // 必須有 repoFullName，否則無法正確部署到 ~/.claude/
+
+	const projectDir = path.resolve(PROJECTS_DIR, repoFullName);
+	if (!projectDir.startsWith(PROJECTS_DIR)) return false; // 路徑穿越防護
+	fs.mkdirSync(projectDir, { recursive: true });
+	const ignorePath = path.join(projectDir, ".claudeignore");
+	if (fs.existsSync(ignorePath)) {
+		const existing = fs.readFileSync(ignorePath, "utf8");
+		if (!existing.startsWith(CLAUDEIGNORE_MARKER)) return false;
 	}
+	fs.writeFileSync(ignorePath, content);
 
 	return true;
 }
@@ -268,7 +242,6 @@ export function deployClaudeignore(localPath, repoFullName) {
  */
 export function deployAllProjectClaudeMd(items) {
 	const deployed = [];
-	const repoDeployed = [];
 	const skipped = [];
 	let claudeignoreCount = 0;
 
@@ -276,7 +249,6 @@ export function deployAllProjectClaudeMd(items) {
 		const result = deployProjectClaudeMd(localPath, content, repo);
 		if (result.deployed) {
 			deployed.push(repo);
-			if (result.repoDeployed) repoDeployed.push(repo);
 		} else if (result.skipped) {
 			skipped.push(`${repo}（${result.skipped}）`);
 		}
@@ -285,7 +257,7 @@ export function deployAllProjectClaudeMd(items) {
 		if (deployClaudeignore(localPath, repo)) claudeignoreCount++;
 	}
 
-	return { deployed, repoDeployed, skipped, claudeignoreCount };
+	return { deployed, skipped, claudeignoreCount };
 }
 
 /**

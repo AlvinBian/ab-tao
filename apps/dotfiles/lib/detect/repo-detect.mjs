@@ -170,7 +170,8 @@ async function detectFallback(repos, alreadyFound) {
 
 		if (process.platform === "darwin") {
 			try {
-				const query = `kMDItemFSName == '${name}' && kMDItemContentType == public.folder`;
+				const safeName = name.replace(/'/g, "\\'");
+				const query = `kMDItemFSName == '${safeName}' && kMDItemContentType == public.folder`;
 				const { stdout } = await execFileAsync(
 					"mdfind",
 					[query, "-onlyin", HOME],

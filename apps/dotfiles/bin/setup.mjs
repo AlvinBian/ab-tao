@@ -765,7 +765,9 @@ async function main() {
 						};
 						analyzeSuccess = true;
 					} catch (err) {
-						p.log.error(`❌ 分析失敗（${err.message}）`);
+						p.log.error(
+							`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:doctor 診斷環境`,
+						);
 						const action = handleCancel(
 							await p.select({
 								message: "如何繼續？",
@@ -877,6 +879,16 @@ async function main() {
 
 		// --manual
 		if (flagManual) confirmedPlan.mode = "manual";
+
+		// 執行安裝管線前，先保存 Slack 配置到 session（若安裝失敗也不會遺失）
+		if (pendingSlackConfig && prev) {
+			await (await import("../lib/core/session.mjs")).patchSession({
+				slackChannel: pendingSlackConfig.channelId,
+				slackChannelName: pendingSlackConfig.channelName || "",
+				slackMode: pendingSlackConfig.mode,
+				slackUserId: pendingSlackConfig.userId || "",
+			});
+		}
 
 		// 執行安裝管線
 		await runInstallPipeline(confirmedPlan, {

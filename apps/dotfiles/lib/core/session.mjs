@@ -25,7 +25,8 @@ const SESSION_PATH = path.join(REPO, ".cache", "last-session.json");
 export function loadSession() {
 	try {
 		return JSON.parse(fs.readFileSync(SESSION_PATH, "utf8"));
-	} catch {
+	} catch (e) {
+		process.stderr.write(`⚠️ session 檔案損壞，已重置（${e.message}）\n`);
 		return null;
 	}
 }
@@ -40,6 +41,20 @@ let _writeQueue = Promise.resolve();
 function saveSessionSync(data) {
 	const dir = path.dirname(SESSION_PATH);
 	fs.mkdirSync(dir, { recursive: true });
+
+	// 若 session 檔案已存在且有效，先備份一份
+	if (fs.existsSync(SESSION_PATH)) {
+		try {
+			const existing = JSON.parse(fs.readFileSync(SESSION_PATH, "utf8"));
+			if (existing && typeof existing === "object") {
+				const backupPath = `${SESSION_PATH}.bak`;
+				fs.copyFileSync(SESSION_PATH, backupPath);
+			}
+		} catch {
+			// 若檔案損壞無法備份，繼續（寫入會覆蓋壞檔案）
+		}
+	}
+
 	const tmpPath = `${SESSION_PATH}.tmp`;
 	fs.writeFileSync(
 		tmpPath,

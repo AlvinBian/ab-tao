@@ -533,7 +533,11 @@ ${batchList}
 							});
 						}
 					})
-					.catch(() => {});
+					.catch((e) => {
+						logger?.warn(
+							`ECC 自動翻譯失敗（已跳過）：${e?.message ?? String(e)}`,
+						);
+					});
 			}
 		}
 	}

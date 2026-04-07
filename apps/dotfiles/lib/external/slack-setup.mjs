@@ -131,17 +131,26 @@ export async function setupSlackNotify(prev) {
 	if (hasChannel === BACK) return null;
 
 	if (hasChannel === "create") {
+		const { execFileSync } = await import("node:child_process");
+
+		// 分開處理 pbcopy，失敗時發出警告但不中斷
 		try {
-			const { execFileSync } = await import("node:child_process");
 			execFileSync("pbcopy", [], {
 				input: channelName,
 				stdio: ["pipe", "pipe", "pipe"],
 			});
 			p.log.success(`已複製 "${channelName}" 到剪貼板`);
+		} catch {
+			p.log.warn(`未能複製到剪貼板，請手動輸入：${channelName}`);
+		}
+
+		// 分開處理 open，失敗時發出警告但不中斷
+		try {
 			execFileSync("open", ["slack://channel?team=&id=new"]);
 		} catch {
-			/* ignore */
+			p.log.warn("未能自動開啟 Slack，請手動開啟");
 		}
+
 		p.log.info(`請在 Slack 中：
   1. 已打開 Slack，直接貼上名稱（⌘V）
   2. 建議設為私人頻道

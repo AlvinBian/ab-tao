@@ -59,7 +59,9 @@ function ver(cmd, flag = "--version") {
 
 function run(cmd) {
 	try {
-		execSync(cmd, { stdio: "inherit", shell: true, timeout: 300000 });
+		// 檢查是否需要 shell 特性（管道、環境變數擴展、重定向等）
+		const needsShell = /[|&;><$()`]/.test(cmd) || /&&|\|\|/.test(cmd);
+		execSync(cmd, { stdio: "inherit", shell: needsShell, timeout: 300000 });
 		return true;
 	} catch {
 		return false;

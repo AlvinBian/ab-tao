@@ -12,7 +12,7 @@
  *   node sync-sources.mjs --dry-run        模擬執行
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -42,7 +42,7 @@ const SOURCES_CONFIG = {
 	},
 	superpowers: {
 		url: "https://github.com/obra/superpowers.git",
-		icon: "⚡",
+		icon: "🦸",
 		description: "Claude Superpowers — 進階 agent 能力",
 	},
 	"ui-ux-pro": {
@@ -71,7 +71,7 @@ const SOURCES_CONFIG = {
 
 function getRemoteHead(url) {
 	try {
-		const output = execSync(`git ls-remote ${url} HEAD`, {
+		const output = execFileSync("git", ["ls-remote", url, "HEAD"], {
 			encoding: "utf8",
 			timeout: 15000,
 		});
@@ -128,13 +128,13 @@ async function syncSource(sourceName, config, options = {}) {
 
 	try {
 		// 克隆
-		execSync(`git clone --depth 1 ${config.url} ${tempDir}`, {
+		execFileSync("git", ["clone", "--depth", "1", config.url, tempDir], {
 			stdio: "pipe",
 			timeout: 60000,
 		});
 
 		// 取得 commit SHA
-		const sha = execSync("git rev-parse HEAD", {
+		const sha = execFileSync("git", ["rev-parse", "HEAD"], {
 			cwd: tempDir,
 			encoding: "utf8",
 			stdio: "pipe",

@@ -65,19 +65,15 @@ function renderSvg(body, svgPath) {
 				stdio: ["pipe", "pipe", "pipe"],
 			},
 		);
-		try {
-			fs.unlinkSync(tmpPath);
-		} catch {
-			/* 清理失敗不影響結果 */
-		}
 		return true;
 	} catch {
+		return false;
+	} finally {
 		try {
-			fs.unlinkSync(tmpPath);
+			if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
 		} catch {
 			/* 清理失敗不影響結果 */
 		}
-		return false;
 	}
 }
 
