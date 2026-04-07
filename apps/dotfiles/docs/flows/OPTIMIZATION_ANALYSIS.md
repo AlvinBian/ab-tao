@@ -168,7 +168,7 @@ if git fetch origin "$REPO_BRANCH" --quiet 2>/dev/null; then
 
 ### setup-main.mmd
 ✅ 更新：
-- Splash 改為 ab-tao（非 ab-dotfiles）
+- Splash 改為 ab-tao（非 ab-tao）
 - 功能選擇移除 Gmail
 - 加入 AI 來源選擇步驟
 

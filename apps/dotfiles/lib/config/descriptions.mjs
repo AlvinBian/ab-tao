@@ -1,7 +1,7 @@
 /**
  * 配置項描述
  *
- * ab-dotfiles 管理的項目：硬編碼中文描述（穩定）
+ * ab-tao 管理的項目：硬編碼中文描述（穩定）
  * ECC/第三方 + 技術棧：AI 生成 → 快取到 .cache/descriptions.json
  * 快取一次生成，後續直接讀取
  */
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
 
-// ── ab-dotfiles 管理的配置描述（穩定）──
+// ── ab-tao 管理的配置描述（穩定）──
 
 const AB_DESCRIPTIONS = {
   // Commands
@@ -207,7 +207,7 @@ function readFrontmatterDesc(filePath) {
 /**
  * 取得配置項的中文描述
  *
- * 優先順序：ab-dotfiles 硬編碼 → 快取 → 即時讀 frontmatter → 空字串
+ * 優先順序：ab-tao 硬編碼 → 快取 → 即時讀 frontmatter → 空字串
  * frontmatter 讀到後會寫入快取，下次不再讀檔。
  *
  * @param {string} name - 配置項名稱（例如 'code-review'）
@@ -216,7 +216,7 @@ function readFrontmatterDesc(filePath) {
  * @returns {string} 描述文字，無描述時返回空字串
  */
 export function getDescription(name, type, claudeDir) {
-  // 1. ab-dotfiles 自己的
+  // 1. ab-tao 自己的
   if (AB_DESCRIPTIONS[name]) return AB_DESCRIPTIONS[name];
 
   // 2. 快取

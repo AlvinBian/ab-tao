@@ -4,24 +4,24 @@
 
 ## 目標
 
-把 ab-dotfiles 從 `git clone` + `pnpm run setup` 改為 `npx ab-dotfiles init` 一行命令初始化。
+把 ab-tao 從 `git clone` + `pnpm run setup` 改為 `npx ab-tao init` 一行命令初始化。
 
 ## CLI 命令
 
 ```bash
-npx ab-dotfiles init                    # 互動式初始化
-npx ab-dotfiles init --preset vue       # 預設快速初始化
-npx ab-dotfiles update                  # 差異更新
-npx ab-dotfiles doctor                  # 環境檢查
-npx ab-dotfiles restore                 # 還原備份
-npx ab-dotfiles scan                    # 掃描技術棧
+npx ab-tao init                    # 互動式初始化
+npx ab-tao init --preset vue       # 預設快速初始化
+npx ab-tao update                  # 差異更新
+npx ab-tao doctor                  # 環境檢查
+npx ab-tao restore                 # 還原備份
+npx ab-tao scan                    # 掃描技術棧
 ```
 
 ## 目錄結構
 
 ```
 bin/
-  cli.mjs              # 入口：npx ab-dotfiles <command>
+  cli.mjs              # 入口：npx ab-tao <command>
 commands/
   init.mjs             # 初始化（現有 setup.mjs 改造）
   update.mjs           # 差異更新
@@ -62,8 +62,8 @@ templates/
 
 ```json
 {
-  "name": "ab-dotfiles",
-  "bin": { "ab-dotfiles": "bin/cli.mjs" },
+  "name": "ab-tao",
+  "bin": { "ab-tao": "bin/cli.mjs" },
   "files": ["bin/", "lib/", "templates/", "claude/", "stacks/"]
 }
 ```

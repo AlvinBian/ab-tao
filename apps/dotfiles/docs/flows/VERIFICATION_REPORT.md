@@ -16,7 +16,7 @@
 - ✅ 新增 classDef：groupA/B/C 色彩分層 + concurrent 標記
 
 #### setup-main.mmd
-- ✅ Splash "ab-dotfiles" → "ab-tao"
+- ✅ Splash "ab-tao" → "ab-tao"
 - ✅ 功能選擇移除 Gmail
 - ✅ 加入 AI 來源選擇步驟（FAiSourceSetup）
 - ✅ 流程銜接邏輯更新

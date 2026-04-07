@@ -40,7 +40,7 @@ Group C: 驗證 + 預索引（順序，依賴 A+B）
 ### 2. setup-main.mmd — 微調（功能選擇 + AI 來源）
 
 **變更**：
-- ✅ Splash 由 "ab-dotfiles" → "ab-tao"
+- ✅ Splash 由 "ab-tao" → "ab-tao"
 - ✅ 功能選擇移除 Gmail（已獨立）
 - ✅ 加入 "AI 來源選擇" 步驟（ECC 同步來源）
 - ✅ Frontmatter 描述 v3 更新內容

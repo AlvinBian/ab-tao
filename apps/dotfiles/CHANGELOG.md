@@ -2,7 +2,7 @@
 
 ## 1.0.0
 
-### 重大變更（從 ab-dotfiles v2.1.0 遷入 ab-tao monorepo）
+### 重大變更（從舊版 v2.1.0 遷入 ab-tao monorepo）
 
 - **Monorepo 整合** — dotfiles 從獨立 repo 遷入 ab-tao turborepo，成為 `apps/dotfiles`
 - **Token 優化** — Claude Code context 從 ~45KB 降至 ~12KB（-73%）
@@ -22,7 +22,7 @@
 
 ---
 
-## 歷史版本（ab-dotfiles 時期）
+## 歷史版本（舊版時期）
 
 ## 2.1.0
 
@@ -94,7 +94,7 @@
   - **Slack 互動設定精靈** — Channel / DM / 關閉三種模式
   - **listr2 進度顯示** — 8 步安裝任務，含子任務和計時
   - **首次安裝原始備份** — `pnpm run restore-original` 可完全還原
-  - **卸載工具** — `pnpm run uninstall` 只移除 ab-dotfiles 管理的配置
+  - **卸載工具** — `pnpm run uninstall` 只移除 ab-tao 管理的配置
   - **hooks 互動管理** — `pnpm run hooks` 啟用/停用個別 hook
   - **ECC 繁體中文描述** — 60+ 項目完整翻譯，runtime 讀取 + 快取
   - **安裝計畫 inline 摘要** — 網格排列，含現有安裝狀態對比

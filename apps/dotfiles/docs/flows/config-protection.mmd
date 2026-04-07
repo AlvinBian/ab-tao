@@ -8,7 +8,7 @@ links:
 flowchart TD
     subgraph Layer1 ["第一層：首次備份（一次性）"]
         direction TB
-        L1T["觸發時機<br/>pnpm run setup 首次執行<br/>~/.ab-dotfiles-original/ 不存在"]
+        L1T["觸發時機<br/>pnpm run setup 首次執行<br/>~/.ab-tao-original/ 不存在"]
         L1T --> L1F["備份內容<br/>~/.zshrc → zshrc<br/>~/.zshrc.local → zshrc.local<br/>~/.zsh/ → zsh/<br/>~/.claude/ → claude/<br/>~/.zsh_history → zsh_history<br/>~/.ripgreprc → ripgreprc"]
         L1F --> L1R["還原<br/>pnpm run restore-original<br/>→ 完全回滾到安裝前狀態"]
     end

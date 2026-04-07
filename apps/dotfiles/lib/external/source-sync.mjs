@@ -348,7 +348,7 @@ export function filterItems(index, techStacks, existingNames) {
  *
  * @param {Array} sources - config.json 的 sources
  * @param {string[]} techStacks - 用戶選擇的技術棧（用於索引哪些 rules/{lang}/）
- * @param {string} localDir - ab-dotfiles 專案根目錄
+ * @param {string} localDir - dotfiles 專案根目錄
  * @param {Function} onProgress - (sourceName, status, detail?) => void
  * @returns {Promise<Object>} { sources: [{ name, repo, version, cached, allFiles, localNames }] }
  */
@@ -561,7 +561,7 @@ export async function writeSyncedFiles(downloaded, targetDir) {
       if (src.hooks) fs.writeFileSync(path.join(targetDir, 'hooks.json'), src.hooks, 'utf8');
     }
   } catch (err) {
-    // Rollback: 移除本次已寫入的檔案（僅移除 ab-dotfiles 生成的，用戶自訂的已被跳過）
+    // Rollback: 移除本次已寫入的檔案（僅移除 ab-tao 生成的，用戶自訂的已被跳過）
     for (const p of written) {
       try {
         fs.rmSync(p, { force: true });
