@@ -170,11 +170,13 @@ export async function phaseComplete(
 	];
 	p.log.success(`✅ 安裝完成\n${summaryLines.join("\n")}`);
 
-	// 安裝後引導
-	p.log.info(
-		[
-			"🎓 快速上手",
-			"",
+	// 安裝後引導（按 features 過濾）
+	const feats = new Set(plan.features || []);
+	const has = (f) => feats.has(f);
+	const guideLines = ["🎓 快速上手", ""];
+
+	if (has("claude")) {
+		guideLines.push(
 			"── Commands（/指令）──",
 			"  開發流程：/code-review · /tdd · /build-fix · /pr-workflow · /changeset",
 			"  AI 協作：  /plan · /multi-plan · /multi-execute · /multi-workflow",
@@ -193,157 +195,135 @@ export async function phaseComplete(
 			"── Rules（自動套用）──",
 			"  code-style · git-workflow · testing · performance · slack-triage · project-conventions",
 			"",
+		);
+	}
+
+	if (has("zsh")) {
+		guideLines.push(
 			"── ZSH 模組（~/.zshrc.d/ + sheldon）──",
 			"  history · keys · aliases · git · tools + sheldon 插件管理",
+			"  執行 exec zsh 立即套用",
 			"",
-			"── 整合設定 ──",
-			"  📧 Gmail 分級過濾 → docs/gmail-filters.md",
+		);
+	}
+
+	if (has("slack")) {
+		guideLines.push(
+			"── Slack ──",
 			"  💬 Slack 通知頻道 → .env SLACK_NOTIFY_CHANNEL",
 			"",
-			"── 維護 ──",
-			"  pnpm run status   — 配置管理中心（查看 + 互動管理）",
-			"  pnpm run report   — 瀏覽器 HTML Dashboard",
-			"  pnpm run doctor   — 環境診斷",
-			"  pnpm run restore  — 還原上次備份",
-			"",
-			"  💡 進入 repo 目錄，Claude 自動載入專案配置",
-		].join("\n"),
+		);
+	}
+
+	guideLines.push(
+		"── 維護 ──",
+		"  pnpm run status   — 配置管理中心",
+		"  pnpm run doctor   — 環境診斷",
+		"  pnpm run restore  — 還原上次備份",
 	);
 
-	// 三層推薦系統 — 根據 techStacks 動態生成 LSP 推薦
-	const buildLspRecommendations = (techStacks = []) => {
-		const recommended = [];
-		if (
-			techStacks.some(
-				(s) => s.includes("typescript") || s.includes("javascript"),
+	p.log.info(guideLines.join("\n"));
+
+	// ── 以下區塊僅在選了 claude 時顯示 ──
+	if (has("claude")) {
+		// 三層推薦系統
+		const buildLspRecommendations = (techStacks = []) => {
+			const recommended = [];
+			if (
+				techStacks.some(
+					(s) => s.includes("typescript") || s.includes("javascript"),
+				)
 			)
-		) {
-			recommended.push("TypeScript LSP");
-		}
-		if (techStacks.some((s) => s.includes("python"))) {
-			recommended.push("Python (Pyright) LSP");
-		}
-		if (techStacks.some((s) => s.includes("go"))) {
-			recommended.push("Go (gopls) LSP");
-		}
-		if (techStacks.some((s) => s.includes("rust"))) {
-			recommended.push("Rust (rust-analyzer) LSP");
-		}
+				recommended.push("TypeScript LSP");
+			if (techStacks.some((s) => s.includes("python")))
+				recommended.push("Python (Pyright) LSP");
+			if (techStacks.some((s) => s.includes("go")))
+				recommended.push("Go (gopls) LSP");
+			if (techStacks.some((s) => s.includes("rust")))
+				recommended.push("Rust (rust-analyzer) LSP");
+			return !isEmpty(recommended)
+				? `LSP 按語言：${recommended.join("、")}`
+				: "LSP 按語言：/plugin 中搜索 language server";
+		};
 
-		return !isEmpty(recommended)
-			? `LSP 按語言：${recommended.join("、")}`
-			: "LSP 按語言：/plugin 中搜索 language server";
-	};
+		const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
+		const [, claudeMem] = ENHANCERS;
 
-	const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
-
-	// 第一層：Token 優化（強烈推薦）
-	const [, claudeMem] = ENHANCERS;
-	const tier1 = [
-		"  ── Token 優化（強烈推薦）──",
-		"  Claude 每次對話都有 token 上限，以下兩個工具可大幅降低消耗、加快回應、節省費用",
-		"",
-		"  ● RTK（Reduce Token Kontrol）— Bash 輸出壓縮器",
-		"    問題：git log、npm install、grep 等指令輸出動輒數千行，讓 Claude 讀完浪費大量 token",
-		"    效果：自動截短並摘要 100+ 常用命令輸出，平均壓縮 -89% token 消耗",
-		"    使用：安裝後自動生效，無需改變任何操作習慣",
-		"    安裝：brew install rtk  （再執行 rtk init -g）",
-		"",
-		"  ● Claude-Mem（跨會話記憶管理器）",
-		"    問題：每次開新視窗 Claude 都完全「失憶」，重複解釋背景、偏好設定耗費時間與 token",
-		"    效果：自動儲存對話關鍵點，下次啟動時語義搜索載入相關記憶，維持持續工作背景",
-		"    使用：claude-mem save 儲存記憶，Claude 啟動時自動讀取",
-		`    安裝：${claudeMem.install}`,
-	];
-
-	// 第二層：官方 Plugins
-	const tier2 = [
-		"  ── 官方 Plugins ──",
-		"    code-review        多 agent 並行 PR 審查",
-		"    commit-commands    /commit-push-pr 一鍵提交",
-		"    feature-dev        7 階段結構化開發",
-		"    hookify            分析對話自動生成 hooks",
-		"    ralph-wiggum       自動恢復被中斷的會話",
-		"    security-guidance  編輯時安全提醒",
-		"",
-		"    安裝：在 Claude Code 中執行 /plugin",
-	];
-
-	// 第三層：增強工具（可選）
-	const tier3 = [
-		"  ── 增強工具（可選）──",
-		"    pilot-shell        質量 hooks（lint+format+typecheck）",
-		"    prompt-improver    提示詞自動優化 -31% token",
-		`    ${lspRecommendations}`,
-	];
-
-	const recommendationLines = [
-		"💡 推薦安裝（提升 Claude Code 能力）",
-		"",
-		...tier1,
-		"",
-		...tier2,
-		"",
-		...tier3,
-	];
-
-	p.log.info(recommendationLines.join("\n"));
-
-	// 增強工具：RTK / Claude-Mem — 偵測未安裝的項目，提供多選安裝
-	const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
-
-	if (!isEmpty(missingEnhancers)) {
-		const toInstall = handleCancel(
-			await p.multiselect({
-				message:
-					"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
-				options: missingEnhancers.map((e) => ({
-					value: e.name,
-					label: e.name,
-					hint: e.desc,
-				})),
-				required: false,
-				initialValues: [],
-			}),
+		p.log.info(
+			[
+				"💡 推薦安裝（提升 Claude Code 能力）",
+				"",
+				"  ── Token 優化（強烈推薦）──",
+				"  ● RTK — Bash 輸出壓縮 -89% token（brew install rtk && rtk init -g）",
+				`  ● Claude-Mem — 跨會話記憶（${claudeMem.install}）`,
+				"",
+				"  ── 官方 Plugins ──",
+				"    code-review · commit-commands · feature-dev · hookify · security-guidance",
+				"    安裝：在 Claude Code 中執行 /plugin",
+				"",
+				"  ── 增強工具（可選）──",
+				"    pilot-shell · prompt-improver",
+				`    ${lspRecommendations}`,
+			].join("\n"),
 		);
 
-		if (toInstall !== BACK && !isEmpty(toInstall)) {
-			for (const name of toInstall) {
-				const tool = ENHANCERS.find((e) => e.name === name);
-				p.log.info(`📦 安裝 ${tool.name}（輸出如下）：`);
-				try {
-					execSync(tool.install, {
-						stdio: ["pipe", "inherit", "inherit"],
-						timeout: 300000,
-						shell: true,
-					});
-					p.log.success(`✔ ${tool.name} ${tool.doneHint}`);
-				} catch {
-					p.log.warn(`⚠️ ${tool.name} 安裝失敗\n請手動安裝：${tool.failHint}`);
+		// 增強工具互動安裝
+		const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
+		if (!isEmpty(missingEnhancers)) {
+			const toInstall = handleCancel(
+				await p.multiselect({
+					message:
+						"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+					options: missingEnhancers.map((e) => ({
+						value: e.name,
+						label: e.name,
+						hint: e.desc,
+					})),
+					required: false,
+					initialValues: [],
+				}),
+			);
+
+			if (toInstall !== BACK && !isEmpty(toInstall)) {
+				for (const name of toInstall) {
+					const tool = ENHANCERS.find((e) => e.name === name);
+					p.log.info(`📦 安裝 ${tool.name}（輸出如下）：`);
+					try {
+						execSync(tool.install, {
+							stdio: ["pipe", "inherit", "inherit"],
+							timeout: 300000,
+							shell: true,
+						});
+						p.log.success(`✔ ${tool.name} ${tool.doneHint}`);
+					} catch {
+						p.log.warn(`⚠️ ${tool.name} 安裝失敗\n請手動安裝：${tool.failHint}`);
+					}
 				}
 			}
-		} else if (toInstall !== BACK) {
-			p.log.info("已跳過增強工具");
 		}
 	}
 
-	// 建立 ECC/第三方描述快取（下次 setup 顯示中文描述）
-	const { count: descCount, newItems: descNewItems } = buildDescriptionCache(
-		claudeDir,
-		plan.techStacks || [],
-	);
-	if (!isEmpty(descNewItems)) {
-		const names = descNewItems.map((k) =>
-			k.includes("/") ? k.split("/")[1] : k,
+	// 建立 ECC/第三方描述快取（僅 claude 相關）
+	if (has("claude")) {
+		const { count: descCount, newItems: descNewItems } = buildDescriptionCache(
+			claudeDir,
+			plan.techStacks || [],
 		);
-		p.log.info(
-			`📋 已快取 ${descCount} 個配置描述（新增 ${descNewItems.length}）：\n${names.map((n) => `  · ${n}`).join("\n")}`,
-		);
-	} else if (descCount > 0) {
-		p.log.info(`📋 已快取 ${descCount} 個配置描述（無新增）`);
+		if (!isEmpty(descNewItems)) {
+			const names = descNewItems.map((k) =>
+				k.includes("/") ? k.split("/")[1] : k,
+			);
+			p.log.info(
+				`📋 已快取 ${descCount} 個配置描述（新增 ${descNewItems.length}）：\n${names.map((n) => `  · ${n}`).join("\n")}`,
+			);
+		} else if (descCount > 0) {
+			p.log.info(`📋 已快取 ${descCount} 個配置描述（無新增）`);
+		}
 	}
 
-	// 報告
+	// 報告（僅在有 repos 或 claude 配置時生成）
+	const hasSubstantialContent =
+		has("claude") || has("project") || plan.repos?.length > 0;
 	const { ghSync } = await import("../external/github.mjs");
 	const reportData = {
 		username: ghSync("user", ".login") || "",
@@ -409,17 +389,19 @@ export async function phaseComplete(
 		timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
 	};
 
-	try {
-		const html = generateReport(reportData);
-		const reportPath = saveReport(html, path.join(repoDir, "dist"));
-		p.log.info(`📊 報告 → ${path.relative(repoDir, reportPath)}`);
+	if (hasSubstantialContent) {
 		try {
-			await openInBrowser(reportPath);
-		} catch {
-			/* 瀏覽器開啟失敗不阻塞 */
+			const html = generateReport(reportData);
+			const reportPath = saveReport(html, path.join(repoDir, "dist"));
+			p.log.info(`📊 報告 → ${path.relative(repoDir, reportPath)}`);
+			try {
+				await openInBrowser(reportPath);
+			} catch {
+				/* 瀏覽器開啟失敗不阻塞 */
+			}
+		} catch (err) {
+			p.log.warn(`⚠️ 報告生成失敗（${err.message}）`);
 		}
-	} catch (err) {
-		p.log.warn(`⚠️ 報告生成失敗（${err.message}）`);
 	}
 
 	// Session
