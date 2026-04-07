@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Listr } from 'listr2';
+import { isEmpty } from 'lodash-es';
 import { backupIfExists } from '../core/backup.mjs';
 import { updateSessionProgress } from '../core/session.mjs';
 import { generateAllRepoIndex } from '../deploy/deploy-index.mjs';
@@ -100,8 +101,9 @@ export async function phaseExecute(
             backupIfExists(path.join(HOME, '.ripgreprc'), 'ripgreprc'),
           ];
           const results = (await Promise.all(backupTasks)).filter(Boolean);
-          subtask.output =
-            results.length > 0 ? `已備份 ${results.length} 項：${results.join('、')}` : '無需備份';
+          subtask.output = !isEmpty(results)
+            ? `已備份 ${results.length} 項：${results.join('、')}`
+            : '無需備份';
         },
       },
 
@@ -132,7 +134,7 @@ export async function phaseExecute(
 
           const parts = [];
 
-          if (indexedRepos.length > 0) {
+          if (!isEmpty(indexedRepos)) {
             parts.push(`📑 預索引：${indexedRepos.length} 個 repo`);
           } else {
             parts.push('📑 預索引：無需生成');
@@ -204,7 +206,7 @@ export async function phaseExecute(
                   }
                 }
 
-                if (missing.length > 0) {
+                if (!isEmpty(missing)) {
                   subtask.output = `${passed}/${total} 就位，缺少：${missing.join('、')}`;
                 } else {
                   subtask.output = `${passed}/${total} 檔案全部就位 ✓`;

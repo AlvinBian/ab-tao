@@ -6,6 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { descBullet } from '../config/descriptions.mjs';
 
 /**
@@ -142,7 +143,7 @@ export function formatGlobalConfig(globalConfig) {
 export function formatTechStacks(plan) {
   const lines = [];
 
-  if (plan.techStacks.length > 0) {
+  if (!isEmpty(plan.techStacks)) {
     const categorized = plan._pipelineResult?.categorizedTechs;
     if (categorized instanceof Map && categorized.size > 0) {
       lines.push(`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`);
@@ -169,7 +170,7 @@ export function formatTechStacks(plan) {
 export function formatEccResources(plan, claudeDir) {
   const lines = [];
 
-  if (plan.ecc.length > 0) {
+  if (!isEmpty(plan.ecc)) {
     const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
     const eccByType = { commands: [], agents: [], rules: [] };
 
@@ -211,7 +212,7 @@ export function formatCommonsResources(plan) {
   const lines = [];
   const commSources = plan._pipelineResult?.commonsResources?.sources || [];
 
-  if (commSources.length > 0) {
+  if (!isEmpty(commSources)) {
     const commTotal = commSources.reduce(
       (s, src) =>
         s + src.commands.length + src.agents.length + src.rules.length + src.skills.length,
@@ -240,7 +241,7 @@ export function formatCommonsResources(plan) {
 export function formatZshModules(plan) {
   const lines = [];
 
-  if (plan.zshModules.length > 0) {
+  if (!isEmpty(plan.zshModules)) {
     lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
     lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
   }
@@ -257,7 +258,7 @@ export function formatZshModules(plan) {
 export function formatClaudeMd(plan) {
   const lines = [];
 
-  if (plan.projects.length > 0) {
+  if (!isEmpty(plan.projects)) {
     const mainPrj = plan.projects.filter((proj) => proj.claudeMdType === 'full');
     const tempPrj = plan.projects.filter((proj) => proj.claudeMdType === 'concise');
     const parts = [];

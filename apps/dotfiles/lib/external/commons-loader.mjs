@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { TECH_TO_LANG } from '@ab-tao/commons/detect';
 import { RESOURCES_DIR } from '@ab-tao/commons/paths';
+import { isEmpty } from 'lodash-es';
 
 /**
  * 從目錄中載入所有 .md 檔案
@@ -167,7 +168,7 @@ export function filterByTechStack(commonsResources, detectedTechs) {
 
   return {
     sources: filteredSources.filter(
-      (s) => s.commands.length + s.agents.length + s.rules.length + s.skills.length > 0,
+      (s) => s.commands.length + s.agents.length + s.rules.length + !isEmpty(s.skills),
     ),
     stats: { filtered, total },
   };

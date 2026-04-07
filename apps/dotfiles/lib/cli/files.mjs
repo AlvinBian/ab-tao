@@ -4,6 +4,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 
 /**
  * 自動發現目錄中的可安裝項目
@@ -94,7 +95,7 @@ export function extractMatchWhen(repoDir, dir, name) {
       result[key] = val;
     }
   }
-  return Object.keys(result).length > 0 ? result : null;
+  return !isEmpty(result) ? result : null;
 }
 
 /**

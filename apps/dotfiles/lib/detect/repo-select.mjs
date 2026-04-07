@@ -15,7 +15,7 @@
 
 import { execSync } from 'node:child_process';
 import * as p from '@clack/prompts';
-import { orderBy } from 'lodash-es';
+import { isEmpty, orderBy } from 'lodash-es';
 import pc from 'picocolors';
 import { BACK, handleCancel, multiselectWithAll, smartSelect } from '../cli/prompts.mjs';
 import { pMap } from '../core/concurrency.mjs';
@@ -62,10 +62,10 @@ export async function interactiveRepoSelect(session = null) {
   // 支持多選帳號/組織
   let selectedSources;
   const prevOrgs = Array.isArray(session?.org) ? session.org : session?.org ? [session.org] : [];
-  if (prevOrgs.length > 0 && prevOrgs.some((o) => sources.some((s) => s.value === o))) {
+  if (!isEmpty(prevOrgs) && prevOrgs.some((o) => sources.some((s) => s.value === o))) {
     // 有 session → 自動選擇上次的（支持單個或多個）
     selectedSources = prevOrgs.filter((o) => sources.some((s) => s.value === o));
-    if (selectedSources.length > 0) {
+    if (!isEmpty(selectedSources)) {
       p.log.success(`已連結 ${pc.cyan(selectedSources.join(' + '))}（上次選擇）`);
     }
   }
@@ -119,7 +119,7 @@ export async function interactiveRepoSelect(session = null) {
       );
     }
   }
-  if (allRepos.length === 0) {
+  if (isEmpty(allRepos)) {
     s1.stop('無法取得倉庫列表');
     return [];
   }
@@ -156,7 +156,7 @@ export async function interactiveRepoSelect(session = null) {
     `貢獻分析完成：${pc.green(contribCount)} 個有貢獻（共 ${pc.cyan(totalCommits)} commits）`,
   );
 
-  if (allRepos.length === 0) {
+  if (isEmpty(allRepos)) {
     p.log.warn('沒有找到倉庫');
     return [];
   }
@@ -229,7 +229,7 @@ export async function interactiveRepoSelect(session = null) {
   let selected;
   if (multiOrg) {
     // 顯示分組預覽
-    if (preselected.length > 0) p.log.info(showSummary(preselected));
+    if (!isEmpty(preselected)) p.log.info(showSummary(preselected));
 
     // confirm / edit / back
     const preCount = preselected.length;
@@ -284,7 +284,7 @@ export async function interactiveRepoSelect(session = null) {
         allSelected.push(...orgResult);
       }
       selected = allSelected;
-      if (selected.length > 0) {
+      if (!isEmpty(selected)) {
         const lines = selected.map((r, i) => `  ${i + 1}. ${r}`);
         p.log.success(`${selectTitle}：${selected.length} 個\n${lines.join('\n')}`);
       }
@@ -303,7 +303,7 @@ export async function interactiveRepoSelect(session = null) {
     selected = result;
   }
 
-  if (!selected || selected.length === 0) {
+  if (!selected || isEmpty(selected)) {
     p.log.warn('未選擇倉庫');
     return BACK;
   }

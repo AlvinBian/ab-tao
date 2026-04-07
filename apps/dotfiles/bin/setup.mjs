@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
-import { cloneDeep, countBy } from 'lodash-es';
+import { cloneDeep, countBy, isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { BACK, handleCancel, smartSelect } from '../lib/cli/prompts.mjs';
 import { phaseHeader } from '../lib/cli/task-runner.mjs';
@@ -38,7 +38,7 @@ async function ensureSetupEnvironment() {
   // 備份原始配置（首次使用）
   const { ensureOriginalBackup } = await import('./backup-original.mjs');
   const origBackup = ensureOriginalBackup();
-  if (origBackup && origBackup.length > 0) {
+  if (origBackup && !isEmpty(origBackup)) {
     p.log.success(
       `首次使用：已備份原始配置 → ~/.ab-tao-original/\n${origBackup.map((r) => `  ${r}`).join('\n')}\n還原指令：pnpm run restore → 選擇「完全還原」`,
     );
@@ -326,22 +326,22 @@ async function main() {
         `${healthIcon}  [${bar}]  ${pc.bold(`${summary.pct}%`)}  (${summary.ok}/${summary.total})`,
         '',
         pc.bold('Claude 配置'),
-        `  Commands   ${cmdOk} 個${claude.installedCommands.length > 0 ? pc.dim(`  ${claude.installedCommands.slice(0, 6).join(', ')}${claude.installedCommands.length > 6 ? '…' : ''}`) : ''}`,
-        `  Agents     ${agentOk} 個${claude.installedAgents.length > 0 ? pc.dim(`  ${claude.installedAgents.slice(0, 6).join(', ')}${claude.installedAgents.length > 6 ? '…' : ''}`) : ''}`,
-        `  Rules      ${ruleOk} 個${claude.installedRules.length > 0 ? pc.dim(`  ${claude.installedRules.join(', ')}`) : ''}`,
+        `  Commands   ${cmdOk} 個${!isEmpty(claude.installedCommands) ? pc.dim(`  ${claude.installedCommands.slice(0, 6).join(', ')}${claude.installedCommands.length > 6 ? '…' : ''}`) : ''}`,
+        `  Agents     ${agentOk} 個${!isEmpty(claude.installedAgents) ? pc.dim(`  ${claude.installedAgents.slice(0, 6).join(', ')}${claude.installedAgents.length > 6 ? '…' : ''}`) : ''}`,
+        `  Rules      ${ruleOk} 個${!isEmpty(claude.installedRules) ? pc.dim(`  ${claude.installedRules.join(', ')}`) : ''}`,
         `  Hooks      ${hasHooks ? pc.green('已啟用') : pc.dim('未安裝')}`,
         `  Settings   ${hasSettings ? pc.green('已配置') : pc.dim('未安裝')}`,
         `  CLAUDE.md  ${pc.cyan(claudeMd.count)} 個 repo`,
       ];
 
-      if (claude.missing.length > 0) {
+      if (!isEmpty(claude.missing)) {
         lines.push(
           pc.red(
             `  缺少 ${claude.missing.length} 個：${claude.missing.slice(0, 5).join(', ')}${claude.missing.length > 5 ? '…' : ''}`,
           ),
         );
       }
-      if (claude.extra.length > 0) {
+      if (!isEmpty(claude.extra)) {
         lines.push(pc.dim(`  額外 ${claude.extra.length} 個（非 ab-tao 管理）`));
       }
 
@@ -350,7 +350,7 @@ async function main() {
       lines.push(
         `  已安裝  ${pc.green(zsh.installed.length)}/${zsh.expected.length}  ${pc.dim(zsh.installed.join(', ') || '無')}`,
       );
-      if (zsh.missing.length > 0) {
+      if (!isEmpty(zsh.missing)) {
         lines.push(pc.red(`  缺少：${zsh.missing.join(', ')}`));
       }
 
@@ -474,14 +474,14 @@ async function main() {
       required: false,
     }),
   );
-  if (features === BACK || !features || features.length === 0) {
+  if (features === BACK || !features || isEmpty(features)) {
     p.outro('已取消');
     return;
   }
 
   // 對可能修改系統配置的選項給出簡短提示
   const riskySelected = features.filter((f) => ['zsh', 'slack'].includes(f));
-  if (riskySelected.length > 0) {
+  if (!isEmpty(riskySelected)) {
     const hints = {
       zsh: '修改 ~/.zshrc 和 ~/.zsh/',
       slack: '設定 Slack 通知頻道',
@@ -539,7 +539,7 @@ async function main() {
   }
 
   // 外部服務設定摘要
-  if (setupResults.length > 0) {
+  if (!isEmpty(setupResults)) {
     p.log.success(`外部服務設定完成\n${setupResults.map((r) => `  ${r}`).join('\n\n')}`);
   }
 
@@ -560,7 +560,7 @@ async function main() {
 
     // 角色分類（只有選了 repos 的功能才需要）
     const roles = {};
-    if (needsRepos && repos.length > 0) {
+    if (needsRepos && !isEmpty(repos)) {
       const { determineRole } = await import('../lib/config/config-classifier.mjs');
       for (const r of repos) {
         roles[r.fullName] = prev?.roles?.[r.fullName] || determineRole(r);

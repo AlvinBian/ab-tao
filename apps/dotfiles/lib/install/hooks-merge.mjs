@@ -47,7 +47,7 @@ export async function mergeHooksWithExisting(newHooks, settingsPath) {
     }
   }
 
-  if (conflicts.length === 0) {
+  if (isEmpty(conflicts)) {
     // 無衝突，直接合併
     const merged = { ...newHooks, hooks: { ...newHooks.hooks } };
     for (const [event, matchers] of Object.entries(existing.hooks)) {

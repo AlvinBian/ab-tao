@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { cpDir } from '../lib/core/backup.mjs';
 import { getDirname } from '../lib/core/paths.mjs';
@@ -42,7 +43,7 @@ async function main() {
 
   const backups = getBackups();
 
-  if (backups.length === 0) {
+  if (isEmpty(backups)) {
     p.log.warn(`沒有找到任何備份\n  備份目錄：${pc.dim(BACKUP_BASE)}`);
     p.outro('執行 pnpm run setup 會自動建立備份');
     return;

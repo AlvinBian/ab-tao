@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
-import { sumBy } from 'lodash-es';
+import { isEmpty, sumBy } from 'lodash-es';
 import pc from 'picocolors';
 import { countFiles, discoverItems } from '../cli/files.mjs';
 import { stageClaudePreview } from '../cli/preview.mjs';
@@ -62,7 +62,7 @@ async function selectHooks(repoDir, stepLabel, flagAll, session) {
       }
     }
 
-    if (hookItems.length === 0) return { selectedHooks: null, installHooks: false };
+    if (isEmpty(hookItems)) return { selectedHooks: null, installHooks: false };
 
     if (flagAll) return { selectedHooks: hooksData, installHooks: true };
 
@@ -74,14 +74,14 @@ async function selectHooks(repoDir, stepLabel, flagAll, session) {
     });
 
     if (chosen === BACK) return { selectedHooks: null, installHooks: false };
-    if (chosen.length === 0) return { selectedHooks: null, installHooks: false };
+    if (isEmpty(chosen)) return { selectedHooks: null, installHooks: false };
 
     // 建構篩選後的 hooks.json
     const filteredHooks = { description: hooksData.description, hooks: {} };
     const chosenSet = new Set(chosen);
     for (const [event, matchers] of Object.entries(hooksData.hooks || {})) {
       const kept = matchers.filter((m) => chosenSet.has(`${event}:${m.matcher}`));
-      if (kept.length > 0) filteredHooks.hooks[event] = kept;
+      if (!isEmpty(kept)) filteredHooks.hooks[event] = kept;
     }
     return { selectedHooks: filteredHooks, installHooks: true };
   } catch {
@@ -151,7 +151,7 @@ export async function handleInstallClaude(
     let rulesArg = step.fixed.rules;
     if (step.fixed.rules === 'all') {
       const ruleItems = discoverItems(repoDir, 'claude/rules', '.md');
-      if (ruleItems.length > 0 && !flagAll) {
+      if (!isEmpty(ruleItems) && !flagAll) {
         const selectedRules = await smartSelect({
           title: `${stepLabel}Rules`,
           items: ruleItems,

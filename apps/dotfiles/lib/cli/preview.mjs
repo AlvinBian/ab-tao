@@ -22,6 +22,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { cpDir } from '../core/backup.mjs';
 import { mergeSkillFragments } from '../detect/skill-detect.mjs';
 
@@ -85,7 +86,7 @@ export function stageClaudePreview(
       fs.mkdirSync(destDir, { recursive: true });
 
       let content = fs.readFileSync(src, 'utf8');
-      if (skillIds.length > 0) {
+      if (!isEmpty(skillIds)) {
         content = mergeSkillFragments(content, skillIds, `${name}${def.ext}`);
       }
       fs.writeFileSync(path.join(destDir, `${name}${def.ext}`), content);
@@ -104,7 +105,7 @@ export function stageClaudePreview(
           step.fixed.rules.split(',').includes(f.replace('.md', ''))
         ) {
           let content = fs.readFileSync(path.join(rulesDir, f), 'utf8');
-          if (skillIds.length > 0) {
+          if (!isEmpty(skillIds)) {
             content = mergeSkillFragments(content, skillIds, f);
           }
           fs.writeFileSync(path.join(destRulesDir, f), content);

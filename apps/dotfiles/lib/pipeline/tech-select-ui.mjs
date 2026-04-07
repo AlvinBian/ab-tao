@@ -9,7 +9,7 @@
  */
 
 import * as p from '@clack/prompts';
-import { union } from 'lodash-es';
+import { isEmpty, union } from 'lodash-es';
 import pc from 'picocolors';
 import { handleCancel, multiselectWithAll } from '../cli/prompts.mjs';
 import { CATEGORY_ORDER } from '../config/npm-classify.mjs';
@@ -99,7 +99,7 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
 
-  if (sortedCats.length === 0) return [];
+  if (isEmpty(sortedCats)) return [];
 
   const preselectedTechs = computePreselection(categorizedTechs, primaryRepo, coreCategories);
   const totalTechs = [...categorizedTechs.values()].reduce((s, m) => s + m.size, 0);
@@ -112,7 +112,7 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
       const items = [...categorizedTechs.get(cat).keys()];
       const pre = items.filter((id) => preselectedTechs.has(id));
       const skipped = items.filter((id) => !preselectedTechs.has(id));
-      if (pre.length === 0 && skipped.length === 0) return null;
+      if (isEmpty(pre) && isEmpty(skipped)) return null;
       const preText = pre.join('、');
       const skipText = skipped.length ? `  [未選: ${skipped.join('、')}]` : '';
       return `${i + 1}. ${cat}: ${preText}${skipText}`;
@@ -226,7 +226,7 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
     }
   }
 
-  if (selected.length > 0) {
+  if (!isEmpty(selected)) {
     // 所有路徑最終確認
     const techLines = selected.slice(0, 20).map((t, i) => `  ${i + 1}. ${t}`);
     const more = selected.length > 20 ? `\n  ... 另有 ${selected.length - 20} 個` : '';

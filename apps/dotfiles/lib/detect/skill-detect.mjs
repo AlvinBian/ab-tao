@@ -12,6 +12,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import semver from 'semver';
 import { getDirname } from '../core/paths.mjs';
 import {
@@ -124,8 +125,9 @@ export async function analyzeRepo(repoName) {
   ];
 
   // ── 第 2 輪：GraphQL 批次抓取所有分類檔案（1 次請求）──
-  const fileContents =
-    allFilePaths.length > 0 ? await fetchFilesBatch(owner, name, result.branch, allFilePaths) : {};
+  const fileContents = !isEmpty(allFilePaths)
+    ? await fetchFilesBatch(owner, name, result.branch, allFilePaths)
+    : {};
 
   // 分配到各 context
   for (const f of classified.techDetect) {
@@ -168,7 +170,7 @@ export async function analyzeRepo(repoName) {
     const subPkgDirs = dirListings.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 
     // 批次抓取子包 package.json（1 次 GraphQL）
-    if (subPkgDirs.length > 0) {
+    if (!isEmpty(subPkgDirs)) {
       const pkgPaths = subPkgDirs.map((d) => `${d}/package.json`);
       const pkgFiles = await fetchFilesBatch(owner, name, result.branch, pkgPaths);
       for (const [fp, content] of Object.entries(pkgFiles)) {
@@ -255,7 +257,7 @@ export function extractDeps(techFiles) {
  */
 export function detectSkills({ deps = {}, devDeps = {}, rootFiles = [], languages = {} }) {
   const registry = loadRegistry();
-  if (registry.skills.length === 0) return [];
+  if (isEmpty(registry.skills)) return [];
 
   const depKeys = new Set(Object.keys(deps).filter(Boolean));
   const devDepKeys = new Set(Object.keys(devDeps).filter(Boolean));
@@ -293,7 +295,7 @@ export function detectSkills({ deps = {}, devDeps = {}, rootFiles = [], language
 
     const hit =
       (skill.detect.match || 'any') === 'all'
-        ? checks.length > 0 && checks.every(Boolean)
+        ? !isEmpty(checks) && checks.every(Boolean)
         : checks.some(Boolean);
 
     if (hit) {
@@ -326,7 +328,7 @@ export function mergeSkillFragments(baseContent, skillIds, fragmentName) {
     const p = path.join(STACKS_DIR, id, fragmentName);
     if (fs.existsSync(p)) fragments.push(fs.readFileSync(p, 'utf8').trim());
   }
-  if (fragments.length === 0) return baseContent;
+  if (isEmpty(fragments)) return baseContent;
 
   const markers = ['## 輸出格式', '## Step 3'];
   let idx = -1;

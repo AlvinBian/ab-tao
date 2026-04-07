@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ECC_DIR } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { getDirname } from '../lib/core/paths.mjs';
 import {
@@ -247,7 +248,7 @@ async function showDetail(data) {
     case 'plugins':
       console.log();
       p.log.step(pc.bold('📦 Plugins'));
-      if (data.plugins.length === 0) console.log(pc.dim('  無已構建的 plugin'));
+      if (isEmpty(data.plugins)) console.log(pc.dim('  無已構建的 plugin'));
       for (const pl of data.plugins) console.log(`  ${pl.name}  ${pc.dim(pl.mtime.slice(0, 10))}`);
       break;
     case 'slack':
@@ -290,16 +291,16 @@ async function showDetail(data) {
       const staleCommands = staleItems.filter((item) => item.type === 'command');
       const staleAgents = staleItems.filter((item) => item.type === 'agent');
 
-      if (staleItems.length === 0) {
+      if (isEmpty(staleItems)) {
         console.log(pc.green('✔ 沒有 30 天未使用的項目'));
         break;
       }
 
       console.log();
       console.log(`  未使用 (30天+)`);
-      if (staleCommands.length > 0)
+      if (!isEmpty(staleCommands))
         console.log(`    ${pc.cyan('Commands:')} ${staleCommands.length} 個`);
-      if (staleAgents.length > 0) console.log(`    ${pc.cyan('Agents:')} ${staleAgents.length} 個`);
+      if (!isEmpty(staleAgents)) console.log(`    ${pc.cyan('Agents:')} ${staleAgents.length} 個`);
       console.log();
 
       // 估算節省
@@ -329,7 +330,7 @@ async function showDetail(data) {
           required: false,
         });
 
-        if (!p.isCancel(selected) && selected.length > 0) {
+        if (!p.isCancel(selected) && !isEmpty(selected)) {
           // 顯示確認對話
           const confirm = await p.confirm({
             message: `確認刪除 ${selected.length} 個項目？（將備份到 dist/backup/）`,
@@ -401,7 +402,7 @@ async function showDetail(data) {
       console.log();
       p.log.step(pc.bold('💾 備份與磁碟'));
       console.log(
-        `  備份    ${data.backups.length} 份${data.backups.length > 0 ? pc.dim(`  最近: ${data.backups[data.backups.length - 1]}`) : ''}`,
+        `  備份    ${data.backups.length} 份${!isEmpty(data.backups) ? pc.dim(`  最近: ${data.backups[data.backups.length - 1]}`) : ''}`,
       );
       console.log(`  Cache   ${formatBytes(data.diskUsage.cache)}`);
       console.log(`  Dist    ${formatBytes(data.diskUsage.dist)}`);
@@ -447,7 +448,7 @@ async function manageConfig(data) {
           label: '🗑️ 刪除已安裝的',
           hint: `${items.filter((i) => i.count === 0).length} 個從未使用`,
         },
-        ...(notInstalled.length > 0
+        ...(!isEmpty(notInstalled)
           ? [
               {
                 value: 'add',
@@ -471,7 +472,7 @@ async function manageConfig(data) {
         })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         for (const name of selected) {
           const fp = path.join(dir, `${name}.md`);
           if (fs.existsSync(fp)) {
@@ -487,7 +488,7 @@ async function manageConfig(data) {
         options: notInstalled.map((name) => ({ value: name, label: name })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         const eccCategoryDir = path.join(ECC_DIR, category);
         for (const name of selected) {
           const src = path.join(eccCategoryDir, `${name}.md`);
@@ -525,7 +526,7 @@ async function manageConfig(data) {
         })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         for (const name of selected) {
           const rule = data.rules.find((r) => r.name === name);
           if (rule.enabled) {
@@ -555,7 +556,7 @@ async function manageConfig(data) {
         })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         for (const name of selected) {
           for (const ext of ['.md', '.md.disabled']) {
             const fp = path.join(rulesDir, `${name}${ext}`);
@@ -571,7 +572,7 @@ async function manageConfig(data) {
       const notInstalled = data.ecc.rules.filter(
         (name) => !data.rules.find((r) => r.name === name),
       );
-      if (notInstalled.length === 0) {
+      if (isEmpty(notInstalled)) {
         p.log.info('所有 ECC rules 已安裝');
         return false;
       }
@@ -580,7 +581,7 @@ async function manageConfig(data) {
         options: notInstalled.map((name) => ({ value: name, label: name })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         const eccRulesDir = path.join(ECC_DIR, 'rules');
         for (const name of selected) {
           const src = path.join(eccRulesDir, `${name}.md`);
@@ -605,7 +606,7 @@ async function manageConfig(data) {
     }
     const events = Object.keys(hooksData.hooks || {});
 
-    if (events.length === 0) {
+    if (isEmpty(events)) {
       p.log.info('沒有已配置的 Hook 事件');
       return false;
     }
@@ -619,7 +620,7 @@ async function manageConfig(data) {
       })),
       required: false,
     });
-    if (!p.isCancel(selected) && selected.length > 0) {
+    if (!p.isCancel(selected) && !isEmpty(selected)) {
       for (const event of selected) {
         delete hooksData.hooks[event];
         p.log.info(`已移除 ${event}`);
@@ -642,7 +643,7 @@ async function manageConfig(data) {
       })),
       required: false,
     });
-    if (!p.isCancel(selected) && selected.length > 0) {
+    if (!p.isCancel(selected) && !isEmpty(selected)) {
       fs.mkdirSync(zshDest, { recursive: true });
       for (const m of selected) {
         const dest = path.join(zshDest, `${m}.zsh`);
@@ -698,7 +699,7 @@ async function manageConfig(data) {
         })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         settings.permissions.allow = settings.permissions.allow.filter(
           (r) => !selected.includes(r),
         );
@@ -729,7 +730,7 @@ async function manageConfig(data) {
         })),
         required: false,
       });
-      if (!p.isCancel(selected) && selected.length > 0) {
+      if (!p.isCancel(selected) && !isEmpty(selected)) {
         for (const projPath of selected) {
           const realPath = projPath.replace('~', HOME);
           const mdPath = path.join(realPath, 'CLAUDE.md');
@@ -982,7 +983,7 @@ async function generateHtmlReport(data) {
   <table><thead><tr><th>來源</th><th>規則</th></tr></thead>
   <tbody>${permRows}</tbody></table>
   </div>
-  ${data.permissions.deny.length > 0 ? `<p class="text-red-400 text-sm mt-2">Deny: ${data.permissions.deny.map(escHtml).join(', ')}</p>` : ''}
+  ${!isEmpty(data.permissions.deny) ? `<p class="text-red-400 text-sm mt-2">Deny: ${data.permissions.deny.map(escHtml).join(', ')}</p>` : ''}
 </div>
 
 <!-- 9. CLAUDE.md -->
@@ -996,7 +997,7 @@ async function generateHtmlReport(data) {
 <div class="card">
   <div class="section-title">📦 Plugins <span class="text-sm text-gray-400 font-normal">${data.plugins.length} 個</span></div>
   ${
-    data.plugins.length === 0
+    isEmpty(data.plugins)
       ? '<p class="text-gray-500">無已構建的 plugin</p>'
       : data.plugins
           .map(
@@ -1010,7 +1011,7 @@ async function generateHtmlReport(data) {
 <!-- 11. 備份與磁碟 -->
 <div class="card">
   <div class="section-title">💾 備份與磁碟</div>
-  <p class="text-sm">備份 <strong>${data.backups.length}</strong> 份${data.backups.length > 0 ? ` · 最近: ${escHtml(data.backups[data.backups.length - 1])}` : ''}</p>
+  <p class="text-sm">備份 <strong>${data.backups.length}</strong> 份${!isEmpty(data.backups) ? ` · 最近: ${escHtml(data.backups[data.backups.length - 1])}` : ''}</p>
   <p class="text-sm mt-1">Cache: ${formatBytes(data.diskUsage.cache)} · Dist: ${formatBytes(data.diskUsage.dist)} · Sessions: ${formatBytes(data.diskUsage.claudeProjects)}</p>
 </div>
 

@@ -13,6 +13,7 @@
  *           prompt 或依賴沒變化就不重新呼叫 AI。
  */
 
+import { isEmpty } from 'lodash-es';
 import { callClaudeJSONStream } from '../external/claude-cli.mjs';
 import { classifyBatch, getStandardCategories } from '../taxonomy/classify.mjs';
 import { hashKey, readCache, writeCache } from './pipeline-cache.mjs';
@@ -110,7 +111,7 @@ export function buildRepoSummary(repoName, analysis) {
     );
     parts.push(`  已知分類: ${preParts.join(' | ')}`);
   }
-  if (unclassified.length > 0) {
+  if (!isEmpty(unclassified)) {
     parts.push(
       `  待分類: ${unclassified.slice(0, 10).join(', ')}${unclassified.length > 10 ? ' …' : ''}`,
     );

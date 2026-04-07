@@ -8,6 +8,7 @@
  */
 
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 
 /** 回退信號 — phase 收到此值應回退到上一步 */
@@ -74,7 +75,7 @@ export async function groupedMultiselectWithAll({
       message: `${message}  Space 選擇 · ↑↓ 滾動 · Enter 確認`,
       options: groups,
       required,
-      initialValues: initialValues.length > 0 ? initialValues : undefined,
+      initialValues: !isEmpty(initialValues) ? initialValues : undefined,
     }),
   );
   if (result === BACK) return BACK;
@@ -124,7 +125,7 @@ export async function multiselectWithAll({
       message: `${message}  Space 選擇 · ↑↓ 滾動 · Enter 確認`,
       options: [...extraOpts, ...safeOptions],
       required,
-      initialValues: initialValues.length > 0 ? initialValues : undefined,
+      initialValues: !isEmpty(initialValues) ? initialValues : undefined,
     }),
   );
   if (result === BACK) return BACK;
@@ -161,7 +162,7 @@ export async function smartSelect({
   showSummary,
   autoSelectThreshold = 2,
 }) {
-  if (items.length === 0) return [];
+  if (isEmpty(items)) return [];
 
   // 少量項目自動全選
   if (items.length <= autoSelectThreshold) {
@@ -171,12 +172,11 @@ export async function smartSelect({
   }
 
   // 決定預選來源：preselected > session > 空
-  const effectivePreselected =
-    preselected.length > 0
-      ? preselected
-      : session?.length > 0
-        ? session.filter((v) => items.some((i) => i.value === v))
-        : [];
+  const effectivePreselected = !isEmpty(preselected)
+    ? preselected
+    : !isEmpty(session)
+      ? session.filter((v) => items.some((i) => i.value === v))
+      : [];
 
   const preCount = effectivePreselected.length;
   const total = items.length;
@@ -236,7 +236,7 @@ export async function smartSelect({
   if (result === BACK) return BACK;
 
   // 調整完成後顯示編號列表（合併為一次輸出）
-  if (result.length > 0) {
+  if (!isEmpty(result)) {
     const selectedItems = result.map((v) => items.find((i) => i.value === v)).filter(Boolean);
     const lines = selectedItems
       .map((item, idx) => `  ${pc.dim(`${idx + 1}.`)} ${item.label}  ${pc.dim(item.hint || '')}`)

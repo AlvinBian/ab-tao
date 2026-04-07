@@ -10,6 +10,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { getDirname } from '../lib/core/paths.mjs';
 
 const __dirname = getDirname(import.meta);
@@ -91,12 +92,11 @@ function generateHTML(charts) {
 
   const sections = charts
     .map((c) => {
-      const linkHTML =
-        c.links.length > 0
-          ? `<div class="chart-links">${c.links
-              .map((l) => `<a href="#${l.target}" class="link-btn">${escHtml(l.label)} →</a>`)
-              .join(' ')}</div>`
-          : '';
+      const linkHTML = !isEmpty(c.links)
+        ? `<div class="chart-links">${c.links
+            .map((l) => `<a href="#${l.target}" class="link-btn">${escHtml(l.label)} →</a>`)
+            .join(' ')}</div>`
+        : '';
 
       // 嵌入 SVG inline（如果渲染成功）或 fallback 到 mermaid CDN
       const svgPath = path.join(OUTPUT_DIR, `${c.name}.svg`);
@@ -459,7 +459,7 @@ const files = fs
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
 
-if (files.length === 0) {
+if (isEmpty(files)) {
   console.error('docs/flows/ 中沒有 .mmd 檔案');
   process.exit(1);
 }

@@ -11,6 +11,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
+import { isEmpty } from 'lodash-es';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -368,12 +369,12 @@ export async function collectFullStatus() {
       healthPct: configStatus.summary.pct,
       totalInstalled,
       totalUsed,
-      commandUsageRate:
-        installed.commands.length > 0
-          ? Math.round((usedCommands / installed.commands.length) * 100)
-          : 0,
-      agentUsageRate:
-        installed.agents.length > 0 ? Math.round((usedAgents / installed.agents.length) * 100) : 0,
+      commandUsageRate: !isEmpty(installed.commands)
+        ? Math.round((usedCommands / installed.commands.length) * 100)
+        : 0,
+      agentUsageRate: !isEmpty(installed.agents)
+        ? Math.round((usedAgents / installed.agents.length) * 100)
+        : 0,
     },
     commands: commandsDetail,
     agents: agentsDetail,

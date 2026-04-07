@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import { getDescription } from '../lib/config/descriptions.mjs';
 
 const HOME = process.env.HOME;
@@ -66,7 +67,7 @@ async function main() {
     }
   }
 
-  if (allHooks.length === 0) {
+  if (isEmpty(allHooks)) {
     p.log.info('沒有 hooks');
     p.outro();
     return;

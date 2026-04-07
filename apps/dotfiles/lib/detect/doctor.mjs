@@ -8,6 +8,7 @@ import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 
 const HOME = homedir();
@@ -191,7 +192,7 @@ export async function ensureEnvironment() {
   const missingOptional = checks.filter((c) => !c.ok && c.optional);
 
   // 全部通過
-  if (missing.length === 0) {
+  if (isEmpty(missing)) {
     const cleanVer = (v) => v?.match(/[\d.]+/)?.[0] || '';
     const info = checks
       .filter((c) => c.ver)
@@ -222,7 +223,7 @@ export async function ensureEnvironment() {
   p.log.info(`🔍 環境檢查\n${checkLines}`);
 
   // 若有必須安裝的項目，確認安裝
-  if (missing.length > 0) {
+  if (!isEmpty(missing)) {
     const confirm = await p.confirm({
       message: `⚙️ 需要處理 ${missing.map((m) => m.actionLabel).join('、')}，繼續？  Y 確認 · n 取消`,
       initialValue: true,
@@ -235,7 +236,7 @@ export async function ensureEnvironment() {
   }
 
   // 若有可選項未安裝，顯示建議
-  if (missingOptional.length > 0) {
+  if (!isEmpty(missingOptional)) {
     p.log.warn(
       `💡 建議安裝可選工具以獲得更好體驗：${missingOptional.map((m) => m.actionLabel).join('、')}`,
     );

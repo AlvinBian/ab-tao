@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 
 const HOME = process.env.HOME;
 const BACKUP_DIR = path.join(HOME, '.ab-tao-backup-original');
@@ -83,7 +84,7 @@ export function ensureOriginalBackup() {
       if (result) backed.push(result);
     }
     fs.writeFileSync(TIMESTAMP_FILE, new Date().toISOString());
-    return backed.length > 0 ? backed : false;
+    return !isEmpty(backed) ? backed : false;
   }
 
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -114,7 +115,7 @@ if (process.argv[1]?.endsWith('backup-original.mjs')) {
   const result = ensureOriginalBackup();
   if (result === false) {
     p.log.info(`原始備份已存在：${BACKUP_DIR}`);
-  } else if (result.length > 0) {
+  } else if (!isEmpty(result)) {
     p.log.success(`已備份原始配置 → ${BACKUP_DIR}\n${result.map((r) => `  ${r}`).join('\n')}`);
   } else {
     p.log.info('無需備份（沒有找到現有配置）');

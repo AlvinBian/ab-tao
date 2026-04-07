@@ -25,7 +25,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-
+import { isEmpty } from 'lodash-es';
 // ── lib 模組匯入 ────────────────────────────────────────────────
 // repo 分析引擎：GitHub API 掃描、deps 提取、路徑常量
 import { analyzeRepo, parseRepoEntry, REPO_DIR, STACKS_DIR } from '../lib/detect/skill-detect.mjs';
@@ -119,7 +119,7 @@ function getRepos() {
 // ── main：主程式編排 ────────────────────────────────────────────
 async function main() {
   // --skills 模式：不需要 repos，直接生成指定的 stacks
-  const needsRepos = !onlySkills || onlySkills.length === 0;
+  const needsRepos = !onlySkills || isEmpty(onlySkills);
   const repos = needsRepos ? getRepos() : [];
   const repoList = top > 0 ? repos.slice(0, top) : repos;
 

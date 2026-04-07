@@ -8,6 +8,7 @@
 import { spawn } from 'node:child_process';
 import { StringDecoder } from 'node:string_decoder';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { stripAnsi } from '../cli/progress.mjs';
 
@@ -66,10 +67,9 @@ export async function handleBuildPlugin(repoDir, step, stepLabel, { silent = fal
       );
     });
 
-    const phaseLines =
-      completedPhases.length > 0
-        ? `\n${completedPhases.map((ph) => `  ${pc.green('✔')} ${ph}`).join('\n')}`
-        : '';
+    const phaseLines = !isEmpty(completedPhases)
+      ? `\n${completedPhases.map((ph) => `  ${pc.green('✔')} ${ph}`).join('\n')}`
+      : '';
     spinner?.stop(`${stepLabel}✔ ${step.successMsg || '打包完成'}${phaseLines}`);
   } catch (e) {
     if (silent) throw e;

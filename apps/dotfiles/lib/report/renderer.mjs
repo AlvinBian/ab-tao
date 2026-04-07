@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { getDescription } from '../config/descriptions.mjs';
 import {
   badge,
@@ -74,7 +75,7 @@ function renderTabTechStacks(data) {
   const totalRepos = (data.repos || []).length;
 
   const stackRepoCount = {};
-  if (data.repos && data.repos.length > 0) {
+  if (data.repos && !isEmpty(data.repos)) {
     for (const repo of data.repos) {
       const stackData = data.perRepoReasoning?.[repo]?.stacks || {};
       for (const stacks of Object.values(stackData)) {
@@ -105,7 +106,7 @@ function renderTabTechStacks(data) {
   </div>
   <div class="card">
     <h2 class="section-title">所有技術棧</h2>
-    ${stacks.length > 0 ? `<div>${stacks.map((s) => badge(s, 'blue', getDescription(s))).join('')}</div>` : '<p style="color:#8b949e">無技術棧資料</p>'}
+    ${!isEmpty(stacks) ? `<div>${stacks.map((s) => badge(s, 'blue', getDescription(s))).join('')}</div>` : '<p style="color:#8b949e">無技術棧資料</p>'}
   </div>
   ${
     topCount > 0
@@ -129,7 +130,7 @@ function renderTabRepos(data) {
   const roles = data.repoRoles || {};
   const projects = data.projects || [];
 
-  const repoKeys = repos.length > 0 ? repos : Object.keys(perRepoReasoning);
+  const repoKeys = !isEmpty(repos) ? repos : Object.keys(perRepoReasoning);
   if (!repoKeys.length)
     return '<div id="tab-repos" class="tab-content"><p style="color:#8b949e">無 Repo 資料</p></div>';
 
@@ -252,7 +253,7 @@ function renderCharts(data) {
   const installed = data.installed || {};
 
   const stackRepoCount = {};
-  if (repos.length > 0) {
+  if (!isEmpty(repos)) {
     for (const repo of repos) {
       const stackData = perRepoReasoning[repo]?.stacks || {};
       for (const techs of Object.values(stackData)) {
@@ -354,7 +355,7 @@ function initTechFreqChart() {
 function initEccInstallChart() {
   const dom = document.getElementById('chart-ecc-install');
   if (!dom || !dom.offsetParent || dom._echarts) return;
-  if (!chartConfig.eccInstall || chartConfig.eccInstall.length === 0) return;
+  if (!chartConfig.eccInstall || isEmpty(chartConfig.eccInstall)) return;
   const chart = echarts.init(dom);
   dom._echarts = chart;
   const option = {
@@ -423,7 +424,7 @@ function initOverviewBar() {
 function initTokenChart() {
   const dom = document.getElementById('chart-token-distribution');
   if (!dom || !dom.offsetParent || dom._echarts) return;
-  if (!chartConfig.tokenDistribution || chartConfig.tokenDistribution.length === 0) return;
+  if (!chartConfig.tokenDistribution || isEmpty(chartConfig.tokenDistribution)) return;
   const chart = echarts.init(dom);
   dom._echarts = chart;
   const colors = ['#58a6ff', '#bc8cff', '#3fb950', '#f0883e', '#f778ba'];

@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { getDirname } from '../core/paths.mjs';
 
 const __dirname = getDirname(import.meta);
@@ -114,9 +115,9 @@ const _scanned = {
 
 // ── 全部配置（統一安裝到 ~/.claude/）──
 
-export const ALL_COMMANDS = _scanned.commands.length > 0 ? _scanned.commands : FALLBACK_COMMANDS;
-export const ALL_AGENTS = _scanned.agents.length > 0 ? _scanned.agents : FALLBACK_AGENTS;
-export const ALL_RULES = _scanned.rules.length > 0 ? _scanned.rules : FALLBACK_RULES;
+export const ALL_COMMANDS = !isEmpty(_scanned.commands) ? _scanned.commands : FALLBACK_COMMANDS;
+export const ALL_AGENTS = !isEmpty(_scanned.agents) ? _scanned.agents : FALLBACK_AGENTS;
+export const ALL_RULES = !isEmpty(_scanned.rules) ? _scanned.rules : FALLBACK_RULES;
 
 // 舊版時這些是專案級（現在全部統一到全局，但 upgrade.mjs 需要知道舊的分類來清理）
 export const LEGACY_PROJECT_COMMANDS = [

@@ -11,6 +11,7 @@
  */
 
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { discoverItems } from '../cli/files.mjs';
 import { stageModulesPreview } from '../cli/preview.mjs';
@@ -41,7 +42,7 @@ export async function handleInstallModules(
   const def = Object.values(step.selectable)[0];
   const key = Object.keys(step.selectable)[0];
   const items = discoverItems(repoDir, def.dir, def.ext);
-  if (items.length === 0) return { modules: [] };
+  if (isEmpty(items)) return { modules: [] };
 
   const selectedModules = flagAll
     ? items.map((i) => i.value)
@@ -52,7 +53,7 @@ export async function handleInstallModules(
         session: session?.install?.modules,
       });
   if (selectedModules === BACK) return undefined;
-  if (selectedModules.length === 0) return;
+  if (isEmpty(selectedModules)) return;
 
   // 計算 total — 只計腳本實際輸出的進度行
   // brew 工具（11 個）+ ~/.zshrc（1）+ ~/.ripgreprc（1）= 13

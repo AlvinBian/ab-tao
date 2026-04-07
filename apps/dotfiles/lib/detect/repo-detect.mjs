@@ -13,6 +13,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { isEmpty } from 'lodash-es';
 
 const execFileAsync = promisify(execFile);
 
@@ -250,11 +251,10 @@ export async function detectLocalRepos(repos, folders) {
   // 3. Spotlight/find 補漏
   const remaining = repos.filter((r) => !merged[r.fullName]);
   let allPaths = merged;
-  if (remaining.length > 0) {
+  if (!isEmpty(remaining)) {
     allPaths = await detectFallback(repos, merged);
   }
 
-  const method =
-    Object.keys(fdResults).length > 0 ? 'fd' : folders?.length ? 'folder' : 'spotlight';
+  const method = !isEmpty(fdResults) ? 'fd' : folders?.length ? 'folder' : 'spotlight';
   return { paths: allPaths, roleOverrides, method };
 }

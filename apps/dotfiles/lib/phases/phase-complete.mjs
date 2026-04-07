@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import { buildDescriptionCache } from '../config/descriptions.mjs';
 import { BACKUP_DIR } from '../core/backup.mjs';
 import { BACKUP_MAX_COUNT } from '../core/constants.mjs';
@@ -68,7 +69,7 @@ export async function phaseComplete(
     rules: installSelections.rules?.length
       ? installSelections.rules
       : readDir(path.join(claudeDir, 'rules')),
-    hooks: installSelections.hooks?.length > 0 || fs.existsSync(path.join(claudeDir, 'hooks.json')),
+    hooks: !isEmpty(installSelections.hooks) || fs.existsSync(path.join(claudeDir, 'hooks.json')),
     modules: installSelections.modules || [],
   };
 
@@ -166,7 +167,7 @@ export async function phaseComplete(
       recommended.push('Rust (rust-analyzer) LSP');
     }
 
-    return recommended.length > 0
+    return !isEmpty(recommended)
       ? `LSP 按語言：${recommended.join('、')}`
       : 'LSP 按語言：/plugin 中搜索 language server';
   };
@@ -220,7 +221,7 @@ export async function phaseComplete(
     claudeDir,
     plan.techStacks || [],
   );
-  if (descNewItems.length > 0) {
+  if (!isEmpty(descNewItems)) {
     const names = descNewItems.map((k) => (k.includes('/') ? k.split('/')[1] : k));
     p.log.info(
       `📋 已快取 ${descCount} 個配置描述（新增 ${descNewItems.length}）：\n${names.map((n) => `  · ${n}`).join('\n')}`,

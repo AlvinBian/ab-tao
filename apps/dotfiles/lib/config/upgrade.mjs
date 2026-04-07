@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import { BACK, handleCancel } from '../cli/prompts.mjs';
 import { backupIfExists } from '../core/backup.mjs';
 import { getDirname } from '../core/paths.mjs';
@@ -397,7 +398,7 @@ async function doClean() {
   }
 
   // 還原用戶自訂設定
-  if (savedUserSettings && Object.keys(savedUserSettings).length > 0) {
+  if (savedUserSettings && !isEmpty(savedUserSettings)) {
     fs.mkdirSync(CLAUDE_DIR, { recursive: true });
     fs.writeFileSync(settingsPath, `${JSON.stringify(savedUserSettings, null, 2)}\n`);
     const parts = [];

@@ -6,6 +6,7 @@
  *   - 將選擇結果組裝成命令列參數（buildCmdArgs）
  */
 
+import { isEmpty } from 'lodash-es';
 import { countExisting, discoverItems } from '../cli/files.mjs';
 import { BACK, smartSelect } from '../cli/prompts.mjs';
 
@@ -32,7 +33,7 @@ export async function selectItems(
   { stepLabel, flagAll, sessionValues, preselected },
 ) {
   const items = discoverItems(repoDir, def.dir, def.ext, def.filter);
-  if (items.length === 0) return [];
+  if (isEmpty(items)) return [];
 
   // flagAll 時排除 deprecated 項目（不自動安裝）
   if (flagAll) {

@@ -11,6 +11,7 @@ import { RESOURCES_DIR } from '@ab-tao/commons/paths';
 import { SOURCES_CONFIG } from '@ab-tao/commons/sync';
 import { readVersions } from '@ab-tao/commons/versions';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { BACK, handleCancel } from '../cli/prompts.mjs';
 
@@ -47,7 +48,7 @@ export async function selectAiSources() {
   );
 
   if (selected === BACK) return BACK;
-  if (!selected || selected.length === 0) {
+  if (!selected || isEmpty(selected)) {
     p.log.info('⏭️ 已跳過 AI 來源');
     return [];
   }
@@ -60,7 +61,7 @@ export async function selectAiSources() {
     return !sourceDir;
   });
 
-  if (needSync.length > 0) {
+  if (!isEmpty(needSync)) {
     const spinner = p.spinner();
     spinner.start(`正在同步 ${needSync.length} 個 AI 來源...`);
     try {

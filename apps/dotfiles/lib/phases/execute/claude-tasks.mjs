@@ -10,6 +10,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { deploySettings } from '../../deploy/deploy-global.mjs';
 import { deployAllProjectClaudeMd } from '../../deploy/deploy-project.mjs';
 import { generateClaudeMd } from '../../deploy/generate-claude-md.mjs';
@@ -238,7 +239,7 @@ export function buildClaudeTasks(
                               task: async (_, sub) => {
                                 if (
                                   (plan.ecc?.length ?? 0) > 0 &&
-                                  fetchedSources?.sources?.length > 0
+                                  !isEmpty(fetchedSources?.sources)
                                 ) {
                                   try {
                                     const eccTypeMap = fetchedSources.eccTypeMap || {};
@@ -275,7 +276,7 @@ export function buildClaudeTasks(
 
                                 // 安裝 commons 篩選後的資源（技術棧匹配）
                                 const commSources = pipelineResult?.commonsResources?.sources || [];
-                                if (commSources.length > 0)
+                                if (!isEmpty(commSources))
                                   try {
                                     // 過濾掉 name 或 content 為空的資源
                                     const validFile = (f) => f?.name && f.content;
@@ -297,9 +298,9 @@ export function buildClaudeTasks(
 
                                     // 安裝 skills（SKILL.md 格式）
                                     const skillSources = commSources.filter(
-                                      (s) => s.skills?.length > 0,
+                                      (s) => !isEmpty(s.skills),
                                     );
-                                    if (skillSources.length > 0) {
+                                    if (!isEmpty(skillSources)) {
                                       await writeSkillFiles(
                                         skillSources,
                                         path.join(previewDir, 'claude'),

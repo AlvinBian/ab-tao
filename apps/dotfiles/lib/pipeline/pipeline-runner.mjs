@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isEmpty } from 'lodash-es';
 import { pMap } from '../core/concurrency.mjs';
 import {
   AI_CONCURRENCY,
@@ -106,7 +107,7 @@ export async function runAnalysisPipeline({
 }) {
   const audit = createAuditTrail();
   const repoNames = repos.map((r) => r.split('/')[1]);
-  const hasEcc = sources.length > 0;
+  const hasEcc = !isEmpty(sources);
 
   // ── TIER 1：repos fetch + AI 資源載入（並行）──
   onPhase('fetch', {
@@ -115,14 +116,13 @@ export async function runAnalysisPipeline({
 
   // 載入 commons 已同步的 AI 來源（僅使用者選擇的，本地零 API）
   const allCommons = loadAllCommonsResources();
-  const commonsResources =
-    selectedAiSources.length > 0
-      ? {
-          ...allCommons,
-          sources: allCommons.sources.filter((s) => selectedAiSources.includes(s.name)),
-        }
-      : allCommons;
-  if (commonsResources.sources.length > 0) {
+  const commonsResources = !isEmpty(selectedAiSources)
+    ? {
+        ...allCommons,
+        sources: allCommons.sources.filter((s) => selectedAiSources.includes(s.name)),
+      }
+    : allCommons;
+  if (!isEmpty(commonsResources.sources)) {
     onPhase('commons', {
       message: `已載入 ${commonsResources.sources.length} 個 AI 來源（${commonsResources.sources.reduce((sum, s) => sum + s.commands.length + s.agents.length + s.rules.length + s.skills.length, 0)} 個資源）`,
     });
@@ -257,7 +257,7 @@ export async function runAnalysisPipeline({
     },
   });
 
-  if (conflicts.length > 0) {
+  if (!isEmpty(conflicts)) {
     for (const c of conflicts) {
       audit.record({
         phase: 'merge',
@@ -298,7 +298,7 @@ export async function runAnalysisPipeline({
           agents: src.allFiles.agents,
           rules: src.allFiles.rules,
         },
-        allDetectedTechs.length > 0 ? allDetectedTechs : [...allLangs].map((l) => l.toLowerCase()),
+        !isEmpty(allDetectedTechs) ? allDetectedTechs : [...allLangs].map((l) => l.toLowerCase()),
         existingNames,
       );
       for (const type of ['commands', 'agents', 'rules']) {
@@ -313,7 +313,7 @@ export async function runAnalysisPipeline({
     }
 
     // 規則匹配推薦（即時，不需 AI）+ 背景翻譯
-    if (eccCandidates.length > 0) {
+    if (!isEmpty(eccCandidates)) {
       // ── 規則匹配 ──
       const techSet = new Set(allDetectedTechs.map((t) => t.toLowerCase()));
       const langSet = new Set([...allLangs].map((l) => l.toLowerCase()));
@@ -461,7 +461,7 @@ export async function runAnalysisPipeline({
         return !translations[c.type]?.[key];
       });
 
-      if (untranslated.length > 0) {
+      if (!isEmpty(untranslated)) {
         const batchList = untranslated
           .map((c) => `[${c.type}] ${c.name.replace('.md', '')} — ${c.desc}`)
           .join('\n');
@@ -515,7 +515,7 @@ ${batchList}
   // 用偵測到的技術棧篩選 commons 資源（動態匹配）
   const allDetectedForFilter = [...categorizedTechs.values()].flatMap((m) => [...m.keys()]);
   const filteredCommons =
-    commonsResources.sources.length > 0 && allDetectedForFilter.length > 0
+    !isEmpty(commonsResources.sources) && !isEmpty(allDetectedForFilter)
       ? filterByTechStack(commonsResources, allDetectedForFilter)
       : commonsResources;
 

@@ -12,6 +12,7 @@
  * setup.mjs 有自己的 npms.io 查詢邏輯（因為 UI 流程不同）。
  */
 
+import { isEmpty } from 'lodash-es';
 import {
   categoryPriority,
   inferNpmCategory,
@@ -42,7 +43,7 @@ const GITHUB_STARS_THRESHOLD = 500; // GitHub stars 門檻（非 npm 套件）
 export async function analyzeNpmDeps(depNames, deps, _devDeps) {
   const techs = new Map();
   const filtered = depNames.filter((n) => !NPM_NAME_NOISE.test(n));
-  if (filtered.length === 0) return techs;
+  if (isEmpty(filtered)) return techs;
 
   for (let i = 0; i < filtered.length; i += NPMS_BATCH_SIZE) {
     const batch = filtered.slice(i, i + NPMS_BATCH_SIZE);
@@ -345,12 +346,10 @@ export async function identifySignificantTechs(techFiles, rootFiles, languages) 
 
   // 並行查詢所有生態（npm + PHP + Python + Go 同時進行）
   const [npmTechs, phpTechs, pyTechs, goTechs] = await Promise.all([
-    Object.keys(npmAllDeps).length > 0
-      ? analyzeNpmDeps(Object.keys(npmAllDeps), deps, devDeps)
-      : new Map(),
-    Object.keys(phpDeps).length > 0 ? analyzePhpDeps(phpDeps) : new Map(),
-    Object.keys(pyDeps).length > 0 ? analyzePythonDeps(pyDeps) : new Map(),
-    Object.keys(goDeps).length > 0 ? analyzeGoDeps(goDeps) : new Map(),
+    !isEmpty(npmAllDeps) ? analyzeNpmDeps(Object.keys(npmAllDeps), deps, devDeps) : new Map(),
+    !isEmpty(phpDeps) ? analyzePhpDeps(phpDeps) : new Map(),
+    !isEmpty(pyDeps) ? analyzePythonDeps(pyDeps) : new Map(),
+    !isEmpty(goDeps) ? analyzeGoDeps(goDeps) : new Map(),
   ]);
 
   // 合併

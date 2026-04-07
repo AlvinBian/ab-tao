@@ -10,6 +10,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isEmpty } from 'lodash-es';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -319,7 +320,7 @@ export function buildDescriptionCache(claudeDir, techStacks = []) {
   }
 
   // 3. AI 批量生成（一次呼叫，所有缺失項）
-  if (missing.length > 0) {
+  if (!isEmpty(missing)) {
     const generated = aiGenerateDescriptions(missing);
     for (const [name, desc] of Object.entries(generated)) {
       if (desc && typeof desc === 'string') {

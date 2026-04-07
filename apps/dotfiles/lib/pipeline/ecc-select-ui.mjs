@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { TRANSLATIONS_PATH } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { handleCancel, multiselectWithAll } from '../cli/prompts.mjs';
 import { getDirname } from '../core/paths.mjs';
@@ -111,7 +112,7 @@ export async function selectEcc({
         agents: src.allFiles.agents,
         rules: src.allFiles.rules,
       },
-      detectedSkills.length > 0 ? detectedSkills : allLangs.map((l) => l.toLowerCase()),
+      !isEmpty(detectedSkills) ? detectedSkills : allLangs.map((l) => l.toLowerCase()),
       existingNames,
     );
     for (const type of ['commands', 'agents', 'rules']) {

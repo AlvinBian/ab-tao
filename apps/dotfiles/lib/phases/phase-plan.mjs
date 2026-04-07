@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import * as p from '@clack/prompts';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, isEmpty } from 'lodash-es';
 import { buildPlanSummary } from '../cli/plan-view.mjs';
 import { BACK, handleCancel, smartSelect } from '../cli/prompts.mjs';
 import { generateMinimalPlan } from '../config/auto-plan.mjs';
@@ -139,7 +139,7 @@ async function detailConfirm(originalPlan) {
 
   // 6. 技術棧（如果 pipeline 有 tech-select 邏輯，這裡直接用預選）
   // 7. ECC 選擇
-  if (plan.ecc.length > 0) {
+  if (!isEmpty(plan.ecc)) {
     const eccItems = plan.ecc.map((name) => ({
       value: name,
       label: name,
@@ -156,7 +156,7 @@ async function detailConfirm(originalPlan) {
   }
 
   // 8. ZSH 模組
-  if (plan.zshModules.length > 0) {
+  if (!isEmpty(plan.zshModules)) {
     const zshItems = plan.zshModules.map((name) => ({
       value: name,
       label: name,
