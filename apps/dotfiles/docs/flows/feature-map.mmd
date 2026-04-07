@@ -41,8 +41,8 @@ flowchart TD
 
     subgraph C4G ["🐚 ZSH 環境模組"]
         C4["ZSH"]
-        C4 --> Z1["10 個模組<br/>aliases · fzf · git · nvm · tools..."]
-        Z1 --> ZT["→ ~/.zsh/modules/ + ~/.zshrc"]
+        C4 --> Z1["7 個模組（sheldon 插件管理）<br/>env · history · keys · aliases · git · tools · plugins"]
+        Z1 --> ZT["→ ~/.zshrc.d/ + loader 追加至 ~/.zshrc"]
     end
 
     C2 -.->|"依賴：repos"| RepoLink["倉庫選擇 →"]

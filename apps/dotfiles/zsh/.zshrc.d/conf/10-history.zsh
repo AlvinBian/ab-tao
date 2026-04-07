@@ -1,9 +1,8 @@
-# ── 歷史記錄設定（全局 + 專案分離）─────────────────────────────
+# ── 歷史記錄設定（guard：用戶已設定則跳過）────────────────────────
 
-# 全局歷史（所有 shell 共享）
-HISTFILE="$HOME/.zsh_history"
-HISTSIZE=50000
-SAVEHIST=50000
+(( HISTSIZE > 1 )) || HISTSIZE=50000
+(( SAVEHIST > 1 )) || SAVEHIST=50000
+[[ -n "$HISTFILE" ]] || HISTFILE="$HOME/.zsh_history"
 
 setopt HIST_EXPIRE_DUPS_FIRST
 setopt HIST_IGNORE_DUPS
@@ -15,10 +14,7 @@ setopt HIST_REDUCE_BLANKS
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY
 
-# ── 專案歷史（自動切換）────────────────────────────────────────
-# 進入 git repo 時自動切換到專案專屬歷史檔
-# 離開時回到全局歷史
-# 專案歷史存放在 ~/.zsh/history.d/{repo-name}
+# ── 專案歷史自動切換（進入 git repo 時切換到專案專屬歷史檔）─────
 
 _ZSH_HISTORY_GLOBAL="$HOME/.zsh_history"
 _ZSH_HISTORY_DIR="$HOME/.zsh/history.d"
@@ -33,11 +29,8 @@ _update_project_history() {
     mkdir -p "$_ZSH_HISTORY_DIR"
 
     if [[ "$HISTFILE" != "$project_hist" ]]; then
-      # 保存當前歷史到舊檔案
       fc -W 2>/dev/null
-      # 切換到專案歷史
       HISTFILE="$project_hist"
-      # 載入專案歷史 + 全局歷史
       fc -R "$_ZSH_HISTORY_GLOBAL" 2>/dev/null
       fc -R "$project_hist" 2>/dev/null
     fi
@@ -50,9 +43,6 @@ _update_project_history() {
   fi
 }
 
-# 每次 cd 時自動切換
 autoload -Uz add-zsh-hook
 add-zsh-hook chpwd _update_project_history
-
-# 初始化時執行一次
 _update_project_history

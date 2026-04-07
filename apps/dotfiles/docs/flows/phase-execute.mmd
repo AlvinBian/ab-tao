@@ -11,7 +11,7 @@ flowchart TD
     subgraph E0 ["[0] 統一備份 → dist/backup/"]
         direction LR
         B1["Claude<br/>commands/ agents/ rules/<br/>hooks.json · settings.json"]
-        B2["ZSH<br/>~/.zshrc · ~/.zshrc.local<br/>~/.zsh/modules/ · ~/.ripgreprc"]
+        B2["ZSH<br/>~/.zshrc · ~/.zshrc.d/<br/>~/.ripgreprc"]
     end
 
     E0 --> PAR
@@ -35,8 +35,8 @@ flowchart TD
 
         subgraph C ["Branch C: ZSH"]
             direction TB
-            C1["ZSH 模組 → ~/.zsh/modules/"]
-            C1 --> C2["~/.zshrc 部署<br/>個人設定 → .zshrc.local"]
+            C1["ZSH 模組 → ~/.zshrc.d/conf/"]
+            C1 --> C2["loader 追加至 ~/.zshrc<br/>sheldon 插件預載"]
         end
     end
 

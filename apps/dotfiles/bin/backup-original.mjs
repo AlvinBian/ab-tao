@@ -75,8 +75,7 @@ export function ensureOriginalBackup() {
 		const backed = [];
 		for (const [src, name] of [
 			[path.join(HOME, ".zshrc"), "zshrc"],
-			[path.join(HOME, ".zshrc.local"), "zshrc.local"],
-			[path.join(HOME, ".zsh"), "zsh"],
+			[path.join(HOME, ".zshrc.d"), "zshrc.d"],
 			[path.join(HOME, ".claude"), "claude"],
 			[path.join(HOME, ".zsh_history"), "zsh_history"],
 			[path.join(HOME, ".ripgreprc"), "ripgreprc"],
@@ -95,8 +94,7 @@ export function ensureOriginalBackup() {
 	const backed = [];
 	const items = [
 		[path.join(HOME, ".zshrc"), "zshrc"],
-		[path.join(HOME, ".zshrc.local"), "zshrc.local"],
-		[path.join(HOME, ".zsh"), "zsh"],
+		[path.join(HOME, ".zshrc.d"), "zshrc.d"],
 		[path.join(HOME, ".claude"), "claude"],
 		[path.join(HOME, ".zsh_history"), "zsh_history"],
 		[path.join(HOME, ".ripgreprc"), "ripgreprc"],

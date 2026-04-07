@@ -68,29 +68,30 @@
 		},
 		"zsh": {
 			"label": "ZSH 環境模組",
-			"hint": "modules → ~/.zsh/modules/ + ~/.zshrc",
+			"hint": "conf → ~/.zshrc.d/ + sheldon 插件管理",
 			"flag": "--zsh",
 			"steps": [
 				{
 					"type": "install-modules",
-					"label": "安裝 ZSH 模組 → ~/.zsh/modules/",
+					"label": "安裝 ZSH 模組 → ~/.zshrc.d/",
 					"script": "zsh zsh/install.sh",
 					"selectable": {
 						"modules": {
-							"dir": "zsh/modules",
+							"dir": "zsh/.zshrc.d/conf",
 							"ext": ".zsh",
-							"selectLabel": "選擇要安裝的環境模組"
+							"selectLabel": "選擇要安裝的環境模組",
+							"exclude": ["00-env", "90-plugins"]
 						}
 					},
 					"extraTotal": {
-						"base": 1,
+						"base": 3,
 						"ifModule": {
 							"tools": 1
 						}
 					}
 				}
 			],
-			"outroMsg": "✅ 安裝完成！執行 source ~/.zshrc 讓 zsh 設定生效"
+			"outroMsg": "✅ 安裝完成！執行 exec zsh 立即套用"
 		}
 	},
 	"sources": [

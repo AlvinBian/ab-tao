@@ -4,10 +4,10 @@
  * 職責：
  *   1. 讓用戶選擇要安裝的 ZSH 模組（smartSelect）
  *   2. 生成 dist/preview/zsh/ 預覽檔案
- *   3. 非 manual 模式時執行 zsh/install.sh，將模組部署到 ~/.zsh/modules/
+ *   3. 非 manual 模式時執行 zsh/install.sh，將模組部署到 ~/.zshrc.d/
  *
  * 進度解析：
- *   解析 install.sh 的 stdout，識別 brew 工具安裝、模組複製、zshrc 部署等階段。
+ *   解析 install.sh 的 stdout，識別 brew 工具安裝、模組複製、sheldon 等階段。
  */
 
 import { isEmpty } from "lodash-es";
@@ -43,7 +43,14 @@ export async function handleInstallModules(
 ) {
 	const def = Object.values(step.selectable)[0];
 	const key = Object.keys(step.selectable)[0];
-	const items = discoverItems(repoDir, def.dir, def.ext);
+	let items = discoverItems(repoDir, def.dir, def.ext);
+
+	// 排除恆常部署的模組（00-env、90-plugins）
+	const exclude = new Set(def.exclude || []);
+	if (exclude.size > 0) {
+		items = items.filter((i) => !exclude.has(i.value));
+	}
+
 	if (isEmpty(items)) return { modules: [] };
 
 	const selectedModules = flagAll
@@ -58,23 +65,29 @@ export async function handleInstallModules(
 	if (isEmpty(selectedModules)) return;
 
 	// 計算 total — 只計腳本實際輸出的進度行
-	// brew 工具（11 個）+ ~/.zshrc（1）+ ~/.ripgreprc（1）= 13
-	// brew 工具數量（對應 zsh/install.sh 中的 TOOLS 陣列）
-	// fzf, zoxide, bat, eza, fd, git-delta, lazygit, tldr, ripgrep,
-	// zsh-autosuggestions, zsh-syntax-highlighting
-	const BREW_TOOL_COUNT = 11;
+	const BREW_TOOL_COUNT = 9;
 	const needsBrew = selectedModules.some((m) =>
-		["fzf", "tools", "git", "plugins"].includes(m),
+		["60-tools", "40-git"].includes(m),
 	);
+	const hasTools = selectedModules.some((m) => m.includes("tools"));
 	const brewToolCount = needsBrew ? BREW_TOOL_COUNT : 0;
-	const total = brewToolCount + 1 /* zshrc */ + 1; /* ripgreprc */
+	const total =
+		1 /* sheldon */ +
+		brewToolCount +
+		1 /* loader */ +
+		2 /* 恆常模組 */ +
+		2 /* sheldon 預載 + 快取 */ +
+		1 /* zcompile */ +
+		(hasTools ? 1 : 0); /* ripgreprc（僅 tools 模組時） */
 
 	// 生成 preview
 	stageModulesPreview(repoDir, previewDir, step, selectedModules);
 
 	const moduleItems = [
-		...selectedModules.map((m) => `modules/${m}.zsh`),
-		"zshrc",
+		"00-env.zsh",
+		...selectedModules.map((m) => `${m}.zsh`),
+		"90-plugins.zsh",
+		"sheldon/plugins.toml",
 	];
 	const fileLines = moduleItems
 		.map(
@@ -83,7 +96,7 @@ export async function handleInstallModules(
 		)
 		.join("\n");
 	logger?.info(
-		`${stepLabel}生成 ${selectedModules.length}/${items.length} 個 ${key} → dist/preview/zsh/\n${fileLines}`,
+		`${stepLabel}生成 ${selectedModules.length + 2}/${items.length + 2} 個 ${key} → dist/preview/zsh/\n${fileLines}`,
 	);
 
 	if (manual) {
@@ -91,33 +104,38 @@ export async function handleInstallModules(
 		return;
 	}
 
+	// 提取不帶前綴的模組名（install.sh 用原始名稱）
+	const moduleNames = selectedModules.map((m) => m.replace(/^\d+-/, ""));
+
 	// 執行安裝
 	logger?.info(
-		`${stepLabel}安裝 ${selectedModules.length}/${items.length} 個 ${key} → ~/.zsh/modules/`,
+		`${stepLabel}安裝 ${selectedModules.length} 個 ${key} → ~/.zshrc.d/`,
 	);
-	await runWithProgress(
-		`${step.script} --modules "${selectedModules.join(",")}"`,
-		{
-			cwd: repoDir,
-			total,
-			logger,
-			parseProgress(line) {
-				if (/^\s+[✔▶⚠]\s+\S+\s+已安裝/.test(line))
-					return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} ✓`;
-				if (/^\s+[✔▶⚠]\s+\S+\s+(安裝完成|安裝失敗)/.test(line))
-					return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} 安裝完成`;
-				if (line.includes("安裝 Homebrew CLI 工具"))
-					return { statusOnly: true, label: "安裝 brew 工具..." };
-				if (/^\s+[✔▶⚠]\s+\S+\.zsh(?!\S)/.test(line))
-					return line.match(/(\S+\.zsh)/)?.[1] ?? "module";
-				if (/✔\s+~\/.zshrc/.test(line)) return "~/.zshrc";
-				if (/✔\s+~\/.ripgreprc/.test(line)) return "~/.ripgreprc";
-				return null;
-			},
+	await runWithProgress(`${step.script} --modules "${moduleNames.join(",")}"`, {
+		cwd: repoDir,
+		total,
+		logger,
+		parseProgress(line) {
+			if (/^\s+[✔▶⚠]\s+\S+\s+已安裝/.test(line))
+				return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} ✓`;
+			if (/^\s+[✔▶⚠]\s+\S+\s+(安裝完成|安裝失敗)/.test(line))
+				return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} 安裝完成`;
+			if (line.includes("安裝 Homebrew CLI 工具"))
+				return { statusOnly: true, label: "安裝 brew 工具..." };
+			if (/^\s+[✔▶⚠]\s+\S+\.zsh(?!\S)/.test(line))
+				return line.match(/(\S+\.zsh)/)?.[1] ?? "module";
+			if (/✔\s+loader/.test(line)) return "loader";
+			if (/✔\s+plugins\.toml/.test(line)) return "plugins.toml";
+			if (/✔\s+插件已下載/.test(line)) return "sheldon plugins";
+			if (/✔\s+快取已生成/.test(line)) return "sheldon cache";
+			if (/✔.*模組已編譯/.test(line)) return "zcompile";
+			if (/✔\s+~\/.ripgreprc/.test(line)) return "~/.ripgreprc";
+			if (/✔\s+sheldon/.test(line)) return "sheldon";
+			return null;
 		},
-	);
+	});
 	logger?.success(
-		`${stepLabel}✔ ${selectedModules.length} 個 ${key} 已安裝：${selectedModules.join("、")}`,
+		`${stepLabel}✔ ${selectedModules.length} 個 ${key} 已安裝：${moduleNames.join("、")}`,
 	);
-	return { modules: selectedModules };
+	return { modules: moduleNames };
 }

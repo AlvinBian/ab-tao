@@ -56,7 +56,7 @@ pnpm run cheatsheet:open   # 在瀏覽器開啟本地 HTML 版本
   CLAUDE.md 八大模塊    — 工作流 + 質量紅線 + 編碼標準 + 指令 + 規範
   commons 資源同步      — 7 個 AI 來源、版本追蹤、安全驗證
   5 個獨有 agents       — 架構師/計劃/TDD/程式碼審查/安全審查
-  ZSH 模組化環境       — 10 個模組（aliases/git/fzf/nvm/completion...）
+  ZSH 模組化環境       — 7 個模組（~/.zshrc.d/ + sheldon 插件管理）
   .claudeignore         — 自動生成，按 repo 偵測
   預索引                — .claude/index/ 壓縮索引（API/組件/schema）
   Rules                 — 只保留 paths 條件載入 + Hooks 過濾

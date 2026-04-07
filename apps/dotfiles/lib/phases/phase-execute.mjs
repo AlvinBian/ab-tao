@@ -100,8 +100,7 @@ export async function phaseExecute(
 						),
 						// ZSH 配置
 						backupIfExists(path.join(HOME, ".zshrc"), "zshrc"),
-						backupIfExists(path.join(HOME, ".zshrc.local"), "zshrc.local"),
-						backupIfExists(path.join(HOME, ".zsh", "modules"), "zsh/modules"),
+						backupIfExists(path.join(HOME, ".zshrc.d"), "zshrc.d"),
 						backupIfExists(path.join(HOME, ".ripgreprc"), "ripgreprc"),
 					];
 					const results = (await Promise.all(backupTasks)).filter(Boolean);

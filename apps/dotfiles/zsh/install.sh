@@ -5,25 +5,35 @@
 # 用法：
 #   zsh zsh/install.sh                                    ← 互動式選擇
 #   zsh zsh/install.sh --all                              ← 全部安裝
-#   zsh zsh/install.sh --modules "nvm,git,plugins,tools"  ← 指定模組（由 setup.mjs 傳入）
+#   zsh zsh/install.sh --modules "history,keys,aliases"   ← 指定模組
 #
-# 模組結構（10 模組，brew 原生）：
-#   aliases     → 編輯器自動偵測 + open -e + gh / uv + 通用 aliases
-#   completion  → zsh 補全系統（compinit + menu select）
-#   fzf         → FZF key-bindings + fd + bat 預覽
-#   git         → delta / lazygit / git aliases
-#   history     → 歷史記錄 setopt（50k + dedup + share）
-#   keybindings → 按鍵綁定（Alt/Ctrl+←/→、↑↓前綴搜尋）
-#   nvm         → Node 版本管理（lazy load + .nvmrc 自動切換）
-#   plugins     → autosuggestions + syntax-highlighting + starship + IDE
-#   pnpm        → PNPM PATH
-#   tools       → bat / eza / zoxide / fd / ripgrep / tldr
+# 零侵入策略：
+#   1. 用戶 .zshrc 不替換、不搬走，只在尾部追加一行 loader
+#   2. ab-tao 全部在 ~/.zshrc.d/，rm -rf 即還原
+#   3. sheldon 管插件，conf/ 管配置，互不侵犯
+#   4. 用戶配置永遠優先，ab-tao 只補缺不覆蓋
+#
+# 部署目標：~/.zshrc.d/
+#   conf/
+#     00-env.zsh      ← 恆常（環境基礎）
+#     10-history.zsh  ← 可選（歷史記錄）
+#     20-keys.zsh     ← 可選（按鍵綁定）
+#     30-aliases.zsh  ← 可選（別名與編輯器偵測）
+#     40-git.zsh      ← 可選（git 增強）
+#     60-tools.zsh    ← 可選（CLI 工具 + FZF）
+#     90-plugins.zsh  ← 恆常（sheldon + compinit + starship）
+#   sheldon/
+#     plugins.toml    ← 插件聲明
 # =============================================================================
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ZSH_DIR="$REPO_DIR/zsh"
-MODULES_DIR="$ZSH_DIR/modules"
+SRC_DIR="$ZSH_DIR/.zshrc.d"
+DEST_DIR="$HOME/.zshrc.d"
+BACKUP_DIR="$DEST_DIR/backups"
+
+LOADER_MARKER="# ab-tao:loader"
 
 BOLD='\033[1m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BLUE='\033[0;34m'; DIM='\033[2m'; RESET='\033[0m'
@@ -33,20 +43,23 @@ info()    { echo -e "  ${CYAN}▶ $1${RESET}"; }
 success() { echo -e "  ${GREEN}✔ $1${RESET}"; }
 warn()    { echo -e "  ${YELLOW}⚠ $1${RESET}"; }
 
-# ── 模組定義（10 模組）───────────────────────────────────────────
-MODULE_ORDER=(aliases completion fzf git history keybindings nvm plugins pnpm tools)
-typeset -A MODULE_DESC
+# ── 恆常部署與可選模組定義 ────────────────────────────────────────
+ALWAYS_DEPLOY=(00-env 90-plugins)
+MODULE_ORDER=(history keys aliases git tools)
+typeset -A MODULE_PREFIX MODULE_DESC
+MODULE_PREFIX=(
+  history  10
+  keys     20
+  aliases  30
+  git      40
+  tools    60
+)
 MODULE_DESC=(
-  aliases     "編輯器自動偵測（Kiro/Cursor/VSCode）+ open -e + gh / uv + 通用 aliases"
-  completion  "zsh 補全系統（menu select、大小寫不敏感）"
-  fzf         "FZF 整合（key-bindings Ctrl+R/T / fd + bat 預覽）"
-  git         "Git aliases + delta diff viewer + lazygit"
-  history     "歷史記錄（50k 筆 + dedup + 跨 session 共享）"
-  keybindings "按鍵綁定（Alt+←/→、Ctrl+←/→、↑↓前綴搜尋）"
-  nvm         "Node 版本管理（nvm lazy load / n 支援，自動讀取 .nvmrc）"
-  plugins     "zsh 插件（autosuggestions + syntax-highlighting）+ starship + IDE"
-  pnpm        "PNPM_HOME PATH 設定"
-  tools       "現代 CLI（bat / eza / zoxide / fd / ripgrep / tldr）"
+  history  "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
+  keys     "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
+  aliases  "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"
+  git      "Git 增強（16 個 alias + delta diff + lazygit）"
+  tools    "CLI 工具（bat / eza / zoxide / fd / rg / tldr + FZF）"
 )
 
 # ── 解析參數 ──────────────────────────────────────────────────────
@@ -62,13 +75,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# 由 setup.mjs 傳入 --modules → 直接使用，跳過互動
 if [[ -n "$MODULES_ARG" ]]; then
   IFS=',' read -rA SELECTED_MODULES <<< "$MODULES_ARG"
-
 elif $INSTALL_ALL; then
   SELECTED_MODULES=($MODULE_ORDER)
-
 else
   # ── 互動式選擇 ────────────────────────────────────────────────
   echo ""
@@ -77,14 +87,15 @@ else
   echo -e "${BOLD}╚══════════════════════════════════════════════╝${RESET}"
   step "選擇要安裝的 zsh 環境模組"
   echo ""
-  echo -e "  ${DIM}可用模組（共 ${#MODULE_ORDER}）：${RESET}"
+  echo -e "  ${DIM}恆常部署：00-env.zsh · 90-plugins.zsh${RESET}"
+  echo -e "  ${DIM}可選模組（共 ${#MODULE_ORDER}）：${RESET}"
   local i=1
   for name in $MODULE_ORDER; do
-    printf "  ${CYAN}[%2d]${RESET} %-10s ${DIM}%s${RESET}\n" $i "$name" "$MODULE_DESC[$name]"
+    printf "  ${CYAN}[%d]${RESET} %-8s ${DIM}%s${RESET}\n" $i "$name" "$MODULE_DESC[$name]"
     i=$((i + 1))
   done
   echo ""
-  echo -e "  ${BOLD}請輸入（Enter = 全部，1,3,5 或 1-4 = 選擇，0 = 取消）：${RESET}"
+  echo -e "  ${BOLD}請輸入（Enter = 全部，1,3,5 或 1-3 = 選擇，0 = 取消）：${RESET}"
   printf "  > "
   read -r user_input
 
@@ -110,139 +121,162 @@ fi
 
 [[ ${#SELECTED_MODULES} -eq 0 ]] && { warn "未選擇任何模組"; exit 0; }
 
-# ── 安裝 Homebrew CLI 工具 ────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+# ── 安裝依賴 ────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
+# ── sheldon（插件管理器）──────────────────────────────────────────
+step "安裝 sheldon"
+if command -v sheldon &>/dev/null; then
+  info "sheldon 已安裝"
+else
+  if command -v brew &>/dev/null; then
+    info "安裝 sheldon..."
+    brew install sheldon 2>/dev/null && success "sheldon 安裝完成" || warn "sheldon 安裝失敗"
+  else
+    warn "未偵測到 brew，請手動安裝 sheldon：https://github.com/rossmacarthur/sheldon"
+  fi
+fi
+
+# ── Homebrew CLI 工具 ─────────────────────────────────────────────
 NEEDS_BREW=false
 for m in $SELECTED_MODULES; do
-  [[ "$m" == "fzf" || "$m" == "tools" || "$m" == "git" || "$m" == "plugins" ]] && NEEDS_BREW=true && break
+  [[ "$m" == "tools" || "$m" == "git" ]] && NEEDS_BREW=true && break
 done
 
 if $NEEDS_BREW && command -v brew &>/dev/null; then
   step "安裝 Homebrew CLI 工具"
-  BREW_TOOLS=(fzf zoxide bat eza fd git-delta lazygit tldr ripgrep zsh-autosuggestions zsh-fast-syntax-highlighting zsh-defer)
+  BREW_TOOLS=(fzf zoxide bat eza fd git-delta lazygit tldr ripgrep)
   for tool in $BREW_TOOLS; do
     brew list "$tool" &>/dev/null 2>&1 \
       && info "$tool 已安裝" \
       || { info "安裝 $tool ..."; brew install "$tool" 2>/dev/null && success "$tool 安裝完成" || warn "$tool 安裝失敗，略過"; }
   done
 
-  # fzf key-bindings 初始化（產生 shell 整合檔）
+  # fzf key-bindings 初始化
   if [ -f "$(brew --prefix)/opt/fzf/install" ]; then
     "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish 2>/dev/null || true
   fi
 fi
 
-# ── 確保 Node 版本管理器已安裝 ───────────────────────────────────
-if [[ " ${SELECTED_MODULES[*]} " == *" nvm "* ]]; then
-  if [[ ! -d "$HOME/.nvm" ]] && ! command -v n &>/dev/null; then
-    step "安裝 n（Node 版本管理，輕量 brew 方案）"
-    brew install n && n lts
-    success "n 安裝完成（LTS 已設定）"
+# ══════════════════════════════════════════════════════════════════
+# ── 備份 + loader 追加 ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
+mkdir -p "$DEST_DIR/conf" "$DEST_DIR/sheldon" "$BACKUP_DIR"
+
+step "備份與 loader"
+
+# 備份 .zshrc
+if [[ -f ~/.zshrc ]]; then
+  cp ~/.zshrc "$BACKUP_DIR/zshrc.$(date +%Y%m%d_%H%M%S)"
+  info "~/.zshrc 已備份至 ~/.zshrc.d/backups/"
+
+  # 備份輪替（保留 10 份）
+  local _max=10
+  local _env_file="$REPO_DIR/.env"
+  if [[ -f "$_env_file" ]]; then
+    local _val
+    _val=$(grep -E '^BACKUP_MAX_COUNT=[0-9]+$' "$_env_file" | cut -d= -f2)
+    [[ -n "$_val" && "$_val" -gt 0 ]] && _max=$_val
+  fi
+  local _backups=("${(@f)$(ls -t "$BACKUP_DIR"/zshrc.* 2>/dev/null)}")
+  if (( ${#_backups[@]} > _max )); then
+    rm -f "${_backups[@]:$_max}"
+    info "備份已清理（上限 ${_max} 份）"
   fi
 fi
 
-# ── 部署模組 → ~/.zsh/modules/ ───────────────────────────────────
-step "部署模組（${#SELECTED_MODULES} 個）"
-mkdir -p ~/.zsh/modules
+# 追加 loader（標記檢測，防重複）
+if ! grep -qF "$LOADER_MARKER" ~/.zshrc 2>/dev/null; then
+  printf '\n%s\n%s\n' "$LOADER_MARKER" \
+    'for _f in ~/.zshrc.d/conf/*.zsh(N); do source "$_f"; done; unset _f' \
+    >> ~/.zshrc
+  success "loader 已追加至 ~/.zshrc"
+else
+  info "loader 已存在，略過"
+fi
 
-for name in $SELECTED_MODULES; do
-  src="$MODULES_DIR/$name.zsh"
-  dest=~/.zsh/modules/"$name.zsh"
-  if [[ ! -f "$src" ]]; then
-    warn "$name.zsh 不存在於 $MODULES_DIR，略過"
-    continue
-  fi
+# ── 遷移舊版 ~/.zsh/modules/ ─────────────────────────────────────
+if [[ -d ~/.zsh/modules ]]; then
+  warn "偵測到舊版 ~/.zsh/modules/，新版已改用 ~/.zshrc.d/"
+  info "可執行 rm -rf ~/.zsh/modules 清理"
+fi
+
+# ── 遷移舊版 ~/.zshrc.local ──────────────────────────────────────
+if [[ -f ~/.zshrc.local ]]; then
+  warn "偵測到 ~/.zshrc.local，新版已不使用此檔案"
+  info "個人設定請直接保留在 ~/.zshrc 中"
+fi
+
+# ══════════════════════════════════════════════════════════════════
+# ── 部署模組 ────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
+# ── 恆常模組 ──────────────────────────────────────────────────────
+step "部署恆常模組"
+for name in $ALWAYS_DEPLOY; do
+  local src="$SRC_DIR/conf/${name}.zsh"
+  local dest="$DEST_DIR/conf/${name}.zsh"
   if [[ -f "$dest" ]] && diff -q "$src" "$dest" &>/dev/null; then
-    info "$name.zsh（無變更，略過）"
+    info "${name}.zsh（無變更，略過）"
   else
     cp "$src" "$dest"
-    success "$name.zsh"
+    success "${name}.zsh"
   fi
 done
 
-# ── 部署 ~/.zshrc ─────────────────────────────────────────────────
-step "部署 ~/.zshrc"
-if [[ -f ~/.zshrc ]]; then
-  # 只有在新 zshrc 與現有內容不同時才備份（避免重複執行產生大量備份）
-  if ! diff -q ~/.zshrc "$ZSH_DIR/zshrc" > /dev/null 2>&1; then
-    local _backup_dir="$HOME/.zsh-backups"
-    mkdir -p "$_backup_dir"
-    cp ~/.zshrc "$_backup_dir/zshrc.$(date +%Y%m%d_%H%M%S)"
-    info "原 .zshrc 已備份至 ~/.zsh-backups/"
+# ── 可選模組 ──────────────────────────────────────────────────────
+step "部署可選模組（${#SELECTED_MODULES} 個）"
+for name in $SELECTED_MODULES; do
+  local prefix="${MODULE_PREFIX[$name]}"
+  local src="$SRC_DIR/conf/${prefix}-${name}.zsh"
+  local dest="$DEST_DIR/conf/${prefix}-${name}.zsh"
 
-    # 讀取 .env 的 BACKUP_MAX_COUNT（與 JS 層共用同一個設定，預設 10）
-    local _max_count=10
-    local _env_file="$REPO_DIR/.env"
-    if [[ -f "$_env_file" ]]; then
-      local _val
-      _val=$(grep -E '^BACKUP_MAX_COUNT=[0-9]+$' "$_env_file" | cut -d= -f2)
-      [[ -n "$_val" && "$_val" -gt 0 ]] && _max_count=$_val
-    fi
-
-    # 超出 BACKUP_MAX_COUNT 時刪除最舊的備份
-    local _backups=("${(@f)$(ls -t "$_backup_dir"/zshrc.* 2>/dev/null)}")
-    if (( ${#_backups[@]} > _max_count )); then
-      local _to_delete=(${_backups[@]:$_max_count})
-      rm -f "${_to_delete[@]}"
-      info ".zshrc 備份已清理（上限 ${_max_count} 份，刪除 ${#_to_delete[@]} 份）"
-    fi
+  if [[ ! -f "$src" ]]; then
+    warn "${prefix}-${name}.zsh 不存在，略過"
+    continue
+  fi
+  if [[ -f "$dest" ]] && diff -q "$src" "$dest" &>/dev/null; then
+    info "${prefix}-${name}.zsh（無變更，略過）"
   else
-    info "~/.zshrc 無變更，略過備份"
+    cp "$src" "$dest"
+    success "${prefix}-${name}.zsh"
   fi
+done
 
-  # 自動遷移：從舊 .zshrc 提取個人設定到 ~/.zshrc.local（不會被覆蓋）
-  if [[ ! -f ~/.zshrc.local ]]; then
-    # ab-tao 內部識別碼 — 這些行不屬於使用者個人設定
-    local _ab_internal='ab-tao|ab-dotfiles|BREW_PREFIX|PYENV_ROOT|_zsh_module|_safe_source|_command_exists|\.zsh/modules|zsh/modules|ZSH_DIR|SELECTED_MODULES|_AB_'
-    # 擷取策略：
-    #   1. export / alias / 任意變數賦值（含小寫、含引號）
-    #   2. PATH += / path += / typeset -x
-    #   3. eval / source（含縮寫 .）
-    #   4. setopt / unsetopt / bindkey
-    #   5. function 宣告行（含 func() { 寫法）— 含多行 body，追蹤大括號深度
-    #   6. autoload
-    awk '
-      BEGIN { depth=0; capture=0; buf="" }
-      {
-        line = $0
-        if (!capture) {
-          if (line ~ /^[[:space:]]*(export |alias |eval |source |\. |setopt |unsetopt |bindkey |autoload |typeset |function [A-Za-z_]|[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(\+?=|\(\)))/) {
-            capture = 1; buf = line; depth = 0
-            n = split(line, ch, "")
-            for (i = 1; i <= n; i++) {
-              if (ch[i] == "{") depth++
-              if (ch[i] == "}") depth--
-            }
-            if (depth <= 0) { print buf; capture = 0; buf = ""; depth = 0 }
-          }
-        } else {
-          buf = buf "\n" line
-          n = split(line, ch, "")
-          for (i = 1; i <= n; i++) {
-            if (ch[i] == "{") depth++
-            if (ch[i] == "}") depth--
-          }
-          if (depth <= 0) { print buf; capture = 0; buf = ""; depth = 0 }
-        }
-      }
-    ' ~/.zshrc \
-      | grep -vE "$_ab_internal" \
-      > ~/.zshrc.local 2>/dev/null || true
-    if [[ -s ~/.zshrc.local ]]; then
-      echo "" >> ~/.zshrc.local
-      echo "# ── 以上由 ab-tao 從舊 .zshrc 自動遷移 ──" >> ~/.zshrc.local
-      echo "# 如有遺漏請查看備份：ls ~/.zsh-backups/" >> ~/.zshrc.local
-      info "個人設定已遷移到 ~/.zshrc.local（$(wc -l < ~/.zshrc.local | tr -d ' ') 行）"
-    else
-      rm -f ~/.zshrc.local  # 沒有可遷移的設定，不建立空檔案
-    fi
-  fi
+# ── sheldon plugins.toml ─────────────────────────────────────────
+step "部署 sheldon 配置"
+local _toml_src="$SRC_DIR/sheldon/plugins.toml"
+local _toml_dest="$DEST_DIR/sheldon/plugins.toml"
+if [[ -f "$_toml_dest" ]] && diff -q "$_toml_src" "$_toml_dest" &>/dev/null; then
+  info "plugins.toml（無變更，略過）"
+else
+  cp "$_toml_src" "$_toml_dest"
+  success "plugins.toml"
 fi
-cp "$ZSH_DIR/zshrc" ~/.zshrc
-success "~/.zshrc 部署完成（個人設定在 ~/.zshrc.local）"
+
+# ── sheldon 預下載插件 + 生成快取（subshell 避免 env 洩漏）──────
+if command -v sheldon &>/dev/null; then
+  step "預載入 sheldon 插件"
+  (
+    export SHELDON_CONFIG_DIR="$DEST_DIR/sheldon"
+    export SHELDON_DATA_DIR="$DEST_DIR/sheldon"
+    sheldon lock --update 2>/dev/null && success "插件已下載" || warn "插件下載失敗（首次開 shell 時重試）"
+    sheldon source > "$DEST_DIR/sheldon/cache.zsh" 2>/dev/null && success "快取已生成" || warn "快取生成失敗"
+  )
+fi
+
+# ── zcompile 預編譯 ──────────────────────────────────────────────
+step "預編譯模組"
+local _compiled=0
+for f in "$DEST_DIR"/conf/*.zsh(N); do
+  zcompile "$f" 2>/dev/null && _compiled=$((_compiled + 1))
+done
+success "${_compiled} 個模組已編譯"
 
 # ── ~/.ripgreprc ──────────────────────────────────────────────────
 if [[ " ${SELECTED_MODULES[*]} " == *" tools "* ]]; then
-  # 保留用戶已有的 ripgreprc，只在不存在時建立
   if [[ -f ~/.ripgreprc ]]; then
     info "~/.ripgreprc 已存在，保留不動"
   else
@@ -260,9 +294,37 @@ RGEOF
   fi
 fi
 
+# ── 寫入版本號 ────────────────────────────────────────────────────
+local _version
+_version=$(cd "$REPO_DIR" && node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
+echo "$_version" > "$DEST_DIR/.version"
+
+# ══════════════════════════════════════════════════════════════════
+# ── 完成 ────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════╗${RESET}"
 echo -e "${GREEN}║  ✅ zsh 環境模組安裝完成                     ║${RESET}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${RESET}"
-echo -e "  已安裝模組：${CYAN}${SELECTED_MODULES[*]}${RESET}"
+echo -e "  恆常模組：${CYAN}${ALWAYS_DEPLOY[*]}${RESET}"
+echo -e "  可選模組：${CYAN}${SELECTED_MODULES[*]}${RESET}"
+echo -e "  部署路徑：${DIM}~/.zshrc.d/（conf/ + sheldon/）${RESET}"
+
+# 啟動加速提示
+if [[ -f ~/.zshrc ]]; then
+  local _has_slow=false
+  grep -q 'nvm\.sh' ~/.zshrc 2>/dev/null && _has_slow=true
+  grep -q 'pyenv init' ~/.zshrc 2>/dev/null && _has_slow=true
+  if $_has_slow; then
+    echo ""
+    echo -e "  ${YELLOW}💡 啟動加速提示：${RESET}"
+    grep -q 'nvm\.sh' ~/.zshrc 2>/dev/null && \
+      echo -e "  ${DIM}  移除 source nvm.sh 可省 ~1s（ab-tao 已提供 lazy load）${RESET}"
+    grep -q 'pyenv init' ~/.zshrc 2>/dev/null && \
+      echo -e "  ${DIM}  移除 eval \"\$(pyenv init -)\" 可省 ~300ms（ab-tao 已提供 lazy load）${RESET}"
+  fi
+fi
+
+echo ""
 echo -e "  執行 ${BOLD}exec zsh${RESET} 立即套用"

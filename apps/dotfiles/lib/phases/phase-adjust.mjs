@@ -212,8 +212,8 @@ export async function adjustZsh({ flagAll = false, manual = false } = {}) {
 	s.start("🗂️ 備份現有 zsh 配置...");
 	const ts = TIMESTAMP();
 	backupIfExists(
-		path.join(HOME, ".zsh", "modules"),
-		path.join(REPO, "dist", "backup", ts, "zsh", "modules"),
+		path.join(HOME, ".zshrc.d"),
+		path.join(REPO, "dist", "backup", ts, "zshrc.d"),
 	);
 	s.stop("✅ 備份完成");
 
@@ -226,9 +226,10 @@ export async function adjustZsh({ flagAll = false, manual = false } = {}) {
 		script: "zsh zsh/install.sh",
 		selectable: {
 			modules: {
-				dir: "zsh/modules",
+				dir: "zsh/.zshrc.d/conf",
 				ext: ".zsh",
-				dest: `${HOME}/.zsh/modules`,
+				dest: `${HOME}/.zshrc.d/conf`,
+				exclude: ["00-env", "90-plugins"],
 			},
 		},
 	};

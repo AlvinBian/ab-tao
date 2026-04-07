@@ -2,7 +2,7 @@
  * Branch C: ZSH 環境模組
  *
  * 包含：
- *   - ZSH 模組安裝 → ~/.zsh/modules/
+ *   - ZSH 模組安裝 → ~/.zshrc.d/
  */
 
 import { listrLogger } from "../../cli/logger.mjs";
@@ -38,7 +38,7 @@ export function buildZshTasks(
 				task.newListr(
 					[
 						{
-							title: `🐚 ZSH 模組（${plan.zshModules?.length ?? 0} 個）→ ~/.zsh/modules/`,
+							title: `🐚 ZSH 模組（${plan.zshModules?.length ?? 0} 個）→ ~/.zshrc.d/`,
 							enabled: () =>
 								(plan.targets || []).includes("zsh") &&
 								(plan.zshModules?.length ?? 0) > 0,

@@ -177,11 +177,18 @@ export function stageModulesPreview(
 ) {
 	const def = Object.values(step.selectable)[0];
 	const mapping = {};
+	// 恆常模組
+	for (const core of ["00-env.zsh", "90-plugins.zsh"]) {
+		const p = path.join(repoDir, def.dir, core);
+		if (fs.existsSync(p)) mapping[`conf/${core}`] = p;
+	}
+	// 可選模組
 	for (const name of selectedModules) {
 		const src = path.join(repoDir, def.dir, `${name}${def.ext}`);
-		if (fs.existsSync(src)) mapping[`modules/${name}${def.ext}`] = src;
+		if (fs.existsSync(src)) mapping[`conf/${name}${def.ext}`] = src;
 	}
-	const zshrc = path.join(repoDir, "zsh/zshrc");
-	if (fs.existsSync(zshrc)) mapping.zshrc = zshrc;
+	// sheldon 配置
+	const toml = path.join(repoDir, "zsh/.zshrc.d/sheldon/plugins.toml");
+	if (fs.existsSync(toml)) mapping["sheldon/plugins.toml"] = toml;
 	return stagePreview(previewDir, "zsh", mapping);
 }

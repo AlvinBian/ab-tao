@@ -50,9 +50,9 @@ flowchart TD
     end
 
     subgraph AZsh ["adjustZsh"]
-        AZ1["備份 ~/.zsh/modules"]
+        AZ1["備份 ~/.zshrc.d/"]
         AZ1 --> AZ2["smartSelect 重選模組"]
-        AZ2 --> AZ3["生成 preview"] --> AZ4["執行安裝腳本<br/>個人設定 → .zshrc.local"]
+        AZ2 --> AZ3["生成 preview"] --> AZ4["執行安裝腳本<br/>loader 追加至 .zshrc"]
         AZ4 --> AZ5["patchSession"]
     end
 

@@ -163,7 +163,7 @@ export async function phaseComplete(
 					"",
 					"手動部署：",
 					"  cp -r dist/preview/claude/* ~/.claude/",
-					"  cp dist/preview/zsh/modules/*.zsh ~/.zsh/modules/",
+					"  cp -r dist/preview/zsh/* ~/.zshrc.d/",
 				]
 			: []),
 		...(fs.existsSync(BACKUP_DIR) ? ["", "還原：pnpm run restore"] : []),
