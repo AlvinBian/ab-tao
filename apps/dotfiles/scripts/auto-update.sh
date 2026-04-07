@@ -28,7 +28,7 @@ warn()    { echo -e "  ${YELLOW}⚠ $1${NC}"; }
 skip()    { echo -e "  ${DIM}─ $1${NC}"; }
 
 REPO_NAME="ab-tao"
-REPO_BRANCH="master"
+REPO_BRANCH="main"
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"

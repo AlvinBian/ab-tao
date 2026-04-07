@@ -38,8 +38,9 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
   const total = ctx.selectedTargets.length;
   const prefix = total > 1 ? `[${idx}/${total}] ` : '';
   const installResults = {};
+  const silent = ctx.silent || false;
 
-  p.log.info(`${prefix}${def.label || key}`);
+  if (!silent) p.log.info(`${prefix}${def.label || key}`);
 
   for (const step of def.steps) {
     if (step.skipIf && ctx.completed.has(step.skipIf)) continue;
@@ -60,7 +61,7 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
         break;
       }
       case 'build-plugin':
-        await handleBuildPlugin(repoDir, step, prefix);
+        await handleBuildPlugin(repoDir, step, prefix, { silent });
         break;
       case 'install-modules': {
         const result = await handleInstallModules(

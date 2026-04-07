@@ -195,6 +195,7 @@ export function buildClaudeTasks(
                             manual: isManual,
                             skillIds: plan.techStacks,
                             session: prev,
+                            silent: true,
                           });
                           if (result) Object.assign(installSelections, result);
                           completed.add(key);

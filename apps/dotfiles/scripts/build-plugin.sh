@@ -82,7 +82,7 @@ echo -e "${BOLD}║   ab-tao 智慧插件打包  v$PLUGIN_VERSION            ║
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 
 REPO_NAME="ab-tao"
-REPO_BRANCH="master"
+REPO_BRANCH="main"
 
 # ── Step 1：git pull 取得最新模板 ────────────────────────────────
 step "① 同步最新模板（$REPO_NAME@$REPO_BRANCH）"

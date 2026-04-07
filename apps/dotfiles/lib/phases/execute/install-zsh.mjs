@@ -47,6 +47,7 @@ export function buildZshTasks(
                     manual: isManual,
                     skillIds: [],
                     session: prev,
+                    silent: true,
                   });
                   if (result) Object.assign(installSelections, result);
                 }
