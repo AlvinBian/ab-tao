@@ -67,9 +67,9 @@ async function ghFetch(apiPath, retries = 2) {
 	const token = await getToken();
 	if (!token) return null;
 	for (let attempt = 0; attempt <= retries; attempt++) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 		try {
-			const controller = new AbortController();
-			const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 			const res = await fetch(`https://api.github.com/${apiPath}`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
@@ -94,6 +94,7 @@ async function ghFetch(apiPath, retries = 2) {
 			if (!res.ok) return null;
 			return await res.json();
 		} catch {
+			clearTimeout(timer);
 			if (attempt < retries) continue;
 			return null;
 		}
@@ -166,9 +167,9 @@ export function ghSync(apiPath, jqExpr = null) {
 export async function getAuthorCommitCount(repoFullName, username) {
 	const token = await getToken();
 	if (!token) return 0;
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 	try {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 		const res = await fetch(
 			`https://api.github.com/repos/${repoFullName}/commits?author=${encodeURIComponent(username)}&per_page=1`,
 			{
@@ -184,13 +185,14 @@ export async function getAuthorCommitCount(repoFullName, username) {
 
 		// Link: <...?page=N>; rel="last" → N 即總數
 		const link = res.headers.get("link") || "";
-		const match = link.match(/[?&]page=(\d+)>;\s*rel="last"/);
+		const match = link.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/);
 		if (match) return parseInt(match[1], 10);
 
 		// 無 Link header 代表只有一頁，直接數 body 長度
 		const data = await res.json();
 		return Array.isArray(data) ? data.length : 0;
 	} catch {
+		clearTimeout(timer);
 		return 0;
 	}
 }
@@ -210,9 +212,33 @@ export function ghSyncPaginate(apiPath, jqExpr = null) {
 		if (jqExpr) args.push("--jq", jqExpr);
 		return execFileSync("gh", args, {
 			encoding: "utf8",
-			timeout: GH_API_TIMEOUT * 5, // 多頁需要更長時間
+			timeout: GH_API_TIMEOUT * 10, // 多頁需要更長時間
 			stdio: ["pipe", "pipe", "pipe"],
 		}).trim();
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * GitHub API 非同步封裝（自動翻頁，抓取所有資料）
+ *
+ * 使用 --paginate 抓取所有分頁，適用於 repo 列表等可能超過 100 筆的資料。
+ * 非同步版本，可用於 Promise.all 並行加載多個 org 的 repos。
+ *
+ * @param {string} apiPath - API 路徑
+ * @param {string|null} [jqExpr=null] - jq 篩選表達式（每頁套用）
+ * @returns {Promise<string|null>} 所有分頁合併後的文字，失敗返回 null
+ */
+export async function ghPaginate(apiPath, jqExpr = null) {
+	try {
+		const args = ["api", "--paginate", apiPath];
+		if (jqExpr) args.push("--jq", jqExpr);
+		const { stdout } = await execFileAsync("gh", args, {
+			encoding: "utf8",
+			timeout: GH_API_TIMEOUT * 10,
+		});
+		return stdout.trim();
 	} catch {
 		return null;
 	}
@@ -281,9 +307,9 @@ export async function fetchRepoBundle(owner, name, filePaths = []) {
     }
   }`;
 
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 	try {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 		const res = await fetch("https://api.github.com/graphql", {
 			method: "POST",
 			headers: {
@@ -336,6 +362,7 @@ export async function fetchRepoBundle(owner, name, filePaths = []) {
 			topics,
 		};
 	} catch {
+		clearTimeout(timer);
 		return null;
 	}
 }
@@ -374,9 +401,9 @@ export async function fetchFilesBatch(owner, name, branch, filePaths) {
     }
   }`;
 
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 	try {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
 		const res = await fetch("https://api.github.com/graphql", {
 			method: "POST",
 			headers: {
@@ -398,6 +425,7 @@ export async function fetchFilesBatch(owner, name, branch, filePaths) {
 		}
 		return files;
 	} catch {
+		clearTimeout(timer);
 		return {};
 	}
 }

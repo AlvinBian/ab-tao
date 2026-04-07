@@ -235,18 +235,20 @@ if [[ -n "$PROJECT_CLAUDE_MD" ]]; then
   [[ -n "$CLAUDE_SUMMARY" ]] && PLUGIN_DESC="$CLAUDE_SUMMARY"
 fi
 
-cat > "$PLUGIN_OUTPUT_DIR/.claude-plugin/plugin.json" << JSON_EOF
-{
-  "name": "ab-tao",
-  "description": "$PLUGIN_DESC",
-  "version": "$PLUGIN_VERSION",
-  "author": {
-    "name": "AlvinBian"
-  },
-  "homepage": "https://github.com/AlvinBian/ab-tao",
-  "license": "MIT"
-}
-JSON_EOF
+jq -n \
+	--arg name "ab-tao" \
+	--arg desc "$PLUGIN_DESC" \
+	--arg version "$PLUGIN_VERSION" \
+	'{
+		name: $name,
+		description: $desc,
+		version: $version,
+		author: {
+			name: "AlvinBian"
+		},
+		homepage: "https://github.com/AlvinBian/ab-tao",
+		license: "MIT"
+	}' > "$PLUGIN_OUTPUT_DIR/.claude-plugin/plugin.json"
 
 # Commands：專案自訂 > ab-tao（同名時專案優先）
 echo -e "${BLUE}📦 Commands${NC}"

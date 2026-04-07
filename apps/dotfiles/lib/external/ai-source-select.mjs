@@ -5,7 +5,7 @@
  * 已同步的直接使用，未同步的即時同步。
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import { RESOURCES_DIR } from "@ab-tao/commons/paths";
 import { SOURCES_CONFIG } from "@ab-tao/commons/sync";
@@ -66,10 +66,14 @@ export async function selectAiSources() {
 		spinner.start(`正在同步 ${needSync.length} 個 AI 來源...`);
 		try {
 			const pickArg = needSync.join(",");
-			execSync(`pnpm --filter @ab-tao/commons run sync -- --pick ${pickArg}`, {
-				stdio: "pipe",
-				timeout: 120000,
-			});
+			execFileSync(
+				"pnpm",
+				["--filter", "@ab-tao/commons", "run", "sync", "--", "--pick", pickArg],
+				{
+					stdio: "pipe",
+					timeout: 120000,
+				},
+			);
 			spinner.stop(`已同步 ${needSync.length} 個 AI 來源`);
 		} catch (err) {
 			spinner.stop(

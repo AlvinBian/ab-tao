@@ -16,6 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { BACK, handleCancel } from "../cli/prompts.mjs";
 import { getDirname, HOME } from "../core/paths.mjs";
 import { loadSession, patchSession } from "../core/session.mjs";
 
@@ -147,12 +148,14 @@ export async function adjustSlack() {
  */
 export async function adjustClaudeMd({ skipConfirm = false } = {}) {
 	if (!skipConfirm) {
-		const ok = await p.confirm({
-			message:
-				"🤖 重新生成 CLAUDE.md 需要 AI 呼叫（約 30 秒），繼續？  Y 確認 · n 取消 · ESC 上一步",
-			initialValue: true,
-		});
-		if (p.isCancel(ok) || !ok) return;
+		const ok = handleCancel(
+			await p.confirm({
+				message:
+					"🤖 重新生成 CLAUDE.md 需要 AI 呼叫（約 30 秒），繼續？  Y 確認 · n 取消 · ESC 上一步",
+				initialValue: true,
+			}),
+		);
+		if (ok === BACK || !ok) return;
 	}
 
 	const session = loadSession();

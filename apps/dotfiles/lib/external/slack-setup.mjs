@@ -57,7 +57,7 @@ export async function setupSlackNotify(prev) {
 
 	const action = handleCancel(
 		await p.select({
-			message: "Slack 通知設定",
+			message: "Slack 通知設定  ↑↓ 選擇 · Enter 確認 · ESC 上一步",
 			options: [
 				{
 					value: "channel",
@@ -112,7 +112,7 @@ export async function setupSlackNotify(prev) {
 
 	const hasChannel = handleCancel(
 		await p.select({
-			message: `通知頻道 #${channelName}`,
+			message: `通知頻道 #${channelName}  ↑↓ 選擇 · Enter 確認 · ESC 上一步`,
 			options: [
 				{
 					value: "exists",
@@ -148,18 +148,29 @@ export async function setupSlackNotify(prev) {
   3. 建立後回來貼上 Channel Link`);
 	}
 
-	const manualInput = handleCancel(
-		await p.text({
-			message: "貼上 Channel Link 或 ID（在頻道名稱右鍵 → Copy link）",
-			placeholder: "https://xxx.slack.com/archives/C07XXXXXX 或 C07XXXXXX",
-		}),
-	);
-	if (!manualInput || manualInput === BACK) return null;
-	const idMatch = manualInput.match(/\b(C[A-Z0-9]{8,})\b/);
-	const channelId = idMatch ? idMatch[1] : manualInput.trim();
-	if (!channelId.startsWith("C")) {
-		p.log.error("無效的 Channel ID，請重新貼上 Channel Link");
-		return null;
+	// 迴圈直到取得合法的 Channel ID
+	let channelId = "";
+	while (!channelId) {
+		const manualInput = handleCancel(
+			await p.text({
+				message:
+					"貼上 Channel Link 或 ID（在頻道名稱右鍵 → Copy link）  ESC 上一步",
+				placeholder: "https://xxx.slack.com/archives/C07XXXXXX 或 C07XXXXXX",
+			}),
+		);
+		if (!manualInput || manualInput === BACK) return null;
+
+		const idMatch = manualInput.match(/\b(C[A-Z0-9]{8,})\b/);
+		const extractedId = idMatch ? idMatch[1] : manualInput.trim();
+
+		if (!extractedId.startsWith("C")) {
+			p.log.error(
+				"無效的 Channel ID，請重新貼上 Channel Link（格式：C07XXXXXX 或 https://xxx.slack.com/archives/C07XXXXXX）",
+			);
+			continue;
+		}
+
+		channelId = extractedId;
 	}
 	// User ID 不在 setup 收集，用戶說「發給我」時 Claude 會從 $SLACK_NOTIFY_USER_ID 讀取
 	// 若未設定，Claude 會提示用戶去 ~/.claude/.env 加上 SLACK_NOTIFY_USER_ID=Uxxxxxxx

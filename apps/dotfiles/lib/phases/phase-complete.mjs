@@ -15,7 +15,6 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
-import pc from "picocolors";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
 import { buildDescriptionCache } from "../config/descriptions.mjs";
 import { BACKUP_DIR } from "../core/backup.mjs";
@@ -312,17 +311,17 @@ export async function phaseComplete(
 			for (const name of toInstall) {
 				const tool = ENHANCERS.find((e) => e.name === name);
 				const s = p.spinner();
-				s.start(`📦 安裝 ${tool.name}...`);
+				s.stop(`📦 安裝 ${tool.name}...`);
+				p.log.info(`📦 安裝 ${tool.name}（輸出如下）：`);
 				try {
 					execSync(tool.install, {
-						stdio: "pipe",
-						timeout: 180000,
+						stdio: ["pipe", "inherit", "inherit"],
+						timeout: 300000,
 						shell: true,
 					});
-					s.stop(`${pc.green("✔")} ${tool.name} ${tool.doneHint}`);
+					p.log.success(`✔ ${tool.name} ${tool.doneHint}`);
 				} catch {
-					s.stop(pc.yellow(`⚠️ ${tool.name} 安裝失敗`));
-					p.log.warn(`請手動安裝後重新執行：\n  ${pc.cyan(tool.failHint)}`);
+					p.log.warn(`⚠️ ${tool.name} 安裝失敗\n請手動安裝：${tool.failHint}`);
 				}
 			}
 		} else if (toInstall !== BACK) {
