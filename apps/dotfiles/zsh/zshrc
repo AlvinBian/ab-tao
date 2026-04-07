@@ -32,8 +32,6 @@ if [[ -d "$HOME/.pyenv" ]]; then
   }
   python()  { unset -f python;  eval "$(command pyenv init - zsh)"; python  "$@"; }
   python3() { unset -f python3; eval "$(command pyenv init - zsh)"; python3 "$@"; }
-  pip()     { unset -f pip;     eval "$(command pyenv init - zsh)"; pip     "$@"; }
-  pip3()    { unset -f pip3;    eval "$(command pyenv init - zsh)"; pip3    "$@"; }
 fi
 
 # ── 動態載入 ~/.zsh/modules/ 所有模組（字母順序）────────────────
@@ -46,4 +44,4 @@ unset _zsh_module
 
 # ── 個人設定（不會被 ab-tao 覆蓋）────────────────────────
 # 環境變數、PATH、alias 等個人設定請放在 ~/.zshrc.local
-_safe_source "$HOME/.zshrc.local"
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"

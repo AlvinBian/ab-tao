@@ -207,7 +207,7 @@ async function main() {
 			pct: 0,
 			_roleOverride: sessionPrev.roles?.[r] || "temp",
 		}));
-		phaseHeader("⚡ 快速分析");
+		phaseHeader("🧭 快速分析");
 		const plan = await phaseAnalyze({
 			repos: repoObjects,
 			sources: srcs,
