@@ -2,9 +2,9 @@
  * 進度追蹤元件 — 靜態逐行輸出（不用 spinner 避免 listr2 衝突）
  */
 
-import { spawn } from "node:child_process";
-import { StringDecoder } from "node:string_decoder";
-import pc from "picocolors";
+import { spawn } from 'node:child_process';
+import { StringDecoder } from 'node:string_decoder';
+import pc from 'picocolors';
 
 // ANSI escape sequence 正則：包含 CSI 控制序列（\x1B[...）與 OSC 序列（\x1B]...\x07）
 // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences require control characters
@@ -18,7 +18,7 @@ const ANSI_RE = /\x1B\[[0-9;?]*[A-HJKSTfhilmnsu]|\x1B\][^\x07]*\x07/g;
  * @param {string} s - 含 ANSI 碼的原始字串
  * @returns {string} 去除控制序列後的純文字字串
  */
-export const stripAnsi = (s) => s.replace(ANSI_RE, "").replace(/\r/g, "");
+export const stripAnsi = (s) => s.replace(ANSI_RE, '').replace(/\r/g, '');
 
 /**
  * 執行外部命令並實時顯示逐 item 的進度（靜態行，無 spinner 動畫）
@@ -37,54 +37,46 @@ export const stripAnsi = (s) => s.replace(ANSI_RE, "").replace(/\r/g, "");
  * @returns {Promise<void>}
  */
 export function runWithProgress(cmd, { cwd, total, parseProgress }) {
-	return new Promise((resolve, reject) => {
-		let current = 0;
+  return new Promise((resolve, reject) => {
+    let current = 0;
 
-		const [spawnCmd, ...spawnArgs] = cmd.trim().split(/\s+/);
-		const child = spawn(spawnCmd, spawnArgs, { cwd });
-		let buf = "";
-		const stderrChunks = [];
-		const decoder = new StringDecoder("utf8");
+    const [spawnCmd, ...spawnArgs] = cmd.trim().split(/\s+/);
+    const child = spawn(spawnCmd, spawnArgs, { cwd });
+    let buf = '';
+    const stderrChunks = [];
+    const decoder = new StringDecoder('utf8');
 
-		child.stdout.on("data", (chunk) => {
-			buf += decoder.write(chunk);
-			const lines = buf.split("\n");
-			buf = lines.pop();
-			for (const line of lines) {
-				const result = parseProgress(stripAnsi(line));
-				if (result === null) continue;
-				if (typeof result === "object" && result.statusOnly) {
-					// 狀態更新不推進計數，靜默
-				} else if (current < total) {
-					current++;
-					const label = typeof result === "string" ? result : result.label;
-					console.log(
-						`  ${pc.green("✔")} ${pc.dim(`[${current}/${total}]`)} ${label}`,
-					);
-				}
-			}
-		});
-		child.stderr.on("data", (chunk) => {
-			stderrChunks.push(chunk);
-		});
+    child.stdout.on('data', (chunk) => {
+      buf += decoder.write(chunk);
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        const result = parseProgress(stripAnsi(line));
+        if (result === null) continue;
+        if (typeof result === 'object' && result.statusOnly) {
+          // 狀態更新不推進計數，靜默
+        } else if (current < total) {
+          current++;
+          const label = typeof result === 'string' ? result : result.label;
+          console.log(`  ${pc.green('✔')} ${pc.dim(`[${current}/${total}]`)} ${label}`);
+        }
+      }
+    });
+    child.stderr.on('data', (chunk) => {
+      stderrChunks.push(chunk);
+    });
 
-		child.on("close", (code) => {
-			if (code !== 0) {
-				console.log(
-					`  ${pc.red("✗")} ${pc.dim(`[${current}/${total}]`)} ${pc.red("失敗")}`,
-				);
-				const stderr = Buffer.concat(stderrChunks).toString().trim();
-				reject(
-					new Error(`執行失敗（代碼 ${code}）${stderr ? `\n${stderr}` : ""}`),
-				);
-			} else {
-				if (current < total) {
-					console.log(
-						`  ${pc.green("✔")} ${pc.dim(`[${total}/${total}]`)} 完成`,
-					);
-				}
-				resolve();
-			}
-		});
-	});
+    child.on('close', (code) => {
+      if (code !== 0) {
+        console.log(`  ${pc.red('✗')} ${pc.dim(`[${current}/${total}]`)} ${pc.red('失敗')}`);
+        const stderr = Buffer.concat(stderrChunks).toString().trim();
+        reject(new Error(`執行失敗（代碼 ${code}）${stderr ? `\n${stderr}` : ''}`));
+      } else {
+        if (current < total) {
+          console.log(`  ${pc.green('✔')} ${pc.dim(`[${total}/${total}]`)} 完成`);
+        }
+        resolve();
+      }
+    });
+  });
 }

@@ -12,9 +12,9 @@
  * 8. 壓縮指令（保留改動檔案、測試、未完成任務）
  */
 
-import * as p from "@clack/prompts";
-import { AI_ECC_MODEL, AI_ECC_TIMEOUT } from "../core/constants.mjs";
-import { callClaudeJSON } from "../external/claude-cli.mjs";
+import * as p from '@clack/prompts';
+import { AI_ECC_MODEL, AI_ECC_TIMEOUT } from '../core/constants.mjs';
+import { callClaudeJSON } from '../external/claude-cli.mjs';
 
 /**
  * 生成 CLAUDE.md 內容
@@ -24,49 +24,42 @@ import { callClaudeJSON } from "../external/claude-cli.mjs";
  * temp: 精簡版（摘要 + 快速上手）
  * tool: 最小版（一句描述）
  */
-export async function generateClaudeMd({
-	repoName,
-	role,
-	reasoning,
-	stacks,
-	meta,
-}) {
-	try {
-		return await generateWithAI(repoName, role, reasoning, stacks, meta);
-	} catch (error) {
-		// AI 失敗，記錄診斷資訊後使用靜態模板
-		const errorMsg = error?.message || String(error);
-		const isTokenLimit =
-			errorMsg.includes("token") || errorMsg.includes("context");
-		p.log.warn(
-			`⚠️ CLAUDE.md AI 生成失敗 （${repoName} · ${role}）\n` +
-				`   原因：${errorMsg.slice(0, 100)}\n` +
-				`   Token 超限：${isTokenLimit ? "是" : "否"}\n` +
-				`   Fallback：靜態模板 (${role})`,
-		);
+export async function generateClaudeMd({ repoName, role, reasoning, stacks, meta }) {
+  try {
+    return await generateWithAI(repoName, role, reasoning, stacks, meta);
+  } catch (error) {
+    // AI 失敗，記錄診斷資訊後使用靜態模板
+    const errorMsg = error?.message || String(error);
+    const isTokenLimit = errorMsg.includes('token') || errorMsg.includes('context');
+    p.log.warn(
+      `⚠️ CLAUDE.md AI 生成失敗 （${repoName} · ${role}）\n` +
+        `   原因：${errorMsg.slice(0, 100)}\n` +
+        `   Token 超限：${isTokenLimit ? '是' : '否'}\n` +
+        `   Fallback：靜態模板 (${role})`,
+    );
 
-		if (role === "tool") return fallbackTool(repoName, meta);
-		if (role === "temp") return fallbackTemp(repoName, reasoning, stacks, meta);
-		return fallbackMain(repoName, reasoning, stacks, meta);
-	}
+    if (role === 'tool') return fallbackTool(repoName, meta);
+    if (role === 'temp') return fallbackTemp(repoName, reasoning, stacks, meta);
+    return fallbackMain(repoName, reasoning, stacks, meta);
+  }
 }
 
 // ── AI 生成（統一入口）──
 
 async function generateWithAI(repoName, role, reasoning, stacks, meta) {
-	const stackText = stacks
-		? Object.entries(stacks)
-				.map(([cat, items]) => `${cat}: ${items.join(", ")}`)
-				.join("\n")
-		: "";
+  const stackText = stacks
+    ? Object.entries(stacks)
+        .map(([cat, items]) => `${cat}: ${items.join(', ')}`)
+        .join('\n')
+    : '';
 
-	const timestamp = new Date().toISOString().split("T")[0];
-	const stackList = stackText ? stackText.replace(/\n/g, " · ") : "";
+  const timestamp = new Date().toISOString().split('T')[0];
+  const stackList = stackText ? stackText.replace(/\n/g, ' · ') : '';
 
-	const rolePrompts = {
-		main: `為 "${repoName}" 生成完整的 CLAUDE.md（Claude Code 專案上下文）。
+  const rolePrompts = {
+    main: `為 "${repoName}" 生成完整的 CLAUDE.md（Claude Code 專案上下文）。
 
-專案摘要：${reasoning || meta?.description || ""}
+專案摘要：${reasoning || meta?.description || ''}
 技術棧：
 ${stackText}
 
@@ -104,70 +97,70 @@ Commit 格式 + PR 工作流程摘要
 ## 模塊 8: 壓縮指令
 列出壓縮時保留的內容：改動檔案列表、測試命令和結果、未完成任務`,
 
-		temp: `為 "${repoName}" 生成精簡的 CLAUDE.md（Claude Code 專案上下文）。
+    temp: `為 "${repoName}" 生成精簡的 CLAUDE.md（Claude Code 專案上下文）。
 
-專案摘要：${reasoning || meta?.description || ""}
-技術棧：${stackText || "未知"}
+專案摘要：${reasoning || meta?.description || ''}
+技術棧：${stackText || '未知'}
 
 生成以下 Markdown（繁體中文，15 行以內）：
 # ${repoName}
-${reasoning || meta?.description || ""}
+${reasoning || meta?.description || ''}
 
 ## 快速上手
 列出主要開發指令
 
 ## 技術棧
-${stackText || "見 package.json"}
+${stackText || '見 package.json'}
 
 ## 注意事項
 列出 2-3 項關鍵事項`,
 
-		tool: `為 "${repoName}" 生成最小的 CLAUDE.md（一句描述 + 快速參考）。
+    tool: `為 "${repoName}" 生成最小的 CLAUDE.md（一句描述 + 快速參考）。
 
-專案摘要：${reasoning || meta?.description || ""}
+專案摘要：${reasoning || meta?.description || ''}
 
 生成 Markdown（繁體中文，5 行以內）：
 # ${repoName}
-${reasoning || meta?.description || ""}
+${reasoning || meta?.description || ''}
 
 ## 快速參考
 主要開發指令或使用方式`,
-	};
+  };
 
-	const result = await callClaudeJSON(rolePrompts[role] || rolePrompts.temp, {
-		model: AI_ECC_MODEL,
-		effort: "low",
-		timeoutMs: AI_ECC_TIMEOUT,
-		retries: 0,
-	});
+  const result = await callClaudeJSON(rolePrompts[role] || rolePrompts.temp, {
+    model: AI_ECC_MODEL,
+    effort: 'low',
+    timeoutMs: AI_ECC_TIMEOUT,
+    retries: 0,
+  });
 
-	const content = typeof result === "string" ? result : result?.result;
-	if (!content) throw new Error("AI generation failed");
+  const content = typeof result === 'string' ? result : result?.result;
+  if (!content) throw new Error('AI generation failed');
 
-	// 檢查長度，如果超過 200 行則截斷並加警告
-	const lineCount = content.split("\n").length;
-	if (lineCount > 200) {
-		const truncated = content.split("\n").slice(0, 200).join("\n");
-		return `${truncated}\n\n<!-- 警告: 生成內容已從 ${lineCount} 行截斷至 200 行 -->`;
-	}
+  // 檢查長度，如果超過 200 行則截斷並加警告
+  const lineCount = content.split('\n').length;
+  if (lineCount > 200) {
+    const truncated = content.split('\n').slice(0, 200).join('\n');
+    return `${truncated}\n\n<!-- 警告: 生成內容已從 ${lineCount} 行截斷至 200 行 -->`;
+  }
 
-	// 新增簽名註釋（不消耗 token）
-	const metaStackList =
-		Object.entries(meta?.stacks || {})
-			.flatMap(([, items]) => items)
-			.join(", ") ||
-		stackList ||
-		"未知";
-	const signature = `\n\n<!-- Generated by ab-tao · ${timestamp} · ${metaStackList} -->`;
+  // 新增簽名註釋（不消耗 token）
+  const metaStackList =
+    Object.entries(meta?.stacks || {})
+      .flatMap(([, items]) => items)
+      .join(', ') ||
+    stackList ||
+    '未知';
+  const signature = `\n\n<!-- Generated by ab-tao · ${timestamp} · ${metaStackList} -->`;
 
-	return content + signature;
+  return content + signature;
 }
 
 // ── 靜態 Fallback ──
 
 function fallbackTool(repoName, meta) {
-	const timestamp = new Date().toISOString().split("T")[0];
-	return `# ${repoName}
+  const timestamp = new Date().toISOString().split('T')[0];
+  return `# ${repoName}
 
 ${meta?.description || repoName}
 
@@ -178,14 +171,14 @@ ${meta?.description || repoName}
 }
 
 function fallbackTemp(repoName, reasoning, stacks, meta) {
-	const techList = stacks
-		? Object.entries(stacks)
-				.flatMap(([, items]) => items)
-				.join(" · ")
-		: "";
-	const timestamp = new Date().toISOString().split("T")[0];
-	const stackDesc = techList || "見 package.json";
-	return `# ${repoName}
+  const techList = stacks
+    ? Object.entries(stacks)
+        .flatMap(([, items]) => items)
+        .join(' · ')
+    : '';
+  const timestamp = new Date().toISOString().split('T')[0];
+  const stackDesc = techList || '見 package.json';
+  return `# ${repoName}
 
 ${reasoning || meta?.description || repoName}
 
@@ -207,23 +200,23 @@ ${stackDesc}
 - 執行測試後才提交
 - 查看 README 了解詳細指令
 
-<!-- Generated by ab-tao · ${timestamp} · ${techList || "temp"} -->`;
+<!-- Generated by ab-tao · ${timestamp} · ${techList || 'temp'} -->`;
 }
 
 function fallbackMain(repoName, reasoning, stacks, meta) {
-	const stackSections = stacks
-		? Object.entries(stacks)
-				.map(([cat, items]) => `- **${cat}**：${items.join(", ")}`)
-				.join("\n")
-		: "";
-	const timestamp = new Date().toISOString().split("T")[0];
-	const stackList = stacks
-		? Object.entries(stacks)
-				.flatMap(([, items]) => items)
-				.join(", ")
-		: "";
+  const stackSections = stacks
+    ? Object.entries(stacks)
+        .map(([cat, items]) => `- **${cat}**：${items.join(', ')}`)
+        .join('\n')
+    : '';
+  const timestamp = new Date().toISOString().split('T')[0];
+  const stackList = stacks
+    ? Object.entries(stacks)
+        .flatMap(([, items]) => items)
+        .join(', ')
+    : '';
 
-	return `# ${repoName}
+  return `# ${repoName}
 
 ${reasoning || meta?.description || repoName}
 
@@ -260,7 +253,7 @@ pnpm run lint   # 程式碼檢查
 
 ## 架構摘要
 
-${stackSections || "見 package.json"}
+${stackSections || '見 package.json'}
 
 ## 測試規範
 
@@ -294,5 +287,5 @@ ${stackSections || "見 package.json"}
 - 未完成的任務清單
 - 當前進度與後續步驟
 
-<!-- Generated by ab-tao · ${timestamp} · ${stackList || "main"} -->`;
+<!-- Generated by ab-tao · ${timestamp} · ${stackList || 'main'} -->`;
 }

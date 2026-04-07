@@ -6,9 +6,9 @@
  *   - 將選擇結果組裝成命令列參數（buildCmdArgs）
  */
 
-import { isEmpty } from "lodash-es";
-import { countExisting, discoverItems } from "../cli/files.mjs";
-import { BACK, smartSelect } from "../cli/prompts.mjs";
+import { isEmpty } from 'lodash-es';
+import { countExisting, discoverItems } from '../cli/files.mjs';
+import { BACK, smartSelect } from '../cli/prompts.mjs';
 
 /**
  * 通用選擇流程：發現項目 → smartSelect → 回傳選中清單
@@ -27,27 +27,27 @@ import { BACK, smartSelect } from "../cli/prompts.mjs";
  * @returns {Promise<string[]>}
  */
 export async function selectItems(
-	repoDir,
-	def,
-	key,
-	{ stepLabel, flagAll, sessionValues, preselected },
+  repoDir,
+  def,
+  key,
+  { stepLabel, flagAll, sessionValues, preselected },
 ) {
-	const items = discoverItems(repoDir, def.dir, def.ext, def.filter);
-	if (isEmpty(items)) return [];
+  const items = discoverItems(repoDir, def.dir, def.ext, def.filter);
+  if (isEmpty(items)) return [];
 
-	// flagAll 時排除 deprecated 項目（不自動安裝）
-	if (flagAll) {
-		return items.filter((i) => !i.deprecated).map((i) => i.value);
-	}
+  // flagAll 時排除 deprecated 項目（不自動安裝）
+  if (flagAll) {
+    return items.filter((i) => !i.deprecated).map((i) => i.value);
+  }
 
-	const result = await smartSelect({
-		title: `${stepLabel}${def.selectLabel || key}`,
-		items,
-		preselected: preselected || items.map((i) => i.value),
-		session: sessionValues,
-	});
-	if (result === BACK) return BACK;
-	return result;
+  const result = await smartSelect({
+    title: `${stepLabel}${def.selectLabel || key}`,
+    items,
+    preselected: preselected || items.map((i) => i.value),
+    session: sessionValues,
+  });
+  if (result === BACK) return BACK;
+  return result;
 }
 
 /**
@@ -59,15 +59,15 @@ export async function selectItems(
  * @returns {{ cmdArgs: string[], total: number }}
  */
 export function buildCmdArgs(selected, selectableDefs, repoDir) {
-	const cmdArgs = [];
-	let total = 0;
+  const cmdArgs = [];
+  let total = 0;
 
-	for (const [key, values] of Object.entries(selected)) {
-		if (!values?.length || !selectableDefs[key]) continue;
-		const def = selectableDefs[key];
-		total += countExisting(repoDir, def.dir, values, def.ext);
-		cmdArgs.push(`--${key} "${values.join(",")}"`);
-	}
+  for (const [key, values] of Object.entries(selected)) {
+    if (!values?.length || !selectableDefs[key]) continue;
+    const def = selectableDefs[key];
+    total += countExisting(repoDir, def.dir, values, def.ext);
+    cmdArgs.push(`--${key} "${values.join(',')}"`);
+  }
 
-	return { cmdArgs, total };
+  return { cmdArgs, total };
 }

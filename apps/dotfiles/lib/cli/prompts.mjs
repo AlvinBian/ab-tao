@@ -7,18 +7,18 @@
  *   返回 BACK symbol 表示回退
  */
 
-import * as p from "@clack/prompts";
-import { isEmpty } from "lodash-es";
-import pc from "picocolors";
+import * as p from '@clack/prompts';
+import { isEmpty } from 'lodash-es';
+import pc from 'picocolors';
 
 /** 回退信號 — phase 收到此值應回退到上一步 */
-export const BACK = Symbol("back");
+export const BACK = Symbol('back');
 
 // Ctrl+C → 直接退出（不走 @clack 的 isCancel）
-process.on("SIGINT", () => {
-	console.log();
-	p.cancel("已取消安裝");
-	process.exit(0);
+process.on('SIGINT', () => {
+  console.log();
+  p.cancel('已取消安裝');
+  process.exit(0);
 });
 
 /**
@@ -26,11 +26,11 @@ process.on("SIGINT", () => {
  * ESC → 回退（上一步），Ctrl+C 由 SIGINT handler 直接退出
  */
 export function handleCancel(value) {
-	if (p.isCancel(value)) {
-		// ESC 觸發 → 回退上一步
-		return BACK;
-	}
-	return value;
+  if (p.isCancel(value)) {
+    // ESC 觸發 → 回退上一步
+    return BACK;
+  }
+  return value;
 }
 
 /**
@@ -44,15 +44,14 @@ export function handleCancel(value) {
  * @returns {{ sortedOptions: Array, initialValues: string[] }}
  */
 export function applyPreviousSelection(options, previousValues = []) {
-	if (!previousValues?.length)
-		return { sortedOptions: options, initialValues: [] };
-	const prevSet = new Set(previousValues);
-	const selected = options.filter((o) => prevSet.has(o.value));
-	const rest = options.filter((o) => !prevSet.has(o.value));
-	return {
-		sortedOptions: [...selected, ...rest],
-		initialValues: selected.map((o) => o.value),
-	};
+  if (!previousValues?.length) return { sortedOptions: options, initialValues: [] };
+  const prevSet = new Set(previousValues);
+  const selected = options.filter((o) => prevSet.has(o.value));
+  const rest = options.filter((o) => !prevSet.has(o.value));
+  return {
+    sortedOptions: [...selected, ...rest],
+    initialValues: selected.map((o) => o.value),
+  };
 }
 
 /**
@@ -66,21 +65,21 @@ export function applyPreviousSelection(options, previousValues = []) {
  * @returns {Promise<string[]|symbol>} 選中的 value 列表，取消時返回 BACK
  */
 export async function groupedMultiselectWithAll({
-	message,
-	groups,
-	required = false,
-	initialValues = [],
+  message,
+  groups,
+  required = false,
+  initialValues = [],
 }) {
-	const result = await handleCancel(
-		await p.groupMultiselect({
-			message: `${message}  Space 選擇 · Enter 確認 · ESC 上一步`,
-			options: groups,
-			required,
-			initialValues: !isEmpty(initialValues) ? initialValues : undefined,
-		}),
-	);
-	if (result === BACK) return BACK;
-	return result;
+  const result = await handleCancel(
+    await p.groupMultiselect({
+      message: `${message}  Space 選擇 · Enter 確認 · ESC 上一步`,
+      options: groups,
+      required,
+      initialValues: !isEmpty(initialValues) ? initialValues : undefined,
+    }),
+  );
+  if (result === BACK) return BACK;
+  return result;
 }
 
 /**
@@ -98,43 +97,41 @@ export async function groupedMultiselectWithAll({
  * @returns {Promise<string[]|symbol>} 選中的 value 列表，取消時返回 BACK
  */
 export async function multiselectWithAll({
-	message,
-	options,
-	required = false,
-	initialValues = [],
+  message,
+  options,
+  required = false,
+  initialValues = [],
 }) {
-	const ALL_VALUE = "__all__";
-	const SKIP_VALUE = "__skip__";
+  const ALL_VALUE = '__all__';
+  const SKIP_VALUE = '__skip__';
 
-	// 截斷長 label 防止 terminal wrap 造成渲染錯亂
-	const safeOptions = options.map((o) => {
-		const labelStr = typeof o.label === "string" ? o.label : String(o.label);
-		const hintStr = o.hint || "";
-		if (labelStr.length + hintStr.length > 60) {
-			return { ...o, label: labelStr.slice(0, 30), hint: hintStr.slice(0, 28) };
-		}
-		return o;
-	});
+  // 截斷長 label 防止 terminal wrap 造成渲染錯亂
+  const safeOptions = options.map((o) => {
+    const labelStr = typeof o.label === 'string' ? o.label : String(o.label);
+    const hintStr = o.hint || '';
+    if (labelStr.length + hintStr.length > 60) {
+      return { ...o, label: labelStr.slice(0, 30), hint: hintStr.slice(0, 28) };
+    }
+    return o;
+  });
 
-	const extraOpts = [
-		{ value: ALL_VALUE, label: `全部選擇  ${pc.dim("選中此項 = 全選")}` },
-		...(!required
-			? [{ value: SKIP_VALUE, label: `跳過  ${pc.dim("不選，進入下一步")}` }]
-			: []),
-	];
+  const extraOpts = [
+    { value: ALL_VALUE, label: `全部選擇  ${pc.dim('選中此項 = 全選')}` },
+    ...(!required ? [{ value: SKIP_VALUE, label: `跳過  ${pc.dim('不選，進入下一步')}` }] : []),
+  ];
 
-	const result = await handleCancel(
-		await p.multiselect({
-			message: `${message}  Space 選擇 · Enter 確認 · ESC 上一步`,
-			options: [...extraOpts, ...safeOptions],
-			required,
-			initialValues: !isEmpty(initialValues) ? initialValues : undefined,
-		}),
-	);
-	if (result === BACK) return BACK;
-	if (result.includes(SKIP_VALUE)) return [];
-	if (result.includes(ALL_VALUE)) return safeOptions.map((o) => o.value);
-	return result;
+  const result = await handleCancel(
+    await p.multiselect({
+      message: `${message}  Space 選擇 · Enter 確認 · ESC 上一步`,
+      options: [...extraOpts, ...safeOptions],
+      required,
+      initialValues: !isEmpty(initialValues) ? initialValues : undefined,
+    }),
+  );
+  if (result === BACK) return BACK;
+  if (result.includes(SKIP_VALUE)) return [];
+  if (result.includes(ALL_VALUE)) return safeOptions.map((o) => o.value);
+  return result;
 }
 
 /**
@@ -157,110 +154,100 @@ export async function multiselectWithAll({
  * @returns {Promise<string[]>} 選中的 value 列表
  */
 export async function smartSelect({
-	title,
-	items,
-	preselected = [],
-	session = [],
-	required = false,
-	showSummary,
-	autoSelectThreshold = 2,
+  title,
+  items,
+  preselected = [],
+  session = [],
+  required = false,
+  showSummary,
+  autoSelectThreshold = 2,
 }) {
-	if (isEmpty(items)) return [];
+  if (isEmpty(items)) return [];
 
-	// 少量項目自動全選
-	if (items.length <= autoSelectThreshold) {
-		const all = items.map((i) => i.value);
-		p.log.success(`${title}：${all.length} 個（自動全選）`);
-		return all;
-	}
+  // 少量項目自動全選
+  if (items.length <= autoSelectThreshold) {
+    const all = items.map((i) => i.value);
+    p.log.success(`${title}：${all.length} 個（自動全選）`);
+    return all;
+  }
 
-	// 決定預選來源：preselected > session > 空
-	const effectivePreselected = !isEmpty(preselected)
-		? preselected
-		: !isEmpty(session)
-			? session.filter((v) => items.some((i) => i.value === v))
-			: [];
+  // 決定預選來源：preselected > session > 空
+  const effectivePreselected = !isEmpty(preselected)
+    ? preselected
+    : !isEmpty(session)
+      ? session.filter((v) => items.some((i) => i.value === v))
+      : [];
 
-	const preCount = effectivePreselected.length;
-	const total = items.length;
+  const preCount = effectivePreselected.length;
+  const total = items.length;
 
-	// 顯示摘要（帶編號 + 繁中描述，合併為一次輸出避免空行）
-	if (showSummary && preCount > 0) {
-		p.log.info(showSummary(effectivePreselected));
-	} else if (preCount > 0) {
-		const preItems = items.filter((i) =>
-			effectivePreselected.includes(i.value),
-		);
-		const detailLines = preItems
-			.map(
-				(item, idx) =>
-					`  ${pc.dim(`${idx + 1}.`)} ${item.label}  ${pc.dim(item.hint || "")}`,
-			)
-			.join("\n");
-		p.log.info(`${title}（預選 ${preCount}/${total}）：\n${detailLines}`);
-	}
+  // 顯示摘要（帶編號 + 繁中描述，合併為一次輸出避免空行）
+  if (showSummary && preCount > 0) {
+    p.log.info(showSummary(effectivePreselected));
+  } else if (preCount > 0) {
+    const preItems = items.filter((i) => effectivePreselected.includes(i.value));
+    const detailLines = preItems
+      .map((item, idx) => `  ${pc.dim(`${idx + 1}.`)} ${item.label}  ${pc.dim(item.hint || '')}`)
+      .join('\n');
+    p.log.info(`${title}（預選 ${preCount}/${total}）：\n${detailLines}`);
+  }
 
-	// 建構選項
-	const options = [];
-	if (preCount > 0) {
-		options.push({
-			value: "accept",
-			label: `確認預選 (${preCount})`,
-			hint: "推薦",
-		});
-	}
-	options.push({
-		value: "edit",
-		label: preCount > 0 ? "調整選擇" : `選擇（${total} 個可選）`,
-	});
-	if (!required) {
-		options.push({ value: "skip", label: "跳過" });
-	}
-	options.push({ value: "back", label: `← 上一步  ${pc.dim("ESC 也可以")}` });
+  // 建構選項
+  const options = [];
+  if (preCount > 0) {
+    options.push({
+      value: 'accept',
+      label: `確認預選 (${preCount})`,
+      hint: '推薦',
+    });
+  }
+  options.push({
+    value: 'edit',
+    label: preCount > 0 ? '調整選擇' : `選擇（${total} 個可選）`,
+  });
+  if (!required) {
+    options.push({ value: 'skip', label: '跳過' });
+  }
+  options.push({ value: 'back', label: `← 上一步  ${pc.dim('ESC 也可以')}` });
 
-	const action = await handleCancel(
-		await p.select({
-			message: `${title}  ↑↓ 選擇 · Enter 確認 · ESC 上一步`,
-			options,
-		}),
-	);
-	if (action === BACK || action === "back") return BACK;
+  const action = await handleCancel(
+    await p.select({
+      message: `${title}  ↑↓ 選擇 · Enter 確認 · ESC 上一步`,
+      options,
+    }),
+  );
+  if (action === BACK || action === 'back') return BACK;
 
-	if (action === "skip") return [];
+  if (action === 'skip') return [];
 
-	let result;
-	if (action === "accept") {
-		// 確認預選 — 摘要已顯示過，只需一行確認
-		p.log.success(`${title}：${preCount} 個`);
-		return effectivePreselected;
-	}
+  let result;
+  if (action === 'accept') {
+    // 確認預選 — 摘要已顯示過，只需一行確認
+    p.log.success(`${title}：${preCount} 個`);
+    return effectivePreselected;
+  }
 
-	// 調整模式 — 用 multiselectWithAll
-	const { sortedOptions, initialValues } = applyPreviousSelection(
-		items.map((i) => ({ value: i.value, label: i.label, hint: i.hint })),
-		effectivePreselected,
-	);
-	result = await multiselectWithAll({
-		message: title,
-		options: sortedOptions,
-		initialValues,
-		required,
-	});
-	if (result === BACK) return BACK;
+  // 調整模式 — 用 multiselectWithAll
+  const { sortedOptions, initialValues } = applyPreviousSelection(
+    items.map((i) => ({ value: i.value, label: i.label, hint: i.hint })),
+    effectivePreselected,
+  );
+  result = await multiselectWithAll({
+    message: title,
+    options: sortedOptions,
+    initialValues,
+    required,
+  });
+  if (result === BACK) return BACK;
 
-	// 調整完成後顯示編號列表（合併為一次輸出）
-	if (!isEmpty(result)) {
-		const selectedItems = result
-			.map((v) => items.find((i) => i.value === v))
-			.filter(Boolean);
-		const lines = selectedItems
-			.map(
-				(item, idx) =>
-					`  ${pc.dim(`${idx + 1}.`)} ${item.label}  ${pc.dim(item.hint || "")}`,
-			)
-			.join("\n");
-		p.log.success(`${title}：${result.length} 個\n${lines}`);
-	}
+  // 調整完成後顯示編號列表（合併為一次輸出）
+  if (!isEmpty(result)) {
+    const selectedItems = result.map((v) => items.find((i) => i.value === v)).filter(Boolean);
+    const lines = selectedItems
+      .map((item, idx) => `  ${pc.dim(`${idx + 1}.`)} ${item.label}  ${pc.dim(item.hint || '')}`)
+      .join('\n');
+    p.log.success(`${title}：${result.length} 個\n${lines}`);
+  }
 
-	return result;
+  return result;
 }

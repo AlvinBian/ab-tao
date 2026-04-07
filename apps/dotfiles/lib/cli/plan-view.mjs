@@ -4,10 +4,10 @@
  * 職責：組裝摘要、表格、icon、描述等顯示邏輯
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { isEmpty } from "lodash-es";
-import { descBullet } from "../config/descriptions.mjs";
+import fs from 'node:fs';
+import path from 'node:path';
+import { isEmpty } from 'lodash-es';
+import { descBullet } from '../config/descriptions.mjs';
 
 /**
  * 網格排列：固定列寬，每行多個項目
@@ -18,16 +18,16 @@ import { descBullet } from "../config/descriptions.mjs";
  * @param {string} indent - 縮排字串（預設 '   '）
  * @returns {string[]} 格式化後的行陣列
  */
-export function grid(items, cols = 4, colWidth = 18, indent = "   ") {
-	const rows = [];
-	for (let i = 0; i < items.length; i += cols) {
-		const row = items
-			.slice(i, i + cols)
-			.map((s) => s.padEnd(colWidth))
-			.join("");
-		rows.push(`${indent}${row.trimEnd()}`);
-	}
-	return rows;
+export function grid(items, cols = 4, colWidth = 18, indent = '   ') {
+  const rows = [];
+  for (let i = 0; i < items.length; i += cols) {
+    const row = items
+      .slice(i, i + cols)
+      .map((s) => s.padEnd(colWidth))
+      .join('');
+    rows.push(`${indent}${row.trimEnd()}`);
+  }
+  return rows;
 }
 
 /**
@@ -38,8 +38,8 @@ export function grid(items, cols = 4, colWidth = 18, indent = "   ") {
  * @returns {string} 格式化後的字串
  */
 export function inlineList(items, max = 8) {
-	if (items.length <= max) return items.join("、");
-	return `${items.slice(0, max).join("、")}… +${items.length - max}`;
+  if (items.length <= max) return items.join('、');
+  return `${items.slice(0, max).join('、')}… +${items.length - max}`;
 }
 
 /**
@@ -49,25 +49,24 @@ export function inlineList(items, max = 8) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatExistingState(existing) {
-	const lines = [];
-	const existTotal =
-		existing.commands.length + existing.agents.length + existing.rules.length;
+  const lines = [];
+  const existTotal = existing.commands.length + existing.agents.length + existing.rules.length;
 
-	if (existTotal > 0) {
-		const parts = [];
-		if (existing.commands.length) parts.push(`${existing.commands.length} cmd`);
-		if (existing.agents.length) parts.push(`${existing.agents.length} agent`);
-		if (existing.rules.length) parts.push(`${existing.rules.length} rule`);
-		const extras = [];
-		if (existing.hasSettings) extras.push("settings");
-		if (existing.hasHooks) extras.push("hooks");
+  if (existTotal > 0) {
+    const parts = [];
+    if (existing.commands.length) parts.push(`${existing.commands.length} cmd`);
+    if (existing.agents.length) parts.push(`${existing.agents.length} agent`);
+    if (existing.rules.length) parts.push(`${existing.rules.length} rule`);
+    const extras = [];
+    if (existing.hasSettings) extras.push('settings');
+    if (existing.hasHooks) extras.push('hooks');
 
-		lines.push(
-			`現有 ~/.claude/：${parts.join(" · ")}${extras.length ? ` · ${extras.join(" · ")}` : ""}`,
-		);
-	}
+    lines.push(
+      `現有 ~/.claude/：${parts.join(' · ')}${extras.length ? ` · ${extras.join(' · ')}` : ''}`,
+    );
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -81,32 +80,30 @@ export function formatExistingState(existing) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatRepos(repos, mainCount, tempCount, toolCount, HOME) {
-	const lines = [];
+  const lines = [];
 
-	lines.push(
-		`1. Repos（${mainCount} ⭐ 主力 · ${tempCount} 🔄 臨時${toolCount ? ` · ${toolCount} 🔧 工具` : ""}）`,
-	);
+  lines.push(
+    `1. Repos（${mainCount} ⭐ 主力 · ${tempCount} 🔄 臨時${toolCount ? ` · ${toolCount} 🔧 工具` : ''}）`,
+  );
 
-	// 按組織分組
-	const byOrg = {};
-	for (const r of repos) {
-		const org = r.fullName.split("/")[0];
-		if (!byOrg[org]) byOrg[org] = [];
-		byOrg[org].push(r);
-	}
+  // 按組織分組
+  const byOrg = {};
+  for (const r of repos) {
+    const org = r.fullName.split('/')[0];
+    if (!byOrg[org]) byOrg[org] = [];
+    byOrg[org].push(r);
+  }
 
-	for (const [org, orgRepos] of Object.entries(byOrg)) {
-		lines.push(`   ${org}`);
-		for (const r of orgRepos) {
-			const icon = r.role === "main" ? "⭐" : r.role === "tool" ? "🔧" : "🔄";
-			const loc = r.localPath
-				? `~/${path.relative(HOME, r.localPath)}`
-				: "未找到";
-			lines.push(`     ${icon} ${r.fullName.split("/")[1]}  ${loc}`);
-		}
-	}
+  for (const [org, orgRepos] of Object.entries(byOrg)) {
+    lines.push(`   ${org}`);
+    for (const r of orgRepos) {
+      const icon = r.role === 'main' ? '⭐' : r.role === 'tool' ? '🔧' : '🔄';
+      const loc = r.localPath ? `~/${path.relative(HOME, r.localPath)}` : '未找到';
+      lines.push(`     ${icon} ${r.fullName.split('/')[1]}  ${loc}`);
+    }
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -116,25 +113,25 @@ export function formatRepos(repos, mainCount, tempCount, toolCount, HOME) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatGlobalConfig(globalConfig) {
-	const lines = [];
-	const g = globalConfig;
+  const lines = [];
+  const g = globalConfig;
 
-	lines.push(`2. 全局配置 → ~/.claude/`);
-	lines.push(`   Commands（${g.commands.length}）`);
-	lines.push(...grid(g.commands));
-	lines.push(`   Agents（${g.agents.length}）`);
-	lines.push(...grid(g.agents));
-	lines.push(`   Rules（${g.rules.length}）`);
-	lines.push(...grid(g.rules, 3, 24));
-	lines.push(`   Hooks（${g.hooks.length}）`);
-	const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ["", h])[1]);
-	lines.push(...grid(hookNames, 4, 16));
-	lines.push(
-		`   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
-	);
-	lines.push(`   Model: ${g.settings.model} · AutoMemory`);
+  lines.push(`2. 全局配置 → ~/.claude/`);
+  lines.push(`   Commands（${g.commands.length}）`);
+  lines.push(...grid(g.commands));
+  lines.push(`   Agents（${g.agents.length}）`);
+  lines.push(...grid(g.agents));
+  lines.push(`   Rules（${g.rules.length}）`);
+  lines.push(...grid(g.rules, 3, 24));
+  lines.push(`   Hooks（${g.hooks.length}）`);
+  const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ['', h])[1]);
+  lines.push(...grid(hookNames, 4, 16));
+  lines.push(
+    `   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
+  );
+  lines.push(`   Model: ${g.settings.model} · AutoMemory`);
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -144,25 +141,23 @@ export function formatGlobalConfig(globalConfig) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatTechStacks(plan) {
-	const lines = [];
+  const lines = [];
 
-	if (!isEmpty(plan.techStacks)) {
-		const categorized = plan._pipelineResult?.categorizedTechs;
-		if (categorized instanceof Map && categorized.size > 0) {
-			lines.push(
-				`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`,
-			);
-			for (const [cat, techMap] of categorized) {
-				const techs = [...techMap.keys()];
-				lines.push(`   ${cat}（${techs.length}）：${techs.join("、")}`);
-			}
-		} else {
-			lines.push(`4. 技術棧（${plan.techStacks.length}）`);
-			lines.push(...grid(plan.techStacks, 5, 16));
-		}
-	}
+  if (!isEmpty(plan.techStacks)) {
+    const categorized = plan._pipelineResult?.categorizedTechs;
+    if (categorized instanceof Map && categorized.size > 0) {
+      lines.push(`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`);
+      for (const [cat, techMap] of categorized) {
+        const techs = [...techMap.keys()];
+        lines.push(`   ${cat}（${techs.length}）：${techs.join('、')}`);
+      }
+    } else {
+      lines.push(`4. 技術棧（${plan.techStacks.length}）`);
+      lines.push(...grid(plan.techStacks, 5, 16));
+    }
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -173,48 +168,38 @@ export function formatTechStacks(plan) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatEccResources(plan, claudeDir) {
-	const lines = [];
+  const lines = [];
 
-	if (!isEmpty(plan.ecc)) {
-		const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
-		const eccByType = { commands: [], agents: [], rules: [] };
+  if (!isEmpty(plan.ecc)) {
+    const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
+    const eccByType = { commands: [], agents: [], rules: [] };
 
-		for (const name of plan.ecc) {
-			const clean = name.replace(".md", "");
-			const type =
-				eccTypeMap[clean] ||
-				(fs.existsSync(path.join(claudeDir, "agents", `${clean}.md`))
-					? "agents"
-					: null) ||
-				(fs.existsSync(path.join(claudeDir, "rules", `${clean}.md`))
-					? "rules"
-					: null) ||
-				"commands";
-			eccByType[type].push(clean);
-		}
+    for (const name of plan.ecc) {
+      const clean = name.replace('.md', '');
+      const type =
+        eccTypeMap[clean] ||
+        (fs.existsSync(path.join(claudeDir, 'agents', `${clean}.md`)) ? 'agents' : null) ||
+        (fs.existsSync(path.join(claudeDir, 'rules', `${clean}.md`)) ? 'rules' : null) ||
+        'commands';
+      eccByType[type].push(clean);
+    }
 
-		lines.push(`5. 🌐 AI 外部資源（${plan.ecc.length} 個）`);
-		if (eccByType.commands.length) {
-			lines.push(`   5.1 Commands（${eccByType.commands.length}）`);
-			lines.push(
-				...eccByType.commands.map((n) => descBullet(n, "commands", claudeDir)),
-			);
-		}
-		if (eccByType.agents.length) {
-			lines.push(`   5.2 Agents（${eccByType.agents.length}）`);
-			lines.push(
-				...eccByType.agents.map((n) => descBullet(n, "agents", claudeDir)),
-			);
-		}
-		if (eccByType.rules.length) {
-			lines.push(`   5.3 Rules（${eccByType.rules.length}）`);
-			lines.push(
-				...eccByType.rules.map((n) => descBullet(n, "rules", claudeDir)),
-			);
-		}
-	}
+    lines.push(`5. 🌐 AI 外部資源（${plan.ecc.length} 個）`);
+    if (eccByType.commands.length) {
+      lines.push(`   5.1 Commands（${eccByType.commands.length}）`);
+      lines.push(...eccByType.commands.map((n) => descBullet(n, 'commands', claudeDir)));
+    }
+    if (eccByType.agents.length) {
+      lines.push(`   5.2 Agents（${eccByType.agents.length}）`);
+      lines.push(...eccByType.agents.map((n) => descBullet(n, 'agents', claudeDir)));
+    }
+    if (eccByType.rules.length) {
+      lines.push(`   5.3 Rules（${eccByType.rules.length}）`);
+      lines.push(...eccByType.rules.map((n) => descBullet(n, 'rules', claudeDir)));
+    }
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -224,34 +209,27 @@ export function formatEccResources(plan, claudeDir) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatCommonsResources(plan) {
-	const lines = [];
-	const commSources = plan._pipelineResult?.commonsResources?.sources || [];
+  const lines = [];
+  const commSources = plan._pipelineResult?.commonsResources?.sources || [];
 
-	if (!isEmpty(commSources)) {
-		const commTotal = commSources.reduce(
-			(s, src) =>
-				s +
-				src.commands.length +
-				src.agents.length +
-				src.rules.length +
-				src.skills.length,
-			0,
-		);
-		lines.push(
-			`   🤖 技術棧匹配 AI 資源（${commSources.length} 個來源 · ${commTotal} 個資源）`,
-		);
-		for (const src of commSources) {
-			const parts = [];
-			if (src.commands.length) parts.push(`${src.commands.length} 指令`);
-			if (src.agents.length) parts.push(`${src.agents.length} 代理`);
-			if (src.rules.length) parts.push(`${src.rules.length} 規則`);
-			if (src.skills.length) parts.push(`${src.skills.length} 技能`);
-			if (parts.length)
-				lines.push(`       · ${src.name} — ${parts.join(" · ")}`);
-		}
-	}
+  if (!isEmpty(commSources)) {
+    const commTotal = commSources.reduce(
+      (s, src) =>
+        s + src.commands.length + src.agents.length + src.rules.length + src.skills.length,
+      0,
+    );
+    lines.push(`   🤖 技術棧匹配 AI 資源（${commSources.length} 個來源 · ${commTotal} 個資源）`);
+    for (const src of commSources) {
+      const parts = [];
+      if (src.commands.length) parts.push(`${src.commands.length} 指令`);
+      if (src.agents.length) parts.push(`${src.agents.length} 代理`);
+      if (src.rules.length) parts.push(`${src.rules.length} 規則`);
+      if (src.skills.length) parts.push(`${src.skills.length} 技能`);
+      if (parts.length) lines.push(`       · ${src.name} — ${parts.join(' · ')}`);
+    }
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -261,14 +239,14 @@ export function formatCommonsResources(plan) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatZshModules(plan) {
-	const lines = [];
+  const lines = [];
 
-	if (!isEmpty(plan.zshModules)) {
-		lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
-		lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
-	}
+  if (!isEmpty(plan.zshModules)) {
+    lines.push(`6. ZSH 模組（${plan.zshModules.length}）`);
+    lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -278,22 +256,18 @@ export function formatZshModules(plan) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatClaudeMd(plan) {
-	const lines = [];
+  const lines = [];
 
-	if (!isEmpty(plan.projects)) {
-		const mainPrj = plan.projects.filter(
-			(proj) => proj.claudeMdType === "full",
-		);
-		const tempPrj = plan.projects.filter(
-			(proj) => proj.claudeMdType === "concise",
-		);
-		const parts = [];
-		if (mainPrj.length) parts.push(`${mainPrj.length} AI 生成`);
-		if (tempPrj.length) parts.push(`${tempPrj.length} 靜態模板`);
-		lines.push(`3. CLAUDE.md（${parts.join(" + ")}）→ ~/.claude/projects/`);
-	}
+  if (!isEmpty(plan.projects)) {
+    const mainPrj = plan.projects.filter((proj) => proj.claudeMdType === 'full');
+    const tempPrj = plan.projects.filter((proj) => proj.claudeMdType === 'concise');
+    const parts = [];
+    if (mainPrj.length) parts.push(`${mainPrj.length} AI 生成`);
+    if (tempPrj.length) parts.push(`${tempPrj.length} 靜態模板`);
+    lines.push(`3. CLAUDE.md（${parts.join(' + ')}）→ ~/.claude/projects/`);
+  }
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -304,28 +278,26 @@ export function formatClaudeMd(plan) {
  * @returns {string[]} 格式化後的行陣列
  */
 export function formatChanges(plan, existing) {
-	const lines = [];
-	const g = plan.global;
-	const changes = [];
+  const lines = [];
+  const g = plan.global;
+  const changes = [];
 
-	const newCmds = g.commands.filter((c) => !existing.commands.includes(c));
-	const newAgents = g.agents.filter((a) => !existing.agents.includes(a));
-	const newRules = g.rules.filter((r) => !existing.rules.includes(r));
+  const newCmds = g.commands.filter((c) => !existing.commands.includes(c));
+  const newAgents = g.agents.filter((a) => !existing.agents.includes(a));
+  const newRules = g.rules.filter((r) => !existing.rules.includes(r));
 
-	if (newCmds.length) changes.push(`+${newCmds.length} cmd`);
-	if (newAgents.length) changes.push(`+${newAgents.length} agent`);
-	if (newRules.length) changes.push(`+${newRules.length} rule`);
-	if (!existing.hasSettings) changes.push("+settings");
-	else changes.push("合併 settings");
-	if (!existing.hasHooks) changes.push("+hooks");
-	else changes.push("合併 hooks");
+  if (newCmds.length) changes.push(`+${newCmds.length} cmd`);
+  if (newAgents.length) changes.push(`+${newAgents.length} agent`);
+  if (newRules.length) changes.push(`+${newRules.length} rule`);
+  if (!existing.hasSettings) changes.push('+settings');
+  else changes.push('合併 settings');
+  if (!existing.hasHooks) changes.push('+hooks');
+  else changes.push('合併 hooks');
 
-	lines.push("");
-	lines.push(
-		`變更：${changes.join(" · ")} · AI ~$${plan.aiCost.total.toFixed(2)}`,
-	);
+  lines.push('');
+  lines.push(`變更：${changes.join(' · ')} · AI ~$${plan.aiCost.total.toFixed(2)}`);
 
-	return lines;
+  return lines;
 }
 
 /**
@@ -338,50 +310,40 @@ export function formatChanges(plan, existing) {
  * @returns {string} 格式化後的完整計畫摘要字串
  */
 export function buildPlanSummary(plan, existing, HOME, claudeDir) {
-	const lines = [];
+  const lines = [];
 
-	// 現有狀態
-	lines.push(...formatExistingState(existing));
+  // 現有狀態
+  lines.push(...formatExistingState(existing));
 
-	// 角色與技能
-	if (plan.profile) {
-		lines.push(
-			`${plan.profile.role || "開發者"} — ${plan.profile.coreSkills?.join(" · ") || ""}`,
-		);
-	}
-	lines.push("");
+  // 角色與技能
+  if (plan.profile) {
+    lines.push(`${plan.profile.role || '開發者'} — ${plan.profile.coreSkills?.join(' · ') || ''}`);
+  }
+  lines.push('');
 
-	// 1. Repos
-	lines.push(
-		...formatRepos(
-			plan.repos,
-			plan.mainCount,
-			plan.tempCount,
-			plan.toolCount,
-			HOME,
-		),
-	);
+  // 1. Repos
+  lines.push(...formatRepos(plan.repos, plan.mainCount, plan.tempCount, plan.toolCount, HOME));
 
-	// 2. 全局配置
-	lines.push(...formatGlobalConfig(plan.global));
+  // 2. 全局配置
+  lines.push(...formatGlobalConfig(plan.global));
 
-	// 3. CLAUDE.md
-	lines.push(...formatClaudeMd(plan));
+  // 3. CLAUDE.md
+  lines.push(...formatClaudeMd(plan));
 
-	// 4. 技術棧
-	lines.push(...formatTechStacks(plan));
+  // 4. 技術棧
+  lines.push(...formatTechStacks(plan));
 
-	// 5. ECC 資源
-	lines.push(...formatEccResources(plan, claudeDir));
+  // 5. ECC 資源
+  lines.push(...formatEccResources(plan, claudeDir));
 
-	// 5b. Commons 資源
-	lines.push(...formatCommonsResources(plan));
+  // 5b. Commons 資源
+  lines.push(...formatCommonsResources(plan));
 
-	// 6. ZSH 模組
-	lines.push(...formatZshModules(plan));
+  // 6. ZSH 模組
+  lines.push(...formatZshModules(plan));
 
-	// 變更 + 費用
-	lines.push(...formatChanges(plan, existing));
+  // 變更 + 費用
+  lines.push(...formatChanges(plan, existing));
 
-	return lines.join("\n");
+  return lines.join('\n');
 }

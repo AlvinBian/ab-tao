@@ -15,10 +15,10 @@
  * 被 scan.mjs 使用（pnpm run scan 時批量生成）
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { STACKS_DIR } from "../detect/skill-detect.mjs";
-import { callClaude, isClaudeAvailable } from "./claude-cli.mjs";
+import fs from 'node:fs';
+import path from 'node:path';
+import { STACKS_DIR } from '../detect/skill-detect.mjs';
+import { callClaude, isClaudeAvailable } from './claude-cli.mjs';
 
 // ── AI 可用性檢查 ──────────────────────────────────────────────
 
@@ -40,10 +40,10 @@ export { isClaudeAvailable as isAIAvailable };
  * @returns {Promise<Object|null>} { 'code-review.md': content, ... } 或 null
  */
 export async function generateSkillContent(_techId, techMeta) {
-	const prompt = `為 "${techMeta.label}" 技術生成三個 Markdown 片段，用於程式碼審查和測試輔助。
+  const prompt = `為 "${techMeta.label}" 技術生成三個 Markdown 片段，用於程式碼審查和測試輔助。
 
 技術描述：${techMeta.description || techMeta.label}
-分類：${techMeta.category || "general"}
+分類：${techMeta.category || 'general'}
 
 生成三個檔案內容，用 ---FILE_SEPARATOR--- 分隔：
 
@@ -53,14 +53,14 @@ export async function generateSkillContent(_techId, techMeta) {
 
 要求：繁體中文說明，程式碼英文，每個以 ## 標題開頭，簡潔實用。只輸出三個檔案內容。`;
 
-	// 統一用 claude CLI（穩定方式，見 lib/claude-cli.mjs）
-	try {
-		const result = await callClaude(prompt, { model: "sonnet", effort: "low" });
-		if (result) return parseAIResponse(result);
-	} catch {
-		/* 呼叫失敗則 fallback 回 null */
-	}
-	return null;
+  // 統一用 claude CLI（穩定方式，見 lib/claude-cli.mjs）
+  try {
+    const result = await callClaude(prompt, { model: 'sonnet', effort: 'low' });
+    if (result) return parseAIResponse(result);
+  } catch {
+    /* 呼叫失敗則 fallback 回 null */
+  }
+  return null;
 }
 
 /**
@@ -70,13 +70,13 @@ export async function generateSkillContent(_techId, techMeta) {
  * @returns {Object|null} { 'code-review.md': ..., 'test-gen.md': ..., 'code-style.md': ... }
  */
 function parseAIResponse(text) {
-	const parts = text.split("---FILE_SEPARATOR---").map((p) => p.trim());
-	if (parts.length < 3) return null;
-	return {
-		"code-review.md": parts[0],
-		"test-gen.md": parts[1],
-		"code-style.md": parts[2],
-	};
+  const parts = text.split('---FILE_SEPARATOR---').map((p) => p.trim());
+  if (parts.length < 3) return null;
+  return {
+    'code-review.md': parts[0],
+    'test-gen.md': parts[1],
+    'code-style.md': parts[2],
+  };
 }
 
 // ── 預設模板 ──────────────────────────────────────────────────
@@ -92,9 +92,9 @@ function parseAIResponse(text) {
  * @returns {Object} { 'code-review.md': ..., 'test-gen.md': ..., 'code-style.md': ... }
  */
 export function generateDefaultTemplates(_id, meta) {
-	const label = meta.label;
+  const label = meta.label;
 
-	const codeReview = `## ${label} Code Review Checklist
+  const codeReview = `## ${label} Code Review Checklist
 
 ### 架構與設計
 - [ ] 元件 / 模組職責單一，無 God Object
@@ -117,7 +117,7 @@ export function generateDefaultTemplates(_id, meta) {
 - [ ] 錯誤訊息對除錯有幫助（含 context，不只是 "something went wrong"）
 `;
 
-	const testGen = `## ${label} 測試模式
+  const testGen = `## ${label} 測試模式
 
 ### 測試策略
 - 單元測試：純邏輯函式、工具函式、資料轉換
@@ -143,7 +143,7 @@ describe('模組名稱', () => {
 - 使用 factory function 建立測試資料，避免寫死 magic number
 `;
 
-	const codeStyle = `## ${label} 程式碼風格
+  const codeStyle = `## ${label} 程式碼風格
 
 ### 命名慣例
 | 類型 | 慣例 | 範例 |
@@ -167,11 +167,11 @@ describe('模組名稱', () => {
 - 非同步函式以動詞開頭：\`fetchUser\`, \`createOrder\`, \`validateInput\`
 `;
 
-	return {
-		"code-review.md": codeReview,
-		"test-gen.md": testGen,
-		"code-style.md": codeStyle,
-	};
+  return {
+    'code-review.md': codeReview,
+    'test-gen.md': testGen,
+    'code-style.md': codeStyle,
+  };
 }
 
 // ── Stack 目錄管理 ──────────────────────────────────────────────
@@ -188,50 +188,47 @@ describe('模組名稱', () => {
  * @returns {Promise<string>} 'kept' | 'ai-generated' | 'created'
  */
 export async function ensureStack(id, meta, useAI = false) {
-	const stackDir = path.join(STACKS_DIR, id);
-	const detectPath = path.join(stackDir, "detect.json");
+  const stackDir = path.join(STACKS_DIR, id);
+  const detectPath = path.join(stackDir, 'detect.json');
 
-	// 已有完整檔案 → 跳過
-	if (
-		fs.existsSync(detectPath) &&
-		fs.existsSync(path.join(stackDir, "code-review.md")) &&
-		fs.existsSync(path.join(stackDir, "test-gen.md")) &&
-		fs.existsSync(path.join(stackDir, "code-style.md"))
-	) {
-		return "kept";
-	}
+  // 已有完整檔案 → 跳過
+  if (
+    fs.existsSync(detectPath) &&
+    fs.existsSync(path.join(stackDir, 'code-review.md')) &&
+    fs.existsSync(path.join(stackDir, 'test-gen.md')) &&
+    fs.existsSync(path.join(stackDir, 'code-style.md'))
+  ) {
+    return 'kept';
+  }
 
-	fs.mkdirSync(stackDir, { recursive: true });
+  fs.mkdirSync(stackDir, { recursive: true });
 
-	// detect.json
-	const detectJson = {
-		id,
-		label: meta.label,
-		priority: meta.priority || 50,
-		detect: { ...meta.detect, match: "any" },
-	};
-	if (meta.excludes) detectJson.excludes = meta.excludes;
-	fs.writeFileSync(detectPath, `${JSON.stringify(detectJson, null, 2)}\n`);
+  // detect.json
+  const detectJson = {
+    id,
+    label: meta.label,
+    priority: meta.priority || 50,
+    detect: { ...meta.detect, match: 'any' },
+  };
+  if (meta.excludes) detectJson.excludes = meta.excludes;
+  fs.writeFileSync(detectPath, `${JSON.stringify(detectJson, null, 2)}\n`);
 
-	// 嘗試 AI 生成
-	let files = null;
-	if (useAI) {
-		process.stdout.write("  🤖 ");
-		try {
-			files = await generateSkillContent(id, meta);
-		} catch {
-			/* AI 生成失敗則使用預設模板 */
-		}
-	}
+  // 嘗試 AI 生成
+  let files = null;
+  if (useAI) {
+    process.stdout.write('  🤖 ');
+    try {
+      files = await generateSkillContent(id, meta);
+    } catch {
+      /* AI 生成失敗則使用預設模板 */
+    }
+  }
 
-	// 寫入（AI 優先，否則預設模板）
-	const defaults = generateDefaultTemplates(id, meta);
-	for (const [file, defaultContent] of Object.entries(defaults)) {
-		fs.writeFileSync(
-			path.join(stackDir, file),
-			files?.[file] || defaultContent,
-		);
-	}
+  // 寫入（AI 優先，否則預設模板）
+  const defaults = generateDefaultTemplates(id, meta);
+  for (const [file, defaultContent] of Object.entries(defaults)) {
+    fs.writeFileSync(path.join(stackDir, file), files?.[file] || defaultContent);
+  }
 
-	return files ? "ai-generated" : "created";
+  return files ? 'ai-generated' : 'created';
 }
