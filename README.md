@@ -4,6 +4,25 @@
 
 Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
+## 這是什麼
+
+**ab-tao** 是一套以 Claude Code 為核心的開發環境自動化工具，解決「每台機器、每個專案都要重新設定一遍」的痛點。
+
+核心能力：
+
+- **一鍵部署** — 互動式安裝精靈，5 個階段自動完成 Claude Code 配置、ZSH 環境、AI 資源同步
+- **技術棧感知** — 掃描你的 GitHub repos，用 AI 分類技術棧，只安裝匹配的 commands / agents / rules
+- **AI 資源池** — 整合 7 個社群與官方 AI 來源，版本追蹤 + 安全驗證，一條指令同步到最新
+- **快速參考表** — Claude Code 繁體中文版，每日自動同步，部署到 GitHub Pages
+
+典型使用場景：
+
+```
+新機器 / 換工作 / 幫朋友設定 → pnpm run d:setup → 10 分鐘搞定全套開發環境
+定期更新 AI 資源             → pnpm run c:sync:all → 保持所有 Claude 工具最新
+查 Claude Code 快捷鍵        → 開啟 https://alvinbian.github.io/ab-tao/
+```
+
 ## 架構
 
 ```
