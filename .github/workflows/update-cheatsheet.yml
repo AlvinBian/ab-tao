@@ -1,0 +1,80 @@
+name: 更新 Claude Code 快速參考手冊
+
+on:
+  schedule:
+    # 每週一 03:00 UTC（與 sync.yml 相同時區）
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '強制更新（忽略版本比對）'
+        type: boolean
+        default: false
+
+concurrency:
+  group: update-cheatsheet
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 執行更新腳本
+        id: update
+        run: |
+          ARGS=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="--force"
+          fi
+          node apps/dotfiles/scripts/update-cheatsheet.mjs $ARGS
+        env:
+          GITHUB_OUTPUT: ${{ env.GITHUB_OUTPUT }}
+
+      - name: 建立 PR（若有更新）
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          VERSION="${{ steps.update.outputs.version }}"
+          TODAY="${{ steps.update.outputs.updated }}"
+          BRANCH="chore/update-cheatsheet-${VERSION//./-}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add apps/dotfiles/docs/claude-code-cheatsheet.md
+          git commit -m "docs: 更新 Claude Code 快速參考手冊 ${VERSION}（${TODAY}）"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "docs: 更新 Claude Code 快速參考手冊 ${VERSION}" \
+            --body "$(cat <<EOF
+          ## 自動更新
+
+          - **來源**：https://cc.storyfox.cz/
+          - **版本**：${VERSION}
+          - **更新日期**：${TODAY}
+
+          此 PR 由 GitHub Actions 自動建立，定期同步 Claude Code Cheat Sheet 最新版本並翻譯為繁體中文。
+
+          > 若版本號未更新但內容有變動，可手動觸發 workflow 並勾選「強制更新」。
+          EOF
+          )" \
+            --base develop \
+            --label "documentation,automated"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

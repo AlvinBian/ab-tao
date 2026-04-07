@@ -30,6 +30,7 @@
 		"c:sync:select": "node packages/commons/commands.mjs",
 		"c:sync:all": "node packages/commons/commands.mjs",
 		"c:validate": "node packages/commons/commands.mjs",
+		"d:cheatsheet:update": "node apps/dotfiles/scripts/update-cheatsheet.mjs",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "pnpm run build && changeset publish",
