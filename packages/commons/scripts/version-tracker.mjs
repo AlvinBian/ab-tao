@@ -1,17 +1,17 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const VERSIONS_PATH = path.resolve(__dirname, '../.versions.json');
+const VERSIONS_PATH = path.resolve(__dirname, "../.versions.json");
 
 /**
  * 讀取目前的版本記錄。
  * @returns {Record<string, object>}
  */
 export function readVersions() {
-  if (!fs.existsSync(VERSIONS_PATH)) return {};
-  return JSON.parse(fs.readFileSync(VERSIONS_PATH, 'utf8'));
+	if (!fs.existsSync(VERSIONS_PATH)) return {};
+	return JSON.parse(fs.readFileSync(VERSIONS_PATH, "utf8"));
 }
 
 /**
@@ -19,7 +19,7 @@ export function readVersions() {
  * @param {Record<string, object>} versions
  */
 export function writeVersions(versions) {
-  fs.writeFileSync(VERSIONS_PATH, `${JSON.stringify(versions, null, 2)}\n`);
+	fs.writeFileSync(VERSIONS_PATH, `${JSON.stringify(versions, null, 2)}\n`);
 }
 
 /**
@@ -28,18 +28,20 @@ export function writeVersions(versions) {
  * @param {string} sha - Git commit SHA
  */
 export function recordSync(sourceName, sha) {
-  const versions = readVersions();
-  if (!versions[sourceName]) {
-    throw new Error(`未知的來源: ${sourceName}`);
-  }
-  if (versions[sourceName].locked) {
-    console.log(`來源 "${sourceName}" 已鎖定於 ${versions[sourceName].sha}，跳過更新`);
-    return false;
-  }
-  versions[sourceName].sha = sha;
-  versions[sourceName].date = new Date().toISOString().split('T')[0];
-  writeVersions(versions);
-  return true;
+	const versions = readVersions();
+	if (!versions[sourceName]) {
+		throw new Error(`未知的來源: ${sourceName}`);
+	}
+	if (versions[sourceName].locked) {
+		console.log(
+			`來源 "${sourceName}" 已鎖定於 ${versions[sourceName].sha}，跳過更新`,
+		);
+		return false;
+	}
+	versions[sourceName].sha = sha;
+	versions[sourceName].date = new Date().toISOString().split("T")[0];
+	writeVersions(versions);
+	return true;
 }
 
 /**
@@ -49,12 +51,12 @@ export function recordSync(sourceName, sha) {
  * @returns {boolean}
  */
 export function needsSync(sourceName, remoteSha) {
-  const versions = readVersions();
-  const entry = versions[sourceName];
-  if (!entry) return true;
-  if (entry.locked) return false;
-  if (!entry.sha) return true;
-  return entry.sha !== remoteSha;
+	const versions = readVersions();
+	const entry = versions[sourceName];
+	if (!entry) return true;
+	if (entry.locked) return false;
+	if (!entry.sha) return true;
+	return entry.sha !== remoteSha;
 }
 
 /**
@@ -62,12 +64,12 @@ export function needsSync(sourceName, remoteSha) {
  * @param {string} sourceName
  */
 export function lockSource(sourceName) {
-  const versions = readVersions();
-  if (!versions[sourceName]) {
-    throw new Error(`未知的來源: ${sourceName}`);
-  }
-  versions[sourceName].locked = true;
-  writeVersions(versions);
+	const versions = readVersions();
+	if (!versions[sourceName]) {
+		throw new Error(`未知的來源: ${sourceName}`);
+	}
+	versions[sourceName].locked = true;
+	writeVersions(versions);
 }
 
 /**
@@ -75,10 +77,10 @@ export function lockSource(sourceName) {
  * @param {string} sourceName
  */
 export function unlockSource(sourceName) {
-  const versions = readVersions();
-  if (!versions[sourceName]) {
-    throw new Error(`未知的來源: ${sourceName}`);
-  }
-  versions[sourceName].locked = false;
-  writeVersions(versions);
+	const versions = readVersions();
+	if (!versions[sourceName]) {
+		throw new Error(`未知的來源: ${sourceName}`);
+	}
+	versions[sourceName].locked = false;
+	writeVersions(versions);
 }

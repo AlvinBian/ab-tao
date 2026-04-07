@@ -17,17 +17,17 @@
  *   - execute/install-zsh.mjs — Branch C（ZSH 模組）
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { Listr } from 'listr2';
-import { isEmpty } from 'lodash-es';
-import { backupIfExists } from '../core/backup.mjs';
-import { HOME } from '../core/paths.mjs';
-import { updateSessionProgress } from '../core/session.mjs';
-import { generateAllRepoIndex } from '../deploy/deploy-index.mjs';
-import { buildClaudeTasks } from './execute/claude-tasks.mjs';
-import { buildPluginTasks } from './execute/install-plugin.mjs';
-import { buildZshTasks } from './execute/install-zsh.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import { Listr } from "listr2";
+import { isEmpty } from "lodash-es";
+import { backupIfExists } from "../core/backup.mjs";
+import { HOME } from "../core/paths.mjs";
+import { updateSessionProgress } from "../core/session.mjs";
+import { generateAllRepoIndex } from "../deploy/deploy-index.mjs";
+import { buildClaudeTasks } from "./execute/claude-tasks.mjs";
+import { buildPluginTasks } from "./execute/install-plugin.mjs";
+import { buildZshTasks } from "./execute/install-zsh.mjs";
 
 /**
  * 執行安裝計畫
@@ -43,189 +43,212 @@ import { buildZshTasks } from './execute/install-zsh.mjs';
  * @returns {Promise<Object>} { installSelections, syncResult, startTime }
  */
 export async function phaseExecute(
-  plan,
-  { repoDir, previewDir, targets, prev, pipelineResult, fetchedSources },
+	plan,
+	{ repoDir, previewDir, targets, prev, pipelineResult, fetchedSources },
 ) {
-  const isManual = plan.mode === 'manual';
-  const features = new Set(plan.features || ['claude', 'claudemd', 'ecc', 'slack', 'zsh']);
-  const has = (f) => features.has(f);
-  const startTime = Date.now();
+	const isManual = plan.mode === "manual";
+	const features = new Set(
+		plan.features || ["claude", "claudemd", "ecc", "slack", "zsh"],
+	);
+	const has = (f) => features.has(f);
+	const startTime = Date.now();
 
-  await updateSessionProgress({
-    lastPhase: 'execute',
-    completedTargets: [],
-    pendingTargets: plan.targets,
-  });
+	await updateSessionProgress({
+		lastPhase: "execute",
+		completedTargets: [],
+		pendingTargets: plan.targets,
+	});
 
-  // 共享狀態
-  const installSelections = {};
-  const shared = { syncResult: null };
+	// 共享狀態
+	const installSelections = {};
+	const shared = { syncResult: null };
 
-  // 子模組傳參
-  const commonOpts = {
-    repoDir,
-    previewDir,
-    targets,
-    prev,
-    pipelineResult,
-    fetchedSources,
-    isManual,
-    installSelections,
-    shared,
-  };
+	// 子模組傳參
+	const commonOpts = {
+		repoDir,
+		previewDir,
+		targets,
+		prev,
+		pipelineResult,
+		fetchedSources,
+		isManual,
+		installSelections,
+		shared,
+	};
 
-  // 構建子模組任務
-  const claudeTasks = buildClaudeTasks(plan, commonOpts);
-  const pluginTasks = buildPluginTasks(plan, { repoDir });
-  const zshTasks = buildZshTasks(plan, commonOpts);
+	// 構建子模組任務
+	const claudeTasks = buildClaudeTasks(plan, commonOpts);
+	const pluginTasks = buildPluginTasks(plan, { repoDir });
+	const zshTasks = buildZshTasks(plan, commonOpts);
 
-  const tasks = new Listr(
-    [
-      // [0] 統一備份（Claude + ZSH 一次完成）
-      {
-        title: '🗂️ 備份現有配置 → dist/backup/',
-        task: async (_, subtask) => {
-          const cd = path.join(HOME, '.claude');
-          const backupTasks = [
-            // Claude 配置
-            ...['commands', 'agents', 'rules'].map((sub) =>
-              backupIfExists(path.join(cd, sub), `claude/${sub}`),
-            ),
-            backupIfExists(path.join(cd, 'hooks.json'), 'claude/hooks.json'),
-            backupIfExists(path.join(cd, 'settings.json'), 'claude/settings.json'),
-            // ZSH 配置
-            backupIfExists(path.join(HOME, '.zshrc'), 'zshrc'),
-            backupIfExists(path.join(HOME, '.zshrc.local'), 'zshrc.local'),
-            backupIfExists(path.join(HOME, '.zsh', 'modules'), 'zsh/modules'),
-            backupIfExists(path.join(HOME, '.ripgreprc'), 'ripgreprc'),
-          ];
-          const results = (await Promise.all(backupTasks)).filter(Boolean);
-          subtask.output = !isEmpty(results)
-            ? `已備份 ${results.length} 項：${results.join('、')}`
-            : '無需備份';
-        },
-      },
+	const tasks = new Listr(
+		[
+			// [0] 統一備份（Claude + ZSH 一次完成）
+			{
+				title: "🗂️ 備份現有配置 → dist/backup/",
+				task: async (_, subtask) => {
+					const cd = path.join(HOME, ".claude");
+					const backupTasks = [
+						// Claude 配置
+						...["commands", "agents", "rules"].map((sub) =>
+							backupIfExists(path.join(cd, sub), `claude/${sub}`),
+						),
+						backupIfExists(path.join(cd, "hooks.json"), "claude/hooks.json"),
+						backupIfExists(
+							path.join(cd, "settings.json"),
+							"claude/settings.json",
+						),
+						// ZSH 配置
+						backupIfExists(path.join(HOME, ".zshrc"), "zshrc"),
+						backupIfExists(path.join(HOME, ".zshrc.local"), "zshrc.local"),
+						backupIfExists(path.join(HOME, ".zsh", "modules"), "zsh/modules"),
+						backupIfExists(path.join(HOME, ".ripgreprc"), "ripgreprc"),
+					];
+					const results = (await Promise.all(backupTasks)).filter(Boolean);
+					subtask.output = !isEmpty(results)
+						? `已備份 ${results.length} 項：${results.join("、")}`
+						: "無需備份";
+				},
+			},
 
-      // ── 並行安裝：Branch A（Claude）、Branch B（Plugin）、Branch C（ZSH）──
-      {
-        task: (_, outerTask) =>
-          outerTask.newListr([...claudeTasks, ...pluginTasks, ...zshTasks], {
-            concurrent: true,
-            exitOnError: false,
-          }),
-      },
+			// ── 並行安裝：Branch A（Claude）、Branch B（Plugin）、Branch C（ZSH）──
+			{
+				task: (_, outerTask) =>
+					outerTask.newListr([...claudeTasks, ...pluginTasks, ...zshTasks], {
+						concurrent: true,
+						exitOnError: false,
+					}),
+			},
 
-      // [1] .claudeignore + 預索引（合併一次迭代）
-      {
-        title: `📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
-        enabled: () => (plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
-        task: async (_, subtask) => {
-          const repos = (plan.repos || [])
-            .filter((r) => r.localPath)
-            .map((r) => ({ localPath: r.localPath, repo: r.fullName }));
+			// [1] .claudeignore + 預索引（合併一次迭代）
+			{
+				title: `📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
+				enabled: () => (plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
+				task: async (_, subtask) => {
+					const repos = (plan.repos || [])
+						.filter((r) => r.localPath)
+						.map((r) => ({ localPath: r.localPath, repo: r.fullName }));
 
-          // .claudeignore 已由 deployAllProjectClaudeMd 內部處理，這裡只做預索引
-          const indexedRepos = [];
-          for (const { localPath, repo } of repos) {
-            const indexResult = generateAllRepoIndex([{ localPath, repo }]);
-            if (indexResult.count > 0) indexedRepos.push(repo.split('/').pop());
-          }
+					// .claudeignore 已由 deployAllProjectClaudeMd 內部處理，這裡只做預索引
+					const indexedRepos = [];
+					for (const { localPath, repo } of repos) {
+						const indexResult = generateAllRepoIndex([{ localPath, repo }]);
+						if (indexResult.count > 0) indexedRepos.push(repo.split("/").pop());
+					}
 
-          const parts = [];
+					const parts = [];
 
-          if (!isEmpty(indexedRepos)) {
-            parts.push(`📑 預索引：${indexedRepos.length} 個 repo`);
-          } else {
-            parts.push('📑 預索引：無需生成');
-          }
+					if (!isEmpty(indexedRepos)) {
+						parts.push(`📑 預索引：${indexedRepos.length} 個 repo`);
+					} else {
+						parts.push("📑 預索引：無需生成");
+					}
 
-          subtask.output = parts.join(' · ');
-        },
-      },
+					subtask.output = parts.join(" · ");
+				},
+			},
 
-      // [2] 驗證安裝完整性
-      {
-        title: '✅ 驗證',
-        task: (_, task) =>
-          task.newListr([
-            {
-              title: '🔍 驗證安裝完整性',
-              task: async (_, subtask) => {
-                let passed = 0;
-                let total = 0;
-                const missing = [];
-                const checkDir = (dir, items, ext = '.md') => {
-                  for (const name of items) {
-                    total++;
-                    if (fs.existsSync(path.join(dir, `${name}${ext}`))) {
-                      passed++;
-                    } else {
-                      missing.push(name);
-                    }
-                  }
-                };
-                if (installSelections.commands?.length)
-                  checkDir(path.join(HOME, '.claude/commands'), installSelections.commands);
-                if (installSelections.agents?.length)
-                  checkDir(path.join(HOME, '.claude/agents'), installSelections.agents);
-                if (installSelections.rules?.length)
-                  checkDir(path.join(HOME, '.claude/rules'), installSelections.rules);
+			// [2] 驗證安裝完整性
+			{
+				title: "✅ 驗證",
+				task: (_, task) =>
+					task.newListr([
+						{
+							title: "🔍 驗證安裝完整性",
+							task: async (_, subtask) => {
+								let passed = 0;
+								let total = 0;
+								const missing = [];
+								const checkDir = (dir, items, ext = ".md") => {
+									for (const name of items) {
+										total++;
+										if (fs.existsSync(path.join(dir, `${name}${ext}`))) {
+											passed++;
+										} else {
+											missing.push(name);
+										}
+									}
+								};
+								if (installSelections.commands?.length)
+									checkDir(
+										path.join(HOME, ".claude/commands"),
+										installSelections.commands,
+									);
+								if (installSelections.agents?.length)
+									checkDir(
+										path.join(HOME, ".claude/agents"),
+										installSelections.agents,
+									);
+								if (installSelections.rules?.length)
+									checkDir(
+										path.join(HOME, ".claude/rules"),
+										installSelections.rules,
+									);
 
-                // 驗證 settings.json（有 Claude 或 Slack 才檢查）
-                if (has('claude') || has('slack')) {
-                  if (fs.existsSync(path.join(HOME, '.claude/settings.json'))) {
-                    total++;
-                    passed++;
-                  } else {
-                    total++;
-                    missing.push('settings.json');
-                  }
-                }
-                // 驗證 hooks.json（有 Slack 才檢查）
-                if (has('slack')) {
-                  if (fs.existsSync(path.join(HOME, '.claude/hooks.json'))) {
-                    total++;
-                    passed++;
-                  } else {
-                    total++;
-                    missing.push('hooks.json');
-                  }
-                }
+								// 驗證 settings.json（有 Claude 或 Slack 才檢查）
+								if (has("claude") || has("slack")) {
+									if (fs.existsSync(path.join(HOME, ".claude/settings.json"))) {
+										total++;
+										passed++;
+									} else {
+										total++;
+										missing.push("settings.json");
+									}
+								}
+								// 驗證 hooks.json（有 Slack 才檢查）
+								if (has("slack")) {
+									if (fs.existsSync(path.join(HOME, ".claude/hooks.json"))) {
+										total++;
+										passed++;
+									} else {
+										total++;
+										missing.push("hooks.json");
+									}
+								}
 
-                // 驗證 CLAUDE.md
-                if (plan.projects?.length) {
-                  const { encodeProjectPath } = await import('../config/config-classifier.mjs');
-                  for (const proj of plan.projects) {
-                    if (!proj.localPath) continue;
-                    total++;
-                    const encoded = encodeProjectPath(proj.localPath);
-                    const mdPath = path.join(HOME, '.claude', 'projects', encoded, 'CLAUDE.md');
-                    if (fs.existsSync(mdPath)) passed++;
-                    else missing.push(`CLAUDE.md (${proj.repo.split('/').pop()})`);
-                  }
-                }
+								// 驗證 CLAUDE.md
+								if (plan.projects?.length) {
+									const { encodeProjectPath } = await import(
+										"../config/config-classifier.mjs"
+									);
+									for (const proj of plan.projects) {
+										if (!proj.localPath) continue;
+										total++;
+										const encoded = encodeProjectPath(proj.localPath);
+										const mdPath = path.join(
+											HOME,
+											".claude",
+											"projects",
+											encoded,
+											"CLAUDE.md",
+										);
+										if (fs.existsSync(mdPath)) passed++;
+										else
+											missing.push(`CLAUDE.md (${proj.repo.split("/").pop()})`);
+									}
+								}
 
-                if (!isEmpty(missing)) {
-                  subtask.output = `${passed}/${total} 就位，缺少：${missing.join('、')}`;
-                } else {
-                  subtask.output = `${passed}/${total} 檔案全部就位 ✓`;
-                }
-              },
-            },
-          ]),
-      },
-    ],
-    {
-      concurrent: false,
-      rendererOptions: {
-        showTimer: true,
-        collapseSubtasks: false,
-        showSubtasks: true,
-      },
-    },
-  );
+								if (!isEmpty(missing)) {
+									subtask.output = `${passed}/${total} 就位，缺少：${missing.join("、")}`;
+								} else {
+									subtask.output = `${passed}/${total} 檔案全部就位 ✓`;
+								}
+							},
+						},
+					]),
+			},
+		],
+		{
+			concurrent: false,
+			rendererOptions: {
+				showTimer: true,
+				collapseSubtasks: false,
+				showSubtasks: true,
+			},
+		},
+	);
 
-  await tasks.run();
+	await tasks.run();
 
-  return { installSelections, syncResult: shared.syncResult, startTime };
+	return { installSelections, syncResult: shared.syncResult, startTime };
 }

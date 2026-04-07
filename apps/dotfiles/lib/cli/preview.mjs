@@ -20,11 +20,11 @@
  *     backup/       ← backup.mjs 處理
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { isEmpty } from 'lodash-es';
-import { cpDir } from '../core/backup.mjs';
-import { mergeSkillFragments } from '../detect/skill-detect.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import { isEmpty } from "lodash-es";
+import { cpDir } from "../core/backup.mjs";
+import { mergeSkillFragments } from "../detect/skill-detect.mjs";
 
 /**
  * 通用 preview staging：按 mapping 複製檔案到 dist/preview/{targetKey}/
@@ -35,19 +35,19 @@ import { mergeSkillFragments } from '../detect/skill-detect.mjs';
  * @returns {string} 生成的目標目錄絕對路徑
  */
 export function stagePreview(previewDir, targetKey, mapping) {
-  const targetDir = path.join(previewDir, targetKey);
-  fs.mkdirSync(targetDir, { recursive: true });
+	const targetDir = path.join(previewDir, targetKey);
+	fs.mkdirSync(targetDir, { recursive: true });
 
-  for (const [rel, src] of Object.entries(mapping)) {
-    const dest = path.join(targetDir, rel);
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    if (fs.statSync(src).isDirectory()) {
-      cpDir(src, dest);
-    } else {
-      fs.copyFileSync(src, dest);
-    }
-  }
-  return targetDir;
+	for (const [rel, src] of Object.entries(mapping)) {
+		const dest = path.join(targetDir, rel);
+		fs.mkdirSync(path.dirname(dest), { recursive: true });
+		if (fs.statSync(src).isDirectory()) {
+			cpDir(src, dest);
+		} else {
+			fs.copyFileSync(src, dest);
+		}
+	}
+	return targetDir;
 }
 
 /**
@@ -65,95 +65,97 @@ export function stagePreview(previewDir, targetKey, mapping) {
  * @returns {string} 生成的目標目錄
  */
 export function stageClaudePreview(
-  repoDir,
-  previewDir,
-  step,
-  selected,
-  installHooks,
-  skillIds = [],
+	repoDir,
+	previewDir,
+	step,
+	selected,
+	installHooks,
+	skillIds = [],
 ) {
-  const targetDir = path.join(previewDir, 'claude');
-  fs.mkdirSync(targetDir, { recursive: true });
+	const targetDir = path.join(previewDir, "claude");
+	fs.mkdirSync(targetDir, { recursive: true });
 
-  // 複製 commands / agents（合併 skill 片段）
-  for (const [key, def] of Object.entries(step.selectable || {})) {
-    if (!selected[key]?.length) continue;
-    for (const name of selected[key]) {
-      const src = path.join(repoDir, def.dir, `${name}${def.ext}`);
-      if (!fs.existsSync(src)) continue;
-      const subdir = key === 'agents' ? 'agents' : 'commands';
-      const destDir = path.join(targetDir, subdir);
-      fs.mkdirSync(destDir, { recursive: true });
+	// 複製 commands / agents（合併 skill 片段）
+	for (const [key, def] of Object.entries(step.selectable || {})) {
+		if (!selected[key]?.length) continue;
+		for (const name of selected[key]) {
+			const src = path.join(repoDir, def.dir, `${name}${def.ext}`);
+			if (!fs.existsSync(src)) continue;
+			const subdir = key === "agents" ? "agents" : "commands";
+			const destDir = path.join(targetDir, subdir);
+			fs.mkdirSync(destDir, { recursive: true });
 
-      let content = fs.readFileSync(src, 'utf8');
-      if (!isEmpty(skillIds)) {
-        content = mergeSkillFragments(content, skillIds, `${name}${def.ext}`);
-      }
-      fs.writeFileSync(path.join(destDir, `${name}${def.ext}`), content);
-    }
-  }
+			let content = fs.readFileSync(src, "utf8");
+			if (!isEmpty(skillIds)) {
+				content = mergeSkillFragments(content, skillIds, `${name}${def.ext}`);
+			}
+			fs.writeFileSync(path.join(destDir, `${name}${def.ext}`), content);
+		}
+	}
 
-  // rules（合併 skill 片段）
-  if (step.fixed?.rules) {
-    const rulesDir = path.join(repoDir, 'claude/rules');
-    const destRulesDir = path.join(targetDir, 'rules');
-    fs.mkdirSync(destRulesDir, { recursive: true });
-    if (fs.existsSync(rulesDir)) {
-      for (const f of fs.readdirSync(rulesDir).filter((f) => f.endsWith('.md'))) {
-        if (
-          step.fixed.rules === 'all' ||
-          step.fixed.rules.split(',').includes(f.replace('.md', ''))
-        ) {
-          let content = fs.readFileSync(path.join(rulesDir, f), 'utf8');
-          if (!isEmpty(skillIds)) {
-            content = mergeSkillFragments(content, skillIds, f);
-          }
-          fs.writeFileSync(path.join(destRulesDir, f), content);
-        }
-      }
-    }
-  }
+	// rules（合併 skill 片段）
+	if (step.fixed?.rules) {
+		const rulesDir = path.join(repoDir, "claude/rules");
+		const destRulesDir = path.join(targetDir, "rules");
+		fs.mkdirSync(destRulesDir, { recursive: true });
+		if (fs.existsSync(rulesDir)) {
+			for (const f of fs
+				.readdirSync(rulesDir)
+				.filter((f) => f.endsWith(".md"))) {
+				if (
+					step.fixed.rules === "all" ||
+					step.fixed.rules.split(",").includes(f.replace(".md", ""))
+				) {
+					let content = fs.readFileSync(path.join(rulesDir, f), "utf8");
+					if (!isEmpty(skillIds)) {
+						content = mergeSkillFragments(content, skillIds, f);
+					}
+					fs.writeFileSync(path.join(destRulesDir, f), content);
+				}
+			}
+		}
+	}
 
-  // skills（複製整個技能目錄結構）
-  const skillsDir = path.join(repoDir, 'claude/skills');
-  if (fs.existsSync(skillsDir)) {
-    const destSkillsDir = path.join(targetDir, 'skills');
-    fs.mkdirSync(destSkillsDir, { recursive: true });
-    for (const skillName of fs.readdirSync(skillsDir)) {
-      const skillSrcDir = path.join(skillsDir, skillName);
-      if (!fs.statSync(skillSrcDir).isDirectory()) continue;
-      const skillDestDir = path.join(destSkillsDir, skillName);
-      fs.mkdirSync(skillDestDir, { recursive: true });
-      for (const file of fs.readdirSync(skillSrcDir)) {
-        const fileSrc = path.join(skillSrcDir, file);
-        const fileDest = path.join(skillDestDir, file);
-        if (fs.statSync(fileSrc).isDirectory()) {
-          cpDir(fileSrc, fileDest);
-        } else {
-          fs.copyFileSync(fileSrc, fileDest);
-        }
-      }
-    }
-  }
+	// skills（複製整個技能目錄結構）
+	const skillsDir = path.join(repoDir, "claude/skills");
+	if (fs.existsSync(skillsDir)) {
+		const destSkillsDir = path.join(targetDir, "skills");
+		fs.mkdirSync(destSkillsDir, { recursive: true });
+		for (const skillName of fs.readdirSync(skillsDir)) {
+			const skillSrcDir = path.join(skillsDir, skillName);
+			if (!fs.statSync(skillSrcDir).isDirectory()) continue;
+			const skillDestDir = path.join(destSkillsDir, skillName);
+			fs.mkdirSync(skillDestDir, { recursive: true });
+			for (const file of fs.readdirSync(skillSrcDir)) {
+				const fileSrc = path.join(skillSrcDir, file);
+				const fileDest = path.join(skillDestDir, file);
+				if (fs.statSync(fileSrc).isDirectory()) {
+					cpDir(fileSrc, fileDest);
+				} else {
+					fs.copyFileSync(fileSrc, fileDest);
+				}
+			}
+		}
+	}
 
-  // hooks（支援篩選後的 hooks 資料）
-  if (installHooks) {
-    if (typeof installHooks === 'object') {
-      // 篩選後的 hooks 資料
-      fs.writeFileSync(
-        path.join(targetDir, 'hooks.json'),
-        `${JSON.stringify(installHooks, null, 2)}\n`,
-      );
-    } else {
-      // 布林值：直接複製完整 hooks.json
-      const hooksFile = path.join(repoDir, 'claude/hooks.json');
-      if (fs.existsSync(hooksFile)) {
-        fs.copyFileSync(hooksFile, path.join(targetDir, 'hooks.json'));
-      }
-    }
-  }
+	// hooks（支援篩選後的 hooks 資料）
+	if (installHooks) {
+		if (typeof installHooks === "object") {
+			// 篩選後的 hooks 資料
+			fs.writeFileSync(
+				path.join(targetDir, "hooks.json"),
+				`${JSON.stringify(installHooks, null, 2)}\n`,
+			);
+		} else {
+			// 布林值：直接複製完整 hooks.json
+			const hooksFile = path.join(repoDir, "claude/hooks.json");
+			if (fs.existsSync(hooksFile)) {
+				fs.copyFileSync(hooksFile, path.join(targetDir, "hooks.json"));
+			}
+		}
+	}
 
-  return targetDir;
+	return targetDir;
 }
 
 /**
@@ -167,14 +169,19 @@ export function stageClaudePreview(
  * @param {string[]} selectedModules - 用戶選中的模組名稱
  * @returns {string} 生成的目標目錄
  */
-export function stageModulesPreview(repoDir, previewDir, step, selectedModules) {
-  const def = Object.values(step.selectable)[0];
-  const mapping = {};
-  for (const name of selectedModules) {
-    const src = path.join(repoDir, def.dir, `${name}${def.ext}`);
-    if (fs.existsSync(src)) mapping[`modules/${name}${def.ext}`] = src;
-  }
-  const zshrc = path.join(repoDir, 'zsh/zshrc');
-  if (fs.existsSync(zshrc)) mapping.zshrc = zshrc;
-  return stagePreview(previewDir, 'zsh', mapping);
+export function stageModulesPreview(
+	repoDir,
+	previewDir,
+	step,
+	selectedModules,
+) {
+	const def = Object.values(step.selectable)[0];
+	const mapping = {};
+	for (const name of selectedModules) {
+		const src = path.join(repoDir, def.dir, `${name}${def.ext}`);
+		if (fs.existsSync(src)) mapping[`modules/${name}${def.ext}`] = src;
+	}
+	const zshrc = path.join(repoDir, "zsh/zshrc");
+	if (fs.existsSync(zshrc)) mapping.zshrc = zshrc;
+	return stagePreview(previewDir, "zsh", mapping);
 }

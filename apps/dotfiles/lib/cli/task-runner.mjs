@@ -4,8 +4,8 @@
  * 取代 ora spinner + cli-progress，統一所有進度顯示。
  */
 
-import * as p from '@clack/prompts';
-import { Listr } from 'listr2';
+import * as p from "@clack/prompts";
+import { Listr } from "listr2";
 
 /**
  * 輸出階段標題（使用 @clack p.log.step 保持左側流程線一致）
@@ -16,8 +16,8 @@ import { Listr } from 'listr2';
  * @returns {void}
  */
 export function phaseHeader(title, step, total) {
-  const prefix = step ? `Step ${step}/${total} — ` : '';
-  p.log.step(`${prefix}${title}`);
+	const prefix = step ? `Step ${step}/${total} — ` : "";
+	p.log.step(`${prefix}${title}`);
 }
 
 /**
@@ -31,18 +31,18 @@ export function phaseHeader(title, step, total) {
  * @returns {Listr} 已配置的 Listr 實例（尚未執行，需呼叫 .run()）
  */
 export function createTaskList(tasks, opts = {}) {
-  return new Listr(tasks, {
-    concurrent: false,
-    exitOnError: false,
-    rendererOptions: {
-      showTimer: true,
-      collapseSubtasks: false,
-      showSubtasks: true,
-      suffixSkips: true,
-      ...opts.rendererOptions,
-    },
-    ...opts,
-  });
+	return new Listr(tasks, {
+		concurrent: false,
+		exitOnError: false,
+		rendererOptions: {
+			showTimer: true,
+			collapseSubtasks: false,
+			showSubtasks: true,
+			suffixSkips: true,
+			...opts.rendererOptions,
+		},
+		...opts,
+	});
 }
 
 /**
@@ -56,14 +56,14 @@ export function createTaskList(tasks, opts = {}) {
  * @returns {Listr} 已配置的 Listr 實例（尚未執行，需呼叫 .run()）
  */
 export function createConcurrentTasks(tasks, opts = {}) {
-  return new Listr(tasks, {
-    concurrent: true,
-    exitOnError: false,
-    rendererOptions: {
-      showTimer: true,
-      collapseSubtasks: false,
-      ...opts.rendererOptions,
-    },
-    ...opts,
-  });
+	return new Listr(tasks, {
+		concurrent: true,
+		exitOnError: false,
+		rendererOptions: {
+			showTimer: true,
+			collapseSubtasks: false,
+			...opts.rendererOptions,
+		},
+		...opts,
+	});
 }

@@ -6,7 +6,7 @@
  *   - ab-slack-message.plugin 打包
  */
 
-import { spawn } from 'node:child_process';
+import { spawn } from "node:child_process";
 
 /**
  * 構建 Plugin 打包任務陣列
@@ -17,43 +17,55 @@ import { spawn } from 'node:child_process';
  * @returns {Array} Listr2 task 陣列
  */
 export function buildPluginTasks(plan, { repoDir }) {
-  return [
-    {
-      title: '🔌 Plugin 打包 → dist/release/',
-      task: (_, subtask) =>
-        subtask.newListr(
-          [
-            {
-              title: 'ab-claude-dev.plugin',
-              enabled: () => plan.targets.includes('claude-dev'),
-              task: async () => {
-                await new Promise((resolve, reject) => {
-                  const child = spawn('bash', ['scripts/build-claude-dev-plugin.sh'], {
-                    cwd: repoDir,
-                  });
-                  child.on('close', (code) =>
-                    code === 0 ? resolve() : reject(new Error(`執行失敗（代碼 ${code}）`)),
-                  );
-                  child.on('error', reject);
-                });
-              },
-            },
-            {
-              title: 'ab-slack-message.plugin',
-              enabled: () => plan.targets.includes('slack'),
-              task: async () => {
-                await new Promise((resolve, reject) => {
-                  const child = spawn('bash', ['scripts/build-slack-plugin.sh'], { cwd: repoDir });
-                  child.on('close', (code) =>
-                    code === 0 ? resolve() : reject(new Error(`執行失敗（代碼 ${code}）`)),
-                  );
-                  child.on('error', reject);
-                });
-              },
-            },
-          ],
-          { exitOnError: false },
-        ),
-    },
-  ];
+	return [
+		{
+			title: "🔌 Plugin 打包 → dist/release/",
+			task: (_, subtask) =>
+				subtask.newListr(
+					[
+						{
+							title: "ab-claude-dev.plugin",
+							enabled: () => plan.targets.includes("claude-dev"),
+							task: async () => {
+								await new Promise((resolve, reject) => {
+									const child = spawn(
+										"bash",
+										["scripts/build-claude-dev-plugin.sh"],
+										{
+											cwd: repoDir,
+										},
+									);
+									child.on("close", (code) =>
+										code === 0
+											? resolve()
+											: reject(new Error(`執行失敗（代碼 ${code}）`)),
+									);
+									child.on("error", reject);
+								});
+							},
+						},
+						{
+							title: "ab-slack-message.plugin",
+							enabled: () => plan.targets.includes("slack"),
+							task: async () => {
+								await new Promise((resolve, reject) => {
+									const child = spawn(
+										"bash",
+										["scripts/build-slack-plugin.sh"],
+										{ cwd: repoDir },
+									);
+									child.on("close", (code) =>
+										code === 0
+											? resolve()
+											: reject(new Error(`執行失敗（代碼 ${code}）`)),
+									);
+									child.on("error", reject);
+								});
+							},
+						},
+					],
+					{ exitOnError: false },
+				),
+		},
+	];
 }

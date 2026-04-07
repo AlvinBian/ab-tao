@@ -15,27 +15,31 @@
  *   }
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { ALL_AGENTS, ALL_COMMANDS, ALL_RULES } from '../config/config-classifier.mjs';
-import { getDirname, HOME } from './paths.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import {
+	ALL_AGENTS,
+	ALL_COMMANDS,
+	ALL_RULES,
+} from "../config/config-classifier.mjs";
+import { getDirname, HOME } from "./paths.mjs";
 
 const __dirname = getDirname(import.meta);
-const REPO = path.resolve(__dirname, '../..');
-const CLAUDE_DIR = path.join(HOME, '.claude');
-const ZSH_MODULES_DIR = path.join(HOME, '.zsh', 'modules');
+const REPO = path.resolve(__dirname, "../..");
+const CLAUDE_DIR = path.join(HOME, ".claude");
+const ZSH_MODULES_DIR = path.join(HOME, ".zsh", "modules");
 
 const ALL_ZSH_MODULES = [
-  'aliases',
-  'completion',
-  'fzf',
-  'git',
-  'history',
-  'keybindings',
-  'nvm',
-  'plugins',
-  'pnpm',
-  'tools',
+	"aliases",
+	"completion",
+	"fzf",
+	"git",
+	"history",
+	"keybindings",
+	"nvm",
+	"plugins",
+	"pnpm",
+	"tools",
 ];
 
 /**
@@ -44,14 +48,14 @@ const ALL_ZSH_MODULES = [
  * @returns {string[]}
  */
 function scanMdFiles(dir) {
-  try {
-    return fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.md'))
-      .map((f) => f.replace(/\.md$/, ''));
-  } catch {
-    return [];
-  }
+	try {
+		return fs
+			.readdirSync(dir)
+			.filter((f) => f.endsWith(".md"))
+			.map((f) => f.replace(/\.md$/, ""));
+	} catch {
+		return [];
+	}
 }
 
 /**
@@ -60,14 +64,14 @@ function scanMdFiles(dir) {
  * @returns {string[]}
  */
 function scanZshFiles(dir) {
-  try {
-    return fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.zsh'))
-      .map((f) => f.replace(/\.zsh$/, ''));
-  } catch {
-    return [];
-  }
+	try {
+		return fs
+			.readdirSync(dir)
+			.filter((f) => f.endsWith(".zsh"))
+			.map((f) => f.replace(/\.zsh$/, ""));
+	} catch {
+		return [];
+	}
 }
 
 /**
@@ -75,18 +79,18 @@ function scanZshFiles(dir) {
  * @returns {Object}
  */
 function loadEnvValues() {
-  const envPath = path.join(REPO, '.env');
-  const result = {};
-  try {
-    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
-    for (const line of lines) {
-      const m = line.match(/^([A-Z_]+)=(.*)$/);
-      if (m) result[m[1]] = m[2].trim();
-    }
-  } catch {
-    /* no .env */
-  }
-  return result;
+	const envPath = path.join(REPO, ".env");
+	const result = {};
+	try {
+		const lines = fs.readFileSync(envPath, "utf8").split("\n");
+		for (const line of lines) {
+			const m = line.match(/^([A-Z_]+)=(.*)$/);
+			if (m) result[m[1]] = m[2].trim();
+		}
+	} catch {
+		/* no .env */
+	}
+	return result;
 }
 
 /**
@@ -95,71 +99,79 @@ function loadEnvValues() {
  * @returns {Object} ConfigStatus
  */
 export function getConfigStatus() {
-  // ── Claude 配置 ──
-  const installedCommands = scanMdFiles(path.join(CLAUDE_DIR, 'commands'));
-  const installedAgents = scanMdFiles(path.join(CLAUDE_DIR, 'agents'));
-  const installedRules = scanMdFiles(path.join(CLAUDE_DIR, 'rules'));
+	// ── Claude 配置 ──
+	const installedCommands = scanMdFiles(path.join(CLAUDE_DIR, "commands"));
+	const installedAgents = scanMdFiles(path.join(CLAUDE_DIR, "agents"));
+	const installedRules = scanMdFiles(path.join(CLAUDE_DIR, "rules"));
 
-  const claudeExpected = [...ALL_COMMANDS, ...ALL_AGENTS, ...ALL_RULES];
-  const claudeInstalled = [...installedCommands, ...installedAgents, ...installedRules];
-  const claudeMissing = claudeExpected.filter((x) => !claudeInstalled.includes(x));
-  const claudeExtra = claudeInstalled.filter((x) => !claudeExpected.includes(x));
+	const claudeExpected = [...ALL_COMMANDS, ...ALL_AGENTS, ...ALL_RULES];
+	const claudeInstalled = [
+		...installedCommands,
+		...installedAgents,
+		...installedRules,
+	];
+	const claudeMissing = claudeExpected.filter(
+		(x) => !claudeInstalled.includes(x),
+	);
+	const claudeExtra = claudeInstalled.filter(
+		(x) => !claudeExpected.includes(x),
+	);
 
-  // ── ZSH 模組 ──
-  const installedZsh = scanZshFiles(ZSH_MODULES_DIR);
-  const zshMissing = ALL_ZSH_MODULES.filter((m) => !installedZsh.includes(m));
+	// ── ZSH 模組 ──
+	const installedZsh = scanZshFiles(ZSH_MODULES_DIR);
+	const zshMissing = ALL_ZSH_MODULES.filter((m) => !installedZsh.includes(m));
 
-  // ── Slack 配置 ──
-  const env = loadEnvValues();
-  const slack = {
-    mode: env.SLACK_NOTIFY_MODE || null,
-    channel: env.SLACK_NOTIFY_CHANNEL || null,
-  };
+	// ── Slack 配置 ──
+	const env = loadEnvValues();
+	const slack = {
+		mode: env.SLACK_NOTIFY_MODE || null,
+		channel: env.SLACK_NOTIFY_CHANNEL || null,
+	};
 
-  // ── CLAUDE.md 數量 ──
-  let claudeMdCount = 0;
-  const projectsDir = path.join(CLAUDE_DIR, 'projects');
-  const walk = (dir, depth = 0) => {
-    if (depth > 5) return;
-    let entries;
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory()) walk(path.join(dir, entry.name), depth + 1);
-      else if (entry.name === 'CLAUDE.md') claudeMdCount++;
-    }
-  };
-  walk(projectsDir);
+	// ── CLAUDE.md 數量 ──
+	let claudeMdCount = 0;
+	const projectsDir = path.join(CLAUDE_DIR, "projects");
+	const walk = (dir, depth = 0) => {
+		if (depth > 5) return;
+		let entries;
+		try {
+			entries = fs.readdirSync(dir, { withFileTypes: true });
+		} catch {
+			return;
+		}
+		for (const entry of entries) {
+			if (entry.isDirectory()) walk(path.join(dir, entry.name), depth + 1);
+			else if (entry.name === "CLAUDE.md") claudeMdCount++;
+		}
+	};
+	walk(projectsDir);
 
-  // ── 摘要 ──
-  const total = claudeExpected.length + ALL_ZSH_MODULES.length;
-  const missing = claudeMissing.length + zshMissing.length;
-  const ok = total - missing;
-  const pct = total > 0 ? Math.round((ok / total) * 100) : 100;
+	// ── 摘要 ──
+	const total = claudeExpected.length + ALL_ZSH_MODULES.length;
+	const missing = claudeMissing.length + zshMissing.length;
+	const ok = total - missing;
+	const pct = total > 0 ? Math.round((ok / total) * 100) : 100;
 
-  return {
-    claude: {
-      expected: claudeExpected,
-      installed: claudeInstalled,
-      installedCommands,
-      installedAgents,
-      installedRules,
-      missing: claudeMissing,
-      extra: claudeExtra,
-    },
-    claudeMd: { count: claudeMdCount },
-    zsh: {
-      expected: ALL_ZSH_MODULES,
-      installed: installedZsh,
-      missing: zshMissing,
-    },
-    slack,
-    env: {
-      aiModel: env.AI_REPO_MODEL || null,
-    },
-    summary: { ok, total, missing, pct },
-  };
+	return {
+		claude: {
+			expected: claudeExpected,
+			installed: claudeInstalled,
+			installedCommands,
+			installedAgents,
+			installedRules,
+			missing: claudeMissing,
+			extra: claudeExtra,
+		},
+		claudeMd: { count: claudeMdCount },
+		zsh: {
+			expected: ALL_ZSH_MODULES,
+			installed: installedZsh,
+			missing: zshMissing,
+		},
+		slack,
+		env: {
+			aiModel: env.AI_REPO_MODEL || null,
+		},
+		summary: { ok, total, missing, pct },
+	};
 }

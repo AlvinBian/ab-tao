@@ -6,19 +6,19 @@
  */
 
 export {
-  badge,
-  badgeWithDesc,
-  esc,
-  getStyles,
-  renderBackup,
-  renderEcc,
-  renderInstalled,
-  renderOverview,
-  renderStacks,
-  section,
-} from './report/formatters.mjs';
+	badge,
+	badgeWithDesc,
+	esc,
+	getStyles,
+	renderBackup,
+	renderEcc,
+	renderInstalled,
+	renderOverview,
+	renderStacks,
+	section,
+} from "./report/formatters.mjs";
 export {
-  generateReport,
-  openInBrowser,
-  saveReport,
-} from './report/renderer.mjs';
+	generateReport,
+	openInBrowser,
+	saveReport,
+} from "./report/renderer.mjs";

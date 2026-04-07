@@ -6,11 +6,11 @@
  *   採用「合併」而非「覆蓋」策略，保留用戶已有的自訂設定。
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { HOME } from '../core/paths.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import { HOME } from "../core/paths.mjs";
 
-const CLAUDE_DIR = path.join(HOME, '.claude');
+const CLAUDE_DIR = path.join(HOME, ".claude");
 
 /**
  * 部署 settings.json（merge 策略）
@@ -33,50 +33,51 @@ const CLAUDE_DIR = path.join(HOME, '.claude');
  *   isNew: 是否為首次建立（原本不存在）
  */
 export function deploySettings(template) {
-  const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
-  let existing = {};
+	const settingsPath = path.join(CLAUDE_DIR, "settings.json");
+	let existing = {};
 
-  if (fs.existsSync(settingsPath)) {
-    try {
-      existing = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    } catch {
-      /* settings.json 格式錯誤則略過，從空物件合併 */
-    }
-  }
+	if (fs.existsSync(settingsPath)) {
+		try {
+			existing = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+		} catch {
+			/* settings.json 格式錯誤則略過，從空物件合併 */
+		}
+	}
 
-  const merged = { ...existing };
+	const merged = { ...existing };
 
-  // permissions: 完全不動 — 用戶自行在 Claude Code 中配置
-  // ab-tao 不介入 permissions 管理，避免覆蓋用戶偏好
-  if (existing.permissions) {
-    merged.permissions = existing.permissions;
-  }
+	// permissions: 完全不動 — 用戶自行在 Claude Code 中配置
+	// ab-tao 不介入 permissions 管理，避免覆蓋用戶偏好
+	if (existing.permissions) {
+		merged.permissions = existing.permissions;
+	}
 
-  // model/effortLevel: 不寫入，由用戶自行在 Claude Code 中設定
-  if (existing.autoMemoryEnabled === undefined)
-    merged.autoMemoryEnabled = template.autoMemoryEnabled;
+	// model/effortLevel: 不寫入，由用戶自行在 Claude Code 中設定
+	if (existing.autoMemoryEnabled === undefined)
+		merged.autoMemoryEnabled = template.autoMemoryEnabled;
 
-  // env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
-  if (template.env) {
-    merged.env = { ...template.env, ...(existing.env || {}) };
-  }
+	// env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
+	if (template.env) {
+		merged.env = { ...template.env, ...(existing.env || {}) };
+	}
 
-  // statusLine — 不覆蓋已有配置
-  if (!existing.statusLine) {
-    merged.statusLine = {
-      type: 'command',
-      command: '~/.claude/statusline.sh',
-    };
-  }
+	// statusLine — 不覆蓋已有配置
+	if (!existing.statusLine) {
+		merged.statusLine = {
+			type: "command",
+			command: "~/.claude/statusline.sh",
+		};
+	}
 
-  const isNew = !fs.existsSync(settingsPath);
-  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-  fs.writeFileSync(settingsPath, `${JSON.stringify(merged, null, 2)}\n`);
+	const isNew = !fs.existsSync(settingsPath);
+	fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+	fs.writeFileSync(settingsPath, `${JSON.stringify(merged, null, 2)}\n`);
 
-  return {
-    path: settingsPath,
-    permissionsAdded:
-      (merged.permissions?.allow?.length || 0) - (existing.permissions?.allow?.length || 0),
-    isNew,
-  };
+	return {
+		path: settingsPath,
+		permissionsAdded:
+			(merged.permissions?.allow?.length || 0) -
+			(existing.permissions?.allow?.length || 0),
+		isNew,
+	};
 }
