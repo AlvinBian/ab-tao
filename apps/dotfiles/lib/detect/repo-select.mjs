@@ -150,7 +150,7 @@ export async function interactiveRepoSelect(session = null) {
 		`找到 ${pc.green(allRepos.length)} 個倉庫（${selectedSources.join(" + ")}）`,
 	);
 
-	// 5. 分析貢獻度 — 直接查每個 repo 的 contributors（全時間，無遺漏）
+	// 5. 分析貢獻度 — 只查當前用戶的 commits（比 contributors API 更精準）
 	const s2 = p.spinner();
 	s2.start(
 		`📊 分析 ${pc.cyan(username)} 的貢獻度（${allRepos.length} 個 repo）...`,
@@ -160,11 +160,11 @@ export async function interactiveRepoSelect(session = null) {
 		allRepos,
 		async (repo) => {
 			try {
-				const count = await ghAsync(
-					`repos/${repo.fullName}/contributors?per_page=100`,
-					`.[] | select(.login=="${username}") | .contributions`,
+				const raw = await ghAsync(
+					`repos/${repo.fullName}/commits?author=${username}&per_page=100`,
+					"length",
 				);
-				if (count) repo.commits = parseInt(count, 10) || 0;
+				if (raw) repo.commits = parseInt(raw, 10) || 0;
 			} catch {
 				/* skip failed repos */
 			}
