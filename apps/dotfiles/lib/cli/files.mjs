@@ -16,7 +16,7 @@ import path from 'node:path';
  * @param {string} dir - 相對於 repoDir 的目錄路徑
  * @param {string} [ext='.md'] - 檔案副檔名
  * @param {string[]|null} [filter=null] - 白名單（null = 不過濾）
- * @returns {Array<{value: string, label: string, hint: string}>}
+ * @returns {Array<{value: string, label: string, hint: string, deprecated?: boolean}>}
  */
 export function discoverItems(repoDir, dir, ext = '.md', filter = null) {
   const fullDir = path.join(repoDir, dir);
@@ -30,11 +30,14 @@ export function discoverItems(repoDir, dir, ext = '.md', filter = null) {
     const name = f.slice(0, -ext.length);
     const content = fs.readFileSync(path.join(fullDir, f), 'utf8');
     let hint = name;
+    let deprecated = false;
     if (ext === '.md') {
       // 從 YAML frontmatter 的 description 欄位提取摘要，支援 folded scalar（>）格式
       const m = content.match(/^description:\s*>?\s*\n?\s*(.+)/m);
       // 只取第一句（以句號或全形句點分割），避免過長
       if (m) hint = m[1].trim().split(/[。.]/)[0];
+      // 檢查 deprecated 標記
+      deprecated = /^\s*deprecated:\s*true/m.test(content);
     } else {
       // 從 .zsh 檔首行的裝飾性分隔線 `# ── 說明 ──` 提取描述
       const m = content.match(/^#\s*──\s*(.+?)(?:\s*─|$)/m);
@@ -42,7 +45,9 @@ export function discoverItems(repoDir, dir, ext = '.md', filter = null) {
     }
     const label =
       ext === '.zsh' ? name : ext === '.md' && dir.includes('agents') ? `@${name}` : `/${name}`;
-    return { value: name, label, hint };
+    const item = { value: name, label, hint };
+    if (deprecated) item.deprecated = true;
+    return item;
   });
 }
 

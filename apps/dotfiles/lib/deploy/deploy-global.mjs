@@ -2,7 +2,7 @@
  * 全局配置部署 — settings.json 合併
  *
  * 職責：
- *   將 ab-dotfiles 的全局配置安全地部署到 ~/.claude/，
+ *   將 ab-tao 的全局配置安全地部署到 ~/.claude/，
  *   採用「合併」而非「覆蓋」策略，保留用戶已有的自訂設定。
  */
 
@@ -50,7 +50,7 @@ export function deploySettings(template) {
   const merged = { ...existing };
 
   // permissions: 完全不動 — 用戶自行在 Claude Code 中配置
-  // ab-dotfiles 不介入 permissions 管理，避免覆蓋用戶偏好
+  // ab-tao 不介入 permissions 管理，避免覆蓋用戶偏好
   if (existing.permissions) {
     merged.permissions = existing.permissions;
   }
@@ -62,6 +62,14 @@ export function deploySettings(template) {
   // env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
   if (template.env) {
     merged.env = { ...template.env, ...(existing.env || {}) };
+  }
+
+  // statusLine — 不覆蓋已有配置
+  if (!existing.statusLine) {
+    merged.statusLine = {
+      type: 'command',
+      command: '~/.claude/statusline.sh',
+    };
   }
 
   const isNew = !fs.existsSync(settingsPath);

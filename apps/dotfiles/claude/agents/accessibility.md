@@ -15,12 +15,16 @@ description: >
   assistant: "用 accessibility agent 審查 aria、鍵盤導航和色彩對比。"
   </example>
 
+deprecated: true
+replacement: "社區 accessibility-tester"
 model: sonnet
 color: green
 tools: ["Read", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：社區 accessibility-tester
 
 # Accessibility Agent
 

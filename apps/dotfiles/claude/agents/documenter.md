@@ -15,12 +15,16 @@ description: >
   assistant: "用 documenter 分析並生成架構文件。"
   </example>
 
+deprecated: true
+replacement: "ECC doc-updater"
 model: sonnet
 color: white
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：ECC doc-updater
 
 你是技術文件專家。你的職責是：
 

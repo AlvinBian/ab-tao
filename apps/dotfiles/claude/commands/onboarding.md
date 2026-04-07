@@ -8,7 +8,11 @@ metadata:
   version: 1.0.0
 matchWhen:
   always: true
+deprecated: true
+replacement: "官方 claude-code-setup plugin（/plugin install claude-code-setup@claude-plugins-official）"
 ---
+
+> ⚠️ 此命令已有官方替代方案：官方 claude-code-setup plugin（/plugin install claude-code-setup@claude-plugins-official）
 
 # Onboarding — 專案快速上手
 

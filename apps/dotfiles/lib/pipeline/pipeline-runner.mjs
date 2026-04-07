@@ -140,7 +140,7 @@ export async function runAnalysisPipeline({
             const r = await Promise.race([
               analyzeRepo(repo),
               new Promise((_, rej) =>
-                setTimeout(() => rej(new Error('timeout')), GH_REPO_ANALYZE_TIMEOUT),
+                setTimeout(() => rej(new Error('操作超時')), GH_REPO_ANALYZE_TIMEOUT),
               ),
             ]);
             results.push({ status: 'fulfilled', value: r });

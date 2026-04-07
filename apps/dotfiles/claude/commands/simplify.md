@@ -8,7 +8,11 @@ metadata:
   version: 1.0.0
 matchWhen:
   always: true
+deprecated: true
+replacement: "官方 /simplify bundled skill"
 ---
+
+> ⚠️ 此命令已有官方替代方案：官方 /simplify bundled skill
 
 # Simplify
 

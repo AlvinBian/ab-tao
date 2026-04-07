@@ -13,12 +13,17 @@ import { getDescription } from '../config/descriptions.mjs';
 import {
   badge,
   esc,
+  estimateTokenSize,
   getStyles,
   renderBackup,
+  renderClaudeIgnoreStats,
+  renderCleanup,
   renderEcc,
   renderInstalled,
   renderOverview,
+  renderPlugins,
   renderStacks,
+  renderTokenChart,
   section,
 } from './formatters.mjs';
 
@@ -29,17 +34,15 @@ import {
  */
 function renderTabOverview(data) {
   const installed = data.installed || {};
-  const cmdCount = installed.commands?.length || 0;
-  const agentCount = installed.agents?.length || 0;
-  const ruleCount = installed.rules?.length || 0;
-  const moduleCount = installed.modules?.length || 0;
-  const stackCount = data.stacks?.length || 0;
   const repoCount = (data.repos || []).length;
+
+  // 計算 .claudeignore 覆蓋統計
+  const claudeIgnoreStats = renderClaudeIgnoreStats(repoCount);
 
   return `
 <div id="tab-overview" class="tab-content active">
   ${renderOverview(data)}
-  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap">
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
     <div style="flex:1;min-width:280px">
       <h2 class="section-title">安裝概覽</h2>
       <div id="chart-overview-pie" style="height:260px"></div>
@@ -49,6 +52,14 @@ function renderTabOverview(data) {
       <div id="chart-overview-bar" style="height:260px"></div>
     </div>
   </div>
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+      ${claudeIgnoreStats}
+    </div>
+  </div>
+  ${renderTokenChart()}
+  ${renderCleanup(installed, data.auditSummary)}
+  ${renderPlugins(installed)}
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">概覽顯示安裝的總體統計。使用頂部 Tab 導航查看技術棧、專案、安裝詳情、審計日誌。</p>
   </div>
@@ -257,6 +268,21 @@ function renderCharts(data) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, topCount);
 
+  // 計算 Token 消耗分佈（估算值）
+  // 假設文件大小估算：rules ~50KB，commands ~10KB，agents ~15KB，CLAUDE.md ~5KB，memory ~5KB
+  const tokenData = [
+    { name: 'Rules', value: estimateTokenSize(50000), percentage: 0 },
+    { name: 'Agents', value: estimateTokenSize(15000), percentage: 0 },
+    { name: 'Commands', value: estimateTokenSize(10000), percentage: 0 },
+    { name: 'CLAUDE.md', value: estimateTokenSize(5000), percentage: 0 },
+    { name: 'Memory', value: estimateTokenSize(5000), percentage: 0 },
+  ].filter((d) => d.value > 0);
+
+  const totalTokens = tokenData.reduce((sum, item) => sum + item.value, 0);
+  tokenData.forEach((item) => {
+    item.percentage = totalTokens > 0 ? ((item.value / totalTokens) * 100).toFixed(1) : 0;
+  });
+
   const chartConfig = {
     techFreq: topStacks.map(([name, count]) => ({ name, value: count })),
     overview: [
@@ -277,6 +303,7 @@ function renderCharts(data) {
         skipped: Object.values(s.skipped || {}).reduce((a, b) => a + (b?.length || 0), 0),
       })),
     ],
+    tokenDistribution: tokenData,
   };
 
   return `
@@ -393,6 +420,48 @@ function initOverviewBar() {
   window.addEventListener('resize', () => chart.resize());
 }
 
+function initTokenChart() {
+  const dom = document.getElementById('chart-token-distribution');
+  if (!dom || !dom.offsetParent || dom._echarts) return;
+  if (!chartConfig.tokenDistribution || chartConfig.tokenDistribution.length === 0) return;
+  const chart = echarts.init(dom);
+  dom._echarts = chart;
+  const colors = ['#58a6ff', '#bc8cff', '#3fb950', '#f0883e', '#f778ba'];
+  const option = {
+    backgroundColor: 'transparent',
+    textStyle: { color: '#8b949e' },
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        if (params.data) {
+          return params.data.name + ': ' + params.data.value + ' Tokens (' + params.data.percentage + '%)';
+        }
+        return params.name;
+      }
+    },
+    legend: { bottom: 0, textStyle: { color: '#8b949e' } },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '60%'],
+      data: chartConfig.tokenDistribution.map(d => ({
+        value: d.value,
+        name: d.name,
+        percentage: d.percentage
+      })),
+      label: {
+        color: '#c9d1d9',
+        formatter: function(params) {
+          return params.name + '\\n' + params.value + 'T';
+        }
+      },
+      itemStyle: { borderColor: '#0d1117', borderWidth: 2 },
+      color: colors
+    }]
+  };
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+}
+
 // 搜尋功能
 const searchInput = document.getElementById('search');
 if (searchInput) {
@@ -418,6 +487,7 @@ if (searchInput) {
 // 初始化概覽 Tab 圖表（首屏）
 initOverviewPie();
 initOverviewBar();
+initTokenChart();
 </script>`;
 }
 
@@ -463,17 +533,17 @@ export function generateReport(data) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ab-dotfiles 安裝報告</title>
+<title>ab-tao 安裝報告</title>
 <style>${getStyles()}</style>
 </head>
 <body>
 <div class="container">
 <header>
-  <h1>ab-dotfiles 安裝報告</h1>
+  <h1>ab-tao 安裝報告</h1>
   <div class="ts">${esc(ts)}</div>
 </header>
 ${body}
-<footer>Generated by ab-dotfiles · Powered by ECharts</footer>
+<footer>Generated by ab-tao · Powered by ECharts</footer>
 </div>
 </body>
 </html>`;

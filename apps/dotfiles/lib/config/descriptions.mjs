@@ -1,7 +1,7 @@
 /**
  * 配置項描述
  *
- * ab-dotfiles 管理的項目：硬編碼中文描述（穩定）
+ * ab-tao 管理的項目：硬編碼中文描述（穩定）
  * ECC/第三方 + 技術棧：AI 生成 → 快取到 .cache/descriptions.json
  * 快取一次生成，後續直接讀取
  */
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
 
-// ── ab-dotfiles 管理的配置描述（穩定）──
+// ── ab-tao 管理的配置描述（穩定）──
 
 const AB_DESCRIPTIONS = {
   // Commands
@@ -35,18 +35,20 @@ const AB_DESCRIPTIONS = {
   'test-gen': '自動生成單元測試',
   // Agents
   coder: '功能開發實作',
-  reviewer: '深度 code review',
-  tester: '生成測試、跑測試',
+  reviewer: '[已有替代] 深度 code review',
+  tester: '[已有替代] 生成測試、跑測試',
   debugger: '定位修復 bug',
-  planner: '設計方案、拆解任務',
+  planner: '[已有替代] 設計方案、拆解任務',
   deployer: 'PR + Release 流程',
-  documenter: '生成 API 文件',
-  explorer: '快速搜索 codebase',
+  documenter: '[已有替代] 生成 API 文件',
+  explorer: '[已有替代] 快速搜索 codebase',
   security: '安全漏洞掃描',
   migrator: '版本遷移升級',
   'perf-analyzer': '效能瓶頸分析',
   monitor: '日誌分析、效能檢查',
-  refactor: '重構優化代碼',
+  refactor: '[已有替代] 重構優化代碼',
+  accessibility: '[已有替代] WCAG 2.1 無障礙審查',
+  'typescript-reviewer': '[已有替代] TypeScript 型別審查',
   // Rules
   'code-style': '格式、命名、函式規範',
   'git-workflow': 'Conventional Commits + 分支',
@@ -118,7 +120,6 @@ const AB_DESCRIPTIONS = {
   'refactor-cleaner': '死代碼清理與整合',
   'security-reviewer': '安全漏洞偵測',
   'tdd-guide': '測試驅動開發引導',
-  'typescript-reviewer': 'TypeScript/JS 型別審查',
   // ── ECC Rules ──
   agents: 'Agent 使用規範',
   'coding-style': '編碼風格規範',
@@ -206,7 +207,7 @@ function readFrontmatterDesc(filePath) {
 /**
  * 取得配置項的中文描述
  *
- * 優先順序：ab-dotfiles 硬編碼 → 快取 → 即時讀 frontmatter → 空字串
+ * 優先順序：ab-tao 硬編碼 → 快取 → 即時讀 frontmatter → 空字串
  * frontmatter 讀到後會寫入快取，下次不再讀檔。
  *
  * @param {string} name - 配置項名稱（例如 'code-review'）
@@ -215,7 +216,7 @@ function readFrontmatterDesc(filePath) {
  * @returns {string} 描述文字，無描述時返回空字串
  */
 export function getDescription(name, type, claudeDir) {
-  // 1. ab-dotfiles 自己的
+  // 1. ab-tao 自己的
   if (AB_DESCRIPTIONS[name]) return AB_DESCRIPTIONS[name];
 
   // 2. 快取

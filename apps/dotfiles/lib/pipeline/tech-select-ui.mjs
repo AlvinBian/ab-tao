@@ -177,13 +177,6 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
       };
     });
 
-    const preselectedCats =
-      prev?.techCategories?.length > 0
-        ? prev.techCategories.filter((c) => sortedCats.includes(c))
-        : sortedCats.filter((cat) =>
-            [...categorizedTechs.get(cat).keys()].some((id) => preselectedTechs.has(id)),
-          );
-
     const selCats = await multiselectWithAll({
       message: '選擇技術棧分類',
       options: catOpts,
@@ -198,7 +191,6 @@ export async function selectTechStacks(categorizedTechs, prev, primaryRepo, core
         continue;
       }
 
-      const pre = items.filter((id) => preselectedTechs.has(id));
       const itemOpts = items.map((id) => {
         const entry = techMap.get(id);
         const tags = [];

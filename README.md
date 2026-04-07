@@ -1,5 +1,7 @@
 # ab-tao
 
+[English](README_EN.md) | [简体中文](README_CN.md) | **繁體中文**
+
 Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ## 架構
@@ -42,7 +44,7 @@ pnpm run help              # 查看所有指令
 |------|------|
 | `pnpm run help` | 指令總覽 |
 | `pnpm run build` | 構建所有套件 |
-| `pnpm run test` | 執行測試（48 tests） |
+| `pnpm run test` | 執行測試 |
 | `pnpm run lint` | Biome lint |
 | `pnpm run format` | 格式化 |
 | `pnpm run clean` | 清理快取與 node_modules |
@@ -51,14 +53,14 @@ pnpm run help              # 查看所有指令
 
 | 指令 | 說明 |
 |------|------|
-| `pnpm run d:setup` | 完整環境部署精靈 |
+| `pnpm run d:setup` | 互動式環境部署 + 第三方工具推薦 |
 | `pnpm run d:scan` | 技術棧掃描 + 技能庫生成 |
 | `pnpm run d:doctor` | 環境診斷 |
 | `pnpm run d:status` | 配置狀態儀表板 |
 | `pnpm run d:report` | 瀏覽器 HTML Dashboard |
 | `pnpm run d:restore` | 還原備份 |
 | `pnpm run d:hooks` | Hook 管理 |
-| `pnpm run d:uninstall` | 移除 ab-dotfiles |
+| `pnpm run d:uninstall` | 移除 ab-tao |
 
 ### c: commons（AI 資源同步）
 
@@ -103,7 +105,7 @@ pnpm run release          # 構建 + 發布
 
 ## apps/dotfiles
 
-環境配置層（從 [ab-dotfiles](https://github.com/AlvinBian/ab-dotfiles) v2.1.0 遷入）：
+環境配置層（v1.0.0）：
 
 - **互動式安裝精靈** — 5 階段部署（分析 → 規劃 → 執行 → 完成）
 - **AI 驅動技術棧偵測** — GitHub API + Claude AI 分類 + npm/PyPI/Packagist 查詢
@@ -112,10 +114,45 @@ pnpm run release          # 構建 + 發布
 - **智能資源篩選** — 從 commons 資源池中按技術棧動態匹配，只安裝需要的
 - **Pipeline 架構** — Tier 1 並行抓取 → Tier 2 AI 分類 → 技術棧篩選 → 推薦安裝
 
+## 推薦的第三方工具
+
+setup 完成後會推薦安裝以下工具：
+
+- **RTK** — Bash 輸出壓縮 -89%（`curl -fsSL https://rtk.sh | bash`）
+- **Claude-Mem** — 跨會話記憶（`npx claude-mem install`）
+- **官方 Plugins** — 在 Claude Code 中執行 `/plugin`（code-review · commit-commands · feature-dev · simplify）
+
+## GitFlow
+
+採用標準 GitFlow 分支策略：
+
+| 分支 | 命名格式 | 來源 | 合併到 | 用途 |
+|------|----------|------|--------|------|
+| 主分支 | `main` | - | - | 線上穩定版 |
+| 開發分支 | `develop` | main | - | 日常開發彙總 |
+| 功能分支 | `feature/*` | develop | develop | 開發新功能 |
+| 發布分支 | `release/v*` | develop | main + develop | 提測、發版 |
+| 緊急修復 | `hotfix/*` | main | main + develop | 線上 BUG |
+
+```bash
+# 開發新功能
+git checkout develop && git checkout -b feature/xxx
+
+# 發布版本
+git checkout develop && git checkout -b release/v1.1.0
+
+# 緊急修復
+git checkout main && git checkout -b hotfix/xxx
+```
+
 ## CI/CD
 
-- **PR 檢查** — lint + build + test（`.github/workflows/ci.yml`）
-- **自動同步** — 每週一 03:00 UTC 同步外部資源（`.github/workflows/sync.yml`）
+| Workflow | 觸發 | 說明 |
+|----------|------|------|
+| **CI** | push/PR → main | lint + build + test |
+| **GitFlow** | PR + push + tag | 分支校驗 + commit 校驗 + main→develop 同步 + Release |
+| **Sync** | 每週一 03:00 UTC | 自動同步外部 AI 資源 |
+| **Translate** | README.md 變更 | 自動翻譯 EN + zh-CN |
 
 ## License
 

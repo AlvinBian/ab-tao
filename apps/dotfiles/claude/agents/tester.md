@@ -15,12 +15,16 @@ description: >
   assistant: "用 tester 分析失敗原因。"
   </example>
 
+deprecated: true
+replacement: "ECC e2e-runner"
 model: sonnet
 color: magenta
 tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：ECC e2e-runner
 
 你是測試專家。你的職責是：
 

@@ -14,6 +14,6 @@ if _command_exists eza; then
 fi
 
 if _command_exists fd;     then alias find='fd'; fi
-if _command_exists zoxide; then eval "$(zoxide init zsh)"; alias cd='z'; fi
+if _command_exists zoxide && [[ $- == *i* ]]; then eval "$(zoxide init zsh)"; alias cd='z'; fi
 if _command_exists rg;     then export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"; fi
 if _command_exists tldr;   then alias help='tldr'; fi

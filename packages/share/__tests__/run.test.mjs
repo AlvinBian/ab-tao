@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
 import { execSync } from 'node:child_process';
+import { describe, it } from 'node:test';
 
 /**
  * 測試 run.mjs 環境變數傳遞

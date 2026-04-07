@@ -10,12 +10,17 @@ export {
   badge,
   badgeWithDesc,
   esc,
+  estimateTokenSize,
   getStyles,
   renderBackup,
+  renderClaudeIgnoreStats,
+  renderCleanup,
   renderEcc,
   renderInstalled,
   renderOverview,
+  renderPlugins,
   renderStacks,
+  renderTokenChart,
   section,
 } from './formatters.mjs';
 export {

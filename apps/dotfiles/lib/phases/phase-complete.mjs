@@ -24,7 +24,7 @@ import { generateReport, openInBrowser, saveReport } from '../report.mjs';
  *
  * @param {Object} plan - generateInstallPlan 產出的安裝計畫
  * @param {Object} opts
- * @param {string} opts.repoDir - ab-dotfiles 根目錄（用於報告相對路徑）
+ * @param {string} opts.repoDir - @ab-tao/dotfiles 根目錄（用於報告相對路徑）
  * @param {Object} opts.installSelections - phaseExecute 回傳的安裝選項（commands/agents/rules/hooks/modules）
  * @param {Object|null} opts.syncResult - ECC 同步結果（buildSyncResult 產出）
  * @param {number} opts.startTime - 安裝開始時間戳（Date.now()）
@@ -35,7 +35,15 @@ import { generateReport, openInBrowser, saveReport } from '../report.mjs';
  */
 export async function phaseComplete(
   plan,
-  { repoDir, installSelections, syncResult, startTime, pipelineResult, projectFolders, selectedAiSources },
+  {
+    repoDir,
+    installSelections,
+    syncResult,
+    startTime,
+    pipelineResult,
+    projectFolders,
+    selectedAiSources,
+  },
 ) {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const isManual = plan.mode === 'manual';
@@ -141,6 +149,71 @@ export async function phaseComplete(
       '  💡 進入 repo 目錄，Claude 自動載入專案配置',
     ].join('\n'),
   );
+
+  // 三層推薦系統 — 根據 techStacks 動態生成 LSP 推薦
+  const buildLspRecommendations = (techStacks = []) => {
+    const recommended = [];
+    if (techStacks.some((s) => s.includes('typescript') || s.includes('javascript'))) {
+      recommended.push('TypeScript LSP');
+    }
+    if (techStacks.some((s) => s.includes('python'))) {
+      recommended.push('Python (Pyright) LSP');
+    }
+    if (techStacks.some((s) => s.includes('go'))) {
+      recommended.push('Go (gopls) LSP');
+    }
+    if (techStacks.some((s) => s.includes('rust'))) {
+      recommended.push('Rust (rust-analyzer) LSP');
+    }
+
+    return recommended.length > 0
+      ? `LSP 按語言：${recommended.join('、')}`
+      : 'LSP 按語言：/plugin 中搜索 language server';
+  };
+
+  const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
+
+  // 第一層：Token 優化（強烈推薦）
+  const tier1 = [
+    '  ── Token 優化（強烈推薦）──',
+    '    RTK               Bash 輸出壓縮 -89%，100+ 命令',
+    '                      curl -fsSL https://rtk.sh | bash && rtk init -g',
+    '    Claude-Mem         跨會話記憶 + 語義搜索',
+    '                      npx claude-mem install',
+  ];
+
+  // 第二層：官方 Plugins
+  const tier2 = [
+    '  ── 官方 Plugins ──',
+    '    code-review        多 agent 並行 PR 審查',
+    '    commit-commands    /commit-push-pr 一鍵提交',
+    '    feature-dev        7 階段結構化開發',
+    '    hookify            分析對話自動生成 hooks',
+    '    ralph-wiggum       自動恢復被中斷的會話',
+    '    security-guidance  編輯時安全提醒',
+    '',
+    '    安裝：在 Claude Code 中執行 /plugin',
+  ];
+
+  // 第三層：增強工具（可選）
+  const tier3 = [
+    '  ── 增強工具（可選）──',
+    '    pilot-shell        質量 hooks（lint+format+typecheck）',
+    '    prompt-improver    提示詞自動優化 -31% token',
+    `    ${lspRecommendations}`,
+  ];
+
+  const recommendationLines = [
+    '💡 推薦安裝（提升 Claude Code 能力）',
+    '',
+    ...tier1,
+    '',
+    ...tier2,
+    '',
+    ...tier3,
+  ];
+
+  p.log.info(recommendationLines.join('\n'));
 
   // 建立 ECC/第三方描述快取（下次 setup 顯示中文描述）
   const { count: descCount, newItems: descNewItems } = buildDescriptionCache(

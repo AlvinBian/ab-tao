@@ -1,4 +1,28 @@
-# ab-dotfiles
+# @ab-tao/dotfiles
+
+## 1.0.0
+
+### 重大變更（從舊版 v2.1.0 遷入 ab-tao monorepo）
+
+- **Monorepo 整合** — dotfiles 從獨立 repo 遷入 ab-tao turborepo，成為 `apps/dotfiles`
+- **Token 優化** — Claude Code context 從 ~45KB 降至 ~12KB（-73%）
+  - Rules 精簡為 4 個（api-and-data 加 paths 條件載入）
+  - Agent 描述全部 ≤150 字元
+  - 5 個 deprecated commands + 8 個 deprecated agents（標記替代方案）
+  - 4 個新 Skills（patterns、performance、slack-mrkdwn、tooling）
+- **ZSH 啟動優化** — 4.3s → 0.74s（-83%）
+  - nvm lazy load + glob 遍歷取代 `sort -V`
+  - fast-syntax-highlighting + zsh-defer 非同步載入
+  - brew --prefix 硬編碼、pyenv lazy load
+- **零污染部署** — .claudeignore、pre-index 全部部署到 `~/.claude/projects/{org}/{repo}/`，不觸碰專案目錄
+- **並行安裝** — Branch A（Claude）/ B（Plugin）/ C（ZSH）concurrent 執行
+- **三層推薦系統** — RTK + Claude-Mem + 官方 Plugins + LSP（依技術棧動態推薦）
+- **Statusline** — 即時顯示 model + context% + cost 的進度條
+- **claudeignore-guard hook** — 兩層忽略（git check-ignore + .claudeignore pattern）
+
+---
+
+## 歷史版本（舊版時期）
 
 ## 2.1.0
 
@@ -70,7 +94,7 @@
   - **Slack 互動設定精靈** — Channel / DM / 關閉三種模式
   - **listr2 進度顯示** — 8 步安裝任務，含子任務和計時
   - **首次安裝原始備份** — `pnpm run restore-original` 可完全還原
-  - **卸載工具** — `pnpm run uninstall` 只移除 ab-dotfiles 管理的配置
+  - **卸載工具** — `pnpm run uninstall` 只移除 ab-tao 管理的配置
   - **hooks 互動管理** — `pnpm run hooks` 啟用/停用個別 hook
   - **ECC 繁體中文描述** — 60+ 項目完整翻譯，runtime 讀取 + 快取
   - **安裝計畫 inline 摘要** — 網格排列，含現有安裝狀態對比

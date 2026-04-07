@@ -25,7 +25,7 @@ const REPO = path.resolve(__dirname, '../..');
 const HOME = process.env.HOME;
 const CLAUDE_DIR = path.join(HOME, '.claude');
 
-// ab-dotfiles 管理的所有配置名稱（所有版本）
+// ab-tao 管理的所有配置名稱（所有版本）
 const ALL_MANAGED = {
   commands: new Set([...ALL_COMMANDS, ...LEGACY_PROJECT_COMMANDS]),
   agents: new Set([...ALL_AGENTS, ...LEGACY_PROJECT_AGENTS]),
@@ -108,7 +108,7 @@ export function detectLegacyInstallation() {
     }
   }
 
-  // 找出非 ab-dotfiles 管理的用戶自訂配置
+  // 找出非 ab-tao 管理的用戶自訂配置
   const userCustomCommands = existingCommands.filter((c) => !ALL_MANAGED.commands.has(c));
   const userCustomAgents = existingAgents.filter((a) => !ALL_MANAGED.agents.has(a));
   const userCustomRules = existingRules.filter((r) => !ALL_MANAGED.rules.has(r));
@@ -197,7 +197,7 @@ export async function runUpgrade(legacyInfo) {
     legacyInfo.userCustomRules.length;
   if (customCount > 0) {
     lines.push('');
-    lines.push(`${idx}. ⚠ ${customCount} 個非 ab-dotfiles 的自訂配置（不會刪除）`);
+    lines.push(`${idx}. ⚠ ${customCount} 個非 ab-tao 的自訂配置（不會刪除）`);
     let ci = 1;
     if (legacyInfo.userCustomCommands.length) {
       lines.push(`   ${idx}.${ci} Commands（${legacyInfo.userCustomCommands.length}）`);
@@ -263,7 +263,7 @@ export async function runUpgrade(legacyInfo) {
 /**
  * 執行增量升級：先備份，再移除殘留在全局目錄的舊版專案級配置
  *
- * 只刪除 ab-dotfiles 管理的配置，保留用戶自訂項目。
+ * 只刪除 ab-tao 管理的配置，保留用戶自訂項目。
  * settings.json 不刪除，由後續 deploySettings 做智能合併。
  *
  * @param {Object} legacyInfo - detectLegacyInstallation 返回的偵測結果
@@ -287,7 +287,7 @@ async function doUpgrade(legacyInfo) {
 
   let removed = 0;
 
-  // 移除全局中的專案級 commands（只刪 ab-dotfiles 管理的，保留用戶自訂）
+  // 移除全局中的專案級 commands（只刪 ab-tao 管理的，保留用戶自訂）
   for (const name of legacyInfo.projectCommandsInGlobal) {
     const filePath = path.join(commandsDir, `${name}.md`);
     if (fs.existsSync(filePath)) {
@@ -348,7 +348,7 @@ async function doClean() {
   if (fs.existsSync(settingsPath)) {
     try {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      // 保留所有用戶自訂欄位（ab-dotfiles 只管 env 和 autoMemoryEnabled）
+      // 保留所有用戶自訂欄位（ab-tao 只管 env 和 autoMemoryEnabled）
       savedUserSettings = {};
       if (settings.permissions) savedUserSettings.permissions = settings.permissions;
       if (settings.hooks) savedUserSettings.hooks = settings.hooks;

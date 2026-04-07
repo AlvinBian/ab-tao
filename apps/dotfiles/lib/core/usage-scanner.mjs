@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
+import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -505,6 +506,174 @@ function parseEnvFile(content) {
     if (m) map.set(m[1], m[2]);
   }
   return map;
+}
+
+/**
+ * 掃描使用統計（30天內最後使用時間、調用次數等）
+ *
+ * @returns {Promise<Map<string, {
+ *   name: string,
+ *   type: 'command' | 'agent',
+ *   callCount: number,
+ *   lastUsed: string|null,
+ *   firstUsed: string|null,
+ *   stale: boolean
+ * }>>}
+ */
+export async function scanUsageStats() {
+  const stats = new Map();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
+
+  if (!fs.existsSync(PROJECTS_DIR)) return stats;
+
+  const projectDirs = fs
+    .readdirSync(PROJECTS_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory());
+
+  for (const projectDir of projectDirs) {
+    const projectPath = path.join(PROJECTS_DIR, projectDir.name);
+    const jsonlFiles = fs
+      .readdirSync(projectPath)
+      .filter((f) => f.endsWith('.jsonl') && !f.includes('subagent'));
+
+    for (const file of jsonlFiles) {
+      const filePath = path.join(projectPath, file);
+      await scanJsonlFileForStats(filePath, stats);
+    }
+  }
+
+  // 標記 stale 項目（30天未使用）
+  for (const item of stats.values()) {
+    if (item.lastUsed && item.lastUsed < thirtyDaysAgoStr) {
+      item.stale = true;
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * 逐行讀取 JSONL 檔案，提取使用統計
+ * 若檔案超過 5MB，只讀最後 1000 行
+ */
+async function scanJsonlFileForStats(filePath, stats) {
+  return new Promise((resolve) => {
+    try {
+      const stat = fs.statSync(filePath);
+      const fileSizeBytes = stat.size;
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+      let input;
+
+      if (fileSizeBytes > MAX_FILE_SIZE) {
+        // 檔案太大，只讀最後 1000 行
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const allLines = fileContent.split('\n');
+        const linesToProcess = allLines.slice(Math.max(0, allLines.length - 1000));
+        input = Readable.from(linesToProcess);
+      } else {
+        input = fs.createReadStream(filePath, { encoding: 'utf8' });
+      }
+
+      const rl = readline.createInterface({
+        input,
+        crlfDelay: Infinity,
+      });
+
+      rl.on('line', (line) => {
+        if (!line.trim()) return;
+        try {
+          const obj = JSON.parse(line);
+          const role = obj.message?.role || obj.role || '';
+          if (role !== 'human') return;
+
+          const timestamp = obj.timestamp || obj.message?.timestamp || null;
+          if (!timestamp) return;
+
+          const texts = extractTexts(obj);
+          for (const text of texts) {
+            // /command 調用
+            const cmdMatches = text.match(/(?:^|\n)\s*\/([a-z][-a-z0-9]*)/g);
+            if (cmdMatches) {
+              for (const m of cmdMatches) {
+                const name = m.replace(/^[\s\n]*\//, '');
+                const key = `cmd:${name}`;
+                if (!stats.has(key)) {
+                  stats.set(key, {
+                    name,
+                    type: 'command',
+                    callCount: 0,
+                    lastUsed: null,
+                    firstUsed: null,
+                    stale: false,
+                  });
+                }
+                const entry = stats.get(key);
+                entry.callCount++;
+                if (!entry.lastUsed || timestamp > entry.lastUsed) entry.lastUsed = timestamp;
+                if (!entry.firstUsed || timestamp < entry.firstUsed) entry.firstUsed = timestamp;
+              }
+            }
+
+            // @agent 調用
+            const agentMatches = text.match(/@([a-z][-a-z0-9]*)/g);
+            if (agentMatches) {
+              for (const m of agentMatches) {
+                const name = m.slice(1);
+                const key = `agent:${name}`;
+                if (!stats.has(key)) {
+                  stats.set(key, {
+                    name,
+                    type: 'agent',
+                    callCount: 0,
+                    lastUsed: null,
+                    firstUsed: null,
+                    stale: false,
+                  });
+                }
+                const entry = stats.get(key);
+                entry.callCount++;
+                if (!entry.lastUsed || timestamp > entry.lastUsed) entry.lastUsed = timestamp;
+                if (!entry.firstUsed || timestamp < entry.firstUsed) entry.firstUsed = timestamp;
+              }
+            }
+          }
+        } catch {
+          /* skip malformed lines */
+        }
+      });
+
+      rl.on('close', resolve);
+      rl.on('error', resolve);
+    } catch {
+      resolve();
+    }
+  });
+}
+
+/**
+ * 估算清理項目的 token 節省量
+ * - commands：每個描述約 100 token
+ * - agents：每個描述約 200 token
+ *
+ * @param {Array<{ type: 'command' | 'agent', name: string }>} items 要清理的項目
+ * @returns {{ tokens: number, kb: number }}
+ */
+export function estimateTokenSavings(items) {
+  let tokenCount = 0;
+  for (const item of items) {
+    if (item.type === 'command') {
+      tokenCount += 100;
+    } else if (item.type === 'agent') {
+      tokenCount += 200;
+    }
+  }
+  // 粗略估算：1 token ≈ 4 bytes
+  const bytes = tokenCount * 4;
+  const kb = bytes / 1024;
+  return { tokens: tokenCount, kb: Math.round(kb * 100) / 100 };
 }
 
 export { formatBytes };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ab-dotfiles v2.1 統一安裝 CLI
+ * ab-tao v2.1 統一安裝 CLI
  *
  * 3 步流程：選 repos → 確認計畫 → 安裝
  */
@@ -31,14 +31,54 @@ const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '..');
 const PREVIEW_DIR = path.join(REPO, 'dist', 'preview');
 
-// 早期檢查 HOME 環境變數
-if (!process.env.HOME) {
-  console.error('❌ 致命錯誤：HOME 環境變數未設置');
-  console.error(
-    '   請確認 shell 環境正常、PATH 已設置。若使用 macOS，可嘗試：',
-  );
-  console.error('   export HOME=$(eval echo ~)');
-  process.exit(1);
+/**
+ * 確保環境就緒：備份原始配置 + 環境檢查
+ */
+async function ensureSetupEnvironment() {
+  // 備份原始配置（首次使用）
+  const { ensureOriginalBackup } = await import('./backup-original.mjs');
+  const origBackup = ensureOriginalBackup();
+  if (origBackup && origBackup.length > 0) {
+    p.log.success(
+      `首次使用：已備份原始配置 → ~/.ab-tao-original/\n${origBackup.map((r) => `  ${r}`).join('\n')}\n還原指令：pnpm run restore → 選擇「完全還原」`,
+    );
+  }
+
+  // 環境檢查 + 預熱 CLI
+  phaseHeader('🔍 環境檢查');
+  await ensureEnvironment();
+  warmupCli();
+}
+
+/**
+ * 執行安裝管線：分析 + 執行 + 完成
+ */
+async function runInstallPipeline(
+  plan,
+  { repoDir, previewDir, targets, prev, projectFolders, selectedAiSources },
+) {
+  phaseHeader('🚀 安裝中', 3, 3);
+  const { installSelections, syncResult, startTime } = await phaseExecute(plan, {
+    repoDir,
+    previewDir,
+    targets,
+    prev,
+    pipelineResult: plan._pipelineResult || null,
+    fetchedSources: plan._fetchedSources || null,
+  });
+
+  phaseHeader('✅ 完成', 3, 3);
+  await phaseComplete(plan, {
+    repoDir,
+    installSelections,
+    syncResult,
+    startTime,
+    pipelineResult: plan._pipelineResult || null,
+    projectFolders,
+    selectedAiSources,
+  });
+
+  return { installSelections, syncResult, startTime };
 }
 
 function loadConfig() {
@@ -104,10 +144,10 @@ async function main() {
   console.log();
   if (prev) {
     p.intro(
-      ` ab-dotfiles v${APP_VERSION} — 上次：${prev.repos?.length ?? 0} repos · ${prev.techStacks?.length ?? 0} stacks · ${prev.timestamp?.slice(0, 10) || ''} `,
+      ` ab-tao v${APP_VERSION} — 上次：${prev.repos?.length ?? 0} repos · ${prev.techStacks?.length ?? 0} stacks · ${prev.timestamp?.slice(0, 10) || ''} `,
     );
   } else {
-    p.intro(` ab-dotfiles v${APP_VERSION} 安裝精靈 `);
+    p.intro(` ab-tao v${APP_VERSION} 安裝精靈 `);
   }
 
   // 舊版安裝偵測（延後到用戶選擇安裝/調整後再執行）
@@ -122,29 +162,32 @@ async function main() {
     }
   }
 
-  // 共用：用上次 session 快速重裝（--quick 和 reinstall 共享邏輯）
+  // 快速重裝（--quick 和 reinstall 共享邏輯）
   async function runQuickInstall({
     prev: sessionPrev,
     flagManual: isManual,
     sources: srcs,
     targets: tgts,
     projectFolders: folders,
-    selectedAiSources: selectedAis = [],
+    selectedAiSources: selectedAis,
   }) {
     if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
 
-    // 首次使用：備份原始配置（~/.zshrc、~/.claude/ 等）
-    const { ensureOriginalBackup } = await import('./backup-original.mjs');
-    const origBackup = ensureOriginalBackup();
-    if (origBackup && origBackup.length > 0) {
-      p.log.success(
-        `首次使用：已備份原始配置 → ~/.ab-dotfiles-original/\n${origBackup.map((r) => `  ${r}`).join('\n')}\n還原指令：pnpm run restore → 選擇「完全還原」`,
-      );
-    }
+    // 環境準備
+    await ensureSetupEnvironment();
 
-    phaseHeader('🔍 環境檢查');
-    await ensureEnvironment();
-    warmupCli();
+    // 為舊 session 補全新欄位的 default 值
+    if (!sessionPrev.features) sessionPrev.features = [];
+    if (!sessionPrev.techStacks) sessionPrev.techStacks = [];
+    if (!sessionPrev.install) {
+      sessionPrev.install = {
+        commands: [],
+        agents: [],
+        rules: [],
+        hooks: [],
+        modules: [],
+      };
+    }
 
     // 用 session 重建 repo 物件
     if (!sessionPrev.roles) p.log.warn('⚠️ 上次 session 無角色資訊，全部預設為 🔄 臨時');
@@ -183,26 +226,16 @@ async function main() {
 
     if (isManual) plan.mode = 'manual';
 
-    phaseHeader('🚀 安裝中');
-    const { installSelections, syncResult, startTime } = await phaseExecute(plan, {
+    // 執行安裝管線
+    await runInstallPipeline(plan, {
       repoDir: REPO,
       previewDir: PREVIEW_DIR,
       targets: tgts,
       prev: sessionPrev,
-      pipelineResult: plan._pipelineResult || null,
-      fetchedSources: plan._fetchedSources || null,
-    });
-
-    phaseHeader('✅ 完成', 3, 3);
-    await phaseComplete(plan, {
-      repoDir: REPO,
-      installSelections,
-      syncResult,
-      startTime,
-      pipelineResult: plan._pipelineResult || null,
       projectFolders: folders,
       selectedAiSources: selectedAis,
     });
+
     p.outro('設定完成');
   }
 
@@ -309,7 +342,7 @@ async function main() {
         );
       }
       if (claude.extra.length > 0) {
-        lines.push(pc.dim(`  額外 ${claude.extra.length} 個（非 ab-dotfiles 管理）`));
+        lines.push(pc.dim(`  額外 ${claude.extra.length} 個（非 ab-tao 管理）`));
       }
 
       // ── ZSH 環境模組 ──
@@ -411,19 +444,8 @@ async function main() {
   // 舊配置偵測（新安裝流程入口）
   await runLegacyCheckIfNeeded();
 
-  // 首次使用：備份原始配置（~/.zshrc、~/.claude/ 等）
-  const { ensureOriginalBackup } = await import('./backup-original.mjs');
-  const origBackup = ensureOriginalBackup();
-  if (origBackup && origBackup.length > 0) {
-    p.log.success(
-      `首次使用：已備份原始配置 → ~/.ab-dotfiles-original/\n${origBackup.map((r) => `  ${r}`).join('\n')}\n還原指令：pnpm run restore → 選擇「完全還原」`,
-    );
-  }
-
-  // 環境檢查
-  phaseHeader('🔍 環境檢查');
-  await ensureEnvironment();
-  warmupCli();
+  // 環境準備
+  await ensureSetupEnvironment();
 
   // ── 功能選擇 ──
   const featureChoices = [
@@ -773,15 +795,14 @@ async function main() {
     // --manual
     if (flagManual) confirmedPlan.mode = 'manual';
 
-    // 安裝
-    phaseHeader('🚀 安裝中', 3, 3);
-    const { installSelections, syncResult, startTime } = await phaseExecute(confirmedPlan, {
+    // 執行安裝管線
+    await runInstallPipeline(confirmedPlan, {
       repoDir: REPO,
       previewDir: PREVIEW_DIR,
       targets,
       prev,
-      pipelineResult: confirmedPlan._pipelineResult || null,
-      fetchedSources: confirmedPlan._fetchedSources || null,
+      projectFolders,
+      selectedAiSources,
     });
 
     // 安裝成功 — 寫入暫存的 Slack 配置
@@ -803,35 +824,7 @@ async function main() {
       fs.writeFileSync(envPath, envContent);
     }
 
-    // Step 3：完成
-    phaseHeader('✅ 完成', 3, 3);
-    await phaseComplete(confirmedPlan, {
-      repoDir: REPO,
-      installSelections,
-      syncResult,
-      startTime,
-      pipelineResult: confirmedPlan._pipelineResult || null,
-      projectFolders,
-      selectedAiSources,
-    });
-
     break;
-  }
-
-  // 檢查 ~/.zshrc 是否為最新模板（可能用戶只選了 Claude 沒選 ZSH）
-  const zshrcTemplate = path.join(REPO, 'zsh', 'zshrc');
-  const zshrcInstalled = path.join(HOME, '.zshrc');
-  if (fs.existsSync(zshrcTemplate) && fs.existsSync(zshrcInstalled)) {
-    const tpl = fs.readFileSync(zshrcTemplate, 'utf8');
-    const cur = fs.readFileSync(zshrcInstalled, 'utf8');
-    // 檢查關鍵行是否存在
-    if (!cur.includes('.local/bin') && tpl.includes('.local/bin')) {
-      p.log.warn(
-        `~/.zshrc 缺少 ~/.local/bin PATH（Claude CLI 官方安裝路徑）\n` +
-          `  執行 ${pc.cyan('pnpm run setup')} 並選擇 ZSH 模組可自動修復\n` +
-          `  或手動加入：${pc.dim('[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"')}`,
-      );
-    }
   }
 
   p.outro('設定完成');

@@ -16,7 +16,7 @@ export const commands = {
   report: '瀏覽器 HTML Dashboard',
   restore: '還原備份',
   hooks: 'Hook 管理',
-  uninstall: '移除 ab-dotfiles',
+  uninstall: '移除 ab-tao',
 };
 
 export const aliases = {};

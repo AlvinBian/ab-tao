@@ -52,7 +52,7 @@ export function stagePreview(previewDir, targetKey, mapping) {
 /**
  * 為 install-claude 步驟生成 preview 檔案
  *
- * 處理 commands / agents / rules / hooks 的複製，
+ * 處理 commands / agents / rules / skills / hooks 的複製，
  * 並將匹配的 skill 片段合併到 commands 和 rules 中。
  *
  * @param {string} repoDir - 專案根目錄
@@ -108,6 +108,28 @@ export function stageClaudePreview(
             content = mergeSkillFragments(content, skillIds, f);
           }
           fs.writeFileSync(path.join(destRulesDir, f), content);
+        }
+      }
+    }
+  }
+
+  // skills（複製整個技能目錄結構）
+  const skillsDir = path.join(repoDir, 'claude/skills');
+  if (fs.existsSync(skillsDir)) {
+    const destSkillsDir = path.join(targetDir, 'skills');
+    fs.mkdirSync(destSkillsDir, { recursive: true });
+    for (const skillName of fs.readdirSync(skillsDir)) {
+      const skillSrcDir = path.join(skillsDir, skillName);
+      if (!fs.statSync(skillSrcDir).isDirectory()) continue;
+      const skillDestDir = path.join(destSkillsDir, skillName);
+      fs.mkdirSync(skillDestDir, { recursive: true });
+      for (const file of fs.readdirSync(skillSrcDir)) {
+        const fileSrc = path.join(skillSrcDir, file);
+        const fileDest = path.join(skillDestDir, file);
+        if (fs.statSync(fileSrc).isDirectory()) {
+          cpDir(fileSrc, fileDest);
+        } else {
+          fs.copyFileSync(fileSrc, fileDest);
         }
       }
     }

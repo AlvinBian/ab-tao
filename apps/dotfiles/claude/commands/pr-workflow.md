@@ -8,7 +8,11 @@ metadata:
   version: 2.0.0
 matchWhen:
   always: true
+deprecated: true
+replacement: "官方 commit-commands plugin（/plugin install commit-commands@claude-plugins-official）"
 ---
+
+> ⚠️ 此命令已有官方替代方案：官方 commit-commands plugin（/plugin install commit-commands@claude-plugins-official）
 
 # PR Workflow
 

@@ -50,7 +50,7 @@ describe('validateFileContent', () => {
   });
 
   it('可執行檔中的 Function() 應被攔截', () => {
-    const result = validateFileContent('test.json', '{"cmd": "new Function(\\"alert\\")"}');
+    const result = validateFileContent('test.sh', 'new Function("alert")');
     assert.equal(result.valid, false);
   });
 
@@ -60,8 +60,16 @@ describe('validateFileContent', () => {
     assert.ok(result.errors.some((e) => e.message.includes('rm -rf')));
   });
 
-  it('json 檔中的 dynamic import 應被攔截', () => {
+  it('json 檔中的 dynamic import 應為警告（配置檔非可執行）', () => {
     const result = validateFileContent('hooks.json', '{"cmd": "import(\\"evil\\")"}');
+    assert.equal(result.valid, true);
+    assert.ok(result.warnings.some((w) => w.message.includes('dynamic import/require')));
+  });
+
+  it('strict 模式下 json 檔中的 dynamic import 應被攔截', () => {
+    const result = validateFileContent('hooks.json', '{"cmd": "import(\\"evil\\")"}', {
+      strict: true,
+    });
     assert.equal(result.valid, false);
   });
 

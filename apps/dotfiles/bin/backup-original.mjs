@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * 首次使用前備份原始配置 → ~/.ab-dotfiles-original/
+ * 首次使用前備份原始配置 → ~/.ab-tao-backup-original/
  *
  * 備份：~/.zshrc、~/.claude/（整個目錄）
  * 只在首次執行，已有備份不覆蓋。
+ * 向下相容：舊目錄 ~/.ab-dotfiles-original/ 會自動遷移。
  */
 
 import fs from 'node:fs';
@@ -12,7 +13,8 @@ import path from 'node:path';
 import * as p from '@clack/prompts';
 
 const HOME = process.env.HOME;
-const BACKUP_DIR = path.join(HOME, '.ab-dotfiles-original');
+const BACKUP_DIR = path.join(HOME, '.ab-tao-backup-original');
+const LEGACY_BACKUP_DIR = path.join(HOME, '.ab-dotfiles-original');
 
 function backupItem(src, destName) {
   const dest = path.join(BACKUP_DIR, destName);
@@ -29,6 +31,15 @@ function backupItem(src, destName) {
 }
 
 export function ensureOriginalBackup() {
+  // 向下相容：舊目錄遷移
+  if (fs.existsSync(LEGACY_BACKUP_DIR) && !fs.existsSync(BACKUP_DIR)) {
+    try {
+      fs.renameSync(LEGACY_BACKUP_DIR, BACKUP_DIR);
+    } catch {
+      // 若遷移失敗，繼續用舊目錄
+    }
+  }
+
   if (fs.existsSync(BACKUP_DIR)) {
     // 檢查備份是否完整（若有新增項目但備份缺失，補備份）
     const TIMESTAMP_FILE = path.join(BACKUP_DIR, '.timestamp');

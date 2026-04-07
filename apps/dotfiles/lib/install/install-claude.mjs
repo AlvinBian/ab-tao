@@ -27,7 +27,7 @@ import { buildCmdArgs, selectItems } from './common.mjs';
  * 轉換為 smartSelect 可用的選項格式，讓用戶選擇要啟用的 hooks。
  * flagAll 模式下自動全選，不顯示互動選單。
  *
- * @param {string} repoDir - ab-dotfiles 根目錄
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
  * @param {string} stepLabel - 步驟前綴標籤（用於顯示）
  * @param {boolean} flagAll - 是否全自動安裝（跳過互動）
  * @param {Object|null} session - 上次 session（用於預選）
@@ -94,7 +94,7 @@ async function selectHooks(repoDir, stepLabel, flagAll, session) {
  *
  * 依序執行：選擇 commands/agents/rules → 選擇 hooks → 生成 preview → 執行安裝腳本。
  *
- * @param {string} repoDir - ab-dotfiles 根目錄
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
  * @param {string} previewDir - dist/preview 路徑
  * @param {Object} step - config.json 中的 step 定義
  * @param {string} stepLabel - 步驟前綴標籤（如 '[1/3] '）
@@ -208,6 +208,16 @@ export async function handleInstallClaude(
       );
     }
   }
+  // 列出 skills
+  const skillsDir = path.join(repoDir, 'claude/skills');
+  if (fs.existsSync(skillsDir)) {
+    for (const skillName of fs.readdirSync(skillsDir)) {
+      const skillPath = path.join(skillsDir, skillName);
+      if (fs.statSync(skillPath).isDirectory()) {
+        allItems.push(`skills/${skillName}/SKILL.md`);
+      }
+    }
+  }
   if (installHooks && selectedHooks) {
     for (const [event, matchers] of Object.entries(selectedHooks.hooks || {})) {
       for (const m of matchers) {
@@ -234,7 +244,7 @@ export async function handleInstallClaude(
   // 執行安裝
   for (const [key, values] of Object.entries(selected)) {
     if (values?.some((v) => /[;&|`$]/.test(v))) {
-      throw new Error(`Invalid characters in ${key} selection`);
+      throw new Error(`選項 ${key} 中包含無效字元`);
     }
   }
   p.log.info(`${stepLabel}安裝 ${summaryParts.join(' · ')}${hooksLabel} → ~/.claude/`);

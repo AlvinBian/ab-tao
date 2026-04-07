@@ -118,7 +118,7 @@ done
 
 if $NEEDS_BREW && command -v brew &>/dev/null; then
   step "安裝 Homebrew CLI 工具"
-  BREW_TOOLS=(fzf zoxide bat eza fd git-delta lazygit tldr ripgrep zsh-autosuggestions zsh-syntax-highlighting)
+  BREW_TOOLS=(fzf zoxide bat eza fd git-delta lazygit tldr ripgrep zsh-autosuggestions zsh-fast-syntax-highlighting zsh-defer)
   for tool in $BREW_TOOLS; do
     brew list "$tool" &>/dev/null 2>&1 \
       && info "$tool 已安裝" \
@@ -167,8 +167,8 @@ if [[ -f ~/.zshrc ]]; then
 
   # 自動遷移：從舊 .zshrc 提取個人設定到 ~/.zshrc.local（不會被覆蓋）
   if [[ ! -f ~/.zshrc.local ]]; then
-    # ab-dotfiles 內部識別碼 — 這些行不屬於使用者個人設定
-    local _ab_internal='ab-dotfiles|BREW_PREFIX|PYENV_ROOT|_zsh_module|_safe_source|_command_exists|\.zsh/modules|zsh/modules|ZSH_DIR|SELECTED_MODULES|_AB_'
+    # ab-tao 內部識別碼 — 這些行不屬於使用者個人設定
+    local _ab_internal='ab-tao|ab-dotfiles|BREW_PREFIX|PYENV_ROOT|_zsh_module|_safe_source|_command_exists|\.zsh/modules|zsh/modules|ZSH_DIR|SELECTED_MODULES|_AB_'
     # 擷取策略：
     #   1. export / alias / 任意變數賦值（含小寫、含引號）
     #   2. PATH += / path += / typeset -x
@@ -181,7 +181,7 @@ if [[ -f ~/.zshrc ]]; then
       > ~/.zshrc.local 2>/dev/null || true
     if [[ -s ~/.zshrc.local ]]; then
       echo "" >> ~/.zshrc.local
-      echo "# ── 以上由 ab-dotfiles 從舊 .zshrc 自動遷移 ──" >> ~/.zshrc.local
+      echo "# ── 以上由 ab-tao 從舊 .zshrc 自動遷移 ──" >> ~/.zshrc.local
       echo "# 如有遺漏請查看備份：ls ~/.zshrc.backup.*" >> ~/.zshrc.local
       info "個人設定已遷移到 ~/.zshrc.local（$(wc -l < ~/.zshrc.local | tr -d ' ') 行）"
     else

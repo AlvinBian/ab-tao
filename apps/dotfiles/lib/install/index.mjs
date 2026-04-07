@@ -20,7 +20,7 @@ import { handleInstallModules } from './install-modules.mjs';
  * 依序執行 config.json 中 target 的所有 steps，
  * 根據 step.type 分派到對應的 handler。
  *
- * @param {string} repoDir - ab-dotfiles 根目錄
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
  * @param {string} previewDir - dist/preview 路徑
  * @param {string} key - target 鍵名（如 'claude-dev'、'zsh'）
  * @param {Object} def - config.json 中的 target 定義（含 label、steps）
@@ -38,8 +38,9 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
   const total = ctx.selectedTargets.length;
   const prefix = total > 1 ? `[${idx}/${total}] ` : '';
   const installResults = {};
+  const silent = ctx.silent || false;
 
-  p.log.info(`${prefix}${def.label || key}`);
+  if (!silent) p.log.info(`${prefix}${def.label || key}`);
 
   for (const step of def.steps) {
     if (step.skipIf && ctx.completed.has(step.skipIf)) continue;
@@ -60,7 +61,7 @@ export async function runTarget(repoDir, previewDir, key, def, ctx) {
         break;
       }
       case 'build-plugin':
-        await handleBuildPlugin(repoDir, step, prefix);
+        await handleBuildPlugin(repoDir, step, prefix, { silent });
         break;
       case 'install-modules': {
         const result = await handleInstallModules(

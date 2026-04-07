@@ -1,0 +1,41 @@
+name: 自動翻譯 README
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Translate to English
+        uses: dylanlin66/action-translate-readme@v1
+        with:
+          from: 'zh'
+          to: 'en'
+          filename: 'README.md'
+          output: 'README_EN.md'
+
+      - name: Translate to 簡體中文
+        uses: dylanlin66/action-translate-readme@v1
+        with:
+          from: 'zh'
+          to: 'zh-CN'
+          filename: 'README.md'
+          output: 'README_CN.md'
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'docs: auto translate README (EN + zh-CN)'
+          branch: main
+          file_pattern: 'README_EN.md README_CN.md'

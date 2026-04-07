@@ -52,12 +52,16 @@ _spin_start() {
 
 _spin_stop() {
   local status="${1:-ok}"
+  local suppress_output="${2:-false}"
   kill "$_SPIN_PID" 2>/dev/null
   wait "$_SPIN_PID" 2>/dev/null || true
   printf "\r\033[2K"
-  [[ "$status" == "ok" ]] \
-    && echo -e "  ${GREEN}✔ $_SPIN_MSG${NC}" \
-    || echo -e "  ${YELLOW}⚠ $_SPIN_MSG${NC}"
+  # 僅在未抑制輸出時才顯示完成訊息
+  [[ "$suppress_output" == "false" ]] && {
+    [[ "$status" == "ok" ]] \
+      && echo -e "  ${GREEN}✔ $_SPIN_MSG${NC}" \
+      || echo -e "  ${YELLOW}⚠ $_SPIN_MSG${NC}"
+  }
   unset _SPIN_PID _SPIN_MSG
 }
 
@@ -285,7 +289,7 @@ cat > "$BUILD_DIR/.claude-plugin/plugin.json" << JSON_EOF
   "name": "ab-claude-dev",
   "version": "$PLUGIN_VERSION",
   "description": "Claude Code 配置包 — skills / agents / hooks / rules${REPOS_NOTE}",
-  "author": "ab-dotfiles",
+  "author": "ab-tao",
   "keywords": ["claude-code", "code-review", "pr-workflow", "test-gen", "slack", "vue", "typescript", "php"]
 }
 JSON_EOF

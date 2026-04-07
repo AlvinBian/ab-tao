@@ -21,7 +21,7 @@ const CONTROL_CHAR_REGEX = /[\u200B-\u200D\uFEFF\x00-\x08\x0B-\x0C\x0E-\x1F]/;
  */
 function isDocumentationFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
-  return ext === '.md' || ext === '.mdx' || ext === '.txt' || ext === '.rst';
+  return ['.md', '.mdx', '.txt', '.rst', '.json'].includes(ext);
 }
 
 /**
@@ -158,6 +158,8 @@ export function validateDirectory(resourcePath) {
           walkDir(fullPath);
         }
       } else if (entry.name.endsWith('.md') || entry.name.endsWith('.json')) {
+        // 跳過 broken symlink 或不可讀檔案
+        if (!fs.existsSync(fullPath)) continue;
         const content = fs.readFileSync(fullPath, 'utf8');
         const relativePath = path.relative(resourcePath, fullPath);
         const result = validateFileContent(relativePath, content);

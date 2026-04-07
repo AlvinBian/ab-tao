@@ -34,7 +34,7 @@ import { generateProfile } from '../pipeline/profile-generator.mjs';
  * @param {Object} opts
  * @param {Object[]} opts.repos - 含 fullName/commits/pct 的完整 repo 物件陣列
  * @param {Object[]} opts.sources - ECC 來源配置（來自 config.json）
- * @param {string} opts.baseDir - ab-dotfiles 根目錄（快取和審計儲存位置）
+ * @param {string} opts.baseDir - @ab-tao/dotfiles 根目錄（快取和審計儲存位置）
  * @param {Array} [opts.projectFolders] - 專案文件夾映射（name → localPath）
  * @returns {Promise<Object>} plan - 完整安裝計畫，附帶 _pipelineResult 和 _fetchedSources
  */

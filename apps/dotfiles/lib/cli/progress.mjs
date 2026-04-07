@@ -70,7 +70,7 @@ export function runWithProgress(cmd, { cwd, total, parseProgress }) {
       if (code !== 0) {
         console.log(`  ${pc.red('✗')} ${pc.dim(`[${current}/${total}]`)} ${pc.red('失敗')}`);
         const stderr = Buffer.concat(stderrChunks).toString().trim();
-        reject(new Error(`exit ${code}${stderr ? `\n${stderr}` : ''}`));
+        reject(new Error(`執行失敗（代碼 ${code}）${stderr ? `\n${stderr}` : ''}`));
       } else {
         if (current < total) {
           console.log(`  ${pc.green('✔')} ${pc.dim(`[${total}/${total}]`)} 完成`);

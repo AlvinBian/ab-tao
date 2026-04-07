@@ -1,29 +1,36 @@
 #!/usr/bin/env bash
 # =============================================================================
 # scripts/build-plugin.sh
-# 智慧打包 Claude Cowork 插件（.plugin）
+# 智慧打包 Claude Code Plugin（官方格式）
 #
 # 執行邏輯：
-#   1. git pull 拿最新 ab-dotfiles 模板（保持最新）
+#   1. git pull 拿最新 ab-tao 模板（保持最新）
 #   2. 偵測執行位置的專案上下文：
 #      - CLAUDE.md        → 提取規則嵌入 plugin.json
-#      - .claude/commands/ → 專案自訂指令（優先於 ab-dotfiles 同名指令）
+#      - .claude/commands/ → 專案自訂指令（優先於 ab-tao 同名指令）
 #      - .claude/agents/  → 專案自訂 agents
 #      - package.json     → 偵測技術棧，決定要包含哪些 commands
-#   3. 合併：專案配置 > ab-dotfiles 模板
-#   4. 打包輸出 dist/ab-dotfiles.plugin
+#   3. 合併：專案配置 > ab-tao 模板
+#   4. 打包輸出為官方目錄結構：
+#      plugin-name/
+#      ├── .claude-plugin/
+#      │   └── plugin.json
+#      ├── skills/
+#      ├── agents/
+#      ├── commands/
+#      └── hooks/
 #
 # 用法：
-#   pnpm run build           ← 從 ab-dotfiles 自身打包，或從任意專案目錄執行（自動整合專案配置）
+#   pnpm run build           ← 從 ab-tao 自身打包，或從任意專案目錄執行（自動整合專案配置）
 #   pnpm run deploy          ← install + build
 # =============================================================================
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 INVOKE_DIR="$(pwd)"          # 執行指令時所在的目錄（可能是任意專案）
-BUILD_DIR="/tmp/ab-dotfiles-plugin-$$"
+BUILD_DIR="/tmp/ab-tao-plugin-$$"
 DIST_DIR="$REPO_DIR/dist/release"
-OUTPUT="$DIST_DIR/ab-dotfiles.plugin"
+PLUGIN_OUTPUT_DIR="$DIST_DIR/ab-tao-plugin"
 mkdir -p "$DIST_DIR"
 
 GREEN='\033[0;32m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'
@@ -54,12 +61,16 @@ _spin_start() {
 
 _spin_stop() {
   local status="${1:-ok}"
+  local suppress_output="${2:-false}"
   kill "$_SPIN_PID" 2>/dev/null
   wait "$_SPIN_PID" 2>/dev/null || true
   printf "\r\033[2K"
-  [[ "$status" == "ok" ]] \
-    && echo -e "  ${GREEN}✔ $_SPIN_MSG${NC}" \
-    || echo -e "  ${YELLOW}⚠ $_SPIN_MSG${NC}"
+  # 僅在未抑制輸出時才顯示完成訊息
+  [[ "$suppress_output" == "false" ]] && {
+    [[ "$status" == "ok" ]] \
+      && echo -e "  ${GREEN}✔ $_SPIN_MSG${NC}" \
+      || echo -e "  ${YELLOW}⚠ $_SPIN_MSG${NC}"
+  }
   unset _SPIN_PID _SPIN_MSG
 }
 
@@ -67,11 +78,11 @@ PLUGIN_VERSION="$(python3 -c "import json; d=json.load(open('$REPO_DIR/package.j
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║   ab-dotfiles 智慧插件打包  v$PLUGIN_VERSION            ║${NC}"
+echo -e "${BOLD}║   ab-tao 智慧插件打包  v$PLUGIN_VERSION            ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 
-REPO_NAME="ab-dotfiles"
-REPO_BRANCH="master"
+REPO_NAME="ab-tao"
+REPO_BRANCH="main"
 
 # ── Step 1：git pull 取得最新模板 ────────────────────────────────
 step "① 同步最新模板（$REPO_NAME@$REPO_BRANCH）"
@@ -109,7 +120,7 @@ TECH_STACK=()
 INCLUDE_COMMANDS=()   # 最終要包含的 command 名稱清單
 
 if $IS_SELF; then
-  info "執行位置：ab-dotfiles 自身 → 打包完整預設版本"
+  info "執行位置：ab-tao 自身 → 打包完整預設版本"
 else
   info "執行位置：$INVOKE_DIR"
   PROJECT_NAME=$(python3 -c "import json; d=json.load(open('package.json')); print(d.get('name',''))" 2>/dev/null || basename "$INVOKE_DIR")
@@ -165,13 +176,13 @@ fi
 # ── Step 3：決定要包含的 commands ─────────────────────────────────
 step "③ 組裝 commands 清單"
 
-# 預設全部 ab-dotfiles commands
+# 預設全部 ab-tao commands
 DEFAULT_CMDS=()
 for f in "$REPO_DIR/claude/commands/"*.md; do
   DEFAULT_CMDS+=("$(basename "$f" .md)")
 done
 
-# 依技術棧過濾：只保留相關的 commands（從 ab-dotfiles）
+# 依技術棧過濾：只保留相關的 commands（從 ab-tao）
 _should_include_cmd() {
   local name="$1"
   # 這些指令對所有專案都有用
@@ -210,33 +221,35 @@ done
 step "④ 打包中"
 
 mkdir -p "$DIST_DIR"
-rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR/.claude-plugin" "$BUILD_DIR/skills" "$BUILD_DIR/agents" "$BUILD_DIR/hooks"
+rm -rf "$PLUGIN_OUTPUT_DIR"
+mkdir -p "$PLUGIN_OUTPUT_DIR/.claude-plugin" "$PLUGIN_OUTPUT_DIR/skills" "$PLUGIN_OUTPUT_DIR/agents" "$PLUGIN_OUTPUT_DIR/commands" "$PLUGIN_OUTPUT_DIR/hooks"
 
-# plugin.json
-PLUGIN_DESC="ab-dotfiles Claude Code 配置包"
-[[ -n "$PROJECT_NAME" && ! $IS_SELF ]] && PLUGIN_DESC="$PROJECT_NAME Claude 配置（基於 ab-dotfiles）"
+# plugin.json（官方格式）
+PLUGIN_DESC="ab-tao 開發環境智能配置 — commands, agents, rules, hooks"
+[[ -n "$PROJECT_NAME" && ! $IS_SELF ]] && PLUGIN_DESC="$PROJECT_NAME Claude 配置（基於 ab-tao）"
 
-# 若有 CLAUDE.md，提取前 5 行作為 description 補充
+# 若有 CLAUDE.md，提取前一行作為 description 補充
 CLAUDE_SUMMARY=""
 if [[ -n "$PROJECT_CLAUDE_MD" ]]; then
-  CLAUDE_SUMMARY=$(grep -v '^#\|^$\|^---' "$PROJECT_CLAUDE_MD" 2>/dev/null | head -3 | tr '\n' ' ' | cut -c1-100 || true)
-  [[ -n "$CLAUDE_SUMMARY" ]] && PLUGIN_DESC="$PLUGIN_DESC | $CLAUDE_SUMMARY"
+  CLAUDE_SUMMARY=$(sed -n '/^# /s/^# //p' "$PROJECT_CLAUDE_MD" 2>/dev/null | head -1 || true)
+  [[ -n "$CLAUDE_SUMMARY" ]] && PLUGIN_DESC="$CLAUDE_SUMMARY"
 fi
 
-cat > "$BUILD_DIR/.claude-plugin/plugin.json" << JSON_EOF
+cat > "$PLUGIN_OUTPUT_DIR/.claude-plugin/plugin.json" << JSON_EOF
 {
-  "name": "ab-dotfiles",
-  "version": "$PLUGIN_VERSION",
+  "name": "ab-tao",
   "description": "$PLUGIN_DESC",
-  "author": "ab-dotfiles",
-  "keywords": ["ab-dotfiles", "code-review", "pr-workflow", "test-gen", "slack", "vue", "typescript", "php"],
-  "techStack": $(python3 -c "import json; s='${TECH_STACK[*]}'; print(json.dumps(s.split() if s.strip() else []))" 2>/dev/null || echo "[]")
+  "version": "$PLUGIN_VERSION",
+  "author": {
+    "name": "AlvinBian"
+  },
+  "homepage": "https://github.com/AlvinBian/ab-tao",
+  "license": "MIT"
 }
 JSON_EOF
 
-# Commands：專案自訂 > ab-dotfiles（同名時專案優先）
-echo -e "${BLUE}📦 Slash Commands${NC}"
+# Commands：專案自訂 > ab-tao（同名時專案優先）
+echo -e "${BLUE}📦 Commands${NC}"
 CMD_COUNT=0
 ADDED_CMDS=""   # 用空格分隔的字串模擬 set
 
@@ -248,21 +261,19 @@ if [[ -n "$PROJECT_COMMANDS_DIR" ]]; then
   for f in "$PROJECT_COMMANDS_DIR"/*.md; do
     [[ -f "$f" ]] || continue
     name=$(basename "$f" .md)
-    mkdir -p "$BUILD_DIR/skills/$name"
-    cp "$f" "$BUILD_DIR/skills/$name/SKILL.md"
+    cp "$f" "$PLUGIN_OUTPUT_DIR/commands/$name.md"
     echo -e "   ${GREEN}✔${NC} /$name ${CYAN}[專案自訂]${NC}"
     _mark_cmd "$name"
     CMD_COUNT=$((CMD_COUNT + 1))
   done
 fi
 
-# 再加入 ab-dotfiles commands（跳過已有的同名）
+# 再加入 ab-tao commands（跳過已有的同名）
 for name in "${INCLUDED_CMDS[@]}"; do
   _cmd_added "$name" && continue
   f="$REPO_DIR/claude/commands/$name.md"
   [[ -f "$f" ]] || continue
-  mkdir -p "$BUILD_DIR/skills/$name"
-  cp "$f" "$BUILD_DIR/skills/$name/SKILL.md"
+  cp "$f" "$PLUGIN_OUTPUT_DIR/commands/$name.md"
   echo -e "   ${GREEN}✔${NC} /$name"
   CMD_COUNT=$((CMD_COUNT + 1))
 done
@@ -279,7 +290,7 @@ if [[ -n "$PROJECT_AGENTS_DIR" ]]; then
   for f in "$PROJECT_AGENTS_DIR"/*.md; do
     [[ -f "$f" ]] || continue
     name=$(basename "$f" .md)
-    cp "$f" "$BUILD_DIR/agents/"
+    cp "$f" "$PLUGIN_OUTPUT_DIR/agents/"
     echo -e "   ${GREEN}✔${NC} @$name ${CYAN}[專案自訂]${NC}"
     _mark_agent "$name"
     AGENT_COUNT=$((AGENT_COUNT + 1))
@@ -289,7 +300,7 @@ fi
 for f in "$REPO_DIR/claude/agents/"*.md; do
   name=$(basename "$f" .md)
   _agent_added "$name" && continue
-  cp "$f" "$BUILD_DIR/agents/"
+  cp "$f" "$PLUGIN_OUTPUT_DIR/agents/"
   echo -e "   ${GREEN}✔${NC} @$name"
   AGENT_COUNT=$((AGENT_COUNT + 1))
 done
@@ -297,7 +308,7 @@ echo -e "   ${CYAN}→ $AGENT_COUNT 個 agents${NC}"
 
 # Hooks
 echo -e "${BLUE}🪝 Hooks${NC}"
-cp "$REPO_DIR/claude/hooks.json" "$BUILD_DIR/hooks/hooks.json"
+cp "$REPO_DIR/claude/hooks.json" "$PLUGIN_OUTPUT_DIR/hooks/hooks.json"
 HOOK_EVENTS=$(python3 -c "
 import json
 d = json.load(open('$REPO_DIR/claude/hooks.json'))
@@ -306,34 +317,50 @@ for event, items in d.get('hooks', {}).items():
 " 2>/dev/null || echo "   • hooks 已打包")
 echo "$HOOK_EVENTS"
 
-# CLAUDE.md（若有，一併打包供參考）
-if [[ -n "$PROJECT_CLAUDE_MD" ]]; then
-  cp "$PROJECT_CLAUDE_MD" "$BUILD_DIR/CLAUDE.md"
-  info "CLAUDE.md 已嵌入"
+# Skills（如果有專用 skills 目錄，複製進去）
+if [[ -d "$REPO_DIR/claude/skills" ]]; then
+  echo -e "${BLUE}📚 Skills${NC}"
+  for dir in "$REPO_DIR/claude/skills"/*; do
+    [[ -d "$dir" ]] || continue
+    skill_name=$(basename "$dir")
+    cp -r "$dir" "$PLUGIN_OUTPUT_DIR/skills/"
+    echo -e "   ${GREEN}✔${NC} $skill_name"
+  done
 fi
 
-cp "$REPO_DIR/README.md" "$BUILD_DIR/README.md"
+# README（供參考）
+if [[ -f "$REPO_DIR/README.md" ]]; then
+  cp "$REPO_DIR/README.md" "$PLUGIN_OUTPUT_DIR/README.md"
+  info "README.md 已複製"
+fi
 
-# 壓縮
-(cd "$BUILD_DIR" && zip -r "$OUTPUT" . -x "*.DS_Store" > /dev/null)
+# CLAUDE.md（若有，一併打包供參考）
+if [[ -n "$PROJECT_CLAUDE_MD" ]]; then
+  cp "$PROJECT_CLAUDE_MD" "$PLUGIN_OUTPUT_DIR/CLAUDE.md"
+  info "CLAUDE.md 已複製"
+fi
+
+# 清空舊的臨時目錄
 rm -rf "$BUILD_DIR"
 
-FILE_SIZE=$(du -sh "$OUTPUT" | awk '{print $1}')
+# 計算目錄大小
+DIR_SIZE=$(du -sh "$PLUGIN_OUTPUT_DIR" | awk '{print $1}')
 
 echo ""
-echo -e "${GREEN}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   ✅ 插件打包完成                            ║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+echo -e "${GREEN}╔═══════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║   ✅ Plugin 打包完成（官方格式）               ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════════════╝${NC}"
 echo -e "  ${BOLD}版    本：${NC} $PLUGIN_VERSION"
 echo -e "  ${BOLD}內    容：${NC} $CMD_COUNT commands · $AGENT_COUNT agents · hooks"
 [[ ${#TECH_STACK[@]} -gt 0 ]] && \
 echo -e "  ${BOLD}技術棧：  ${NC} ${TECH_STACK[*]}"
 [[ -n "$PROJECT_CLAUDE_MD" ]] && \
 echo -e "  ${BOLD}專案配置：${NC} CLAUDE.md 已整合"
-echo -e "  ${BOLD}檔案大小：${NC} $FILE_SIZE"
-echo -e "  ${BOLD}輸出路徑：${NC} $OUTPUT"
+echo -e "  ${BOLD}目錄大小：${NC} $DIR_SIZE"
+echo -e "  ${BOLD}輸出路徑：${NC} $PLUGIN_OUTPUT_DIR"
 echo ""
-echo -e "${YELLOW}📌 將 dist/release/ab-dotfiles.plugin 拖入 Cowork Desktop App 安裝${NC}"
+echo -e "${YELLOW}📌 測試：${BOLD}claude --plugin-dir $PLUGIN_OUTPUT_DIR/${NC}"
+echo -e "${YELLOW}📌 安裝：${BOLD}/plugin marketplace add <url>${NC}"
 
 # 記錄 build log
 LOG_FILE="$REPO_DIR/.build.log"

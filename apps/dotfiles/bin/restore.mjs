@@ -38,7 +38,7 @@ function getBackups() {
 
 async function main() {
   console.log();
-  p.intro(' ab-dotfiles 備份還原 ');
+  p.intro(' ab-tao 備份還原 ');
 
   const backups = getBackups();
 
@@ -59,8 +59,10 @@ async function main() {
   }
 
   // 互動式選擇
-  const ORIGINAL_DIR = path.join(HOME, '.ab-dotfiles-original');
-  const hasOriginal = fs.existsSync(ORIGINAL_DIR);
+  const ORIGINAL_DIR = path.join(HOME, '.ab-tao-backup-original');
+  const LEGACY_ORIGINAL_DIR = path.join(HOME, '.ab-dotfiles-original');
+  const hasOriginal = fs.existsSync(ORIGINAL_DIR) || fs.existsSync(LEGACY_ORIGINAL_DIR);
+  const actualOriginalDir = fs.existsSync(ORIGINAL_DIR) ? ORIGINAL_DIR : LEGACY_ORIGINAL_DIR;
 
   const selected = await p.select({
     message: '選擇還原方式  ↑↓ 選擇 · Enter 確認',
@@ -70,7 +72,7 @@ async function main() {
             {
               value: '__original__',
               label: `${pc.red('完全還原')}  恢復到首次 setup 前的原始狀態`,
-              hint: '~/.ab-dotfiles-original/',
+              hint: '~/.ab-tao-backup-original/',
             },
           ]
         : []),
@@ -87,8 +89,8 @@ async function main() {
 
   // 完全還原（合併自 restore-original）
   if (selected === '__original__') {
-    const items = fs.readdirSync(ORIGINAL_DIR);
-    p.log.info(`即將從 ${pc.cyan('~/.ab-dotfiles-original/')} 恢復：\n  ${items.join(', ')}`);
+    const items = fs.readdirSync(actualOriginalDir);
+    p.log.info(`即將從 ${pc.cyan('~/.ab-tao-backup-original/')} 恢復：\n  ${items.join(', ')}`);
     const confirm = await p.confirm({
       message: '確認完全還原？這會覆蓋當前所有 Claude 和 ZSH 配置',
       initialValue: false,
@@ -100,7 +102,7 @@ async function main() {
     const s = p.spinner();
     s.start('完全還原中...');
     for (const item of items) {
-      const src = path.join(ORIGINAL_DIR, item);
+      const src = path.join(actualOriginalDir, item);
       const dest = path.join(HOME, item.startsWith('.') ? item : `.${item}`);
       try {
         const stat = fs.statSync(src);

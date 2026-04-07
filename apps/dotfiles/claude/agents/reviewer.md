@@ -15,12 +15,16 @@ description: >
   assistant: "用 reviewer agent 審查當前 branch 的 diff。"
   </example>
 
+deprecated: true
+replacement: "官方 code-review plugin"
 model: sonnet
 color: blue
 tools: ["Read", "Grep", "Glob", "Bash"]
 matchWhen:
   always: true
 ---
+
+> ⚠️ 此 agent 已有更好的替代方案：官方 code-review plugin
 
 # Reviewer Agent
 

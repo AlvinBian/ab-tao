@@ -27,12 +27,12 @@ success() { echo -e "  ${GREEN}✔ $1${NC}"; }
 warn()    { echo -e "  ${YELLOW}⚠ $1${NC}"; }
 skip()    { echo -e "  ${DIM}─ $1${NC}"; }
 
-REPO_NAME="ab-dotfiles"
-REPO_BRANCH="master"
+REPO_NAME="ab-tao"
+REPO_BRANCH="main"
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║   ab-dotfiles 自動更新                       ║${NC}"
+echo -e "${BOLD}║   ab-tao 自動更新                           ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 echo -e "  ${DIM}來源：$REPO_NAME@$REPO_BRANCH${NC}"
 echo -e "  ${DIM}路徑：$REPO_DIR${NC}"
@@ -157,7 +157,7 @@ if [[ "$ZSHRC_CHANGED" -gt 0 ]]; then
     # 自動遷移個人設定到 ~/.zshrc.local（不會被覆蓋）
     if [[ ! -f ~/.zshrc.local ]]; then
       grep -E '^\s*(export |alias |path\+|PATH=|eval |source )' ~/.zshrc \
-        | grep -v 'ab-dotfiles\|BREW_PREFIX\|PYENV_ROOT\|_zsh_module\|_safe_source\|_command_exists\|\.zsh/modules' \
+        | grep -v 'ab-tao\|ab-dotfiles\|BREW_PREFIX\|PYENV_ROOT\|_zsh_module\|_safe_source\|_command_exists\|\.zsh/modules' \
         > ~/.zshrc.local 2>/dev/null || true
       [[ -s ~/.zshrc.local ]] && info "個人設定已遷移到 ~/.zshrc.local"
     fi
