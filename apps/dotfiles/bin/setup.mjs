@@ -17,7 +17,7 @@ import { detectLegacyInstallation, runUpgrade } from '../lib/config/upgrade.mjs'
 import { cleanOldBackups } from '../lib/core/backup.mjs';
 import { APP_VERSION } from '../lib/core/constants.mjs';
 import { env } from '../lib/core/env.mjs';
-import { getDirname } from '../lib/core/paths.mjs';
+import { getDirname, HOME } from '../lib/core/paths.mjs';
 import { checkIncompleteSession, loadSession } from '../lib/core/session.mjs';
 import { ensureEnvironment } from '../lib/detect/doctor.mjs';
 import { interactiveRepoSelect } from '../lib/detect/repo-select.mjs';
@@ -306,7 +306,6 @@ async function main() {
 
       const status = getConfigStatus();
       const { summary, claude, claudeMd, zsh, slack, env: envStatus } = status;
-      const HOME = process.env.HOME;
       const claudeDir = path.join(HOME, '.claude');
 
       // ── 健康度 bar ──
@@ -502,6 +501,14 @@ async function main() {
   // ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
   // 優先用 session 保存的選擇（重新安裝時），再讓用戶選擇新的
   if (hasProject || has('claude')) {
+    p.log.info(
+      [
+        '🔗 AI 來源 — 外部 Claude 代理、命令與規則庫',
+        '  各來源提供由社群或官方維護的 agents / commands / rules，',
+        '  安裝後自動融合到 ~/.claude/，與你本地的配置並存（本地優先）。',
+        '  直接 Enter 跳過，稍後可執行 pnpm run c:sync:select 個別補充。',
+      ].join('\n'),
+    );
     const { selectAiSources } = await import('../lib/external/ai-source-select.mjs');
     const { BACK: B } = await import('../lib/cli/prompts.mjs');
     const result = await selectAiSources();
@@ -596,7 +603,15 @@ async function main() {
           }
         }
         p.log.info(
-          `角色分配（${mc} ⭐ 主力 · ${tc} 🔄 臨時${toolc ? ` · ${toolc} 🔧 工具` : ''}）\n${summaryLines.join('\n')}`,
+          [
+            `角色分配（${mc} ⭐ 主力 · ${tc} 🔄 臨時${toolc ? ` · ${toolc} 🔧 工具` : ''}）`,
+            '  角色決定每個 repo 會安裝哪種 CLAUDE.md：',
+            '  ⭐ 主力 — 完整 AI 分析 + 技術棧感知 CLAUDE.md（每天在用的主力 repo）',
+            '  🔄 臨時 — 精簡 CLAUDE.md，無 AI 分析（偶爾開啟的 repo）',
+            '  🔧 工具 — 最小配置，僅基礎 context（依賴庫、腳手架等工具 repo）',
+            '',
+            ...summaryLines,
+          ].join('\n'),
         );
 
         const action = handleCancel(
@@ -675,6 +690,7 @@ async function main() {
         .join(',');
       if (!analyzeCache || analyzeCache.key !== reposKey) {
         phaseHeader('🔬 自動分析');
+        p.log.info('掃描技術棧、偵測本機路徑、生成個人化安裝計畫（約 10–30 秒）');
         let analyzeSuccess = false;
         while (!analyzeSuccess) {
           try {

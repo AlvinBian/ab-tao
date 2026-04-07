@@ -16,15 +16,14 @@
  */
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { ALL_AGENTS, ALL_COMMANDS, ALL_RULES } from '../config/config-classifier.mjs';
-import { getDirname } from './paths.mjs';
+import { getDirname, HOME } from './paths.mjs';
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '../..');
-const CLAUDE_DIR = path.join(os.homedir(), '.claude');
-const ZSH_MODULES_DIR = path.join(os.homedir(), '.zsh', 'modules');
+const CLAUDE_DIR = path.join(HOME, '.claude');
+const ZSH_MODULES_DIR = path.join(HOME, '.zsh', 'modules');
 
 const ALL_ZSH_MODULES = [
   'aliases',

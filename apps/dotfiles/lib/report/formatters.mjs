@@ -5,10 +5,10 @@
  * 包括：HTML 逃逸、徽章、卡片、CSS 樣式、安裝/ECC 項目渲染。
  */
 
-import os from 'node:os';
 import path from 'node:path';
 import { sumBy } from 'lodash-es';
 import { getDescription } from '../config/descriptions.mjs';
+import { HOME } from '../core/paths.mjs';
 
 // ── HTML 轉義及元件 ──────────────────────────────────────────────
 
@@ -158,6 +158,7 @@ export function renderOverview(data) {
  */
 export function renderEcc(ecc) {
   if (!ecc?.sources?.length) return '';
+  const claudeDir = path.join(HOME, '.claude');
   let inner = '';
   for (const src of ecc.sources) {
     inner += `<div class="source-header">
@@ -166,8 +167,6 @@ export function renderEcc(ecc) {
     </div>`;
     for (const [key, arr] of Object.entries(src.added || {})) {
       if (!arr?.length) continue;
-      const HOME = process.env.HOME;
-      const claudeDir = path.join(HOME, '.claude');
       inner += `<div class="group-label">+ ${esc(key)}（${arr.length}）</div><div>${arr.map((v) => badgeWithDesc(v, 'green', key, claudeDir)).join('')}</div>`;
     }
     const skippedTotal = sumBy(Object.values(src.skipped || {}), (a) => a?.length || 0);
@@ -188,7 +187,6 @@ export function renderEcc(ecc) {
  */
 export function renderInstalled(installed) {
   if (!installed) return '';
-  const HOME = process.env.HOME || os.homedir();
   const claudeDir = path.join(HOME, '.claude');
   let inner = '';
   const groups = [

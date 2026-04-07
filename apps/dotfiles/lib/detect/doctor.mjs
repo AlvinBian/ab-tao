@@ -6,12 +6,10 @@
 
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
-
-const HOME = homedir();
+import { HOME } from '../core/paths.mjs';
 
 // claude CLI 可能的安裝路徑（官方安裝器、npm 全局、Homebrew）
 const CLAUDE_CANDIDATES = [
@@ -71,7 +69,7 @@ function run(cmd) {
  * 使用 $NVM_DIR 或 fallback 到 $HOME/.nvm（剛安裝時 env 尚未更新）
  */
 function runNvm(nvmCmd) {
-  const nvmDir = process.env.NVM_DIR || `${process.env.HOME}/.nvm`;
+  const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
   try {
     execFileSync('bash', ['-c', `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm ${nvmCmd}`], {
       stdio: 'inherit',
@@ -84,7 +82,7 @@ function runNvm(nvmCmd) {
 }
 
 function checkNvm() {
-  const nvmDir = process.env.NVM_DIR || `${process.env.HOME}/.nvm`;
+  const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
   try {
     execFileSync('bash', ['-c', `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm --version`], {
       stdio: 'pipe',
@@ -97,7 +95,7 @@ function checkNvm() {
 }
 
 function nvmVersion() {
-  const nvmDir = process.env.NVM_DIR || `${process.env.HOME}/.nvm`;
+  const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
   try {
     return execFileSync('bash', ['-c', `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm --version`], {
       encoding: 'utf8',
@@ -281,7 +279,7 @@ export async function ensureEnvironment() {
         return false;
       }
       // 安裝後設定 NVM_DIR，讓後續 runNvm 不需要重啟終端就能使用
-      if (!process.env.NVM_DIR) process.env.NVM_DIR = `${process.env.HOME}/.nvm`;
+      if (!process.env.NVM_DIR) process.env.NVM_DIR = `${HOME}/.nvm`;
       justInstalled.add('nvm');
     }
 

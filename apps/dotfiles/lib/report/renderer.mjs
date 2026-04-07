@@ -7,10 +7,10 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { isEmpty } from 'lodash-es';
 import { getDescription } from '../config/descriptions.mjs';
+import { HOME } from '../core/paths.mjs';
 import {
   badge,
   esc,
@@ -160,7 +160,7 @@ function renderTabRepos(data) {
       }
 
       const localPath = roleInfo.localPath
-        ? roleInfo.localPath.replace(process.env.HOME || os.homedir(), '~')
+        ? roleInfo.localPath.replace(HOME, '~')
         : '未找到';
       const claudeMd = proj ? typeLabel[proj.claudeMdType] || '—' : '—';
       const roleDesc =

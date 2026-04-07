@@ -12,10 +12,10 @@ import readline from 'node:readline';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { isEmpty } from 'lodash-es';
+import { HOME } from './paths.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
-const HOME = process.env.HOME;
 const PROJECTS_DIR = path.join(HOME, '.claude', 'projects');
 
 /**
@@ -446,7 +446,7 @@ function parseEnvKeys(content) {
  * 策略：嘗試匹配已知的 HOME 前綴，然後逐段還原
  */
 export function humanizeProjectPath(encoded) {
-  const home = process.env.HOME || '';
+  const home = HOME;
   // 把 HOME 的每一段作為前綴匹配
   const homeParts = home.split('/').filter(Boolean); // ['Users', 'alvin']
   let remaining = encoded.startsWith('-') ? encoded.slice(1) : encoded;

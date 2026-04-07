@@ -10,7 +10,6 @@
  */
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
@@ -19,6 +18,7 @@ import { BACKUP_DIR } from '../core/backup.mjs';
 import { BACKUP_MAX_COUNT } from '../core/constants.mjs';
 import { clearSessionProgress, saveSession } from '../core/session.mjs';
 import { generateReport, openInBrowser, saveReport } from '../report.mjs';
+import { HOME } from '../core/paths.mjs';
 
 /**
  * 執行安裝完成後的收尾工作
@@ -48,7 +48,6 @@ export async function phaseComplete(
 ) {
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   const isManual = plan.mode === 'manual';
-  const HOME = process.env.HOME || os.homedir();
   const claudeDir = path.join(HOME, '.claude');
   const readDir = (dir) =>
     fs.existsSync(dir)
@@ -177,10 +176,19 @@ export async function phaseComplete(
   // 第一層：Token 優化（強烈推薦）
   const tier1 = [
     '  ── Token 優化（強烈推薦）──',
-    '    RTK               Bash 輸出壓縮 -89%，100+ 命令',
-    '                      curl -fsSL https://rtk.sh | bash && rtk init -g',
-    '    Claude-Mem         跨會話記憶 + 語義搜索',
-    '                      npx claude-mem install',
+    '  Claude 每次對話都有 token 上限，以下兩個工具可大幅降低消耗、加快回應、節省費用',
+    '',
+    '  ● RTK（Reduce Token Kontrol）— Bash 輸出壓縮器',
+    '    問題：git log、npm install、grep 等指令輸出動輒數千行，讓 Claude 讀完浪費大量 token',
+    '    效果：自動截短並摘要 100+ 常用命令輸出，平均壓縮 -89% token 消耗',
+    '    使用：安裝後自動生效，無需改變任何操作習慣',
+    '    安裝：curl -fsSL https://rtk.sh | bash && rtk init -g',
+    '',
+    '  ● Claude-Mem（跨會話記憶管理器）',
+    '    問題：每次開新視窗 Claude 都完全「失憶」，重複解釋背景、偏好設定耗費時間與 token',
+    '    效果：自動儲存對話關鍵點，下次啟動時語義搜索載入相關記憶，維持持續工作背景',
+    '    使用：npx claude-mem save 儲存記憶，Claude 啟動時自動讀取',
+    '    安裝：npx claude-mem install',
   ];
 
   // 第二層：官方 Plugins

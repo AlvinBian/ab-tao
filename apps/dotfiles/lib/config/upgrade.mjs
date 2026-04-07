@@ -10,7 +10,7 @@ import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
 import { BACK, handleCancel } from '../cli/prompts.mjs';
 import { backupIfExists } from '../core/backup.mjs';
-import { getDirname } from '../core/paths.mjs';
+import { getDirname, HOME } from '../core/paths.mjs';
 import {
   ALL_AGENTS,
   ALL_COMMANDS,
@@ -23,7 +23,6 @@ import { descBullet } from './descriptions.mjs';
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '../..');
-const HOME = process.env.HOME;
 const CLAUDE_DIR = path.join(HOME, '.claude');
 
 // ab-tao 管理的所有配置名稱（所有版本）

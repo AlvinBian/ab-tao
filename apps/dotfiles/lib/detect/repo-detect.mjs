@@ -14,10 +14,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { isEmpty } from 'lodash-es';
+import { HOME } from '../core/paths.mjs';
 
 const execFileAsync = promisify(execFile);
-
-const HOME = process.env.HOME;
 
 /**
  * 將 ~ 開頭的路徑展開為絕對路徑

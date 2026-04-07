@@ -16,11 +16,9 @@
 
 import { execFile, execSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { promisify } from 'node:util';
 import { AI_EFFORT, AI_MODEL, AI_TIMEOUT } from '../core/constants.mjs';
-
-const HOME = homedir();
+import { HOME } from '../core/paths.mjs';
 
 const execFileAsync = promisify(execFile);
 

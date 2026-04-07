@@ -16,6 +16,7 @@ import { deployAllProjectClaudeMd } from '../../deploy/deploy-project.mjs';
 import { generateClaudeMd } from '../../deploy/generate-claude-md.mjs';
 import { buildSyncResult, writeSkillFiles, writeSyncedFiles } from '../../external/source-sync.mjs';
 import { runTarget } from '../../install/index.mjs';
+import { HOME } from '../../core/paths.mjs';
 
 /**
  * 構建 Claude 安裝任務陣列
@@ -47,7 +48,6 @@ export function buildClaudeTasks(
     shared,
   },
 ) {
-  const HOME = process.env.HOME;
   const features = new Set(plan.features || ['claude', 'claudemd', 'ecc', 'slack', 'zsh']);
   const has = (f) => features.has(f);
 

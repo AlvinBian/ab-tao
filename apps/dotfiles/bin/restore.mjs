@@ -14,12 +14,11 @@ import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
 import { cpDir } from '../lib/core/backup.mjs';
-import { getDirname } from '../lib/core/paths.mjs';
+import { getDirname, HOME } from '../lib/core/paths.mjs';
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '..');
 const BACKUP_BASE = path.join(REPO, 'dist', 'backup');
-const HOME = process.env.HOME;
 
 const args = process.argv.slice(2);
 const flagList = args.includes('--list');

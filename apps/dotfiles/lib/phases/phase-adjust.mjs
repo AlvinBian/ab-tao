@@ -13,16 +13,15 @@
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
-import { getDirname } from '../core/paths.mjs';
+import { getDirname, HOME } from '../core/paths.mjs';
 import { loadSession, patchSession } from '../core/session.mjs';
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '../..');
-const CLAUDE_DIR = path.join(os.homedir(), '.claude');
+const CLAUDE_DIR = path.join(HOME, '.claude');
 
 function backupIfExists(src, dest) {
   if (fs.existsSync(src)) {
@@ -200,7 +199,7 @@ export async function adjustZsh({ flagAll = false, manual = false } = {}) {
   s.start('🗂️ 備份現有 zsh 配置...');
   const ts = TIMESTAMP();
   backupIfExists(
-    path.join(os.homedir(), '.zsh', 'modules'),
+    path.join(HOME, '.zsh', 'modules'),
     path.join(REPO, 'dist', 'backup', ts, 'zsh', 'modules'),
   );
   s.stop('✅ 備份完成');
@@ -214,7 +213,7 @@ export async function adjustZsh({ flagAll = false, manual = false } = {}) {
       modules: {
         dir: 'zsh/modules',
         ext: '.zsh',
-        dest: `${os.homedir()}/.zsh/modules`,
+        dest: `${HOME}/.zsh/modules`,
       },
     },
   };

@@ -14,7 +14,7 @@ import { ECC_DIR } from '@ab-tao/commons/paths';
 import * as p from '@clack/prompts';
 import { isEmpty } from 'lodash-es';
 import pc from 'picocolors';
-import { getDirname } from '../lib/core/paths.mjs';
+import { getDirname, HOME } from '../lib/core/paths.mjs';
 import {
   collectFullStatus,
   estimateTokenSavings,
@@ -25,7 +25,6 @@ import {
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, '..');
-const HOME = process.env.HOME;
 const CLAUDE_DIR = path.join(HOME, '.claude');
 const isReport = process.argv.includes('--report');
 

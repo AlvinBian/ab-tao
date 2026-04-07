@@ -22,6 +22,7 @@ import path from 'node:path';
 import { Listr } from 'listr2';
 import { isEmpty } from 'lodash-es';
 import { backupIfExists } from '../core/backup.mjs';
+import { HOME } from '../core/paths.mjs';
 import { updateSessionProgress } from '../core/session.mjs';
 import { generateAllRepoIndex } from '../deploy/deploy-index.mjs';
 import { buildClaudeTasks } from './execute/claude-tasks.mjs';
@@ -45,8 +46,6 @@ export async function phaseExecute(
   plan,
   { repoDir, previewDir, targets, prev, pipelineResult, fetchedSources },
 ) {
-  const HOME = process.env.HOME;
-  if (!HOME) throw new Error('HOME 環境變數未設置，請確認 shell 環境正常');
   const isManual = plan.mode === 'manual';
   const features = new Set(plan.features || ['claude', 'claudemd', 'ecc', 'slack', 'zsh']);
   const has = (f) => features.has(f);

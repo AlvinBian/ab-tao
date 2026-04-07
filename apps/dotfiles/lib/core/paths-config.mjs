@@ -4,12 +4,12 @@
  * 職責：提供統一的路徑常數，避免在各檔案重複定義相同路徑。
  */
 
-import os from 'node:os';
 import path from 'node:path';
+import { HOME } from './paths.mjs';
+
+export { HOME };
 
 // ── Home & Claude 主目錄 ──────────────────────────────────────────
-
-export const HOME = os.homedir();
 export const CLAUDE_HOME = path.join(HOME, '.claude');
 
 // ── Claude 配置檔案 ────────────────────────────────────────────────

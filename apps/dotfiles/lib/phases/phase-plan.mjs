@@ -15,6 +15,7 @@ import { cloneDeep, isEmpty } from 'lodash-es';
 import { buildPlanSummary } from '../cli/plan-view.mjs';
 import { BACK, handleCancel, smartSelect } from '../cli/prompts.mjs';
 import { generateMinimalPlan } from '../config/auto-plan.mjs';
+import { HOME } from '../core/paths.mjs';
 
 /**
  * 展示安裝計畫並讓用戶確認
@@ -24,7 +25,6 @@ import { generateMinimalPlan } from '../config/auto-plan.mjs';
  */
 export async function phasePlan(plan) {
   // 偵測現有安裝狀態
-  const HOME = process.env.HOME;
   const claudeDir = path.join(HOME, '.claude');
   const readDir = (dir) =>
     fs.existsSync(dir)

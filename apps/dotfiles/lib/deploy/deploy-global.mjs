@@ -8,12 +8,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { HOME } from '../core/paths.mjs';
 
-const CLAUDE_DIR_GETTER = () => {
-  const HOME = process.env.HOME;
-  if (!HOME) throw new Error('HOME 環境變數未設定，無法部署全局設定');
-  return path.join(HOME, '.claude');
-};
+const CLAUDE_DIR = path.join(HOME, '.claude');
 
 /**
  * 部署 settings.json（merge 策略）
@@ -36,7 +33,7 @@ const CLAUDE_DIR_GETTER = () => {
  *   isNew: 是否為首次建立（原本不存在）
  */
 export function deploySettings(template) {
-  const settingsPath = path.join(CLAUDE_DIR_GETTER(), 'settings.json');
+  const settingsPath = path.join(CLAUDE_DIR, 'settings.json');
   let existing = {};
 
   if (fs.existsSync(settingsPath)) {
