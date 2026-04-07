@@ -34,10 +34,10 @@ function detectRtk() {
 	}
 }
 
-/** 偵測 Claude-Mem 是否已安裝（npx --no 防止自動下載） */
+/** 偵測 Claude-Mem 是否已全局安裝 */
 function detectClaudeMem() {
 	try {
-		execSync("npx --no claude-mem --version", { stdio: "pipe", timeout: 5000 });
+		execFileSync("which", ["claude-mem"], { stdio: "pipe" });
 		return true;
 	} catch {
 		return false;
@@ -231,8 +231,8 @@ export async function phaseComplete(
 		"  ● Claude-Mem（跨會話記憶管理器）",
 		"    問題：每次開新視窗 Claude 都完全「失憶」，重複解釋背景、偏好設定耗費時間與 token",
 		"    效果：自動儲存對話關鍵點，下次啟動時語義搜索載入相關記憶，維持持續工作背景",
-		"    使用：npx claude-mem save 儲存記憶，Claude 啟動時自動讀取",
-		"    安裝：npx claude-mem install",
+		"    使用：claude-mem save 儲存記憶，Claude 啟動時自動讀取",
+		"    安裝：pnpm add -g claude-mem && claude-mem install",
 	];
 
 	// 第二層：官方 Plugins
@@ -280,8 +280,8 @@ export async function phaseComplete(
 		{
 			name: "Claude-Mem",
 			desc: "跨會話記憶，開新視窗也記得你的背景與偏好",
-			install: "npx claude-mem install",
-			doneHint: "已就緒，執行 npx claude-mem save 可儲存對話記憶",
+			install: "pnpm add -g claude-mem && claude-mem install",
+			doneHint: "已就緒，執行 claude-mem save 可儲存對話記憶",
 			detect: detectClaudeMem,
 		},
 	];
