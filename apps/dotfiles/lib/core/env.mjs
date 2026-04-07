@@ -66,7 +66,8 @@ export function env(key, fallback) {
 	if (val === undefined || val === "") return fallback;
 	if (typeof fallback === "number") {
 		const n = parseInt(val, 10);
-		return Number.isNaN(n) ? fallback : n;
+		if (Number.isNaN(n) || n < 0) return fallback;
+		return n;
 	}
 	if (typeof fallback === "boolean") return val === "true" || val === "1";
 	return val;

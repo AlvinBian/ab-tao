@@ -137,7 +137,10 @@ async function scanJsonlFile(
 		});
 
 		rl.on("close", resolve);
-		rl.on("error", resolve);
+		rl.on("error", () => {
+			rl.close();
+			resolve();
+		});
 	});
 }
 
@@ -708,7 +711,10 @@ async function scanJsonlFileForStats(filePath, stats) {
 			});
 
 			rl.on("close", resolve);
-			rl.on("error", resolve);
+			rl.on("error", () => {
+				rl.close();
+				resolve();
+			});
 		});
 	} catch {
 		/* 檔案讀取失敗（可能已被刪除），略過 */

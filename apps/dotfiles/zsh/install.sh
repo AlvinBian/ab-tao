@@ -175,7 +175,7 @@ if [[ -f ~/.zshrc ]]; then
     if [[ -f "$_env_file" ]]; then
       local _val
       _val=$(grep -E '^BACKUP_MAX_COUNT=[0-9]+$' "$_env_file" | cut -d= -f2)
-      [[ -n "$_val" ]] && _max_count=$_val
+      [[ -n "$_val" && "$_val" -gt 0 ]] && _max_count=$_val
     fi
 
     # 超出 BACKUP_MAX_COUNT 時刪除最舊的備份

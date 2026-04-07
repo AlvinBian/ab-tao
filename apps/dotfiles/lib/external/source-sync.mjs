@@ -205,6 +205,8 @@ async function downloadFile(repo, filePath) {
 	const safePath = filePath.split("/").map(encodeURIComponent).join("/");
 	const b64 = await gh(`repos/${repo}/contents/${safePath}`, ".content");
 	if (!b64) return null;
+	// base64 ≈ 原始大小 × 1.33，限制 512KB 原始檔案（≈ 682KB base64）
+	if (b64.length > 700_000) return null;
 	return Buffer.from(b64.replace(/[\n\r\s]/g, ""), "base64").toString("utf8");
 }
 

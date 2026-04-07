@@ -155,6 +155,18 @@ if [[ "$ZSHRC_CHANGED" -gt 0 ]]; then
   if [[ -f ~/.zshrc ]]; then
     mkdir -p "$HOME/.zsh-backups"
     cp ~/.zshrc "$HOME/.zsh-backups/zshrc.$(date +%Y%m%d_%H%M%S)"
+    # BACKUP_MAX_COUNT 清理（與 zsh/install.sh 一致）
+    local _max_count=10
+    local _env_file="$REPO_DIR/.env"
+    if [[ -f "$_env_file" ]]; then
+      local _val
+      _val=$(grep -E '^BACKUP_MAX_COUNT=[0-9]+$' "$_env_file" | cut -d= -f2)
+      [[ -n "$_val" && "$_val" -gt 0 ]] && _max_count=$_val
+    fi
+    local _backups=("${(@f)$(ls -t "$HOME/.zsh-backups"/zshrc.* 2>/dev/null)}")
+    if (( ${#_backups[@]} > _max_count )); then
+      rm -f "${_backups[@]:$_max_count}"
+    fi
     # 自動遷移個人設定到 ~/.zshrc.local（不會被覆蓋）
     if [[ ! -f ~/.zshrc.local ]]; then
       grep -E '^\s*(export |alias |path\+|PATH=|eval |source )' ~/.zshrc \
