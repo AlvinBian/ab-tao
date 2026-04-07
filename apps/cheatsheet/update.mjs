@@ -425,12 +425,6 @@ function convertS2T(html) {
  */
 function updateMeta(html, version) {
 	const today = new Date().toISOString().slice(0, 10);
-	const dateZhTW = today
-		.replace(
-			/-(\d+)-(\d+)$/,
-			(_, m, d) => ` 年 ${Number(m)} 月 ${Number(d)} 日`,
-		)
-		.replace(/^(\d+)/, "$1");
 
 	return (
 		html
