@@ -255,14 +255,15 @@ export function generateRepoIndex(localPath, repoFullName) {
 		return { files: [], count: 0 };
 	}
 
+	// 必須提供 repoFullName，否則跳過索引生成（零污染策略）
+	if (!repoFullName) {
+		return { files: [], count: 0 };
+	}
+
 	let indexDir;
 	try {
 		// 部署到 ~/.claude/projects/{org}/{repo}/index/（不碰項目目錄）
-		if (repoFullName) {
-			indexDir = path.join(PROJECTS_DIR, repoFullName, "index");
-		} else {
-			indexDir = path.join(localPath, ".claude", "index");
-		}
+		indexDir = path.join(PROJECTS_DIR, repoFullName, "index");
 		fs.mkdirSync(indexDir, { recursive: true });
 	} catch {
 		return { files: [], count: 0 };

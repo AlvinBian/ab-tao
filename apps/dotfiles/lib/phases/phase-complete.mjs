@@ -349,7 +349,13 @@ export async function phaseComplete(
 	const { ghSync } = await import("../external/github.mjs");
 	const reportData = {
 		username: ghSync("user", ".login") || "",
-		org: plan.repos[0]?.fullName?.split("/")[0] || "",
+		org: [
+			...new Set(
+				(plan.repos || [])
+					.map((r) => r.fullName?.split("/")[0])
+					.filter(Boolean),
+			),
+		].join(" + "),
 		repos: (plan.repos || []).map((r) => r.fullName),
 		techStacks: Object.fromEntries(
 			[...(pipelineResult?.categorizedTechs || new Map())].map(([k, v]) => [
