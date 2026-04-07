@@ -37,7 +37,7 @@ describe('run.mjs 環境變數傳遞', () => {
 
     // 在子進程中檢查 HOME 是否存在
     try {
-      const output = execSync('test -n "$HOME" && echo "OK" || echo "MISSING"', {
+      const _output = execSync('test -n "$HOME" && echo "OK" || echo "MISSING"', {
         encoding: 'utf8',
         stdio: 'pipe',
         // 注意：沒有傳遞 env 選項 — 這是問題所在

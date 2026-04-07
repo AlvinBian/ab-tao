@@ -221,7 +221,8 @@ export function deployClaudeignore(localPath, repoFullName) {
 
   // 部署到 ~/.claude/projects/{org}/{repo}/.claudeignore（不碰項目目錄）
   if (repoFullName) {
-    const projectDir = path.join(PROJECTS_DIR, repoFullName);
+    const projectDir = path.resolve(PROJECTS_DIR, repoFullName);
+    if (!projectDir.startsWith(PROJECTS_DIR)) return false; // 路徑穿越防護
     fs.mkdirSync(projectDir, { recursive: true });
     const ignorePath = path.join(projectDir, '.claudeignore');
     if (fs.existsSync(ignorePath)) {

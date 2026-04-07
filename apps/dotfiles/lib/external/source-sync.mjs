@@ -532,27 +532,30 @@ export async function writeSyncedFiles(downloaded, targetDir) {
   try {
     for (const src of downloaded) {
       for (const f of src.commands) {
-        const dest = path.join(targetDir, 'commands', f.name);
+        const safeName = path.basename(f.name);
+        const dest = path.join(targetDir, 'commands', safeName);
         if (isUserCustomized(dest)) {
-          skipped.push(`commands/${f.name}`);
+          skipped.push(`commands/${safeName}`);
           continue;
         }
         fs.writeFileSync(dest, GENERATED_MARKER + f.content, 'utf8');
         written.push(dest);
       }
       for (const f of src.agents) {
-        const dest = path.join(targetDir, 'agents', f.name);
+        const safeName = path.basename(f.name);
+        const dest = path.join(targetDir, 'agents', safeName);
         if (isUserCustomized(dest)) {
-          skipped.push(`agents/${f.name}`);
+          skipped.push(`agents/${safeName}`);
           continue;
         }
         fs.writeFileSync(dest, GENERATED_MARKER + f.content, 'utf8');
         written.push(dest);
       }
       for (const f of src.rules) {
-        const dest = path.join(targetDir, 'rules', f.name);
+        const safeName = path.basename(f.name);
+        const dest = path.join(targetDir, 'rules', safeName);
         if (isUserCustomized(dest)) {
-          skipped.push(`rules/${f.name}`);
+          skipped.push(`rules/${safeName}`);
           continue;
         }
         fs.writeFileSync(dest, GENERATED_MARKER + f.content, 'utf8');

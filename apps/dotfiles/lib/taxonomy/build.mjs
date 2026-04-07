@@ -18,7 +18,13 @@ import { getDirname } from '../core/paths.mjs';
 const __dirname = getDirname(import.meta);
 
 // 載入分類映射
-const { mapping } = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories.json'), 'utf8'));
+let mapping;
+try {
+  ({ mapping } = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories.json'), 'utf8')));
+} catch (err) {
+  console.error(`categories.json 載入失敗: ${err.message}`);
+  process.exit(1);
+}
 
 /**
  * 從 awesome-list markdown 解析 { awesomeCategory: [packageName] }

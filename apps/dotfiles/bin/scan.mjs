@@ -22,7 +22,7 @@
  *   pnpm run scan -- --org kkday-it
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -73,8 +73,15 @@ function getRepos() {
   // 來源 1：GitHub org API
   if (orgName) {
     try {
-      const raw = execSync(
-        `gh api "orgs/${orgName}/repos?sort=pushed&per_page=100" --paginate --jq '.[] | select(.archived == false and .fork == false and .size > 0) | .full_name'`,
+      const raw = execFileSync(
+        'gh',
+        [
+          'api',
+          `orgs/${orgName}/repos?sort=pushed&per_page=100`,
+          '--paginate',
+          '--jq',
+          '.[] | select(.archived == false and .fork == false and .size > 0) | .full_name',
+        ],
         { encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
       );
       return raw.trim().split('\n').filter(Boolean);
@@ -87,14 +94,22 @@ function getRepos() {
   // 來源 2：.cache/repos.json（setup 產生的快取）
   const cacheRepos = path.join(REPO_DIR, '.cache', 'repos.json');
   if (fs.existsSync(cacheRepos)) {
-    return JSON.parse(fs.readFileSync(cacheRepos, 'utf8')).map((e) => parseRepoEntry(e).repo);
+    try {
+      return JSON.parse(fs.readFileSync(cacheRepos, 'utf8')).map((e) => parseRepoEntry(e).repo);
+    } catch {
+      console.error('repos.json 格式損壞，跳過快取');
+    }
   }
 
   // 來源 3：config.json（向後相容）
   const configPath = path.join(REPO_DIR, 'config.json');
   if (fs.existsSync(configPath)) {
-    const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (cfg.repos?.length) return cfg.repos.map((e) => parseRepoEntry(e).repo);
+    try {
+      const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (cfg.repos?.length) return cfg.repos.map((e) => parseRepoEntry(e).repo);
+    } catch {
+      console.error('config.json 格式損壞，跳過');
+    }
   }
 
   console.error('找不到 repos 設定。請先執行 pnpm run setup');

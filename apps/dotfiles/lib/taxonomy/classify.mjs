@@ -40,9 +40,16 @@ function loadData() {
     dataDir = CACHE_DIR;
   }
 
-  _nodePackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'node-packages.json'), 'utf8'));
-  _phpPackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'php-packages.json'), 'utf8'));
-  _categories = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories.json'), 'utf8'));
+  try {
+    _nodePackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'node-packages.json'), 'utf8'));
+    _phpPackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'php-packages.json'), 'utf8'));
+    _categories = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories.json'), 'utf8'));
+  } catch (err) {
+    console.error(`分類資料載入失敗: ${err.message}`);
+    _nodePackages = {};
+    _phpPackages = {};
+    _categories = { mapping: {} };
+  }
 }
 
 /**
