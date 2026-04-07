@@ -161,7 +161,7 @@ export async function interactiveRepoSelect(session = null) {
 		async (repo) => {
 			try {
 				const count = await ghAsync(
-					`repos/${repo.fullName}/contributors?per_page=5`,
+					`repos/${repo.fullName}/contributors?per_page=100`,
 					`.[] | select(.login=="${username}") | .contributions`,
 				);
 				if (count) repo.commits = parseInt(count, 10) || 0;
