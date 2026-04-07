@@ -43,10 +43,9 @@ function validateSourceStructure(sourceName, sourcePath) {
 
   // 格式專屬檢查
   if (config.format === 'agent-skills') {
-    const items = fs.readdirSync(sourcePath);
-    const hasSkills = items.some((item) => {
-      const itemPath = path.join(sourcePath, item);
-      return fs.statSync(itemPath).isDirectory() && fs.existsSync(path.join(itemPath, 'SKILL.md'));
+    const items = fs.readdirSync(sourcePath, { withFileTypes: true });
+    const hasSkills = items.some((entry) => {
+      return entry.isDirectory() && fs.existsSync(path.join(sourcePath, entry.name, 'SKILL.md'));
     });
 
     // agent-skills 格式不一定都有 SKILL.md — 僅警告

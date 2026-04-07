@@ -67,7 +67,9 @@ describe('validateFileContent', () => {
   });
 
   it('strict 模式下 json 檔中的 dynamic import 應被攔截', () => {
-    const result = validateFileContent('hooks.json', '{"cmd": "import(\\"evil\\")"}', { strict: true });
+    const result = validateFileContent('hooks.json', '{"cmd": "import(\\"evil\\")"}', {
+      strict: true,
+    });
     assert.equal(result.valid, false);
   });
 

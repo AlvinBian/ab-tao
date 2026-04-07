@@ -158,6 +158,8 @@ export function validateDirectory(resourcePath) {
           walkDir(fullPath);
         }
       } else if (entry.name.endsWith('.md') || entry.name.endsWith('.json')) {
+        // 跳過 broken symlink 或不可讀檔案
+        if (!fs.existsSync(fullPath)) continue;
         const content = fs.readFileSync(fullPath, 'utf8');
         const relativePath = path.relative(resourcePath, fullPath);
         const result = validateFileContent(relativePath, content);
