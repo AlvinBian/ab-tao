@@ -310,8 +310,6 @@ export async function phaseComplete(
 		if (toInstall !== BACK && !isEmpty(toInstall)) {
 			for (const name of toInstall) {
 				const tool = ENHANCERS.find((e) => e.name === name);
-				const s = p.spinner();
-				s.stop(`📦 安裝 ${tool.name}...`);
 				p.log.info(`📦 安裝 ${tool.name}（輸出如下）：`);
 				try {
 					execSync(tool.install, {

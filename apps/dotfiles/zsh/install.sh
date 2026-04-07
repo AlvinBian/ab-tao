@@ -198,9 +198,33 @@ if [[ -f ~/.zshrc ]]; then
     #   2. PATH += / path += / typeset -x
     #   3. eval / source（含縮寫 .）
     #   4. setopt / unsetopt / bindkey
-    #   5. function 宣告行（含 func() { 寫法）
+    #   5. function 宣告行（含 func() { 寫法）— 含多行 body，追蹤大括號深度
     #   6. autoload
-    grep -E '^\s*(export |alias |eval |source |\. |setopt |unsetopt |bindkey |autoload |typeset |[A-Za-z_][A-Za-z0-9_]*=|[A-Za-z_][A-Za-z0-9_]*\+?=|function [A-Za-z_]|[A-Za-z_][A-Za-z0-9_]*\s*\(\))' ~/.zshrc \
+    awk '
+      BEGIN { depth=0; capture=0; buf="" }
+      {
+        line = $0
+        if (!capture) {
+          if (line ~ /^[[:space:]]*(export |alias |eval |source |\. |setopt |unsetopt |bindkey |autoload |typeset |function [A-Za-z_]|[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(\+?=|\(\)))/) {
+            capture = 1; buf = line; depth = 0
+            n = split(line, ch, "")
+            for (i = 1; i <= n; i++) {
+              if (ch[i] == "{") depth++
+              if (ch[i] == "}") depth--
+            }
+            if (depth <= 0) { print buf; capture = 0; buf = ""; depth = 0 }
+          }
+        } else {
+          buf = buf "\n" line
+          n = split(line, ch, "")
+          for (i = 1; i <= n; i++) {
+            if (ch[i] == "{") depth++
+            if (ch[i] == "}") depth--
+          }
+          if (depth <= 0) { print buf; capture = 0; buf = ""; depth = 0 }
+        }
+      }
+    ' ~/.zshrc \
       | grep -vE "$_ab_internal" \
       > ~/.zshrc.local 2>/dev/null || true
     if [[ -s ~/.zshrc.local ]]; then
