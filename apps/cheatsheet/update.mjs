@@ -424,8 +424,6 @@ function convertS2T(html) {
  * 更新 meta 標籤為繁體中文版本
  */
 function updateMeta(html, version) {
-	const today = new Date().toISOString().slice(0, 10);
-
 	return (
 		html
 			// lang 屬性
