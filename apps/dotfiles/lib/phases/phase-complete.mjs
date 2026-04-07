@@ -49,7 +49,9 @@ const ENHANCERS = [
 	{
 		name: "RTK",
 		desc: "壓縮 Bash 輸出 -89% token，安裝後自動生效，無需改變操作習慣",
-		install: `export PATH="$HOME/.local/bin:$PATH" && curl -fsSL https://rtk.sh | bash && rtk init -g`,
+		// 優先 brew，不可用時 fallback curl；最後統一執行 rtk init -g
+		install: `if command -v brew &>/dev/null; then brew install rtk; else export PATH="$HOME/.local/bin:$PATH" && curl -fsSL https://rtk.sh | bash; fi && rtk init -g`,
+		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
 	},
@@ -57,6 +59,7 @@ const ENHANCERS = [
 		name: "Claude-Mem",
 		desc: "跨會話記憶，開新視窗也記得你的背景與偏好",
 		install: "pnpm add -g claude-mem && claude-mem install",
+		failHint: "pnpm add -g claude-mem && claude-mem install",
 		doneHint: "已就緒，執行 claude-mem save 可儲存對話記憶",
 		detect: detectClaudeMem,
 	},
@@ -236,7 +239,7 @@ export async function phaseComplete(
 	const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
 
 	// 第一層：Token 優化（強烈推薦）
-	const [rtk, claudeMem] = ENHANCERS;
+	const [, claudeMem] = ENHANCERS;
 	const tier1 = [
 		"  ── Token 優化（強烈推薦）──",
 		"  Claude 每次對話都有 token 上限，以下兩個工具可大幅降低消耗、加快回應、節省費用",
@@ -245,7 +248,7 @@ export async function phaseComplete(
 		"    問題：git log、npm install、grep 等指令輸出動輒數千行，讓 Claude 讀完浪費大量 token",
 		"    效果：自動截短並摘要 100+ 常用命令輸出，平均壓縮 -89% token 消耗",
 		"    使用：安裝後自動生效，無需改變任何操作習慣",
-		`    安裝：${rtk.install}`,
+		"    安裝：brew install rtk  （再執行 rtk init -g）",
 		"",
 		"  ● Claude-Mem（跨會話記憶管理器）",
 		"    問題：每次開新視窗 Claude 都完全「失憶」，重複解釋背景、偏好設定耗費時間與 token",
@@ -291,16 +294,10 @@ export async function phaseComplete(
 	const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
 
 	if (!isEmpty(missingEnhancers)) {
-		p.log.info(
-			[
-				"🚀 可選增強工具",
-				...missingEnhancers.map((e) => `  ◯ ${e.name.padEnd(12)} — ${e.desc}`),
-			].join("\n"),
-		);
-
 		const toInstall = handleCancel(
 			await p.multiselect({
-				message: "選擇要安裝的工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+				message:
+					"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
 				options: missingEnhancers.map((e) => ({
 					value: e.name,
 					label: e.name,
@@ -324,11 +321,8 @@ export async function phaseComplete(
 					});
 					s.stop(`${pc.green("✔")} ${tool.name} ${tool.doneHint}`);
 				} catch {
-					s.stop(
-						pc.yellow(
-							`⚠️ ${tool.name} 安裝失敗，可稍後手動安裝：${pc.dim(tool.install)}`,
-						),
-					);
+					s.stop(pc.yellow(`⚠️ ${tool.name} 安裝失敗`));
+					p.log.warn(`請手動安裝後重新執行：\n  ${pc.cyan(tool.failHint)}`);
 				}
 			}
 		} else if (toInstall !== BACK) {
