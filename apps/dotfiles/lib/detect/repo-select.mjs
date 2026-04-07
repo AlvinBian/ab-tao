@@ -203,14 +203,14 @@ export async function interactiveRepoSelect(session = null) {
 	function repoOpt(r, showOrg) {
 		const org = r.fullName.split("/")[0];
 		const name = r.fullName.split("/")[1];
-		const label = showOrg ? `${pc.dim(`${org}/`)}${name}` : name;
 		const parts = [];
 		if (r.pct > 0) parts.push(`${r.pct}%`);
 		if (r.commits > 0) parts.push(`${r.commits} commits`);
 		if (r.stars > 0) parts.push(`★${r.stars}`);
 		if (r.desc) parts.push(r.desc.slice(0, 30));
-		const hint = parts.join(" · ");
-		return { value: r.fullName, label, hint };
+		const meta = parts.length ? `  ${pc.dim(parts.join(" · "))}` : "";
+		const prefix = showOrg ? `${pc.dim(`${org}/`)}` : "";
+		return { value: r.fullName, label: `${prefix}${name}${meta}` };
 	}
 
 	// 7. 統一用 smartSelect（有 session 預選上次，無 session 預選有貢獻的）
@@ -294,18 +294,7 @@ export async function interactiveRepoSelect(session = null) {
 				const org = repoOrgs[oi];
 				const orgRepos = sorted.filter((r) => r.fullName.startsWith(`${org}/`));
 				const orgPre = preselected.filter((v) => v.startsWith(`${org}/`));
-				const orgItems = orgRepos.map((r) => {
-					const parts = [];
-					if (r.pct > 0) parts.push(`${r.pct}%`);
-					if (r.commits > 0) parts.push(`${r.commits} commits`);
-					if (r.stars > 0) parts.push(`★${r.stars}`);
-					if (r.desc) parts.push(r.desc.slice(0, 30));
-					return {
-						value: r.fullName,
-						label: r.fullName.split("/")[1],
-						hint: parts.join(" · "),
-					};
-				});
+				const orgItems = orgRepos.map((r) => repoOpt(r, false));
 				const orgResult = await multiselectWithAll({
 					message: `${org}（${oi + 1}/${repoOrgs.length}）`,
 					options: orgItems,
