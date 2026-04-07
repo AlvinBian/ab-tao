@@ -44,7 +44,7 @@ export async function setupSlackNotify(prev) {
         initialValue: true,
       }),
     );
-    if (keep === true) {
+    if (keep) {
       return {
         channelId: currentChannel,
         channelName: currentChannelName,

@@ -58,7 +58,7 @@ function ver(cmd, flag = '--version') {
 
 function run(cmd) {
   try {
-    execSync(cmd, { stdio: 'inherit', env: process.env });
+    execSync(cmd, { stdio: 'inherit' });
     return true;
   } catch {
     return false;

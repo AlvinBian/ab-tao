@@ -5,7 +5,6 @@
  *
  * 設計：
  *   - 避免遞迴：檢查 npm_lifecycle_event 確保只轉發一層
- *   - 保留環境：傳遞完整的 process.env，避免狀態丟失
  */
 
 import { execSync } from 'node:child_process';
@@ -33,7 +32,7 @@ export function run(pkg, aliases = {}) {
   }
 
   try {
-    execSync(full, { stdio: 'inherit', env: process.env });
+    execSync(full, { stdio: 'inherit' });
   } catch (err) {
     // 保留原始退出碼
     process.exit(err.status || 1);
@@ -43,7 +42,7 @@ export function run(pkg, aliases = {}) {
 /** 執行指令，繼承 stdio（互動式，支援 TTY） */
 export function execInteractive(cmd) {
   try {
-    execSync(cmd, { stdio: 'inherit', env: process.env });
+    execSync(cmd, { stdio: 'inherit' });
     return true;
   } catch {
     return false;
