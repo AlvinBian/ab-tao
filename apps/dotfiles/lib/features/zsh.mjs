@@ -180,8 +180,7 @@ export default {
 
 		CLACK_LOGGER.info(`安裝 ${moduleNames.length} 個 ZSH 模組 → ~/.zshrc.d/`);
 
-		// total 設為首次全新安裝的上限（重裝時行數較少，完成時自動跳到 100%）
-		// sheldon(1-2) + fnm(1-2) + brew(9-18) + backup(1) + loader(1) + 恆常(2) + 可選(5) + toml(1) + sheldon預載(2) + zcompile(1) + ripgreprc(1) ≈ 30
+		// total 由 install.sh 動態輸出 TOTAL:XX（fallback 30）
 		await runWithProgress(`${script} --modules ${moduleNames.join(",")}`, {
 			cwd: ctx.repoDir,
 			total: 30,

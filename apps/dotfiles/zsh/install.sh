@@ -121,6 +121,25 @@ fi
 
 [[ ${#SELECTED_MODULES} -eq 0 ]] && { warn "未選擇任何模組"; exit 0; }
 
+# ── 計算進度總數（動態，供 JS 層讀取）─────────────────────────────
+_total=0
+(( _total += 1 ))  # sheldon
+(( _total += 1 ))  # fnm
+NEEDS_BREW=false
+for m in $SELECTED_MODULES; do
+  [[ "$m" == "tools" || "$m" == "git" ]] && NEEDS_BREW=true && break
+done
+$NEEDS_BREW && (( _total += ${#${(s: :):-fzf zoxide bat eza fd git-delta lazygit tldr ripgrep}} ))  # brew tools
+(( _total += 1 ))  # backup or skip
+(( _total += 1 ))  # loader
+(( _total += ${#${(s: :)ALWAYS_DEPLOY}} ))  # 恆常模組
+(( _total += ${#SELECTED_MODULES} ))  # 可選模組
+(( _total += 1 ))  # plugins.toml
+(( _total += 2 ))  # sheldon lock + cache
+(( _total += 1 ))  # zcompile
+[[ " ${SELECTED_MODULES[*]} " == *" tools "* ]] && (( _total += 1 ))  # ripgreprc
+echo "TOTAL:${_total}"
+
 # ══════════════════════════════════════════════════════════════════
 # ── 安裝依賴 ────────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════
@@ -152,10 +171,7 @@ else
 fi
 
 # ── Homebrew CLI 工具 ─────────────────────────────────────────────
-NEEDS_BREW=false
-for m in $SELECTED_MODULES; do
-  [[ "$m" == "tools" || "$m" == "git" ]] && NEEDS_BREW=true && break
-done
+# NEEDS_BREW 已在上方進度計算時設定
 
 if $NEEDS_BREW && command -v brew &>/dev/null; then
   step "安裝 Homebrew CLI 工具"

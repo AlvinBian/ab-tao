@@ -64,7 +64,7 @@ export async function handleInstallModules(
 	if (selectedModules === BACK) return undefined;
 	if (isEmpty(selectedModules)) return;
 
-	// total 設為首次全新安裝的上限（重裝時行數較少，完成時自動跳到 100%）
+	// total 由 install.sh 動態輸出 TOTAL:XX（fallback 30）
 	const total = 30;
 
 	// 生成 preview
