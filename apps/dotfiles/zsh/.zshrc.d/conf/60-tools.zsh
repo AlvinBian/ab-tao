@@ -15,11 +15,8 @@ if _command_exists eza; then
   (( ${+aliases[lt]} )) || alias lt='eza --tree --icons --level=2'
 fi
 
-# fd（find 替代）
-_command_exists fd && (( ! ${+aliases[find]} )) && alias find='fd'
-
-# zoxide（cd 替代）
-_command_exists zoxide && [[ $- == *i* ]] && eval "$(zoxide init zsh)" && alias cd='z'
+# zoxide（互動 shell 才啟用，不覆蓋 cd — 用 z 命令代替）
+_command_exists zoxide && [[ $- == *i* ]] && eval "$(zoxide init zsh)"
 
 # ripgrep
 _command_exists rg && export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"

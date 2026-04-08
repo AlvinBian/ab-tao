@@ -1,7 +1,7 @@
 # ── Git 增強 ──────────────────────────────────────────────────────
 
-# delta diff viewer（存在才配置）
-if _command_exists delta; then
+# delta diff viewer（僅在未配置時設定，避免每次開 shell 寫磁碟）
+if _command_exists delta && [[ "$(git config --global core.pager)" != "delta" ]]; then
   git config --global core.pager delta
   git config --global delta.navigate true
   git config --global delta.light false

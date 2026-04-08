@@ -244,15 +244,23 @@ else
   success "plugins.toml"
 fi
 
-# ── sheldon 預下載插件 + 生成快取（subshell 避免 env 洩漏）──────
+# ── sheldon 預下載插件 + 生成快取 ─────────────────────────────────
 if command -v sheldon &>/dev/null; then
   step "預載入 sheldon 插件"
-  (
-    export SHELDON_CONFIG_DIR="$DEST_DIR/sheldon"
-    export SHELDON_DATA_DIR="$DEST_DIR/sheldon"
-    sheldon lock --update 2>/dev/null && success "插件已下載" || warn "插件下載失敗（首次開 shell 時重試）"
-    sheldon source > "$DEST_DIR/sheldon/cache.zsh" 2>/dev/null && success "快取已生成" || warn "快取生成失敗"
-  )
+  export SHELDON_CONFIG_DIR="$DEST_DIR/sheldon"
+  export SHELDON_DATA_DIR="$DEST_DIR/sheldon"
+  if sheldon lock --update 2>/dev/null; then
+    success "插件已下載"
+  else
+    warn "插件下載失敗（首次開 shell 時重試）"
+  fi
+  if sheldon source > "$DEST_DIR/sheldon/cache.zsh" 2>/dev/null && [[ -s "$DEST_DIR/sheldon/cache.zsh" ]]; then
+    success "快取已生成"
+  else
+    warn "快取生成失敗"
+    touch "$DEST_DIR/sheldon/cache.zsh"
+  fi
+  unset SHELDON_CONFIG_DIR SHELDON_DATA_DIR
 fi
 
 # ── zcompile 預編譯 ──────────────────────────────────────────────

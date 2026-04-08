@@ -1,4 +1,4 @@
-# ── 插件載入（sheldon）+ 補全 + Prompt + IDE ─────────────────────
+# ── 插件載入（sheldon）+ 補全 + Prompt ────────────────────────────
 
 # sheldon source 快取（只在 plugins.toml 變動時重新生成）
 _sheldon_cache="$HOME/.zshrc.d/sheldon/cache.zsh"
@@ -26,10 +26,10 @@ fi
 
 # compinit（sheldon 加完 fpath 之後統一執行）
 autoload -Uz compinit
-if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
-  compinit
-else
+if [[ -f ~/.zcompdump && -z ~/.zcompdump(#qN.mh+24) ]]; then
   compinit -C
+else
+  compinit
 fi
 
 # 補全樣式
@@ -41,10 +41,13 @@ zstyle ':completion:*:warnings' format '%F{red}找不到符合項目%f'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*' rehash true
 
-# fzf-tab（必須在 compinit 之後同步載入，不可 defer）
+# fzf-tab（必須在 compinit 之後同步載入，用 glob 避免硬編碼 sheldon 內部路徑）
 if [[ -n "$SHELDON_DATA_DIR" ]]; then
-  local _fzf_tab="$SHELDON_DATA_DIR/repos/github.com/Aloxaf/fzf-tab"
-  [[ -f "$_fzf_tab/fzf-tab.plugin.zsh" ]] && source "$_fzf_tab/fzf-tab.plugin.zsh"
+  for _fzf_tab in "$SHELDON_DATA_DIR"/repos/*/Aloxaf/fzf-tab(N); do
+    [[ -f "$_fzf_tab/fzf-tab.plugin.zsh" ]] && source "$_fzf_tab/fzf-tab.plugin.zsh"
+    break
+  done
+  unset _fzf_tab
 fi
 
 # starship prompt（必須同步，不可 defer — prompt 必須在首次渲染前就緒）

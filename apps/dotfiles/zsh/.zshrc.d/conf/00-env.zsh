@@ -33,6 +33,6 @@ if [[ -d "$HOME/.pyenv" && -z "$PYENV_SHELL" ]]; then
   export PYENV_ROOT="$HOME/.pyenv"
   [[ ":$PATH:" != *":$PYENV_ROOT/bin:"* ]] && export PATH="$PYENV_ROOT/bin:$PATH"
   pyenv()   { unset -f pyenv python python3 2>/dev/null; eval "$(command pyenv init - zsh)"; pyenv "$@"; }
-  python()  { unset -f python;  eval "$(command pyenv init - zsh)"; python  "$@"; }
-  python3() { unset -f python3; eval "$(command pyenv init - zsh)"; python3 "$@"; }
+  python()  { unset -f pyenv python python3 2>/dev/null; eval "$(command pyenv init - zsh)"; python  "$@"; }
+  python3() { unset -f pyenv python python3 2>/dev/null; eval "$(command pyenv init - zsh)"; python3 "$@"; }
 fi
