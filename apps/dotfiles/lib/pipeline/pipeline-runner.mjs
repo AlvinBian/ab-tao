@@ -464,11 +464,16 @@ export async function runAnalysisPipeline({
 				}
 			}
 
-			eccAiPromise = Promise.resolve({ recommended });
+			// 去重：同一資源可能從多來源 + 多條件重複匹配
+			const dedupedRecommended = [...new Set(recommended)];
+			eccAiPromise = Promise.resolve({ recommended: dedupedRecommended });
 			audit.record({
 				phase: "ecc",
 				action: "rule-recommend",
-				output: { count: recommended.length, total: eccCandidates.length },
+				output: {
+					count: dedupedRecommended.length,
+					total: eccCandidates.length,
+				},
 			});
 
 			// ── 背景翻譯（僅未翻譯的，不阻塞）──

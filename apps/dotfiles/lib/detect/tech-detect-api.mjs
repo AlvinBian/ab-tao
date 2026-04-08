@@ -16,6 +16,7 @@ import { isEmpty } from "lodash-es";
 import {
 	categoryPriority,
 	inferNpmCategory,
+	isNoisePkg,
 	NPM_NAME_NOISE,
 	PHP_NOISE,
 } from "../config/npm-classify.mjs";
@@ -65,14 +66,20 @@ export async function analyzeNpmDeps(depNames, deps, _devDeps) {
 				if (techs.has(id)) continue;
 
 				const keywords = pkg?.collected?.metadata?.keywords || [];
-				const category = inferNpmCategory(
-					keywords,
-					pkg?.collected?.metadata?.description || "",
-				);
+				const desc = pkg?.collected?.metadata?.description || "";
+
+				// 過濾噪音套件（plugin/loader/polyfill/types 等）
+				if (isNoisePkg(keywords, desc)) continue;
+
+				const category = inferNpmCategory(keywords, desc);
+
+				// 只保留框架級分類（排除 library/devtool/other 等低優先級）
+				const priority = categoryPriority(category);
+				if (priority > 45) continue; // 排除 library(55), cli(50), devtool(60)
 
 				techs.set(id, {
 					label: name,
-					priority: categoryPriority(category),
+					priority,
 					category,
 					popularity: Math.round(popularity * 100),
 					detect: {

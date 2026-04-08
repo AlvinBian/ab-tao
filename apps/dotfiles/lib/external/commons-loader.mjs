@@ -107,17 +107,53 @@ const LANG_PREFIXES = [...new Set(Object.values(TECH_TO_LANG))].map(
 
 /**
  * 判斷檔案名是否匹配技術棧
- * - 無語言前綴 → 通用資源，始終匹配
  * - 有語言前綴 → 只有技術棧對應的語言才匹配
+ * - 無語言前綴 → 只匹配 "通用" 類型的資源（名稱不含框架特定關鍵字）
  */
+const FRAMEWORK_KEYWORDS = new Set([
+	"vue",
+	"react",
+	"angular",
+	"svelte",
+	"next",
+	"nuxt",
+	"flutter",
+	"dart",
+	"swift",
+	"kotlin",
+	"java",
+	"python",
+	"rust",
+	"go",
+	"cpp",
+	"php",
+	"ruby",
+	"django",
+	"rails",
+	"express",
+	"fastapi",
+	"spring",
+	"laravel",
+	"nest",
+]);
+
 function matchesTechStack(fileName, matchedLangs) {
 	const name = fileName.replace(".md", "");
+	// 有語言前綴 → 精確匹配
 	for (const prefix of LANG_PREFIXES) {
 		if (name.startsWith(prefix)) {
 			return matchedLangs.has(prefix.replace(/-$/, ""));
 		}
 	}
-	return true; // 無語言前綴 = 通用資源
+	// 無語言前綴 → 檢查名稱是否包含框架關鍵字
+	const nameLower = name.toLowerCase();
+	for (const kw of FRAMEWORK_KEYWORDS) {
+		if (nameLower.includes(kw)) {
+			// 名稱含框架關鍵字 → 只在對應技術棧存在時匹配
+			return matchedLangs.has(kw);
+		}
+	}
+	return true; // 純通用資源（如 code-review、docs）仍匹配
 }
 
 /**
