@@ -16,63 +16,34 @@ const CLAUDE_DIR = path.resolve(__dirname, "..", "..", "claude");
 // ── 靜態 fallback（當動態掃描結果為空時使用）──
 
 const FALLBACK_COMMANDS = [
-	"code-review",
 	"pr-workflow",
 	"tdd",
-	"build-fix",
-	"simplify",
 	"refactor-clean",
 	"changeset",
 	"e2e",
 	"multi-frontend",
-	"test-coverage",
-	"auto-setup",
-	"draft-slack",
-	"review-slack",
-	"slack-formatting",
-	"quality-gate",
-	"verify",
-	"context-budget",
 	"prompt-optimize",
-	"plan",
-	"aside",
 	"multi-plan",
-	"changelog",
 	"adr",
 	"runbook",
 	"api-design",
 	"db-migration",
-	"test-gen",
-	"onboarding",
 	"incident",
+	"test",
+	"check",
+	"slack",
 ];
 
 const FALLBACK_AGENTS = [
-	"coder",
-	"debugger",
 	"deployer",
-	"security",
 	"migrator",
-	"perf-analyzer",
 	"monitor",
-	"chief-of-staff",
-	"architect",
-	"architecture-reviewer",
-	"database-reviewer",
-	"load-tester",
 	"dependency-auditor",
-	"build-error-resolver",
 	"tdd-guide",
-	"data-analyst",
-	// 以下已有更好的替代方案（deprecated）
-	"reviewer", // 替代：code-review plugin
-	"tester", // 替代：e2e-runner
-	"planner", // 替代：Plan subagent
-	"documenter", // 替代：doc-updater
-	"explorer", // 替代：Explore subagent
-	"refactor", // 替代：refactor-cleaner
-	"typescript-reviewer", // 替代：ECC typescript-reviewer
-	"accessibility", // 替代：accessibility-tester
+	"architect",
+	"debugger",
+	"perf",
+	"data",
 ];
 
 const FALLBACK_RULES = [
@@ -134,6 +105,17 @@ export const LEGACY_PROJECT_COMMANDS = [
 	"draft-slack",
 	"review-slack",
 	"slack-formatting",
+	"build-fix",
+	"quality-gate",
+	"test-gen",
+	"code-review",
+	"simplify",
+	"context-budget",
+	"aside",
+	"plan",
+	"verify",
+	"changelog",
+	"onboarding",
 ];
 export const LEGACY_PROJECT_AGENTS = [
 	"security",
@@ -141,6 +123,20 @@ export const LEGACY_PROJECT_AGENTS = [
 	"perf-analyzer",
 	"monitor",
 	"refactor",
+	"coder",
+	"reviewer",
+	"tester",
+	"planner",
+	"documenter",
+	"explorer",
+	"typescript-reviewer",
+	"accessibility",
+	"chief-of-staff",
+	"architecture-reviewer",
+	"build-error-resolver",
+	"load-tester",
+	"data-analyst",
+	"database-reviewer",
 ];
 export const LEGACY_PROJECT_RULES = [
 	"project-conventions",

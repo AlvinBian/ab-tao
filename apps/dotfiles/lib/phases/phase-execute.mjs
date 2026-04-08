@@ -8,8 +8,7 @@
  *   │ Branch B: Plugin 打包               │
  *   │ Branch C: ZSH 模組                  │
  *   └────────────────────────────────────┘
- *   [1] .claudeignore + 預索引（合併一次迭代）
- *   [2] 驗證安裝完整性
+ *   [1] 驗證安裝完整性
  *
  * 子模組責任分離：
  *   - execute/claude-tasks.mjs — Branch A（全局配置 + Claude 安裝 + 專案配置）
@@ -24,7 +23,6 @@ import { isEmpty } from "lodash-es";
 import { backupIfExists } from "../core/backup.mjs";
 import { HOME } from "../core/paths.mjs";
 import { updateSessionProgress } from "../core/session.mjs";
-import { generateAllRepoIndex } from "../deploy/deploy-index.mjs";
 import { buildClaudeTasks } from "./execute/claude-tasks.mjs";
 import { buildPluginTasks } from "./execute/install-plugin.mjs";
 import { buildZshTasks } from "./execute/install-zsh.mjs";
@@ -138,37 +136,7 @@ export async function phaseExecute(
 				},
 			},
 
-			// [1] .claudeignore + 預索引（合併一次迭代）
-			{
-				title: `📑 預索引（${plan.repos?.filter((r) => r.localPath).length ?? 0} 個 repo）`,
-				enabled: () =>
-					(has("project") || has("claudemd")) &&
-					(plan.repos?.filter((r) => r.localPath).length ?? 0) > 0,
-				task: async (_, subtask) => {
-					const repos = (plan.repos || [])
-						.filter((r) => r.localPath)
-						.map((r) => ({ localPath: r.localPath, repo: r.fullName }));
-
-					// .claudeignore 已由 deployAllProjectClaudeMd 內部處理，這裡只做預索引
-					const indexedRepos = [];
-					for (const { localPath, repo } of repos) {
-						const indexResult = generateAllRepoIndex([{ localPath, repo }]);
-						if (indexResult.count > 0) indexedRepos.push(repo.split("/").pop());
-					}
-
-					const parts = [];
-
-					if (!isEmpty(indexedRepos)) {
-						parts.push(`📑 預索引：${indexedRepos.length} 個 repo`);
-					} else {
-						parts.push("📑 預索引：無需生成");
-					}
-
-					subtask.output = parts.join(" · ");
-				},
-			},
-
-			// [2] 驗證安裝完整性
+			// [1] 驗證安裝完整性
 			{
 				title: "✅ 驗證",
 				task: (_, task) =>

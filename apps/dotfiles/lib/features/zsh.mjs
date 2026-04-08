@@ -9,10 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
-import pc from "picocolors";
-import { discoverItems } from "../cli/files.mjs";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
-import { BACKUP_MAX_COUNT } from "../core/constants.mjs";
 import { HOME } from "../core/paths.mjs";
 
 const MODULE_DESCRIPTIONS = {
@@ -204,7 +201,7 @@ export default {
 	/**
 	 * 7. 驗證
 	 */
-	async verify(ctx) {
+	async verify() {
 		const confDir = path.join(HOME, ".zshrc.d", "conf");
 		let passed = 0;
 		let total = 0;

@@ -208,8 +208,8 @@ export function generateMinimalPlan(fullPlan) {
 		...fullPlan,
 		installMode: "minimal",
 		global: {
-			commands: ["code-review", "pr-workflow"],
-			agents: ["coder", "reviewer", "debugger"],
+			commands: ["pr-workflow", "check"],
+			agents: ["debugger", "deployer"],
 			rules: ["code-style", "git-workflow"],
 			hooks: [
 				"PostToolUse:Edit|Write (prettier)",

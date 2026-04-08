@@ -33,16 +33,6 @@ function detectRtk() {
 	}
 }
 
-/** 偵測 Claude-Mem 是否已全局安裝 */
-function detectClaudeMem() {
-	try {
-		execFileSync("which", ["claude-mem"], { stdio: "pipe" });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 /** 可選增強工具配置（模組級常數） */
 const ENHANCERS = [
 	{
@@ -53,14 +43,6 @@ const ENHANCERS = [
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
-	},
-	{
-		name: "Claude-Mem",
-		desc: "跨會話記憶，開新視窗也記得你的背景與偏好",
-		install: "pnpm add -g claude-mem && claude-mem install",
-		failHint: "pnpm add -g claude-mem && claude-mem install",
-		doneHint: "已就緒，執行 claude-mem save 可儲存對話記憶",
-		detect: detectClaudeMem,
 	},
 ];
 
@@ -178,22 +160,19 @@ export async function phaseComplete(
 	if (has("claude")) {
 		guideLines.push(
 			"── Commands（/指令）──",
-			"  開發流程：/code-review · /tdd · /build-fix · /pr-workflow · /changeset",
-			"  AI 協作：  /plan · /multi-plan · /multi-execute · /multi-workflow",
-			"  程式碼：  /simplify · /refactor-clean · /verify · /quality-gate",
-			"  測試：    /test-gen · /test-coverage · /e2e",
-			"  Slack：   /draft-slack · /review-slack · /slack-formatting",
-			"  Session： /save-session · /resume-session · /sessions",
-			"  工具：    /docs · /prompt-optimize · /context-budget · /aside",
+			"  開發流程：/tdd · /check · /pr-workflow · /changeset · /refactor-clean",
+			"  AI 協作：  /multi-plan · /prompt-optimize",
+			"  測試：    /test · /e2e",
+			"  Slack：   /slack（草稿/審查/格式指南）",
+			"  其他：    /adr · /runbook · /api-design · /db-migration · /incident",
 			"",
 			"── Agents（@代理）──",
-			"  開發：  @coder · @planner · @architect · @debugger · @reviewer · @deployer",
-			"  審查：  @code-reviewer · @typescript-reviewer · @security-reviewer",
-			"  測試：  @tester · @tdd-guide · @e2e-runner",
-			"  維運：  @chief-of-staff · @monitor · @migrator · @perf-analyzer",
+			"  開發：  @architect · @debugger · @deployer · @tdd-guide",
+			"  審查：  @data · @perf · @dependency-auditor",
+			"  維運：  @monitor · @migrator",
 			"",
 			"── Rules（自動套用）──",
-			"  code-style · git-workflow · testing · performance · slack-triage · project-conventions",
+			"  code-style · git-workflow · testing · performance · project-conventions",
 			"",
 		);
 	}
@@ -247,7 +226,6 @@ export async function phaseComplete(
 		};
 
 		const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
-		const [, claudeMem] = ENHANCERS;
 
 		p.log.info(
 			[
@@ -255,14 +233,17 @@ export async function phaseComplete(
 				"",
 				"  ── Token 優化（強烈推薦）──",
 				"  ● RTK — Bash 輸出壓縮 -89% token（brew install rtk && rtk init -g）",
-				`  ● Claude-Mem — 跨會話記憶（${claudeMem.install}）`,
+				"",
+				"  ── 官方功能（內建，無需安裝）──",
+				"  ● Auto Memory — 跨會話記憶（settings 中開啟 autoMemoryEnabled）",
+				"  ● /init — 自動分析專案並生成 CLAUDE.md",
+				"  ● /plan — 規劃模式（與官方 Plan subagent 搭配）",
 				"",
 				"  ── 官方 Plugins ──",
-				"    code-review · commit-commands · feature-dev · hookify · security-guidance",
-				"    安裝：在 Claude Code 中執行 /plugin",
+				"    code-review · commit-commands · feature-dev · simplify · security-guidance",
+				"    安裝：在 Claude Code 中執行 /install-plugin",
 				"",
 				"  ── 增強工具（可選）──",
-				"    pilot-shell · prompt-improver",
 				`    ${lspRecommendations}`,
 			].join("\n"),
 		);
