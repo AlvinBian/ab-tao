@@ -111,7 +111,7 @@ export async function handleInstallModules(
 	logger?.info(
 		`${stepLabel}安裝 ${selectedModules.length} 個 ${key} → ~/.zshrc.d/`,
 	);
-	await runWithProgress(`${step.script} --modules "${moduleNames.join(",")}"`, {
+	await runWithProgress(`${step.script} --modules ${moduleNames.join(",")}`, {
 		cwd: repoDir,
 		total,
 		logger,
