@@ -47,11 +47,5 @@ if [[ -n "$SHELDON_DATA_DIR" ]]; then
   [[ -f "$_fzf_tab/fzf-tab.plugin.zsh" ]] && source "$_fzf_tab/fzf-tab.plugin.zsh"
 fi
 
-# starship prompt（有 zsh-defer 就延遲，沒有就同步）
-if _command_exists starship && [[ $- == *i* ]]; then
-  if (( ${+functions[zsh-defer]} )); then
-    zsh-defer eval "$(starship init zsh)"
-  else
-    eval "$(starship init zsh)"
-  fi
-fi
+# starship prompt（必須同步，不可 defer — prompt 必須在首次渲染前就緒）
+_command_exists starship && [[ $- == *i* ]] && eval "$(starship init zsh)"
