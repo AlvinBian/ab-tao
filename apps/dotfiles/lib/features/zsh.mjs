@@ -180,23 +180,20 @@ export default {
 
 		CLACK_LOGGER.info(`安裝 ${moduleNames.length} 個 ZSH 模組 → ~/.zshrc.d/`);
 
+		// total: sheldon(1) + fnm(1) + brew tools(9) + loader(1) + 恆常(2) + 可選(5) + toml(1) + sheldon預載(2) + zcompile(1) + ripgreprc(1) = 24
 		await runWithProgress(`${script} --modules ${moduleNames.join(",")}`, {
 			cwd: ctx.repoDir,
-			total: 15, // 粗估：sheldon + brew + modules + zcompile
+			total: 24,
 			logger: CLACK_LOGGER,
 			parseProgress(line) {
-				if (/^\s+[✔▶⚠]\s+\S+\s+已安裝/.test(line))
-					return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} ✓`;
-				if (/^\s+[✔▶⚠]\s+\S+\s+(安裝完成|安裝失敗)/.test(line))
-					return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} 安裝完成`;
-				if (/^\s+[✔▶⚠]\s+\S+\.zsh(?!\S)/.test(line))
-					return line.match(/(\S+\.zsh)/)?.[1] ?? "module";
-				if (/✔\s+loader/.test(line)) return "loader";
-				if (/✔\s+plugins\.toml/.test(line)) return "plugins.toml";
-				if (/✔\s+插件已下載/.test(line)) return "sheldon plugins";
-				if (/✔\s+快取已生成/.test(line)) return "sheldon cache";
-				if (/✔.*模組已編譯/.test(line)) return "zcompile";
-				if (/✔\s+sheldon/.test(line)) return "sheldon";
+				// 匹配所有 ✔/▶/⚠ 開頭的進度行
+				if (/^\s+[✔▶⚠]/.test(line)) {
+					// 提取關鍵字作為 label
+					const match = line.match(/[✔▶⚠]\s+(.+)/);
+					const label = match?.[1]?.trim() || "...";
+					// 截短到 40 字
+					return label.length > 40 ? `${label.slice(0, 37)}...` : label;
+				}
 				return null;
 			},
 		});
