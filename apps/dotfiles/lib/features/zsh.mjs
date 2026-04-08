@@ -180,10 +180,11 @@ export default {
 
 		CLACK_LOGGER.info(`安裝 ${moduleNames.length} 個 ZSH 模組 → ~/.zshrc.d/`);
 
-		// total: sheldon(1) + fnm(1) + brew tools(9) + loader(1) + 恆常(2) + 可選(5) + toml(1) + sheldon預載(2) + zcompile(1) + ripgreprc(1) = 24
+		// total 設為首次全新安裝的上限（重裝時行數較少，完成時自動跳到 100%）
+		// sheldon(1-2) + fnm(1-2) + brew(9-18) + backup(1) + loader(1) + 恆常(2) + 可選(5) + toml(1) + sheldon預載(2) + zcompile(1) + ripgreprc(1) ≈ 30
 		await runWithProgress(`${script} --modules ${moduleNames.join(",")}`, {
 			cwd: ctx.repoDir,
-			total: 24,
+			total: 30,
 			logger: CLACK_LOGGER,
 			parseProgress(line) {
 				// 匹配所有 ✔/▶/⚠ 開頭的進度行

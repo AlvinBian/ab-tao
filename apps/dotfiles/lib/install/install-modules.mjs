@@ -64,21 +64,8 @@ export async function handleInstallModules(
 	if (selectedModules === BACK) return undefined;
 	if (isEmpty(selectedModules)) return;
 
-	// 計算 total — 只計腳本實際輸出的進度行
-	const BREW_TOOL_COUNT = 9;
-	const needsBrew = selectedModules.some((m) =>
-		["60-tools", "40-git"].includes(m),
-	);
-	const hasTools = selectedModules.some((m) => m.includes("tools"));
-	const brewToolCount = needsBrew ? BREW_TOOL_COUNT : 0;
-	const total =
-		1 /* sheldon */ +
-		brewToolCount +
-		1 /* loader */ +
-		2 /* 恆常模組 */ +
-		2 /* sheldon 預載 + 快取 */ +
-		1 /* zcompile */ +
-		(hasTools ? 1 : 0); /* ripgreprc（僅 tools 模組時） */
+	// total 設為首次全新安裝的上限（重裝時行數較少，完成時自動跳到 100%）
+	const total = 30;
 
 	// 生成 preview
 	stageModulesPreview(repoDir, previewDir, step, selectedModules);
@@ -116,21 +103,12 @@ export async function handleInstallModules(
 		total,
 		logger,
 		parseProgress(line) {
-			if (/^\s+[✔▶⚠]\s+\S+\s+已安裝/.test(line))
-				return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} ✓`;
-			if (/^\s+[✔▶⚠]\s+\S+\s+(安裝完成|安裝失敗)/.test(line))
-				return `${line.match(/[✔▶⚠]\s+(\S+)/)?.[1] || "brew"} 安裝完成`;
-			if (line.includes("安裝 Homebrew CLI 工具"))
-				return { statusOnly: true, label: "安裝 brew 工具..." };
-			if (/^\s+[✔▶⚠]\s+\S+\.zsh(?!\S)/.test(line))
-				return line.match(/(\S+\.zsh)/)?.[1] ?? "module";
-			if (/✔\s+loader/.test(line)) return "loader";
-			if (/✔\s+plugins\.toml/.test(line)) return "plugins.toml";
-			if (/✔\s+插件已下載/.test(line)) return "sheldon plugins";
-			if (/✔\s+快取已生成/.test(line)) return "sheldon cache";
-			if (/✔.*模組已編譯/.test(line)) return "zcompile";
-			if (/✔\s+~\/.ripgreprc/.test(line)) return "~/.ripgreprc";
-			if (/✔\s+sheldon/.test(line)) return "sheldon";
+			// 匹配所有 ✔/▶/⚠ 開頭的進度行
+			if (/^\s+[✔▶⚠]/.test(line)) {
+				const match = line.match(/[✔▶⚠]\s+(.+)/);
+				const label = match?.[1]?.trim() || "...";
+				return label.length > 40 ? `${label.slice(0, 37)}...` : label;
+			}
 			return null;
 		},
 	});
