@@ -292,7 +292,9 @@ export function formatClaudeMd(plan) {
 		const parts = [];
 		if (mainPrj.length) parts.push(`${mainPrj.length} AI 生成`);
 		if (tempPrj.length) parts.push(`${tempPrj.length} 靜態模板`);
-		lines.push(`3. CLAUDE.md（${parts.join(" + ")}）→ ~/.claude/projects/`);
+		lines.push(
+			`3. CLAUDE.md 設定（${parts.join(" + ")}）→ 執行 /init 在各 repo 中生成`,
+		);
 	}
 
 	return lines;

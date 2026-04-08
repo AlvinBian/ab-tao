@@ -4,7 +4,7 @@
  * 包含：
  *   [1] 全局配置（settings + hooks dispatch）
  *   [2] Claude 安裝（commands + agents + rules）
- *   [3] 專案配置（ECC + Stacks + CLAUDE.md）
+ *   [3] 專案配置（ECC + Stacks）
  */
 
 import { spawn } from "node:child_process";
@@ -14,8 +14,6 @@ import { isEmpty } from "lodash-es";
 import { listrLogger } from "../../cli/logger.mjs";
 import { HOME } from "../../core/paths.mjs";
 import { deploySettings } from "../../deploy/deploy-global.mjs";
-import { deployAllProjectClaudeMd } from "../../deploy/deploy-project.mjs";
-import { generateClaudeMd } from "../../deploy/generate-claude-md.mjs";
 import {
 	buildSyncResult,
 	writeSkillFiles,
@@ -53,9 +51,7 @@ export function buildClaudeTasks(
 		shared,
 	},
 ) {
-	const features = new Set(
-		plan.features || ["claude", "claudemd", "ecc", "slack", "zsh"],
-	);
+	const features = new Set(plan.features || ["claude", "slack", "zsh"]);
 	const has = (f) => features.has(f);
 
 	return [
@@ -449,56 +445,6 @@ export function buildClaudeTasks(
 													],
 													{ concurrent: true, exitOnError: false },
 												),
-										},
-
-										// [4] CLAUDE.md 生成 → ~/.claude/projects/
-										{
-											title: `📝 CLAUDE.md → ~/.claude/projects/（${plan.projects?.length ?? 0} 個 repo）`,
-											enabled: () =>
-												has("claudemd") &&
-												(plan.projects?.length ?? 0) > 0 &&
-												!isManual,
-											task: async (_, subtask) => {
-												const aiWarnings = [];
-												const items = await Promise.all(
-													(plan.projects || []).map(async (proj) => {
-														const perRepo =
-															pipelineResult?.perRepo instanceof Map
-																? pipelineResult.perRepo.get(proj.repo)
-																: null;
-														const content = await generateClaudeMd({
-															repoName: proj.repo,
-															role: proj.role,
-															reasoning: perRepo?.reasoning || "",
-															stacks: perRepo?.techStacks || {},
-															meta: { description: "" },
-															onWarn: (msg) => aiWarnings.push(msg),
-														});
-														return {
-															localPath: proj.localPath,
-															content,
-															repo: proj.repo,
-														};
-													}),
-												);
-												const result = deployAllProjectClaudeMd(items);
-												const parts = [];
-												if (result.deployed.length)
-													parts.push(
-														`已生成：${result.deployed.map((r) => r.split("/").pop()).join("、")}`,
-													);
-												if (result.claudeignoreCount > 0)
-													parts.push(
-														`.claudeignore：${result.claudeignoreCount} 個 repo`,
-													);
-												if (result.skipped.length)
-													parts.push(`跳過：${result.skipped.join("、")}`);
-												if (aiWarnings.length)
-													parts.push(
-														`⚠️ ${aiWarnings.length} 個 AI 生成失敗（靜態模板替代）`,
-													);
-												subtask.output = parts.join("\n") || "無需生成";
-											},
 										},
 									],
 									{ concurrent: false },

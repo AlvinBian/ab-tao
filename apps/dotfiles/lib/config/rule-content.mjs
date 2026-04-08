@@ -2,7 +2,7 @@
  * rule-content.mjs — Rules 核心內容提取
  *
  * 職責：
- *   匯出通用規則內容，供 generate-claude-md 和其他工具使用。
+ *   匯出通用規則內容，供安裝流程和其他工具使用。
  *   核心規則內容與 ~/.claude/rules/ 中的定義同步，但去除語言特定部分。
  */
 

@@ -9,7 +9,7 @@ import { StringDecoder } from "node:string_decoder";
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape stripping requires control chars
 const ANSI_RE = /\x1B\[[0-?]*[ -/]*[@-~]/g;
-function stripAnsi(str) {
+export function stripAnsi(str) {
 	return str.replace(ANSI_RE, "");
 }
 

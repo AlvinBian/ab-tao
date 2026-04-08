@@ -22,7 +22,7 @@ flowchart TD
 
     Choice -->|"安裝全部（Enter）"| Full[返回完整 plan]
     Choice -->|"逐項確認"| Detail
-    Choice -->|"精簡安裝"| Minimal["generateMinimalPlan<br/>只保留核心：<br/>code-review · pr-workflow<br/>coder · reviewer · debugger"]
+    Choice -->|"精簡安裝"| Minimal["generateMinimalPlan<br/>只保留核心：<br/>check · test · debugger"]
     Choice -->|"上一步"| Back([BACK 回 Step 1])
 
     subgraph Detail ["逐項確認 detailConfirm"]

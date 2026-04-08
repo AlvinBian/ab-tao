@@ -2,7 +2,7 @@
  * 配置分類引擎
  *
  * 所有 commands/agents/rules 統一裝到 ~/.claude/（全局）
- * 只有 CLAUDE.md 按 repo 角色差異化 → ~/.claude/projects/{path}/
+ * CLAUDE.md 由 /init 指令在各 repo 中按需生成
  */
 
 import fs from "node:fs";
@@ -15,54 +15,11 @@ const CLAUDE_DIR = path.resolve(__dirname, "..", "..", "claude");
 
 // ── 靜態 fallback（當動態掃描結果為空時使用）──
 
-const FALLBACK_COMMANDS = [
-	"pr-workflow",
-	"tdd",
-	"refactor-clean",
-	"changeset",
-	"e2e",
-	"multi-frontend",
-	"prompt-optimize",
-	"multi-plan",
-	"adr",
-	"runbook",
-	"api-design",
-	"db-migration",
-	"incident",
-	"test",
-	"check",
-	"slack",
-];
+const FALLBACK_COMMANDS = ["check", "slack", "test", "db-migration"];
 
-const FALLBACK_AGENTS = [
-	"deployer",
-	"migrator",
-	"monitor",
-	"dependency-auditor",
-	"tdd-guide",
-	"architect",
-	"debugger",
-	"perf",
-	"data",
-];
+const FALLBACK_AGENTS = ["architect", "debugger"];
 
-const FALLBACK_RULES = [
-	"code-style",
-	"git-workflow",
-	"project-conventions",
-	"testing",
-	"performance",
-	"slack-mrkdwn",
-	"tool-selection",
-	"agent-orchestration",
-	"api-conventions",
-	"context-management",
-	"error-handling",
-	"security-baseline",
-	"observability",
-	"typescript-conventions",
-	"database-conventions",
-];
+const FALLBACK_RULES = ["api-and-data"];
 
 // ── 動態掃描 claude/ 子目錄 ──
 
@@ -98,6 +55,7 @@ export const ALL_RULES = !isEmpty(_scanned.rules)
 
 // 舊版時這些是專案級（現在全部統一到全局，但 upgrade.mjs 需要知道舊的分類來清理）
 export const LEGACY_PROJECT_COMMANDS = [
+	// v1 刪除
 	"e2e",
 	"multi-frontend",
 	"test-coverage",
@@ -116,8 +74,21 @@ export const LEGACY_PROJECT_COMMANDS = [
 	"verify",
 	"changelog",
 	"onboarding",
+	// v2 刪除
+	"pr-workflow",
+	"refactor-clean",
+	"changeset",
+	"prompt-optimize",
+	"multi-plan",
+	"adr",
+	"api-design",
+	"tdd",
+	"runbook",
+	"incident",
+	"multi-frontend",
 ];
 export const LEGACY_PROJECT_AGENTS = [
+	// v1 刪除
 	"security",
 	"migrator",
 	"perf-analyzer",
@@ -137,12 +108,22 @@ export const LEGACY_PROJECT_AGENTS = [
 	"load-tester",
 	"data-analyst",
 	"database-reviewer",
+	// v2 刪除
+	"deployer",
+	"dependency-auditor",
+	"tdd-guide",
+	"perf",
+	"data",
 ];
 export const LEGACY_PROJECT_RULES = [
 	"project-conventions",
 	"testing",
 	"performance",
 	"slack-mrkdwn",
+	// v2 刪除
+	"core-conventions",
+	"workflow",
+	"security",
 ];
 
 // ── 角色閾值 ──
@@ -163,21 +144,6 @@ export const MAIN_REPO_MIN_COMMITS = 3;
 export function determineRole(repo) {
 	if (repo.commits >= MAIN_REPO_MIN_COMMITS) return "main";
 	return "temp";
-}
-
-// ── 路徑編碼（Claude Code 原生格式）──
-
-/**
- * 將本地路徑編碼為 Claude Code projects/ 目錄的 key 格式
- *
- * Claude Code 用路徑中的 / 全部換成 - 作為目錄名稱。
- * 例如：/Users/foo/bar → -Users-foo-bar
- *
- * @param {string} localPath - 本地絕對路徑
- * @returns {string} 編碼後的 key 字串
- */
-export function encodeProjectPath(localPath) {
-	return localPath.replace(/\//g, "-");
 }
 
 // ── CLAUDE.md 模板類型（按角色）──

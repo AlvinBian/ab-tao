@@ -45,9 +45,7 @@ export async function phaseExecute(
 	{ repoDir, previewDir, targets, prev, pipelineResult, fetchedSources },
 ) {
 	const isManual = plan.mode === "manual";
-	const features = new Set(
-		plan.features || ["claude", "claudemd", "ecc", "slack", "zsh"],
-	);
+	const features = new Set(plan.features || ["claude", "slack", "zsh"]);
 	const has = (f) => features.has(f);
 	const startTime = Date.now();
 
@@ -194,31 +192,6 @@ export async function phaseExecute(
 									} else {
 										total++;
 										missing.push("hooks.json");
-									}
-								}
-
-								// 驗證 CLAUDE.md（僅選了 project 時）
-								if (
-									(has("project") || has("claudemd")) &&
-									plan.projects?.length
-								) {
-									const { encodeProjectPath } = await import(
-										"../config/config-classifier.mjs"
-									);
-									for (const proj of plan.projects) {
-										if (!proj.localPath) continue;
-										total++;
-										const encoded = encodeProjectPath(proj.localPath);
-										const mdPath = path.join(
-											HOME,
-											".claude",
-											"projects",
-											encoded,
-											"CLAUDE.md",
-										);
-										if (fs.existsSync(mdPath)) passed++;
-										else
-											missing.push(`CLAUDE.md (${proj.repo.split("/").pop()})`);
 									}
 								}
 

@@ -26,7 +26,7 @@ const CLAUDE_DIR = path.join(HOME, ".claude");
  * @param {string} [template.model] - 預設 AI 模型（如 'sonnet'）
  * @param {string} [template.effortLevel] - 推理強度（如 'medium'）
  * @param {boolean} [template.autoMemoryEnabled] - 是否啟用自動記憶
- * @param {Object} [template.env] - 環境變數設定（如 MAX_THINKING_TOKENS）
+ * @param {Object} [template.env] - 環境變數設定
  * @returns {{ path: string, permissionsAdded: number, isNew: boolean }}
  *   path: settings.json 的絕對路徑
  *   permissionsAdded: 新增的 allow 規則數量

@@ -5,6 +5,9 @@ description: >
   支援場景檢測、自動組裝、格式驗證、直接發送。
   Use when: "幫我寫 Slack 訊息", "檢查 Slack 格式", "Slack 審查",
   "draft Slack message", "format Slack", "mrkdwn", "Slack 告警", "寫 Slack 公告".
+disable-model-invocation: true
+model: haiku
+effort: low
 metadata:
   version: 2.0.0
 matchWhen:

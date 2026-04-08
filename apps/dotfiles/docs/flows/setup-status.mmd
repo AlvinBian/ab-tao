@@ -8,7 +8,7 @@ links:
 flowchart TD
     Entry([從主流程進入]) --> Health["配置健康度<br/>85% 42/50"]
 
-    Health --> Claude["Claude 配置<br/>Commands 12 個 code-review, pr-workflow...<br/>Agents 14 個 coder, debugger, reviewer...<br/>Rules 8 個 code-style, git-workflow...<br/>Hooks 已啟用 / Settings 已配置<br/>CLAUDE.md 4 個 repo"]
+    Health --> Claude["Claude 配置<br/>Commands 4 個 check, slack, test, db-migration<br/>Agents 2 個 architect, debugger<br/>Rules 1 個 api-and-data<br/>Hooks 5 個 prettier, eslint, file-protection, dangerous-command-block, macos-notification<br/>CLAUDE.md 4 個 repo"]
 
     Claude --> ZshInfo["ZSH 模組<br/>~/.zshrc.d/ + sheldon 插件管理"]
 
@@ -20,7 +20,7 @@ flowchart TD
 
     AiInfo --> Select{"選擇調整項目"}
 
-    Select -->|"Claude 配置 commands 12 agents 14 rules 8"| AClaude
+    Select -->|"Claude 配置 commands 4 agents 2 rules 1"| AClaude
     Select -->|"全局設定 settings"| ASettings
     Select -->|"CLAUDE.md 4 個 repo 需 AI"| AClaudeMd
     Select -->|"ZSH 模組 ~/.zshrc.d/"| AZsh

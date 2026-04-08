@@ -49,7 +49,7 @@
 						"commands": {
 							"dir": "claude/commands",
 							"ext": ".md",
-							"filter": ["draft-slack", "review-slack", "slack-formatting"]
+							"filter": ["slack"]
 						}
 					},
 					"fixed": {

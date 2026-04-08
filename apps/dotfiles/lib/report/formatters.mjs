@@ -346,15 +346,3 @@ export function renderPlugins(_installed = {}) {
 		`<p class="section-desc">提升 Claude Code 能力，在 Claude Code 中執行 /plugin 安裝</p>${pluginsList}`,
 	);
 }
-
-/**
- * 渲染 .claudeignore 覆蓋統計
- */
-export function renderClaudeIgnoreStats(repoCount = 0) {
-	if (repoCount === 0) return "";
-
-	return `<div class="stat" style="margin-right:16px">
-    <span style="color:#8b949e">.claudeignore</span>
-    <span style="color:#58a6ff;font-weight:600">${repoCount} 個 Repo 已覆蓋</span>
-  </div>`;
-}

@@ -1008,13 +1008,7 @@ async function main() {
 				);
 			}
 
-			// 展開 project → claudemd + ecc 給下游
-			const expandedFeatures = [...features];
-			if (hasProject && !expandedFeatures.includes("claudemd"))
-				expandedFeatures.push("claudemd");
-			if (hasProject && !expandedFeatures.includes("ecc"))
-				expandedFeatures.push("ecc");
-			planForReview.features = expandedFeatures;
+			planForReview.features = features;
 		}
 
 		// Step 2：確認計畫

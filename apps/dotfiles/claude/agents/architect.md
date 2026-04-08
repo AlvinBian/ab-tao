@@ -1,13 +1,7 @@
 ---
 name: architect
 description: >
-  系統架構設計與審查代理，產出 ADR、評估設計決策、識別架構債。唯讀，不修改檔案。
-
-  <example>
-  Context: 設計新功能架構
-  user: "幫我設計一個通知系統"
-  assistant: "啟動 architect 設計架構方案並產出 ADR。"
-  </example>
+  架構設計 + 審查 — ADR 產出、5 維度評分、架構債識別。唯讀。
 
   <example>
   Context: 技術選型

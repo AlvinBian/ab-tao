@@ -40,7 +40,7 @@ pnpm run d:uninstall       # 移除 ab-tao
 
 pnpm run c:sync            # 列出 AI 來源（預設不同步）
 pnpm run c:sync:select     # 互動式選擇同步
-pnpm run c:sync:all        # 同步全部 7 個來源
+pnpm run c:sync:ecc        # 同步 1 個可選來源（ECC rules+skills）
 pnpm run c:validate        # 驗證資源結構
 
 pnpm run cheatsheet:update # 從原站同步最新版
@@ -48,24 +48,22 @@ pnpm run cheatsheet:force  # 強制更新（忽略版本比對）
 pnpm run cheatsheet:open   # 在瀏覽器開啟本地 HTML 版本
 ```
 
-## v1.0.0 架構：智能配置精靈 + 最佳輪子編排
+## v2.0.0 架構：輕量化配置 + 命令驅動
 
 保留層（核心資產）：
 ```
   setup 互動精靈        — 5 階段部署（環境檢查 → 功能選擇 → 分析 → 確認 → 執行）
-  CLAUDE.md 八大模塊    — 工作流 + 質量紅線 + 編碼標準 + 指令 + 規範
-  commons 資源同步      — 7 個 AI 來源、版本追蹤、安全驗證
-  5 個獨有 agents       — 架構師/計劃/TDD/程式碼審查/安全審查
+  /init 動態生成        — 各 repo 執行 claude /init 產生自訂 CLAUDE.md
+  commons 資源同步      — 1 個可選 AI 來源（ECC rules+skills）、版本追蹤、安全驗證
+  2 個 agents           — architect、debugger
   ZSH 模組化環境       — 7 個模組（~/.zshrc.d/ + sheldon 插件管理）
-  .claudeignore         — 自動生成，按 repo 偵測
-  預索引                — .claude/index/ 壓縮索引（API/組件/schema）
   Rules                 — 只保留 paths 條件載入 + Hooks 過濾
 ```
 
 推薦安裝層（第三方輪子）：
 ```
   Token 優化            — RTK（Bash 輸出 -89%，brew install rtk）· Claude-Mem（跨會話記憶）
-  官方 Plugins          — code-review · commit-commands · feature-dev · simplify
+  官方 Plugins          — code-review · commit-commands · simplify
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
   監控與診斷            — statusline（自動部署）· doctor（環境診斷）
 ```

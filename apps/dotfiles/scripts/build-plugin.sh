@@ -185,11 +185,7 @@ done
 # 依技術棧過濾：只保留相關的 commands（從 ab-tao）
 _should_include_cmd() {
   local name="$1"
-  # 這些指令對所有專案都有用
-  case "$name" in
-    auto-setup|pr-workflow|draft-slack|slack-formatting|review-slack) return 0 ;;
-  esac
-  # 技術棧相關
+    # 技術棧相關
   for tech in "${TECH_STACK[@]}"; do
     case "$tech:$name" in
       vue:code-review|vue:test-gen) return 0 ;;

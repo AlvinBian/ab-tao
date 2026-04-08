@@ -25,9 +25,7 @@ export function buildZshTasks(
 	plan,
 	{ repoDir, previewDir, targets, prev, isManual, installSelections },
 ) {
-	const features = new Set(
-		plan.features || ["claude", "claudemd", "ecc", "slack", "zsh"],
-	);
+	const features = new Set(plan.features || ["claude", "slack", "zsh"]);
 	const has = (f) => features.has(f);
 
 	return [

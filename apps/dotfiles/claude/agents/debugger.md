@@ -1,13 +1,7 @@
 ---
 name: debugger
 description: >
-  除錯與 Build 錯誤修復代理，定位 bug 根因、分析錯誤日誌、修復編譯/型別錯誤。
-
-  <example>
-  Context: 生產環境報錯
-  user: "這個 API 回傳 500，幫我查"
-  assistant: "啟動 debugger 定位問題。"
-  </example>
+  除錯 + Build 修復 — 根因定位、最小 diff 修復、不重構。可寫檔案。
 
   <example>
   Context: 邏輯錯誤

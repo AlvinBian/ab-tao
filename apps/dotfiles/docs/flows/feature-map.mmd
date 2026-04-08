@@ -1,6 +1,6 @@
 ---
 title: 功能選擇結構
-description: 4 大功能、部署目標、v3 新增（.claudeignore + 預索引 + Plugin）
+description: 4 大功能、部署目標、v2.0 精簡（4 個命令 + 2 個 agents + 1 個可選來源）
 links:
   - setup-main: 返回主流程
   - phase-execute: 安裝執行
@@ -10,27 +10,24 @@ flowchart TD
 
     subgraph C1G ["🤖 Claude Code 開發配置"]
         C1["Claude Code"]
-        C1 --> CC1["commands<br/>29 個 · disable-model-invocation 標記"]
-        C1 --> CC2["agents<br/>24 個 · 描述 ≤150 字 · context:fork"]
-        C1 --> CC3["rules<br/>4 個精簡 · paths 條件載入"]
-        C1 --> CC4["skills<br/>patterns · performance · slack-mrkdwn · tooling"]
-        C1 --> CC5["hooks + settings"]
+        C1 --> CC1["commands<br/>4 個 · check, slack, test, db-migration"]
+        C1 --> CC2["agents<br/>2 個 · architect, debugger"]
+        C1 --> CC3["rules<br/>1 個精簡 · api-and-data · paths 條件載入"]
+        C1 --> CC4["skills<br/>3 個 · slack-mrkdwn · runbook · incident"]
+        C1 --> CC5["hooks<br/>5 個 · prettier · eslint · file protection · dangerous command block · macOS notification"]
         CC1 --> T1["→ ~/.claude/commands/"]
         CC2 --> T2["→ ~/.claude/agents/"]
         CC3 --> T3["→ ~/.claude/rules/"]
         CC4 --> T4["→ ~/.claude/skills/"]
-        CC5 --> T5["→ ~/.claude/settings.json"]
+        CC5 --> T5["→ ~/.claude/hooks/"]
     end
 
     subgraph C2G ["📁 專案配置（需要 repos）"]
         C2["專案配置"]
-        C2 --> CM1["CLAUDE.md<br/>八大模塊 · AI 生成"]
-        C2 --> CM2[".claudeignore<br/>按目錄自動偵測"]
-        C2 --> CM3["預索引<br/>.claude/index/"]
-        C2 --> CM4["ECC 資源融合<br/>AI 來源選擇"]
+        C2 --> CM1["CLAUDE.md<br/>動態生成 · claude /init"]
+        C2 --> CM4["ECC 資源融合<br/>1 個可選 AI 來源（rules+skills）"]
         CM1 --> CMT["→ {org}/{repo}/"]
-        CM2 --> CMT
-        CM3 --> CMT
+        CM4 --> CMT
     end
 
     subgraph C3G ["💬 Slack 通知"]
@@ -49,8 +46,8 @@ flowchart TD
 
     classDef feature fill:#1f6feb,color:#fff
     classDef target fill:#238636,color:#fff
-    classDef new fill:#d29922,color:#000
+    classDef optional fill:#d29922,color:#000
 
     class C1,C2,C3,C4 feature
     class T1,T2,T3,T4,T5,CMT,ST,ZT target
-    class CM2,CM3,CC4 new
+    class CM4 optional

@@ -37,8 +37,8 @@ function loadSource(sourceName) {
 
 	const result = {
 		name: sourceName,
-		commands: loadMdFiles(path.join(sourceDir, "commands")),
-		agents: loadMdFiles(path.join(sourceDir, "agents")),
+		commands: [],
+		agents: [],
 		rules: loadMdFiles(path.join(sourceDir, "rules")),
 		skills: [],
 	};

@@ -626,6 +626,31 @@ export async function writeSyncedFiles(downloaded, targetDir) {
  * @param {string} targetDir - 目標目錄（如 ~/.claude/）
  * @returns {Promise<string[]>} 跳過的技能名稱
  */
+/**
+ * 為外部 skill 注入 model 路由 frontmatter
+ *
+ * 外部 skills 強制使用 sonnet + low effort + disable-model-invocation，
+ * 避免在 opusplan 模式下浪費 Opus quota。
+ */
+function injectSkillModelRouting(content) {
+	const INJECT_FIELDS =
+		"disable-model-invocation: true\nmodel: sonnet\neffort: low";
+
+	// 已有 frontmatter → 在 --- 結束前注入
+	if (content.startsWith("---\n")) {
+		const endIdx = content.indexOf("\n---", 4);
+		if (endIdx !== -1) {
+			// 檢查是否已有 model 欄位
+			const frontmatter = content.slice(0, endIdx);
+			if (frontmatter.includes("model:")) return content;
+			return `${content.slice(0, endIdx)}\n${INJECT_FIELDS}${content.slice(endIdx)}`;
+		}
+	}
+
+	// 無 frontmatter → 加上
+	return `---\n${INJECT_FIELDS}\n---\n\n${content}`;
+}
+
 export async function writeSkillFiles(skillSources, targetDir) {
 	const skipped = [];
 	const skillsRoot = path.join(targetDir, "skills");
@@ -643,7 +668,8 @@ export async function writeSkillFiles(skillSources, targetDir) {
 			}
 
 			fs.mkdirSync(skillDir, { recursive: true });
-			fs.writeFileSync(skillPath, GENERATED_MARKER + skill.content, "utf8");
+			const routed = injectSkillModelRouting(skill.content);
+			fs.writeFileSync(skillPath, GENERATED_MARKER + routed, "utf8");
 		}
 	}
 

@@ -25,18 +25,18 @@ if [ $MISSING -eq 0 ]; then
   echo "✓ All .md files have frontmatter"
 fi
 
-# 3. matchWhen 檢查
+# 3. Frontmatter 路由檢查（matchWhen 或 paths 或 disable-model-invocation）
 echo ""
-echo "--- matchWhen Check ---"
+echo "--- Routing Check ---"
 MW_MISSING=0
 for f in claude/agents/*.md claude/commands/*.md claude/rules/*.md; do
-  if ! grep -q "matchWhen" "$f" 2>/dev/null; then
-    echo "✗ $(basename $f) missing matchWhen"
+  if ! grep -qE "matchWhen|^paths:|disable-model-invocation" "$f" 2>/dev/null; then
+    echo "✗ $(basename $f) missing routing config"
     MW_MISSING=$((MW_MISSING + 1))
   fi
 done
 if [ $MW_MISSING -eq 0 ]; then
-  echo "✓ All files have matchWhen"
+  echo "✓ All .md files have routing config"
 fi
 
 # 4. Module import 驗證
@@ -47,7 +47,6 @@ const modules = [
   './lib/cli/prompts.mjs',
   './lib/cli/progress.mjs',
   './lib/cli/files.mjs',
-  './lib/cli/preselect.mjs',
   './lib/cli/task-runner.mjs',
   './lib/install/index.mjs',
   './lib/install/common.mjs',
@@ -63,8 +62,6 @@ const modules = [
   './lib/config/config-classifier.mjs',
   './lib/detect/repo-detect.mjs',
   './lib/deploy/deploy-global.mjs',
-  './lib/deploy/deploy-project.mjs',
-  './lib/deploy/generate-claude-md.mjs',
   './lib/config/upgrade.mjs',
 ]
 Promise.all(modules.map(m => import(m).then(() => '✓ ' + m).catch(e => '✗ ' + m + ': ' + e.message)))
@@ -79,7 +76,6 @@ Promise.all(modules.map(m => import(m).then(() => '✓ ' + m).catch(e => '✗ ' 
 echo ""
 echo "--- v2 Template Check ---"
 node -e "JSON.parse(require('fs').readFileSync('claude/settings.template.json'))" && echo "✓ settings.template.json"
-node -e "JSON.parse(require('fs').readFileSync('claude/keybindings-template.json'))" && echo "✓ keybindings-template.json"
 
 # 6. 檔案統計
 echo ""

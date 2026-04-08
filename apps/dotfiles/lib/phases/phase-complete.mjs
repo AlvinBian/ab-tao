@@ -4,10 +4,9 @@
  * 安裝完成後的收尾階段，依序執行：
  *   1. 計算耗時並顯示安裝摘要
  *   2. 輸出快速上手引導訊息
- *   3. 偵測並提供 RTK / Claude-Mem 選擇性安裝
- *   4. 建立第三方 ECC 描述快取
- *   5. 生成 HTML 安裝報告並詢問是否開啟瀏覽器
- *   6. 清除 session 進度並儲存最終 session
+ *   3. 偵測並提供 RTK 選擇性安裝
+ *   4. 生成 HTML 安裝報告並詢問是否開啟瀏覽器
+ *   5. 清除 session 進度並儲存最終 session
  */
 
 import { execFileSync, execSync } from "node:child_process";
@@ -16,7 +15,6 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
-import { buildDescriptionCache } from "../config/descriptions.mjs";
 import { BACKUP_DIR } from "../core/backup.mjs";
 import { BACKUP_MAX_COUNT } from "../core/constants.mjs";
 import { HOME } from "../core/paths.mjs";
@@ -123,10 +121,6 @@ export async function phaseComplete(
 		instLines.push(
 			`  Stacks（${plan.techStacks.length}）：${plan.techStacks.join("、")}`,
 		);
-	const claudeMdCount =
-		plan.projects?.filter((proj) => proj.localPath).length || 0;
-	if (claudeMdCount)
-		instLines.push(`  CLAUDE.md（${claudeMdCount}）→ ~/.claude/projects/`);
 
 	const summaryLines = [
 		`耗時 ${elapsed}s · AI ~$${plan.aiCost?.total?.toFixed(2) ?? "?"}`,
@@ -160,19 +154,19 @@ export async function phaseComplete(
 	if (has("claude")) {
 		guideLines.push(
 			"── Commands（/指令）──",
-			"  開發流程：/tdd · /check · /pr-workflow · /changeset · /refactor-clean",
-			"  AI 協作：  /multi-plan · /prompt-optimize",
-			"  測試：    /test · /e2e",
-			"  Slack：   /slack（草稿/審查/格式指南）",
-			"  其他：    /adr · /runbook · /api-design · /db-migration · /incident",
+			"  /check · /slack · /test · /db-migration",
 			"",
 			"── Agents（@代理）──",
-			"  開發：  @architect · @debugger · @deployer · @tdd-guide",
-			"  審查：  @data · @perf · @dependency-auditor",
-			"  維運：  @monitor · @migrator",
+			"  @architect · @debugger",
+			"",
+			"── Skills（/技能庫）──",
+			"  /runbook · /incident（按需）",
 			"",
 			"── Rules（自動套用）──",
-			"  code-style · git-workflow · testing · performance · project-conventions",
+			"  api-and-data（碰到 API/DB 檔案時自動載入）",
+			"",
+			"── CLAUDE.md（每個 repo 各自生成）──",
+			"  cd {repo} && claude /init",
 			"",
 		);
 	}
@@ -195,6 +189,12 @@ export async function phaseComplete(
 	}
 
 	guideLines.push(
+		"── Model 自動路由（opusplan 模式）──",
+		"  預設 opusplan：/plan 用 Opus 思考，執行自動切回 Sonnet",
+		"  @architect → Opus（架構決策）",
+		"  @debugger · /test · /db-migration · /incident → Sonnet（日常開發）",
+		"  /check · /slack · /runbook → Haiku（模板/腳本）",
+		"",
 		"── 維護 ──",
 		"  pnpm run status   — 配置管理中心",
 		"  pnpm run doctor   — 環境診斷",
@@ -225,45 +225,63 @@ export async function phaseComplete(
 				: "LSP 按語言：/plugin 中搜索 language server";
 		};
 
-		const lspRecommendations = buildLspRecommendations(plan.techStacks || []);
+		const lspLine = buildLspRecommendations(plan.techStacks || []);
 
 		p.log.info(
 			[
 				"💡 推薦安裝（提升 Claude Code 能力）",
 				"",
-				"  ── Token 優化（強烈推薦）──",
-				"  ● RTK — Bash 輸出壓縮 -89% token（brew install rtk && rtk init -g）",
+				"  ── 官方 Plugin（強烈推薦）──",
+				"  /plugin install code-review@claude-plugins-official",
+				"  /plugin install commit-commands@claude-plugins-official",
+				"  /plugin install security-guidance@claude-plugins-official",
+				`  ${lspLine}`,
 				"",
-				"  ── 官方功能（內建，無需安裝）──",
-				"  ● Auto Memory — 跨會話記憶（settings 中開啟 autoMemoryEnabled）",
-				"  ● /init — 自動分析專案並生成 CLAUDE.md",
-				"  ● /plan — 規劃模式（與官方 Plan subagent 搭配）",
+				"  ── 官方 Marketplace（按需）──",
+				"  /plugin marketplace add anthropics/knowledge-work-plugins",
 				"",
-				"  ── 官方 Plugins ──",
-				"    code-review · commit-commands · feature-dev · simplify · security-guidance",
-				"    安裝：在 Claude Code 中執行 /install-plugin",
+				"  ── CI/CD 自動化 ──",
+				"  /install-github-app（PR 自動審查 + Issue 分類）",
 				"",
-				"  ── 增強工具（可選）──",
-				`    ${lspRecommendations}`,
+				"  ── Token 優化 ──",
+				"  RTK — brew install rtk && rtk init -g",
+				"",
+				"  ── 官方內建功能（無需安裝）──",
+				"  Auto Memory · /init · /plan · /simplify · /debug · /batch",
 			].join("\n"),
 		);
 
 		// 增強工具互動安裝
 		const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
 		if (!isEmpty(missingEnhancers)) {
-			const toInstall = handleCancel(
-				await p.multiselect({
-					message:
-						"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
-					options: missingEnhancers.map((e) => ({
-						value: e.name,
-						label: e.name,
-						hint: e.desc,
-					})),
-					required: false,
-					initialValues: [],
-				}),
-			);
+			let toInstall = [];
+
+			// 如果只有一個增強工具，使用 confirm；否則使用 multiselect
+			if (missingEnhancers.length === 1) {
+				const confirmed = handleCancel(
+					await p.confirm({
+						message: `🚀 安裝 ${missingEnhancers[0].name}？（${missingEnhancers[0].desc}）`,
+						initialValue: true,
+					}),
+				);
+				if (confirmed !== BACK && confirmed) {
+					toInstall = [missingEnhancers[0].name];
+				}
+			} else {
+				toInstall = handleCancel(
+					await p.multiselect({
+						message:
+							"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+						options: missingEnhancers.map((e) => ({
+							value: e.name,
+							label: e.name,
+							hint: e.desc,
+						})),
+						required: false,
+						initialValues: [],
+					}),
+				);
+			}
 
 			if (toInstall !== BACK && !isEmpty(toInstall)) {
 				for (const name of toInstall) {
@@ -281,24 +299,6 @@ export async function phaseComplete(
 					}
 				}
 			}
-		}
-	}
-
-	// 建立 ECC/第三方描述快取（僅 claude 相關）
-	if (has("claude")) {
-		const { count: descCount, newItems: descNewItems } = buildDescriptionCache(
-			claudeDir,
-			plan.techStacks || [],
-		);
-		if (!isEmpty(descNewItems)) {
-			const names = descNewItems.map((k) =>
-				k.includes("/") ? k.split("/")[1] : k,
-			);
-			p.log.info(
-				`📋 已快取 ${descCount} 個配置描述（新增 ${descNewItems.length}）：\n${names.map((n) => `  · ${n}`).join("\n")}`,
-			);
-		} else if (descCount > 0) {
-			p.log.info(`📋 已快取 ${descCount} 個配置描述（無新增）`);
 		}
 	}
 
@@ -389,7 +389,7 @@ export async function phaseComplete(
 	clearSessionProgress();
 	saveSession({
 		targets: plan.targets || ["claude-dev", "slack", "zsh"],
-		features: plan.features || ["claude", "claudemd", "ecc", "slack", "zsh"],
+		features: plan.features || ["claude", "slack", "zsh"],
 		mode: plan.mode,
 		installMode: plan.installMode,
 		org: [

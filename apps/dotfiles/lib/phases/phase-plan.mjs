@@ -55,7 +55,7 @@ export async function phasePlan(plan) {
 				{
 					value: "minimal",
 					label: "⚡ 精簡安裝",
-					hint: "只裝核心必需品（code-review + pr-workflow + coder + reviewer + debugger）",
+					hint: "只裝核心必需品（check + test + debugger）",
 				},
 				{ value: "back", label: "← 上一步" },
 			],

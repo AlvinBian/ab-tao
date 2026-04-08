@@ -8,7 +8,6 @@
 	"showProgress": true,
 	"includeCoAuthoredBy": false,
 	"env": {
-		"MAX_THINKING_TOKENS": "31999",
 		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "70",
 		"CLAUDE_CODE_SUBAGENT_MODEL": "haiku",
 		"USE_BUILTIN_RIPGREP": "1",

@@ -3,6 +3,8 @@ name: test
 description: >
   單元測試生成與覆蓋率分析，自動偵測框架並載入對應測試模式。
   Use when: "寫測試", "unit test", "加測試", "補測試", "coverage", "覆蓋率", "測試覆蓋", "哪裡沒測", "test coverage".
+model: sonnet
+effort: medium
 metadata:
   version: 1.0.0
 matchWhen:

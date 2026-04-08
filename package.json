@@ -1,5 +1,6 @@
 {
 	"name": "ab-tao",
+	"version": "1.0.0",
 	"private": true,
 	"description": "ab-tao: 統一 monorepo — dotfiles 環境管理 + 共用資源庫",
 	"type": "module",
@@ -37,6 +38,11 @@
 		"version": "changeset version",
 		"release": "pnpm run build && changeset publish",
 		"prepare": "lefthook install"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"lefthook"
+		]
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.10",

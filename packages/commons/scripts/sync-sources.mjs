@@ -31,39 +31,9 @@ const SOURCES_CONFIG = {
 	ecc: {
 		url: "https://github.com/affaan-m/everything-claude-code.git",
 		icon: "🌐",
-		description: "Claude Code 社群資源（commands/agents/rules/skills）",
-		validatePaths: ["commands", "agents", "rules", "skills"],
-	},
-	anthropic: {
-		url: "https://github.com/anthropics/skills.git",
-		icon: "🤖",
-		description: "Anthropic 官方 Skills（claude-api/doc-coauthoring/...）",
-		validatePaths: ["skills"],
-	},
-	superpowers: {
-		url: "https://github.com/obra/superpowers.git",
-		icon: "🦸",
-		description: "Claude Superpowers — 進階 agent 能力",
-	},
-	"ui-ux-pro": {
-		url: "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
-		icon: "🎨",
-		description: "UI/UX Pro Max Skill — 設計與前端最佳實踐",
-	},
-	"claude-plugins": {
-		url: "https://github.com/anthropics/claude-plugins-official.git",
-		icon: "🔌",
-		description: "Anthropic 官方 Plugins",
-	},
-	letta: {
-		url: "https://github.com/letta-ai/skills.git",
-		icon: "🧠",
-		description: "Letta AI Skills（Slack/Google/Obsidian 整合）",
-	},
-	"context-engineering": {
-		url: "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git",
-		icon: "📐",
-		description: "Context Engineering Skills（context 優化/壓縮/評估）",
+		description: "語言特定 Rules + 框架 Skills（可選，不含 commands/agents）",
+		validatePaths: ["rules", "skills"],
+		optional: true,
 	},
 };
 

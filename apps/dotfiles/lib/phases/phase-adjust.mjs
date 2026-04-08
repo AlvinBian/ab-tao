@@ -17,7 +17,7 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { CLACK_LOGGER } from "../cli/logger.mjs";
-import { BACK, handleCancel } from "../cli/prompts.mjs";
+
 import { getDirname, HOME } from "../core/paths.mjs";
 import { loadSession, patchSession } from "../core/session.mjs";
 
@@ -143,61 +143,12 @@ export async function adjustSlack() {
 }
 
 /**
- * 調整 4：重新生成 CLAUDE.md（需 AI，會先詢問用戶確認）
- *
- * @param {Object} opts
- * @param {boolean} opts.skipConfirm - 跳過確認提示
+ * 調整 4：引導用戶使用官方 /init 指令生成 CLAUDE.md
  */
-export async function adjustClaudeMd({ skipConfirm = false } = {}) {
-	if (!skipConfirm) {
-		const ok = handleCancel(
-			await p.confirm({
-				message:
-					"🤖 重新生成 CLAUDE.md 需要 AI 呼叫（約 30 秒），繼續？  Y 確認 · n 取消 · ESC 上一步",
-				initialValue: true,
-			}),
-		);
-		if (ok === BACK || !ok) return;
-	}
-
-	const session = loadSession();
-	if (!session?.repos?.length) {
-		p.log.warn("沒有 session repos 資料，請重新執行 pnpm run setup");
-		return;
-	}
-
-	const s = p.spinner();
-	s.start("📝 重新生成 CLAUDE.md...");
-	const { generateClaudeMd } = await import("../deploy/generate-claude-md.mjs");
-	const { deployAllProjectClaudeMd } = await import(
-		"../deploy/deploy-project.mjs"
+export async function adjustClaudeMd() {
+	p.log.info(
+		"💡 CLAUDE.md 建議使用官方 /init 指令生成（在每個 repo 目錄下執行）",
 	);
-
-	const items = [];
-	const skipped = [];
-	for (const repo of session.repos) {
-		const localPath = session.localPaths?.[repo];
-		if (!localPath) {
-			skipped.push(repo);
-			continue;
-		}
-		const role = session.roles?.[repo] || "main";
-		const content = await generateClaudeMd({
-			repoName: repo.split("/").pop(),
-			role,
-			reasoning: "",
-			stacks: {},
-			meta: { description: "" },
-		});
-		items.push({ localPath, content, repo });
-	}
-
-	const result = deployAllProjectClaudeMd(items);
-	const skipMsg = skipped.length
-		? `  ${pc.dim(`跳過 ${skipped.length} 個無本機路徑的 repo`)}`
-		: "";
-	s.stop(`CLAUDE.md 已生成（${result.deployed.length} 個 repo）${skipMsg}`);
-	await patchSession({ claudeMdUpdatedAt: new Date().toISOString() });
 }
 
 /**

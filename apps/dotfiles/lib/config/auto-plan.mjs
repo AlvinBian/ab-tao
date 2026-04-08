@@ -12,79 +12,35 @@ import {
 	getClaudeMdType,
 } from "./config-classifier.mjs";
 
-// ── 全局 hooks（8 個規則）──
+// ── 全局 hooks（5 個）──
 
 const ALL_HOOKS = [
 	"PostToolUse:Edit|Write (prettier)",
 	"PostToolUse:Edit|Write (eslint)",
 	"PreToolUse:Edit|Write (檔案保護)",
 	"PreToolUse:Bash (危險命令攔截)",
-	"SessionStart:compact (壓縮提示)",
-	"Stop (任務完成檢查)",
 	"Notification (macOS 通知)",
-	"UserPromptSubmit (空提示檢查)",
 ];
 
 // ── Permission 白名單 ──
 
 const PERMISSION_PRESETS = {
-	allow: [
-		"Bash(npm run *)",
-		"Bash(pnpm *)",
-		"Bash(npx *)",
-		"Bash(node *)",
-		"Bash(git add *)",
-		"Bash(git commit *)",
-		"Bash(git checkout *)",
-		"Bash(git branch *)",
-		"Bash(git diff *)",
-		"Bash(git log *)",
-		"Bash(git status)",
-		"Bash(git stash *)",
-		"Bash(git pull)",
-		"Bash(git fetch *)",
-		"Bash(ls *)",
-		"Bash(cat *)",
-		"Bash(mkdir *)",
-		"Bash(cp *)",
-		"Bash(mv *)",
-		"Bash(which *)",
-		"Bash(echo *)",
-		"Bash(grep *)",
-		"Bash(find *)",
-		"Bash(wc *)",
-		"Bash(head *)",
-		"Bash(tail *)",
-		"Bash(sort *)",
-		"Bash(curl *)",
-		"Bash(gh *)",
-		"Read(*)",
-		"Edit(*)",
-		"Write(*)",
-		"Glob(*)",
-		"Grep(*)",
-		"WebFetch(domain:github.com)",
-		"WebFetch(domain:npmjs.com)",
-		"Agent(*)",
-	],
+	allow: ["Read(*)", "Edit(*)", "Write(*)", "Glob(*)", "Grep(*)", "Agent(*)"],
 	deny: [
 		"Bash(git push --force *)",
 		"Bash(git reset --hard *)",
 		"Bash(rm -rf /)",
 		"Bash(rm -rf ~)",
-		"Bash(DROP TABLE *)",
-		"Bash(DROP DATABASE *)",
 	],
 };
 
 // ── 全局 settings ──
 
 const SETTINGS_PRESETS = {
-	model: "sonnet",
+	model: "opusplan",
 	effortLevel: "medium",
 	autoMemoryEnabled: true,
 	env: {
-		MAX_THINKING_TOKENS: "31999",
 		CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: "80",
 	},
 };
@@ -208,9 +164,9 @@ export function generateMinimalPlan(fullPlan) {
 		...fullPlan,
 		installMode: "minimal",
 		global: {
-			commands: ["pr-workflow", "check"],
-			agents: ["debugger", "deployer"],
-			rules: ["code-style", "git-workflow"],
+			commands: ["check", "test"],
+			agents: ["debugger"],
+			rules: ["api-and-data"],
 			hooks: [
 				"PostToolUse:Edit|Write (prettier)",
 				"PreToolUse:Edit|Write (檔案保護)",

@@ -17,7 +17,6 @@ import {
 	estimateTokenSize,
 	getStyles,
 	renderBackup,
-	renderClaudeIgnoreStats,
 	renderCleanup,
 	renderEcc,
 	renderInstalled,
@@ -35,10 +34,6 @@ import {
  */
 function renderTabOverview(data) {
 	const installed = data.installed || {};
-	const repoCount = (data.repos || []).length;
-
-	// 計算 .claudeignore 覆蓋統計
-	const claudeIgnoreStats = renderClaudeIgnoreStats(repoCount);
 
 	return `
 <div id="tab-overview" class="tab-content active">
@@ -51,11 +46,6 @@ function renderTabOverview(data) {
     <div style="flex:1;min-width:280px">
       <h2 class="section-title">數量統計</h2>
       <div id="chart-overview-bar" style="height:260px"></div>
-    </div>
-  </div>
-  <div class="card" style="margin-bottom:16px">
-    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
-      ${claudeIgnoreStats}
     </div>
   </div>
   ${renderTokenChart()}

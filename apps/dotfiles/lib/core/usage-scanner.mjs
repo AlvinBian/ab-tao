@@ -1,7 +1,7 @@
 /**
  * 使用情況掃描器 — 從 Claude session JSONL 提取 command/agent 使用統計
  *
- * 掃描 ~/.claude/projects/ 下所有 .jsonl 檔案（排除 subagents/），
+ * 掃描各 repo 的 .claude/ 下所有 .jsonl 檔案（排除 subagents/），
  * 只統計 human 角色的訊息，提取 /command 和 @agent 調用。
  */
 
