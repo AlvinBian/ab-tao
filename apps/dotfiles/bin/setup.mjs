@@ -468,10 +468,7 @@ async function main() {
 
 	if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
 
-	// 舊配置偵測
-	await runLegacyCheckIfNeeded();
-
-	// ── 功能選擇（第一步，在環境檢查之前）──
+	// ── 功能選擇（第一步）──
 	const featureChoices = [
 		{
 			value: "claude",
@@ -642,7 +639,7 @@ async function main() {
 	}
 
 	// ── Needs-repos 路由：選了 Claude / Project → 走原有流程 ──
-	// 環境準備（只有 needs-repos 才需要完整檢查：gh CLI、Claude CLI 等）
+	await runLegacyCheckIfNeeded();
 	await ensureSetupEnvironment();
 
 	// project = claudemd + ecc 合併，向下兼容
