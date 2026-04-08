@@ -468,13 +468,10 @@ async function main() {
 
 	if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
 
-	// 舊配置偵測（新安裝流程入口）
+	// 舊配置偵測
 	await runLegacyCheckIfNeeded();
 
-	// 環境準備
-	await ensureSetupEnvironment();
-
-	// ── 功能選擇 ──
+	// ── 功能選擇（第一步，在環境檢查之前）──
 	const featureChoices = [
 		{
 			value: "claude",
@@ -531,6 +528,123 @@ async function main() {
 	}
 
 	const has = (f) => features.includes(f);
+
+	// ── Standalone 路由：只選了 ZSH / Slack → 走 Feature Registry pipeline ──
+	const standaloneFeatures = features.filter((f) =>
+		["zsh", "slack"].includes(f),
+	);
+	const needsReposFeatures = features.filter((f) =>
+		["claude", "project"].includes(f),
+	);
+
+	if (standaloneFeatures.length > 0 && needsReposFeatures.length === 0) {
+		// 純 standalone — 跳過 repos / AI 分析 / 環境全檢，走獨立 pipeline
+		const { loadFeatures, topoSort } = await import(
+			"../lib/features/registry.mjs"
+		);
+		const loadedFeatures = await topoSort(
+			await loadFeatures(standaloneFeatures),
+		);
+		const startTime = Date.now();
+		const allResults = {};
+
+		for (const feature of loadedFeatures) {
+			// envCheck
+			const envResult = await feature.envCheck();
+			if (envResult.message)
+				p.log.info(`🔍 ${feature.label}：${envResult.message}`);
+			if (!envResult.ok) {
+				p.log.warn(`${feature.label} 環境檢查未通過，略過`);
+				continue;
+			}
+
+			// backup
+			const backupResult = await feature.backup({
+				backupDir: path.join(
+					REPO,
+					"dist",
+					"backup",
+					new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19),
+					feature.id,
+				),
+			});
+			if (backupResult.files?.length) {
+				p.log.info(`🗂️ 已備份：${backupResult.files.join("、")}`);
+			}
+
+			// configure
+			const config = await feature.configure({
+				repoDir: REPO,
+				flags: {
+					all: flagAll,
+					quick: flagQuick,
+					manual: flagManual,
+					dryRun: flagDryRun,
+				},
+			});
+			if (!config) continue;
+
+			// plan
+			const plan = await feature.plan({}, config);
+			if (!plan) continue;
+
+			// confirm
+			const confirmed = await feature.confirm(
+				{ flags: { all: flagAll, quick: flagQuick } },
+				plan,
+			);
+			if (!confirmed) continue;
+
+			// install
+			if (!flagDryRun) {
+				const result = await feature.install({ repoDir: REPO }, plan);
+				allResults[feature.id] = result;
+
+				// verify
+				const verification = await feature.verify({});
+				if (verification.missing?.length) {
+					p.log.warn(
+						`驗證：${verification.passed}/${verification.total} 就位，缺少：${verification.missing.join("、")}`,
+					);
+				} else if (verification.total > 0) {
+					p.log.success(
+						`驗證：${verification.passed}/${verification.total} 全部就位 ✓`,
+					);
+				}
+			} else {
+				p.log.info(`[DRY RUN] ${feature.label} — 跳過安裝`);
+			}
+
+			// complete
+			const guideLines = feature.complete(allResults[feature.id]);
+			if (guideLines.length) p.log.info(guideLines.join("\n"));
+		}
+
+		const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+		p.log.success(`✅ 安裝完成（耗時 ${elapsed}s）`);
+
+		// session
+		const { saveSession, clearSessionProgress } = await import(
+			"../lib/core/session.mjs"
+		);
+		clearSessionProgress();
+		saveSession({
+			features: standaloneFeatures,
+			targets: standaloneFeatures,
+			mode: flagManual ? "manual" : "auto",
+			install: Object.fromEntries(
+				Object.entries(allResults).map(([id, r]) => [id, r || {}]),
+			),
+		});
+
+		p.outro("設定完成");
+		return;
+	}
+
+	// ── Needs-repos 路由：選了 Claude / Project → 走原有流程 ──
+	// 環境準備（只有 needs-repos 才需要完整檢查：gh CLI、Claude CLI 等）
+	await ensureSetupEnvironment();
+
 	// project = claudemd + ecc 合併，向下兼容
 	const hasProject = has("project") || has("claudemd") || has("ecc");
 	const needsRepos = hasProject;
