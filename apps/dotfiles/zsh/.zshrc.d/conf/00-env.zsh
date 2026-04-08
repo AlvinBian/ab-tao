@@ -24,9 +24,11 @@ export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"
 export PNPM_HOME="$HOME/Library/pnpm"
 [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
 
-# zsh-nvm 環境變數（sheldon 載入 zsh-nvm 時讀取）
-export NVM_LAZY_LOAD=true
-export NVM_AUTO_USE=true
+# fnm — Node 版本管理（Rust，~1ms 啟動，自動讀取 .nvmrc / .node-version）
+# guard：用戶 .zshrc 可能已有 nvm.sh 或 fnm env，不重複初始化
+if _command_exists fnm && [[ -z "$FNM_DIR" ]]; then
+  eval "$(fnm env --use-on-cd --shell zsh)"
+fi
 
 # pyenv lazy load（guard：用戶已初始化則跳過）
 if [[ -d "$HOME/.pyenv" && -z "$PYENV_SHELL" ]]; then

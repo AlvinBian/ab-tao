@@ -23,11 +23,6 @@ apply = ["defer"]
 github = "Aloxaf/fzf-tab"
 apply = ["fpath"]
 
-# ── Node 版本管理（同步，設定 lazy wrapper + .nvmrc 自動切換）────
-
-[plugins.zsh-nvm]
-github = "lukechilds/zsh-nvm"
-
 # ── 補全（加入 fpath，由 compinit 統一載入）──────────────────────
 
 [plugins.zsh-completions]

@@ -40,14 +40,12 @@ export default {
 		// Homebrew
 		try {
 			const { execFileSync } = await import("node:child_process");
-			execFileSync("brew", ["--version"], { stdio: "pipe" });
 			const ver = execFileSync("brew", ["--version"], { stdio: "pipe" })
 				.toString()
 				.match(/Homebrew ([\d.]+)/)?.[1];
 			checks.push(`Homebrew ${ver || "✔"}`);
 		} catch {
 			checks.push("Homebrew ✗（安裝 CLI 工具需要）");
-			// 不阻塞：sheldon 和模組可以不用 brew
 		}
 
 		// sheldon

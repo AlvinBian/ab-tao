@@ -539,11 +539,19 @@ async function main() {
 		const { loadFeatures, topoSort } = await import(
 			"../lib/features/registry.mjs"
 		);
-		const loadedFeatures = await topoSort(
-			await loadFeatures(standaloneFeatures),
-		);
+		const loadedFeatures = topoSort(await loadFeatures(standaloneFeatures));
 		const startTime = Date.now();
 		const allResults = {};
+		const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+		const sharedCtx = {
+			repoDir: REPO,
+			flags: {
+				all: flagAll,
+				quick: flagQuick,
+				manual: flagManual,
+				dryRun: flagDryRun,
+			},
+		};
 
 		for (const feature of loadedFeatures) {
 			// envCheck
@@ -557,48 +565,32 @@ async function main() {
 
 			// backup
 			const backupResult = await feature.backup({
-				backupDir: path.join(
-					REPO,
-					"dist",
-					"backup",
-					new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19),
-					feature.id,
-				),
+				...sharedCtx,
+				backupDir: path.join(REPO, "dist", "backup", ts, feature.id),
 			});
 			if (backupResult.files?.length) {
 				p.log.info(`🗂️ 已備份：${backupResult.files.join("、")}`);
 			}
 
 			// configure
-			const config = await feature.configure({
-				repoDir: REPO,
-				flags: {
-					all: flagAll,
-					quick: flagQuick,
-					manual: flagManual,
-					dryRun: flagDryRun,
-				},
-			});
+			const config = await feature.configure(sharedCtx);
 			if (!config) continue;
 
 			// plan
-			const plan = await feature.plan({}, config);
+			const plan = await feature.plan(sharedCtx, config);
 			if (!plan) continue;
 
 			// confirm
-			const confirmed = await feature.confirm(
-				{ flags: { all: flagAll, quick: flagQuick } },
-				plan,
-			);
+			const confirmed = await feature.confirm(sharedCtx, plan);
 			if (!confirmed) continue;
 
 			// install
 			if (!flagDryRun) {
-				const result = await feature.install({ repoDir: REPO }, plan);
+				const result = await feature.install(sharedCtx, plan);
 				allResults[feature.id] = result;
 
 				// verify
-				const verification = await feature.verify({});
+				const verification = await feature.verify(sharedCtx);
 				if (verification.missing?.length) {
 					p.log.warn(
 						`驗證：${verification.passed}/${verification.total} 就位，缺少：${verification.missing.join("、")}`,
@@ -629,6 +621,9 @@ async function main() {
 			features: standaloneFeatures,
 			targets: standaloneFeatures,
 			mode: flagManual ? "manual" : "auto",
+			installMode: "standalone",
+			repos: [],
+			techStacks: [],
 			install: Object.fromEntries(
 				Object.entries(allResults).map(([id, r]) => [id, r || {}]),
 			),

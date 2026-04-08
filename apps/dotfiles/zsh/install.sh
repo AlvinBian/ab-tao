@@ -138,6 +138,19 @@ else
   fi
 fi
 
+# ── fnm（Node 版本管理，Rust，取代 nvm）─────────────────────────
+step "安裝 fnm"
+if command -v fnm &>/dev/null; then
+  info "fnm 已安裝"
+else
+  if command -v brew &>/dev/null; then
+    info "安裝 fnm..."
+    brew install fnm 2>/dev/null && success "fnm 安裝完成" || warn "fnm 安裝失敗"
+  else
+    warn "未偵測到 brew，請手動安裝 fnm：https://github.com/Schniz/fnm"
+  fi
+fi
+
 # ── Homebrew CLI 工具 ─────────────────────────────────────────────
 NEEDS_BREW=false
 for m in $SELECTED_MODULES; do
@@ -316,7 +329,7 @@ if [[ -f ~/.zshrc ]]; then
     echo ""
     echo -e "  ${YELLOW}💡 啟動加速提示：${RESET}"
     grep -q 'nvm\.sh' ~/.zshrc 2>/dev/null && \
-      echo -e "  ${DIM}  移除 source nvm.sh 可省 ~1s（ab-tao 已提供 lazy load）${RESET}"
+      echo -e "  ${DIM}  移除 source nvm.sh 可省 ~1s（ab-tao 已改用 fnm，自動讀取 .nvmrc）${RESET}"
     grep -q 'pyenv init' ~/.zshrc 2>/dev/null && \
       echo -e "  ${DIM}  移除 eval \"\$(pyenv init -)\" 可省 ~300ms（ab-tao 已提供 lazy load）${RESET}"
   fi
