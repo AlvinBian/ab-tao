@@ -84,10 +84,12 @@ async function detailConfirm(originalPlan) {
 	// _pipelineResult 含 Map 物件，cloneDeep 會損壞 Map，先取出再還原
 	const savedPipelineResult = originalPlan._pipelineResult;
 	const savedFetchedSources = originalPlan._fetchedSources;
+	const savedCommonsResources = originalPlan._commonsResources;
 	// 深拷貝避免 BACK 時污染 cache 中的原始 plan
 	const plan = cloneDeep(originalPlan);
 	plan._pipelineResult = savedPipelineResult;
 	plan._fetchedSources = savedFetchedSources;
+	plan._commonsResources = savedCommonsResources;
 	// 1. Repo 角色調整
 	const roleItems = plan.repos.map((r) => ({
 		value: r.fullName,
@@ -148,13 +150,73 @@ async function detailConfirm(originalPlan) {
 			hint: "",
 		}));
 		const selectedEcc = await smartSelect({
-			title: "🌐 AI 外部資源",
+			title: "🌐 AI 外部資源（ECC）",
 			items: eccItems,
 			preselected: plan.ecc,
 			autoSelectThreshold: 0,
 		});
 		if (selectedEcc === BACK) return BACK;
 		plan.ecc = selectedEcc;
+	}
+
+	// 7.5. 每個 AI 來源的資源確認
+	const commSources = plan._commonsResources?.sources || [];
+	if (!isEmpty(commSources)) {
+		const sourceIcons = {
+			ecc: "🌐",
+			anthropic: "🏛️",
+			superpowers: "⚡",
+			"context-engineering": "🧠",
+		};
+		plan.commonsSelections = {};
+
+		for (const src of commSources) {
+			const icon = sourceIcons[src.name] || "📦";
+			const types = [
+				{ key: "commands", items: src.commands || [], label: "commands" },
+				{ key: "agents", items: src.agents || [], label: "agents" },
+				{ key: "rules", items: src.rules || [], label: "rules" },
+				{ key: "skills", items: src.skills || [], label: "skills" },
+			].filter((t) => t.items.length > 0);
+
+			if (isEmpty(types)) continue;
+
+			// 將所有資源類型合併為一個 smartSelect（帶類型前綴）
+			const allItems = [];
+			const allPreselected = [];
+			for (const t of types) {
+				for (const item of t.items) {
+					const name = item.name?.replace(".md", "") || item.name;
+					const key = `${t.key}:${name}`;
+					allItems.push({
+						value: key,
+						label: `${name}`,
+						hint: t.label,
+					});
+					allPreselected.push(key);
+				}
+			}
+
+			const typeSummary = types
+				.map((t) => `${t.items.length} ${t.label}`)
+				.join(" · ");
+			const selected = await smartSelect({
+				title: `${icon} ${src.name}（${typeSummary}）`,
+				items: allItems,
+				preselected: allPreselected,
+				autoSelectThreshold: 0,
+			});
+			if (selected === BACK) return BACK;
+
+			// 解析選擇結果回各類型
+			const selections = { commands: [], agents: [], rules: [], skills: [] };
+			for (const key of selected) {
+				const [type, ...nameParts] = key.split(":");
+				const name = nameParts.join(":");
+				if (selections[type]) selections[type].push(name);
+			}
+			plan.commonsSelections[src.name] = selections;
+		}
 	}
 
 	// 8. ZSH 模組

@@ -160,6 +160,8 @@ export async function phaseAnalyze({
 
 	// 附帶 pipelineResult 供後續階段使用（phaseComplete 的報告、ECC 融合等）
 	plan._pipelineResult = pipelineResult;
+	// 將 commons AI 來源附到 plan，供 phasePlan 逐來源確認
+	plan._commonsResources = pipelineResult?.commonsResources || { sources: [] };
 	const fetchResult = pipelineResult?.eccFetchResult || null;
 	// 建立 ECC type map（name → commands/agents/rules），供 phasePlan 顯示分組用
 	if (fetchResult?.sources) {

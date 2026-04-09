@@ -336,26 +336,49 @@ export function buildClaudeTasks(
 																	}
 																}
 
-																// 安裝 commons 篩選後的資源（技術棧匹配）
+																// 安裝 commons 篩選後的資源（技術棧匹配 + 用戶確認）
 																const commSources =
 																	pipelineResult?.commonsResources?.sources ||
 																	[];
 																if (!isEmpty(commSources))
 																	try {
-																		// 過濾掉 name 或 content 為空的資源
 																		const validFile = (f) =>
 																			f?.name && f.content;
+																		const selections =
+																			plan.commonsSelections || {};
+																		const filterBySelection = (
+																			items,
+																			srcName,
+																			type,
+																		) => {
+																			const sel = selections[srcName]?.[type];
+																			if (!sel) return items.filter(validFile);
+																			const nameSet = new Set(sel);
+																			return items
+																				.filter(validFile)
+																				.filter((f) =>
+																					nameSet.has(
+																						f.name.replace(".md", ""),
+																					),
+																				);
+																		};
 																		const downloaded = commSources.map(
 																			(src) => ({
 																				source: src.name,
-																				commands: (src.commands || []).filter(
-																					validFile,
+																				commands: filterBySelection(
+																					src.commands || [],
+																					src.name,
+																					"commands",
 																				),
-																				agents: (src.agents || []).filter(
-																					validFile,
+																				agents: filterBySelection(
+																					src.agents || [],
+																					src.name,
+																					"agents",
 																				),
-																				rules: (src.rules || []).filter(
-																					validFile,
+																				rules: filterBySelection(
+																					src.rules || [],
+																					src.name,
+																					"rules",
 																				),
 																				hooks: null,
 																			}),
@@ -375,10 +398,20 @@ export function buildClaudeTasks(
 																			);
 																		}
 
-																		// 安裝 skills（SKILL.md 格式）
-																		const skillSources = commSources.filter(
-																			(s) => !isEmpty(s.skills),
-																		);
+																		// 安裝 skills（SKILL.md 格式，按用戶選擇過濾）
+																		const skillSources = commSources
+																			.map((s) => {
+																				const sel = selections[s.name]?.skills;
+																				if (!sel) return s;
+																				const nameSet = new Set(sel);
+																				return {
+																					...s,
+																					skills: s.skills.filter((sk) =>
+																						nameSet.has(sk.name),
+																					),
+																				};
+																			})
+																			.filter((s) => !isEmpty(s.skills));
 																		if (!isEmpty(skillSources)) {
 																			await writeSkillFiles(
 																				skillSources,
