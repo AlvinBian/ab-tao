@@ -63,40 +63,73 @@ function renderTabOverview(data) {
 function renderTabTechStacks(data) {
 	const stacks = data.stacks || [];
 	const totalRepos = (data.repos || []).length;
+	const perRepoReasoning = data.perRepoReasoning || {};
 
+	// 按分類聚合技術棧
+	const categoryTechs = {};
 	const stackRepoCount = {};
 	if (data.repos && !isEmpty(data.repos)) {
 		for (const repo of data.repos) {
-			const stackData = data.perRepoReasoning?.[repo]?.stacks || {};
-			for (const stacks of Object.values(stackData)) {
-				for (const tech of stacks || []) {
+			const stackData = perRepoReasoning[repo]?.stacks || {};
+			for (const [cat, techs] of Object.entries(stackData)) {
+				for (const tech of techs || []) {
 					stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
+					if (!categoryTechs[cat]) categoryTechs[cat] = new Set();
+					categoryTechs[cat].add(tech);
 				}
 			}
 		}
 	}
 
-	const topCount = Math.min(20, Object.keys(stackRepoCount).length);
-	const topStacks = Object.entries(stackRepoCount)
-		.sort((a, b) => b[1] - a[1])
-		.slice(0, topCount)
-		.map(([tech, count]) => ({
-			name: tech,
-			value: count,
-			percentage: ((count / totalRepos) * 100).toFixed(1),
-		}));
+	// 未歸類的技術（在 stacks 但不在任何 category 中）
+	const categorized = new Set(
+		Object.values(categoryTechs).flatMap((s) => [...s]),
+	);
+	const uncategorized = stacks.filter((s) => !categorized.has(s));
 
-	const _topStacksData = JSON.stringify(topStacks);
+	const topCount = Math.min(20, Object.keys(stackRepoCount).length);
 	const freqHeight = Math.max(300, 100 + topCount * 20);
+
+	// 按分類渲染技術棧區塊
+	const categoryOrder = Object.entries(categoryTechs).sort(
+		(a, b) => b[1].size - a[1].size,
+	);
+	let categoryHtml = "";
+	if (categoryOrder.length > 0) {
+		categoryHtml = categoryOrder
+			.map(([cat, techSet]) => {
+				const sortedTechs = [...techSet].sort((a, b) => {
+					const diff = (stackRepoCount[b] || 0) - (stackRepoCount[a] || 0);
+					return diff !== 0 ? diff : a.localeCompare(b);
+				});
+				const badges = sortedTechs
+					.map((t) => {
+						const count = stackRepoCount[t] || 0;
+						const desc = getDescription(t);
+						const tooltip = desc
+							? `${esc(desc)}（${count} repos）`
+							: `${count} repos`;
+						return `<span class="badge badge-blue tech-link" title="${tooltip}" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`;
+					})
+					.join("");
+				return `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px;text-transform:capitalize">${esc(cat)} <span style="font-size:.78rem;opacity:.7">(${techSet.size})</span></h3>${badges}</div>`;
+			})
+			.join("");
+		if (uncategorized.length > 0) {
+			categoryHtml += `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px">其他</h3>${uncategorized.map((t) => `<span class="badge badge-blue tech-link" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`).join("")}</div>`;
+		}
+	} else if (!isEmpty(stacks)) {
+		categoryHtml = `<div>${stacks.map((s) => `<span class="badge badge-blue tech-link" data-tech="${esc(s)}" style="cursor:pointer">${esc(s)}</span>`).join("")}</div>`;
+	}
 
 	return `
 <div id="tab-stacks" class="tab-content">
   <div class="card" style="margin-bottom:16px">
-    <p class="section-desc" style="margin:0">技術棧統計展示團隊使用的所有技術及其採用頻率。單位為「Repo 數量」。</p>
+    <p class="section-desc" style="margin:0">技術棧統計展示團隊使用的所有技術及其採用頻率。單位為「Repo 數量」。點擊技術棧可跳轉到專案頁籤篩選對應 Repo。</p>
   </div>
   <div class="card">
     <h2 class="section-title">所有技術棧</h2>
-    ${!isEmpty(stacks) ? `<div>${stacks.map((s) => badge(s, "blue", getDescription(s))).join("")}</div>` : '<p style="color:#8b949e">無技術棧資料</p>'}
+    ${categoryHtml || '<p style="color:#8b949e">無技術棧資料</p>'}
   </div>
   ${
 		topCount > 0
@@ -486,6 +519,28 @@ if (searchInput) {
     if (hint) hint.textContent = query ? \`找到 \${matched} 個匹配\` : '';
   });
 }
+
+// 技術棧點擊 → 跳轉專案 Tab 並篩選
+document.querySelectorAll('.tech-link').forEach(el => {
+  el.addEventListener('click', () => {
+    const tech = el.dataset.tech;
+    if (!tech) return;
+    // 切到專案 Tab
+    tabButtons.forEach(b => b.classList.remove('active'));
+    tabContents.forEach(c => c.classList.remove('active'));
+    const reposBtn = document.querySelector('[data-tab="repos"]');
+    if (reposBtn) reposBtn.classList.add('active');
+    const reposTab = document.getElementById('tab-repos');
+    if (reposTab) reposTab.classList.add('active');
+    // 填入搜尋框並觸發篩選
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+      searchInput.value = tech;
+      searchInput.dispatchEvent(new Event('input'));
+      searchInput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
 
 // 初始化概覽 Tab 圖表（首屏）
 initOverviewPie();

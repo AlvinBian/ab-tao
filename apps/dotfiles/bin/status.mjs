@@ -926,9 +926,9 @@ async function generateHtmlReport(data) {
   td { border-bottom: 1px solid #1e293b; }
   .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .health-ring { width: 120px; height: 120px; }
-  .stat-card { text-align: center; padding: 16px; }
-  .stat-num { font-size: 28px; font-weight: 700; color: #38bdf8; }
-  .stat-label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .stat-card { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
+  .stat-num { font-size: 36px; font-weight: 700; color: #38bdf8; line-height: 1.1; }
+  .stat-label { font-size: 14px; color: #94a3b8; margin-top: 8px; }
   .grid-12 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
   #mgmt-output { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; display: none; }
 </style>
@@ -938,10 +938,10 @@ async function generateHtmlReport(data) {
 <p class="text-gray-400 mb-6">掃描時間：${new Date().toLocaleString("zh-TW")}</p>
 
 <!-- 1. 總覽 -->
-<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-  <div class="card stat-card col-span-2 flex items-center gap-6">
+<div style="display:grid;grid-template-columns:2fr repeat(4,1fr);gap:16px;margin-bottom:24px">
+  <div class="card" style="display:flex;align-items:center;justify-content:center;gap:24px;min-height:120px">
     <canvas id="healthRing" class="health-ring"></canvas>
-    <div>
+    <div style="text-align:center">
       <div class="stat-num">${data.overview.healthPct}%</div>
       <div class="stat-label">配置健康度</div>
     </div>
