@@ -28,6 +28,14 @@ function isDocumentationFile(filePath) {
 }
 
 /**
+ * 判斷檔案是否為已知的 hooks 配置檔，其中 require() 是合法的 inline script。
+ */
+function isHooksConfigFile(filePath) {
+	const basename = path.basename(filePath);
+	return basename === "hooks.json";
+}
+
+/**
  * 驗證單一檔案的內容安全性。
  *
  * 對文件檔 (.md)，危險 pattern 產生警告（非錯誤），
@@ -42,8 +50,6 @@ export function validateFileContent(filePath, content, options = {}) {
 	const errors = [];
 	const warnings = [];
 	const isDoc = !options.strict && isDocumentationFile(filePath);
-
-	// 1. 檔案大小檢查
 	const bytes = Buffer.byteLength(content, "utf8");
 	if (bytes > MAX_FILE_SIZE) {
 		errors.push({
@@ -55,8 +61,13 @@ export function validateFileContent(filePath, content, options = {}) {
 
 	// 2. 危險 pattern 掃描
 	// 文件檔：pattern 為警告（說明文字）
-	// 可執行檔（.json, .sh, .js）：pattern 為錯誤
+	// hooks.json：dynamic import/require 為合法 inline script，跳過該 pattern
+	// 可執行檔（.sh, .js）：pattern 為錯誤
+	const isHooks = isHooksConfigFile(filePath);
 	for (const { pattern, label } of DANGEROUS_PATTERNS) {
+		// hooks.json 裡的 require() 是合法的，跳過
+		if (isHooks && label === "dynamic import/require") continue;
+
 		// 重設 lastIndex（全域正則）
 		pattern.lastIndex = 0;
 		if (pattern.test(content)) {

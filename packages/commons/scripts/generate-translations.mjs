@@ -5,7 +5,7 @@
  *
  * 掃描 resources/ai/sources/ 下所有 AI 來源，
  * 提取 commands/agents/rules/skills 的名稱與描述，
- * 比對 translations.json，將未翻譯項批次呼叫 Claude Haiku API 翻譯。
+ * 比對 translations.json，將未翻譯項批次呼叫 GitHub Models API 翻譯。
  *
  * 用法：
  *   node scripts/generate-translations.mjs          # 只翻譯新增/變更
@@ -13,7 +13,7 @@
  *   node scripts/generate-translations.mjs --dry-run # 只顯示差異，不呼叫 API
  *
  * 環境變數：
- *   ANTHROPIC_API_KEY — Anthropic API key（必需）
+ *   GITHUB_TOKEN — GitHub token（需有 models 權限，使用 GH_PAT）
  */
 
 import { createHash } from "node:crypto";
@@ -157,33 +157,36 @@ function findUntranslated(scanned, existing) {
 	return { untranslated, skipCount };
 }
 
-// ── Anthropic API 呼叫 ───────────────────────────────────────
+// ── GitHub Models API 呼叫 ───────────────────────────────────
 
 async function callHaiku(prompt) {
-	const apiKey = process.env.ANTHROPIC_API_KEY;
-	if (!apiKey) throw new Error("ANTHROPIC_API_KEY 未設定");
+	const token = process.env.GITHUB_TOKEN;
+	if (!token) throw new Error("GITHUB_TOKEN 未設定");
 
-	const res = await fetch("https://api.anthropic.com/v1/messages", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"x-api-key": apiKey,
-			"anthropic-version": "2023-06-01",
+	const res = await fetch(
+		"https://models.inference.ai.azure.com/chat/completions",
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
+			},
+			body: JSON.stringify({
+				model: "gpt-4o-mini",
+				max_tokens: 4096,
+				temperature: 0.3,
+				messages: [{ role: "user", content: prompt }],
+			}),
 		},
-		body: JSON.stringify({
-			model: "claude-haiku-4-5-20251001",
-			max_tokens: 4096,
-			messages: [{ role: "user", content: prompt }],
-		}),
-	});
+	);
 
 	if (!res.ok) {
 		const body = await res.text();
-		throw new Error(`Anthropic API ${res.status}: ${body.slice(0, 200)}`);
+		throw new Error(`GitHub Models API ${res.status}: ${body.slice(0, 200)}`);
 	}
 
 	const data = await res.json();
-	const text = data.content?.[0]?.text || "";
+	const text = data.choices?.[0]?.message?.content || "";
 
 	// 提取 JSON
 	const jsonMatch = text.match(/\{[\s\S]*\}/);

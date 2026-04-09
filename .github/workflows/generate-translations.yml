@@ -34,7 +34,7 @@ jobs:
 
       - name: Generate translations
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           FORCE_FLAG: ${{ inputs.force }}
         run: |
           ARGS=""
