@@ -1073,6 +1073,23 @@ async function main() {
 			envContent += `\nCLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`;
 			envContent += "\n";
 			fs.writeFileSync(envPath, envContent);
+
+			// 同步寫入 ~/.claude/.env（slack-dispatch.sh 從這裡讀取）
+			const claudeEnvPath = path.join(HOME, ".claude", ".env");
+			const slackEnvLines = [
+				`SLACK_NOTIFY_CHANNEL=${pendingSlackConfig.channelId}`,
+				`SLACK_NOTIFY_MODE=${pendingSlackConfig.mode}`,
+			];
+			if (pendingSlackConfig.channelName)
+				slackEnvLines.push(
+					`SLACK_NOTIFY_CHANNEL_NAME=${pendingSlackConfig.channelName}`,
+				);
+			if (pendingSlackConfig.userId)
+				slackEnvLines.push(`SLACK_NOTIFY_USER_ID=${pendingSlackConfig.userId}`);
+			slackEnvLines.push(
+				`CLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`,
+			);
+			fs.writeFileSync(claudeEnvPath, `${slackEnvLines.join("\n")}\n`);
 		}
 
 		break;
