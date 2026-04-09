@@ -382,7 +382,6 @@ async function doUpgrade(legacyInfo) {
 		resultLines.push("settings.json 將由安裝程序合併更新");
 	if (legacyInfo.hooksNeedsUpgrade)
 		resultLines.push("hooks.json 將重新生成（10 個 hooks）");
-	resultLines.push("專案級配置將由 setup 重新生成到各 repo");
 	p.log.success(`升級完成：${resultLines.join("，")}`);
 }
 
