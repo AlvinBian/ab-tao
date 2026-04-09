@@ -6,10 +6,10 @@ on:
     - cron: '0 10,11,12,13,14,15,16,17,18,19,20,21,22 * * *'
   workflow_dispatch:
     inputs:
-      repos:
-        description: '指定 repos（逗號分隔 owner/repo，留空則自動偵測有貢獻的 repos）'
+      force_init:
+        description: '強制重新初始化（建立新的 5 個 Issue）'
         required: false
-        default: ''
+        default: 'false'
 
 jobs:
   plan:
@@ -19,82 +19,61 @@ jobs:
       issues: write
 
     steps:
-      # ── Step 1：偵測有貢獻的 repos ─────────────────────────────
-      - name: 偵測目標 repos
-        id: discover
+      # ── Step 1：初始化時間與偵測 repos ────────────────────────
+      - name: 初始化
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-          REPOS_INPUT: ${{ inputs.repos }}
-          DEFAULT_REPOS: ${{ vars.NIGHTLY_PLAN_REPOS }}
         run: |
           TODAY=$(date -u +%Y-%m-%d)
-          SINCE_7=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
-                 || date -u -v-7d     +%Y-%m-%dT%H:%M:%SZ)
-          SINCE_30=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
-                  || date -u -v-30d   +%Y-%m-%dT%H:%M:%SZ)
+          HOUR=$(date -u +%H)
+          SINCE_7=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          SINCE_30=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
           echo "TODAY=$TODAY"       >> "$GITHUB_ENV"
+          echo "HOUR=$HOUR"         >> "$GITHUB_ENV"
           echo "SINCE_7=$SINCE_7"   >> "$GITHUB_ENV"
           echo "SINCE_30=$SINCE_30" >> "$GITHUB_ENV"
 
-          # 優先順序：手動輸入 > vars 設定 > 自動偵測
-          if [ -n "$REPOS_INPUT" ]; then
-            REPOS="$REPOS_INPUT"
-            echo "來源：手動輸入"
-          elif [ -n "$DEFAULT_REPOS" ]; then
-            REPOS="$DEFAULT_REPOS"
-            echo "來源：vars.NIGHTLY_PLAN_REPOS"
-          else
-            echo "來源：GraphQL 自動偵測（個人 + 組織有貢獻的 repos）"
-
-            # 用 GraphQL 查詢所有有貢獻的 repos（含組織），30 天內有活動
-            REPOS=$(gh api graphql -f query='
-              query {
-                viewer {
-                  # 個人擁有的 repos
-                  repositories(
-                    first: 50
-                    orderBy: {field: PUSHED_AT, direction: DESC}
-                    isFork: false
-                  ) {
-                    nodes { nameWithOwner pushedAt }
-                  }
-                  # 有貢獻的 repos（含所屬組織）
-                  repositoriesContributedTo(
-                    first: 50
-                    includeUserRepositories: false
-                    orderBy: {field: PUSHED_AT, direction: DESC}
-                    contributionTypes: [COMMIT, PULL_REQUEST, REPOSITORY]
-                  ) {
-                    nodes { nameWithOwner pushedAt }
-                  }
+          # 自動偵測有貢獻的 repos（含組織）
+          REPOS=$(gh api graphql -f query='
+            query {
+              viewer {
+                repositories(first: 50, orderBy: {field: PUSHED_AT, direction: DESC}, isFork: false) {
+                  nodes { nameWithOwner pushedAt }
                 }
-              }' --jq '
-                ( .data.viewer.repositories.nodes
-                + .data.viewer.repositoriesContributedTo.nodes )
-                | map(select(.pushedAt > "'"$SINCE_30"'"))
-                | unique_by(.nameWithOwner)
-                | sort_by(.pushedAt) | reverse
-                | .[0:10]
-                | map(.nameWithOwner)
-                | join(",")
-              ' 2>/dev/null || echo "")
+                repositoriesContributedTo(
+                  first: 50
+                  includeUserRepositories: false
+                  orderBy: {field: PUSHED_AT, direction: DESC}
+                  contributionTypes: [COMMIT, PULL_REQUEST, REPOSITORY]
+                ) {
+                  nodes { nameWithOwner pushedAt }
+                }
+              }
+            }' --jq '
+              ( .data.viewer.repositories.nodes
+              + .data.viewer.repositoriesContributedTo.nodes )
+              | map(select(.pushedAt > "'"$SINCE_30"'"))
+              | unique_by(.nameWithOwner)
+              | sort_by(.pushedAt) | reverse
+              | .[0:15]
+              | map(.nameWithOwner)
+              | join(",")
+            ' 2>/dev/null || echo "")
 
-            if [ -z "$REPOS" ]; then
-              echo "⚠️ GraphQL 查詢失敗，fallback 到個人最近 5 個 repos"
-              REPOS=$(gh api "user/repos?sort=pushed&per_page=5" \
-                --jq '[.[].full_name] | join(",")' 2>/dev/null || echo "")
-            fi
+          if [ -z "$REPOS" ]; then
+            REPOS=$(gh api "user/repos?sort=pushed&per_page=10" \
+              --jq '[.[].full_name] | join(",")' 2>/dev/null || echo "")
           fi
 
           echo "分析 repos：$REPOS"
           echo "REPOS=$REPOS" >> "$GITHUB_ENV"
 
-      # ── Step 2：逐一抓取 repo 資料 ────────────────────────────
+      # ── Step 2：收集所有 repo 資料 ────────────────────────────
       - name: 收集 repo 資料
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          > /tmp/report.md  # 清空，直接寫 file
+          > /tmp/report.md
 
           IFS=',' read -ra REPO_LIST <<< "$REPOS"
           for REPO in "${REPO_LIST[@]}"; do
@@ -102,16 +81,13 @@ jobs:
             [ -z "$REPO" ] && continue
             echo "=== 分析 $REPO ==="
 
-            # 近 7 天 commits 數量
             COMMIT_COUNT=$(gh api "repos/$REPO/commits?since=$SINCE_7&per_page=100" \
               --jq 'length' 2>/dev/null || echo "0")
 
-            # 近 7 天 commit 訊息（前 8 條）
             COMMIT_MSGS=$(gh api "repos/$REPO/commits?since=$SINCE_7&per_page=8" \
               --jq '[.[] | "- " + (.commit.message | split("\n")[0])] | join("\n")' \
               2>/dev/null || echo "")
 
-            # 開放 PRs（含天數、labels、是否 draft）
             PR_DATA=$(gh api "repos/$REPO/pulls?state=open&per_page=30" \
               --jq '[.[] | {t:.title, d:.draft, l:[.labels[].name], age:.created_at}]' \
               2>/dev/null || echo "[]")
@@ -126,13 +102,12 @@ for p in data[:10]:
     age = (now - datetime.fromisoformat(p['age'].replace('Z','+00:00'))).days
     labels = ','.join(p['l']) if p['l'] else '-'
     draft = '[draft] ' if p['d'] else ''
-    lines.append(f"  - {p['t']} ({age}天) {draft}[{labels}]")
-print('\n'.join(lines) if lines else '  (無)')
+    lines.append(f"  - {p['t']} ({age}d) {draft}[{labels}]")
+print('\n'.join(lines) if lines else '  (none)')
 PYEOF
 )
             PR_COUNT=$(python3 -c "import sys,json; print(len(json.loads(sys.argv[1])))" "$PR_DATA" 2>/dev/null || echo "0")
 
-            # 開放 Issues（排除 PRs）
             ISSUE_DATA=$(gh api "repos/$REPO/issues?state=open&per_page=30" \
               --jq '[.[] | select(.pull_request==null) | {t:.title, l:[.labels[].name], age:.created_at}]' \
               2>/dev/null || echo "[]")
@@ -146,71 +121,110 @@ lines = []
 for i in data[:10]:
     age = (now - datetime.fromisoformat(i['age'].replace('Z','+00:00'))).days
     labels = ','.join(i['l']) if i['l'] else '-'
-    lines.append(f"  - {i['t']} ({age}天) [{labels}]")
-print('\n'.join(lines) if lines else '  (無)')
+    lines.append(f"  - {i['t']} ({age}d) [{labels}]")
+print('\n'.join(lines) if lines else '  (none)')
 PYEOF
 )
             ISSUE_COUNT=$(python3 -c "import sys,json; print(len(json.loads(sys.argv[1])))" "$ISSUE_DATA" 2>/dev/null || echo "0")
 
-            # 最近 CI 結論
             CI_STATUS=$(gh api "repos/$REPO/actions/runs?per_page=5" \
               --jq '.workflow_runs[:3] | map((.conclusion // "running") + "(" + .name + ")") | join(", ")' \
               2>/dev/null || echo "unknown")
 
-            # 寫入 report file
             cat >> /tmp/report.md << MDEOF
 
 ### $REPO
-- 近 7 天 commits：${COMMIT_COUNT} 次
-- 開放 PRs：${PR_COUNT} 個 ／ Issues：${ISSUE_COUNT} 個
-- 近期 CI：${CI_STATUS}
+- commits(7d): ${COMMIT_COUNT}
+- open PRs: ${PR_COUNT} / Issues: ${ISSUE_COUNT}
+- CI: ${CI_STATUS}
 
-**近期 commits：**
+commits:
 ${COMMIT_MSGS}
 
-**PRs：**
+PRs:
 ${PR_LINES}
 
-**Issues：**
+Issues:
 ${ISSUE_LINES}
 MDEOF
           done
 
-          echo "--- report.md 內容 ---"
-          cat /tmp/report.md
+      # ── Step 3：判斷是初始化還是深化 ─────────────────────────
+      - name: 判斷模式
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          ISSUE_REPO: ${{ vars.NIGHTLY_PLAN_ISSUE_REPO || github.repository }}
+          FORCE_INIT: ${{ inputs.force_init || 'false' }}
+        run: |
+          # 確保 label 存在
+          gh label create "nightly-deep-dive" \
+            --repo "$ISSUE_REPO" \
+            --color "6f42c1" \
+            --description "每晚自動深度分析" 2>/dev/null || true
 
-      # ── Step 3：GitHub Models 生成計畫 ────────────────────────
-      - name: 生成工作計畫
+          # 搜尋今天是否已有 5 個 issue
+          EXISTING_COUNT=$(gh issue list \
+            --repo "$ISSUE_REPO" \
+            --label "nightly-deep-dive" \
+            --state open \
+            --json number,title \
+            --jq "[.[] | select(.title | contains(\"$TODAY\"))] | length" \
+            2>/dev/null || echo "0")
+
+          echo "今天已有 $EXISTING_COUNT 個 Issue"
+
+          if [ "$EXISTING_COUNT" -lt 5 ] || [ "$FORCE_INIT" = "true" ]; then
+            echo "MODE=init" >> "$GITHUB_ENV"
+          else
+            echo "MODE=deepen" >> "$GITHUB_ENV"
+            # 取得今天的 issue numbers
+            ISSUE_NUMBERS=$(gh issue list \
+              --repo "$ISSUE_REPO" \
+              --label "nightly-deep-dive" \
+              --state open \
+              --json number,title \
+              --jq "[.[] | select(.title | contains(\"$TODAY\")) | .number] | join(\",\")" \
+              2>/dev/null || echo "")
+            echo "ISSUE_NUMBERS=$ISSUE_NUMBERS" >> "$GITHUB_ENV"
+          fi
+          echo "ISSUE_REPO=$ISSUE_REPO" >> "$GITHUB_ENV"
+
+      # ── Step 4a：初始化 — AI 分析並建立 5 個 Issue ───────────
+      - name: 初始化 5 個 Issue
+        if: env.MODE == 'init'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 - << PYEOF > /tmp/payload.json
+          python3 - << PYEOF > /tmp/init-payload.json
 import json, os
 report = open('/tmp/report.md').read()
 today = os.environ.get('TODAY', '')
-prompt = f"""你是資深工程師兼技術主管。根據以下 GitHub 倉庫數據，為 {today} 生成具體可執行的工作計畫。
+prompt = f"""你是資深工程師。分析以下多個 GitHub 倉庫的數據，找出倉庫之間的依賴關係和共同問題。
 
 ## 倉庫數據
 {report}
 
-## 要求
-- 跨所有倉庫整合，只挑最重要的 5 項任務
-- 每項任務一行，格式：`倉庫 | 任務描述 | 預估時間`
-- 優先：滯留 PR > CI 失敗 > 高頻 issue > 技術債
-- 不要分析、不要建議、不要說明，只輸出任務清單
+## 任務
+1. 自主推斷倉庫間的依賴關係（根據 commit 訊息、PR 標題、issue 內容）
+2. 選出今晚最值得深挖的 5 個方向，每個方向可跨多個倉庫
+3. 每個方向輸出 JSON 物件
 
-## 輸出格式（純 Markdown，不要其他內容）
-
-### 明日任務（最多 5 項）
-| # | 倉庫 | 任務 | 預估時間 |
-|---|------|------|----------|
-"""
+## 輸出格式（只輸出 JSON array，不要其他內容）
+[
+  {{
+    "title": "方向名稱（簡短，15字以內）",
+    "dimension": "維度類型（依賴風險/CI修復/PR清理/技術債/效能）",
+    "repos": ["repo1", "repo2"],
+    "summary": "一句話說明為什麼重要（50字以內）",
+    "first_action": "第一步具體行動（30字以內）"
+  }}
+]"""
 
 print(json.dumps({
     "model": "gpt-4o-mini",
     "messages": [{"role": "user", "content": prompt}],
-    "temperature": 0.3,
-    "max_tokens": 500
+    "temperature": 0.4,
+    "max_tokens": 1000
 }))
 PYEOF
 
@@ -218,74 +232,148 @@ PYEOF
             "https://models.inference.ai.azure.com/chat/completions" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
-            -d @/tmp/payload.json > /tmp/response.json
+            -d @/tmp/init-payload.json > /tmp/init-response.json
 
-          python3 - << 'PYEOF' > /tmp/plan.md
-import json
-try:
-    d = json.loads(open('/tmp/response.json').read())
-    print(d['choices'][0]['message']['content'])
-except Exception as e:
-    resp = open('/tmp/response.json').read()
-    print(f"⚠️ AI 生成失敗：{e}\n\n**原始回應：**\n```\n{resp[:2000]}\n```")
+          # 解析並建立 5 個 Issue
+          python3 - << 'PYEOF'
+import json, os, subprocess
+
+resp = json.loads(open('/tmp/init-response.json').read())
+content = resp['choices'][0]['message']['content'].strip()
+
+# 清理可能的 markdown code block
+if content.startswith('```'):
+    content = '\n'.join(content.split('\n')[1:])
+if content.endswith('```'):
+    content = '\n'.join(content.split('\n')[:-1])
+
+dimensions = json.loads(content)
+today = os.environ.get('TODAY', '')
+issue_repo = os.environ.get('ISSUE_REPO', '')
+
+for i, d in enumerate(dimensions[:5], 1):
+    title = f"🔍 [{d['dimension']}] {d['title']} — {today}"
+    body = f"""## {d['title']}
+
+**維度**：{d['dimension']}
+**相關倉庫**：{', '.join(d['repos'])}
+**為什麼重要**：{d['summary']}
+
+---
+
+## 第一步
+{d['first_action']}
+
+---
+
+## 深化記錄
+> 每小時自動追加分析...
+
+*🤖 自動生成 | {today}*"""
+
+    with open(f'/tmp/issue-{i}.md', 'w') as f:
+        f.write(body)
+
+    result = subprocess.run([
+        'gh', 'issue', 'create',
+        '--repo', issue_repo,
+        '--title', title,
+        '--label', 'nightly-deep-dive',
+        '--body-file', f'/tmp/issue-{i}.md'
+    ], capture_output=True, text=True)
+    print(f"✅ Issue {i}: {title}")
+    print(result.stdout)
+    if result.returncode != 0:
+        print(f"❌ Error: {result.stderr}")
 PYEOF
 
-          echo "計畫生成完成（$(wc -c < /tmp/plan.md) bytes）"
-
-      # ── Step 4：建立或更新 GitHub Issue ───────────────────────
-      - name: 建立 GitHub Issue
+      # ── Step 4b：深化 — 對每個 Issue 追加 comment ────────────
+      - name: 深化分析
+        if: env.MODE == 'deepen'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_REPO: ${{ vars.NIGHTLY_PLAN_ISSUE_REPO != '' && vars.NIGHTLY_PLAN_ISSUE_REPO || github.repository }}
         run: |
-          TITLE="📋 每日工作計畫 $TODAY"
+          python3 - << 'PYEOF'
+import json, os, subprocess
 
-          BODY=$(python3 - << 'PYEOF'
-import os
-plan = open('/tmp/plan.md').read()
-repos = os.environ.get('REPOS', '')
-today = os.environ.get('TODAY', '')
-print(f"""## 每日工作計畫
+report = open('/tmp/report.md').read()
+hour = os.environ.get('HOUR', '')
+issue_repo = os.environ.get('ISSUE_REPO', '')
+issue_numbers = os.environ.get('ISSUE_NUMBERS', '').split(',')
 
-> 🤖 由 GitHub Actions + GitHub Models (gpt-4o-mini) 自動生成
-> 📦 分析倉庫：{repos}
-> 🕐 生成時間：{today} 02:00 UTC
+for num in issue_numbers[:5]:
+    num = num.strip()
+    if not num:
+        continue
 
----
+    # 讀取 Issue 本文 + 所有歷史 comments
+    issue_raw = subprocess.run([
+        'gh', 'issue', 'view', num,
+        '--repo', issue_repo,
+        '--json', 'title,body,comments'
+    ], capture_output=True, text=True)
 
-{plan}
+    issue_data = json.loads(issue_raw.stdout)
+    title = issue_data.get('title', '')
+    body = issue_data.get('body', '')
+    comments = issue_data.get('comments', [])
+    history = '\n\n---\n\n'.join([c['body'] for c in comments]) if comments else '（尚無歷史分析）'
 
----
-*[查看 Workflow 記錄](../../actions/workflows/nightly-plan.yml)*""")
+    prompt = f"""你是資深工程師，正在對以下議題進行持續深化分析。
+
+## 議題標題
+{title}
+
+## 初始分析
+{body}
+
+## 歷史深化記錄（按時間順序）
+{history}
+
+## 最新倉庫數據
+{report}
+
+## 任務
+1. **復盤**：檢視歷史分析，指出哪些結論需要修正、哪些被新數據推翻、哪些已解決
+2. **深化**：基於復盤結果，提出比上一輪更具體、更可執行的下一步
+3. 格式：
+   ### 復盤
+   （簡短指出問題或確認）
+
+   ### 深化
+   （具體行動，含影響範圍）
+
+   ### 當前最佳方案
+   （綜合所有輪次，目前最優解是什麼）
+
+每個區塊不超過 80 字，總字數控制在 250 字以內。"""
+
+    payload = json.dumps({
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 600
+    })
+
+    with open('/tmp/deepen-payload.json', 'w') as f:
+        f.write(payload)
+
+    resp = subprocess.run([
+        'curl', '-s', '-X', 'POST',
+        'https://models.inference.ai.azure.com/chat/completions',
+        '-H', f'Authorization: Bearer {os.environ["GH_TOKEN"]}',
+        '-H', 'Content-Type: application/json',
+        '-d', f'@/tmp/deepen-payload.json'
+    ], capture_output=True, text=True)
+
+    result = json.loads(resp.stdout)
+    insight = result['choices'][0]['message']['content'].strip()
+    comment = f"### 🕐 UTC {hour}:00 深化（第 {len(comments)+1} 輪）\n\n{insight}"
+
+    subprocess.run([
+        'gh', 'issue', 'comment', num,
+        '--repo', issue_repo,
+        '--body', comment
+    ], capture_output=True, text=True)
+    print(f"✅ Issue #{num} 第 {len(comments)+1} 輪深化完成")
 PYEOF
-)
-          echo "$BODY" > /tmp/issue-body.md
-
-          # 確保 label 存在
-          gh label create "nightly-plan" \
-            --repo "$ISSUE_REPO" \
-            --color "0075ca" \
-            --description "每日自動工作計畫" 2>/dev/null || true
-
-          # 搜尋今天是否已有 issue（用日期精確匹配）
-          EXISTING=$(gh issue list \
-            --repo "$ISSUE_REPO" \
-            --label "nightly-plan" \
-            --state open \
-            --json number,title \
-            --jq ".[] | select(.title == \"$TITLE\") | .number" \
-            2>/dev/null | head -1)
-
-          if [ -n "$EXISTING" ]; then
-            gh issue edit "$EXISTING" \
-              --repo "$ISSUE_REPO" \
-              --body-file /tmp/issue-body.md
-            echo "✅ 更新 Issue #$EXISTING"
-          else
-            gh issue create \
-              --repo "$ISSUE_REPO" \
-              --title "$TITLE" \
-              --label "nightly-plan" \
-              --body-file /tmp/issue-body.md
-            echo "✅ 建立 Issue：$TITLE"
-          fi
