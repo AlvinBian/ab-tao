@@ -83,7 +83,11 @@ _${MSG}_"
     else
       JSON_TEXT="\"$(printf '%s' "$MSG_TEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' | tr -d '\n' | sed 's/\\n$//')\""
     fi
-    printf '{"channel_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    if [ "$MODE" = "dm" ]; then
+      printf '{"user_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    else
+      printf '{"channel_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    fi
     rm -f "$start_file"
     ;;
 
