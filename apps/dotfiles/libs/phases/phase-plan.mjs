@@ -129,28 +129,24 @@ export async function phasePlan(plan) {
 			options: [
 				{
 					value: "opusplan",
-					label: "opusplan — 規劃用 Opus，執行用 Sonnet",
-					hint: "推薦：品質與成本平衡，省 68%",
+					label:
+						"opusplan — 規劃用 Opus，執行用 Sonnet（推薦：品質與成本平衡，省 68%）",
 				},
 				{
 					value: "sonnet",
-					label: "sonnet — 均衡",
-					hint: "一般開發的預設選擇",
+					label: "sonnet — 均衡（一般開發的預設選擇）",
 				},
 				{
 					value: "haiku",
-					label: "haiku — 速度優先",
-					hint: "成本最低，適合簡單任務",
+					label: "haiku — 速度優先（成本最低，適合簡單任務）",
 				},
 				{
 					value: "opus",
-					label: "opus — 最高品質",
-					hint: "複雜架構設計、全程 Opus",
+					label: "opus — 最高品質（複雜架構設計、全程 Opus）",
 				},
 				{
 					value: null,
-					label: "← 保留現有設定",
-					hint: currentModel ? `目前：${currentModel}` : "未設定",
+					label: `← 保留現有設定${currentModel ? `（目前：${currentModel}）` : "（未設定）"}`,
 				},
 			],
 			initialValue: currentModel || "opusplan",
