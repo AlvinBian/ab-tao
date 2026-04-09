@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
 import { getDescription } from "../config/descriptions.mjs";
+import { CATEGORY_ORDER } from "../config/npm-classify.mjs";
 import { HOME } from "../core/paths.mjs";
 import {
 	badge,
@@ -62,69 +63,73 @@ function renderTabOverview(data) {
  */
 function renderTabTechStacks(data) {
 	const stacks = data.stacks || [];
+	const techStacks = data.techStacks || {};
 	const perRepoReasoning = data.perRepoReasoning || {};
 
-	// 按分類聚合技術棧
-	const categoryTechs = {};
+	// 每個技術棧出現在多少個 repo 中
 	const stackRepoCount = {};
 	if (data.repos && !isEmpty(data.repos)) {
 		for (const repo of data.repos) {
 			const stackData = perRepoReasoning[repo]?.stacks || {};
-			for (const [cat, techs] of Object.entries(stackData)) {
+			for (const techs of Object.values(stackData)) {
 				for (const tech of techs || []) {
 					stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
-					if (!categoryTechs[cat]) categoryTechs[cat] = new Set();
-					categoryTechs[cat].add(tech);
 				}
 			}
 		}
 	}
 
-	// 未歸類的技術（在 stacks 但不在任何 category 中）
-	const categorized = new Set(
-		Object.values(categoryTechs).flatMap((s) => [...s]),
-	);
+	// 用 CATEGORY_ORDER 排序分類，未知分類排到最後
+	const orderIndex = Object.fromEntries(CATEGORY_ORDER.map((c, i) => [c, i]));
+	const sortedCategories = Object.entries(techStacks)
+		.filter(([, techs]) => techs?.length > 0)
+		.sort((a, b) => (orderIndex[a[0]] ?? 999) - (orderIndex[b[0]] ?? 999));
+
+	// 未歸類的技術
+	const categorized = new Set(sortedCategories.flatMap(([, t]) => t));
 	const uncategorized = stacks.filter((s) => !categorized.has(s));
+
+	const totalTechCount = categorized.size + uncategorized.length;
+	const totalCatCount =
+		sortedCategories.length + (uncategorized.length > 0 ? 1 : 0);
 
 	const topCount = Math.min(20, Object.keys(stackRepoCount).length);
 	const freqHeight = Math.max(300, 100 + topCount * 20);
 
-	// 按分類渲染技術棧區塊
-	const categoryOrder = Object.entries(categoryTechs).sort(
-		(a, b) => b[1].size - a[1].size,
-	);
+	// 渲染分類區塊
+	const renderBadge = (t) => {
+		const count = stackRepoCount[t] || 0;
+		const desc = getDescription(t);
+		const tooltip = desc
+			? `${esc(desc)}（${count} repos）`
+			: count > 0
+				? `${count} repos`
+				: "";
+		return `<span class="badge badge-blue tech-link" title="${tooltip}" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`;
+	};
+
 	let categoryHtml = "";
-	if (categoryOrder.length > 0) {
-		categoryHtml = categoryOrder
-			.map(([cat, techSet]) => {
-				const sortedTechs = [...techSet].sort((a, b) => {
+	if (sortedCategories.length > 0) {
+		categoryHtml = sortedCategories
+			.map(([cat, techs]) => {
+				const sorted = [...techs].sort((a, b) => {
 					const diff = (stackRepoCount[b] || 0) - (stackRepoCount[a] || 0);
 					return diff !== 0 ? diff : a.localeCompare(b);
 				});
-				const badges = sortedTechs
-					.map((t) => {
-						const count = stackRepoCount[t] || 0;
-						const desc = getDescription(t);
-						const tooltip = desc
-							? `${esc(desc)}（${count} repos）`
-							: `${count} repos`;
-						return `<span class="badge badge-blue tech-link" title="${tooltip}" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`;
-					})
-					.join("");
-				return `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px;text-transform:capitalize">${esc(cat)} <span style="font-size:.78rem;opacity:.7">(${techSet.size})</span></h3>${badges}</div>`;
+				return `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px">${esc(cat)} <span style="font-size:.78rem;opacity:.7">(${techs.length})</span></h3>${sorted.map(renderBadge).join("")}</div>`;
 			})
 			.join("");
 		if (uncategorized.length > 0) {
-			categoryHtml += `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px">其他</h3>${uncategorized.map((t) => `<span class="badge badge-blue tech-link" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`).join("")}</div>`;
+			categoryHtml += `<div style="margin-bottom:16px"><h3 style="font-size:.9rem;color:#8b949e;margin:0 0 8px">其他 <span style="font-size:.78rem;opacity:.7">(${uncategorized.length})</span></h3>${uncategorized.map(renderBadge).join("")}</div>`;
 		}
 	} else if (!isEmpty(stacks)) {
-		categoryHtml = `<div>${stacks.map((s) => `<span class="badge badge-blue tech-link" data-tech="${esc(s)}" style="cursor:pointer">${esc(s)}</span>`).join("")}</div>`;
+		categoryHtml = `<div>${stacks.map(renderBadge).join("")}</div>`;
 	}
 
 	return `
 <div id="tab-stacks" class="tab-content">
   <div class="card" style="margin-bottom:16px">
-    <p class="section-desc" style="margin:0">技術棧統計展示團隊使用的所有技術及其採用頻率。單位為「Repo 數量」。點擊技術棧可跳轉到專案頁籤篩選對應 Repo。</p>
+    <p class="section-desc" style="margin:0">技術棧統計（${totalTechCount} 個，${totalCatCount} 類）。單位為「Repo 數量」。點擊技術棧可跳轉到專案頁籤篩選對應 Repo。</p>
   </div>
   <div class="card">
     <h2 class="section-title">所有技術棧</h2>
