@@ -261,25 +261,45 @@ export function formatAiResResources(plan, claudeDir) {
 			aiResByType[type].push(clean);
 		}
 
+		// 按星級排序（高分在前）+ 加 [預選] 標記
+		const sortByRating = (items, type) =>
+			[...items].sort(
+				(a, b) => (getRating(b, type) || 0) - (getRating(a, type) || 0),
+			);
+		const preselectedBullet = (name, type) => {
+			const desc = getDescription(name, type, claudeDir);
+			const rating = getRating(name, type);
+			const stars = rating
+				? `${"★".repeat(rating)}${"☆".repeat(5 - rating)} `
+				: "";
+			return desc
+				? `       · ${pc.cyan("[預選]")} ${name} ${stars}— ${desc}`
+				: `       · ${pc.cyan("[預選]")} ${name}`;
+		};
+
 		lines.push(`5. 🌐 AI 外部資源（${plan.aiRes.length} 個）可選`);
 		if (aiResByType.commands.length) {
 			lines.push(`   5.1 Commands（${aiResByType.commands.length}）`);
 			lines.push(
-				...aiResByType.commands.map((n) =>
-					descBullet(n, "commands", claudeDir),
+				...sortByRating(aiResByType.commands, "commands").map((n) =>
+					preselectedBullet(n, "commands"),
 				),
 			);
 		}
 		if (aiResByType.agents.length) {
 			lines.push(`   5.2 Agents（${aiResByType.agents.length}）`);
 			lines.push(
-				...aiResByType.agents.map((n) => descBullet(n, "agents", claudeDir)),
+				...sortByRating(aiResByType.agents, "agents").map((n) =>
+					preselectedBullet(n, "agents"),
+				),
 			);
 		}
 		if (aiResByType.rules.length) {
 			lines.push(`   5.3 Rules（${aiResByType.rules.length}）`);
 			lines.push(
-				...aiResByType.rules.map((n) => descBullet(n, "rules", claudeDir)),
+				...sortByRating(aiResByType.rules, "rules").map((n) =>
+					preselectedBullet(n, "rules"),
+				),
 			);
 		}
 	}
