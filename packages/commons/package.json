@@ -1,29 +1,29 @@
 {
-  "name": "@ab-tao/commons",
-  "version": "1.0.0",
-  "description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
-  "type": "module",
-  "exports": {
-    ".": "./scripts/index.mjs",
-    "./sync": "./scripts/sync-sources.mjs",
-    "./validate": "./scripts/validate-structure.mjs",
-    "./detect": "./scripts/tech-detection.mjs",
-    "./loader": "./scripts/resource-loader.mjs",
-    "./security": "./scripts/security-validator.mjs",
-    "./versions": "./scripts/version-tracker.mjs",
-    "./paths": "./scripts/paths.mjs"
-  },
-  "scripts": {
-    "build": "echo 'commons build completed'",
-    "sync": "node scripts/sync-sources.mjs",
-    "validate": "node scripts/validate-structure.mjs",
-    "lint": "biome check .",
-    "test": "node --test __tests__/*.test.mjs"
-  },
-  "dependencies": {
-    "@ab-tao/share": "workspace:*"
-  },
-  "devDependencies": {
-    "commander": "^12.1.0"
-  }
+	"name": "@ab-tao/commons",
+	"version": "1.0.0",
+	"description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
+	"type": "module",
+	"exports": {
+		".": "./scripts/index.mjs",
+		"./sync": "./scripts/sync-sources.mjs",
+		"./validate": "./scripts/validate-structure.mjs",
+		"./detect": "./scripts/tech-detection.mjs",
+		"./loader": "./scripts/resource-loader.mjs",
+		"./security": "./scripts/security-validator.mjs",
+		"./versions": "./scripts/version-tracker.mjs",
+		"./paths": "./scripts/paths.mjs"
+	},
+	"scripts": {
+		"build": "echo 'commons build completed'",
+		"sync": "node scripts/sync-sources.mjs",
+		"validate": "node scripts/validate-structure.mjs",
+		"lint": "biome check .",
+		"test": "node --test __tests__/*.test.mjs"
+	},
+	"dependencies": {
+		"@ab-tao/share": "workspace:*"
+	},
+	"devDependencies": {
+		"commander": "^12.1.0"
+	}
 }

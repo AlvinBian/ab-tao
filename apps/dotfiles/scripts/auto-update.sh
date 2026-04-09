@@ -27,12 +27,12 @@ success() { echo -e "  ${GREEN}✔ $1${NC}"; }
 warn()    { echo -e "  ${YELLOW}⚠ $1${NC}"; }
 skip()    { echo -e "  ${DIM}─ $1${NC}"; }
 
-REPO_NAME="ab-dotfiles"
-REPO_BRANCH="master"
+REPO_NAME="ab-tao"
+REPO_BRANCH="main"
 
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}║   ab-dotfiles 自動更新                       ║${NC}"
+echo -e "${BOLD}║   ab-tao 自動更新                           ║${NC}"
 echo -e "${BOLD}╚══════════════════════════════════════════════╝${NC}"
 echo -e "  ${DIM}來源：$REPO_NAME@$REPO_BRANCH${NC}"
 echo -e "  ${DIM}路徑：$REPO_DIR${NC}"
@@ -77,20 +77,20 @@ COMMANDS_CHANGED=$(echo "$CHANGED_FILES" | grep "^claude/commands/" | sed 's|cla
 AGENTS_CHANGED=$(echo "$CHANGED_FILES"   | grep "^claude/agents/"   | sed 's|claude/agents/||;s|\.md$||'   | tr '\n' ',' | sed 's/,$//')
 RULES_CHANGED=$(echo "$CHANGED_FILES"    | grep "^claude/rules/"    | sed 's|claude/rules/||;s|\.md$||'    | tr '\n' ',' | sed 's/,$//')
 HOOKS_CHANGED=$(echo "$CHANGED_FILES"    | grep -c "claude/hooks.json" || true)
-ZSH_MODULES=$(echo "$CHANGED_FILES"      | grep "^zsh/modules/"     | sed 's|zsh/modules/||;s|\.zsh$||'     | tr '\n' ',' | sed 's/,$//')
-ZSHRC_CHANGED=$(echo "$CHANGED_FILES"    | grep -c "^zsh/zshrc$" || true)
+ZSH_MODULES=$(echo "$CHANGED_FILES"      | grep "^zsh/\.zshrc\.d/conf/"  | sed 's|zsh/\.zshrc\.d/conf/||;s|\.zsh$||' | tr '\n' ',' | sed 's/,$//')
+SHELDON_CHANGED=$(echo "$CHANGED_FILES"  | grep -c "^zsh/\.zshrc\.d/sheldon/" || true)
 
 # 顯示分析結果
 [[ -n "$COMMANDS_CHANGED" ]] && info "Claude commands：$COMMANDS_CHANGED" || skip "Claude commands（無變更）"
 [[ -n "$AGENTS_CHANGED"   ]] && info "Claude agents：$AGENTS_CHANGED"     || skip "Claude agents（無變更）"
 [[ -n "$RULES_CHANGED"    ]] && info "Claude rules：$RULES_CHANGED"       || skip "Claude rules（無變更）"
 [[ "$HOOKS_CHANGED" -gt 0 ]] && info "hooks.json：有變更"                 || skip "hooks.json（無變更）"
-[[ -n "$ZSH_MODULES"      ]] && info "zsh 環境模組：$ZSH_MODULES"          || skip "zsh 環境模組（無變更）"
-[[ "$ZSHRC_CHANGED" -gt 0 ]] && info "~/.zshrc：有變更"                   || skip "~/.zshrc（無變更）"
+[[ -n "$ZSH_MODULES"        ]] && info "zsh 環境模組：$ZSH_MODULES"          || skip "zsh 環境模組（無變更）"
+[[ "$SHELDON_CHANGED" -gt 0 ]] && info "sheldon 配置：有變更"              || skip "sheldon 配置（無變更）"
 
 # 若完全沒有可處理的變更
 if [[ -z "$COMMANDS_CHANGED" && -z "$AGENTS_CHANGED" && -z "$RULES_CHANGED" \
-   && "$HOOKS_CHANGED" -eq 0 && -z "$ZSH_MODULES" && "$ZSHRC_CHANGED" -eq 0 ]]; then
+   && "$HOOKS_CHANGED" -eq 0 && -z "$ZSH_MODULES" && "$SHELDON_CHANGED" -eq 0 ]]; then
   info "其他變更（README / scripts / package.json 等），不需重新部署"
   $DRY_RUN || git pull origin "$REPO_BRANCH" --quiet
   success "已拉取最新版本"
@@ -135,10 +135,20 @@ if [[ "$HOOKS_CHANGED" -gt 0 ]]; then
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
-# zsh 環境模組
+# zsh 環境模組（直接複製變更的檔案到 ~/.zshrc.d/conf/）
 if [[ -n "$ZSH_MODULES" ]]; then
   info "更新 zsh 環境模組：$ZSH_MODULES"
-  zsh "$REPO_DIR/zsh/install.sh" --modules "$ZSH_MODULES"
+  mkdir -p "$HOME/.zshrc.d/conf"
+  IFS=',' read -rA _mods <<< "$ZSH_MODULES"
+  for _m in $_mods; do
+    local _src="$REPO_DIR/zsh/.zshrc.d/conf/${_m}.zsh"
+    local _dest="$HOME/.zshrc.d/conf/${_m}.zsh"
+    if [[ -f "$_src" ]]; then
+      cp "$_src" "$_dest"
+      zcompile "$_dest" 2>/dev/null
+      success "${_m}.zsh"
+    fi
+  done
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
@@ -149,21 +159,18 @@ if [[ -n "$RULES_CHANGED" ]]; then
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
-# zshrc
-if [[ "$ZSHRC_CHANGED" -gt 0 ]]; then
-  info "更新 ~/.zshrc"
-  if [[ -f ~/.zshrc ]]; then
-    cp ~/.zshrc "$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
-    # 自動遷移個人設定到 ~/.zshrc.local（不會被覆蓋）
-    if [[ ! -f ~/.zshrc.local ]]; then
-      grep -E '^\s*(export |alias |path\+|PATH=|eval |source )' ~/.zshrc \
-        | grep -v 'ab-dotfiles\|BREW_PREFIX\|PYENV_ROOT\|_zsh_module\|_safe_source\|_command_exists\|\.zsh/modules' \
-        > ~/.zshrc.local 2>/dev/null || true
-      [[ -s ~/.zshrc.local ]] && info "個人設定已遷移到 ~/.zshrc.local"
-    fi
+# sheldon 配置
+if [[ "$SHELDON_CHANGED" -gt 0 ]]; then
+  info "更新 sheldon 配置"
+  mkdir -p "$HOME/.zshrc.d/sheldon"
+  cp "$REPO_DIR/zsh/.zshrc.d/sheldon/plugins.toml" "$HOME/.zshrc.d/sheldon/"
+  if command -v sheldon &>/dev/null; then
+    export SHELDON_CONFIG_DIR="$HOME/.zshrc.d/sheldon"
+    export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"
+    sheldon lock --update 2>/dev/null
+    sheldon source > "$HOME/.zshrc.d/sheldon/cache.zsh" 2>/dev/null
   fi
-  cp "$REPO_DIR/zsh/zshrc" ~/.zshrc
-  success "~/.zshrc 已更新（個人設定在 ~/.zshrc.local）"
+  success "sheldon 配置已更新"
   DEPLOYED=$((DEPLOYED + 1))
 fi
 

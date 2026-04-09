@@ -3,6 +3,8 @@ name: db-migration
 description: >
   資料庫遷移全流程：Schema 設計 → Migration 生成 → 風險評估 → Rollback 計畫。
   Use when: "db migration", "資料庫遷移", "schema 變更", "加欄位", "改表結構", "migrate".
+model: sonnet
+effort: medium
 paths: ["**/migrations/**", "**/prisma/**", "**/drizzle/**"]
 metadata:
   version: 1.0.0

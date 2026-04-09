@@ -2,18 +2,15 @@
  * 全局配置部署 — settings.json 合併
  *
  * 職責：
- *   將 ab-dotfiles 的全局配置安全地部署到 ~/.claude/，
+ *   將 ab-tao 的全局配置安全地部署到 ~/.claude/，
  *   採用「合併」而非「覆蓋」策略，保留用戶已有的自訂設定。
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
+import fs from "node:fs";
+import path from "node:path";
+import { HOME } from "../core/paths.mjs";
 
-const CLAUDE_DIR_GETTER = () => {
-  const HOME = process.env.HOME;
-  if (!HOME) throw new Error('HOME 環境變數未設定，無法部署全局設定');
-  return path.join(HOME, '.claude');
-};
+const CLAUDE_DIR = path.join(HOME, ".claude");
 
 /**
  * 部署 settings.json（merge 策略）
@@ -29,49 +26,58 @@ const CLAUDE_DIR_GETTER = () => {
  * @param {string} [template.model] - 預設 AI 模型（如 'sonnet'）
  * @param {string} [template.effortLevel] - 推理強度（如 'medium'）
  * @param {boolean} [template.autoMemoryEnabled] - 是否啟用自動記憶
- * @param {Object} [template.env] - 環境變數設定（如 MAX_THINKING_TOKENS）
+ * @param {Object} [template.env] - 環境變數設定
  * @returns {{ path: string, permissionsAdded: number, isNew: boolean }}
  *   path: settings.json 的絕對路徑
  *   permissionsAdded: 新增的 allow 規則數量
  *   isNew: 是否為首次建立（原本不存在）
  */
 export function deploySettings(template) {
-  const settingsPath = path.join(CLAUDE_DIR_GETTER(), 'settings.json');
-  let existing = {};
+	const settingsPath = path.join(CLAUDE_DIR, "settings.json");
+	let existing = {};
 
-  if (fs.existsSync(settingsPath)) {
-    try {
-      existing = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    } catch {
-      /* settings.json 格式錯誤則略過，從空物件合併 */
-    }
-  }
+	if (fs.existsSync(settingsPath)) {
+		try {
+			existing = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+		} catch {
+			/* settings.json 格式錯誤則略過，從空物件合併 */
+		}
+	}
 
-  const merged = { ...existing };
+	const merged = { ...existing };
 
-  // permissions: 完全不動 — 用戶自行在 Claude Code 中配置
-  // ab-dotfiles 不介入 permissions 管理，避免覆蓋用戶偏好
-  if (existing.permissions) {
-    merged.permissions = existing.permissions;
-  }
+	// permissions: 完全不動 — 用戶自行在 Claude Code 中配置
+	// ab-tao 不介入 permissions 管理，避免覆蓋用戶偏好
+	if (existing.permissions) {
+		merged.permissions = existing.permissions;
+	}
 
-  // model/effortLevel: 不寫入，由用戶自行在 Claude Code 中設定
-  if (existing.autoMemoryEnabled === undefined)
-    merged.autoMemoryEnabled = template.autoMemoryEnabled;
+	// model/effortLevel: 不寫入，由用戶自行在 Claude Code 中設定
+	if (existing.autoMemoryEnabled === undefined)
+		merged.autoMemoryEnabled = template.autoMemoryEnabled;
 
-  // env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
-  if (template.env) {
-    merged.env = { ...template.env, ...(existing.env || {}) };
-  }
+	// env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
+	if (template.env) {
+		merged.env = { ...template.env, ...(existing.env || {}) };
+	}
 
-  const isNew = !fs.existsSync(settingsPath);
-  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-  fs.writeFileSync(settingsPath, `${JSON.stringify(merged, null, 2)}\n`);
+	// statusLine — 不覆蓋已有配置
+	if (!existing.statusLine) {
+		merged.statusLine = {
+			type: "command",
+			command: "~/.claude/statusline.sh",
+		};
+	}
 
-  return {
-    path: settingsPath,
-    permissionsAdded:
-      (merged.permissions?.allow?.length || 0) - (existing.permissions?.allow?.length || 0),
-    isNew,
-  };
+	const isNew = !fs.existsSync(settingsPath);
+	fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+	fs.writeFileSync(settingsPath, `${JSON.stringify(merged, null, 2)}\n`);
+
+	return {
+		path: settingsPath,
+		permissionsAdded:
+			(merged.permissions?.allow?.length || 0) -
+			(existing.permissions?.allow?.length || 0),
+		isNew,
+	};
 }

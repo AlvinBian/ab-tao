@@ -5,22 +5,27 @@
  * 匯出：generateReport(data) / saveReport(html, dir) / openInBrowser(path)
  */
 
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { getDescription } from '../config/descriptions.mjs';
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { isEmpty } from "lodash-es";
+import { getDescription } from "../config/descriptions.mjs";
+import { HOME } from "../core/paths.mjs";
 import {
-  badge,
-  esc,
-  getStyles,
-  renderBackup,
-  renderEcc,
-  renderInstalled,
-  renderOverview,
-  renderStacks,
-  section,
-} from './formatters.mjs';
+	badge,
+	esc,
+	estimateTokenSize,
+	getStyles,
+	renderBackup,
+	renderCleanup,
+	renderEcc,
+	renderInstalled,
+	renderOverview,
+	renderPlugins,
+	renderStacks,
+	renderTokenChart,
+	section,
+} from "./formatters.mjs";
 
 // ── Tab 區塊渲染 ────────────────────────────────────────────────
 
@@ -28,18 +33,12 @@ import {
  * 渲染 Tab 概覽頁籤
  */
 function renderTabOverview(data) {
-  const installed = data.installed || {};
-  const cmdCount = installed.commands?.length || 0;
-  const agentCount = installed.agents?.length || 0;
-  const ruleCount = installed.rules?.length || 0;
-  const moduleCount = installed.modules?.length || 0;
-  const stackCount = data.stacks?.length || 0;
-  const repoCount = (data.repos || []).length;
+	const installed = data.installed || {};
 
-  return `
+	return `
 <div id="tab-overview" class="tab-content active">
   ${renderOverview(data)}
-  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap">
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
     <div style="flex:1;min-width:280px">
       <h2 class="section-title">安裝概覽</h2>
       <div id="chart-overview-pie" style="height:260px"></div>
@@ -49,6 +48,9 @@ function renderTabOverview(data) {
       <div id="chart-overview-bar" style="height:260px"></div>
     </div>
   </div>
+  ${renderTokenChart()}
+  ${renderCleanup(installed, data.auditSummary)}
+  ${renderPlugins(installed)}
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">概覽顯示安裝的總體統計。使用頂部 Tab 導航查看技術棧、專案、安裝詳情、審計日誌。</p>
   </div>
@@ -59,53 +61,53 @@ function renderTabOverview(data) {
  * 渲染 Tab 技術棧頁籤
  */
 function renderTabTechStacks(data) {
-  const stacks = data.stacks || [];
-  const totalRepos = (data.repos || []).length;
+	const stacks = data.stacks || [];
+	const totalRepos = (data.repos || []).length;
 
-  const stackRepoCount = {};
-  if (data.repos && data.repos.length > 0) {
-    for (const repo of data.repos) {
-      const stackData = data.perRepoReasoning?.[repo]?.stacks || {};
-      for (const stacks of Object.values(stackData)) {
-        for (const tech of stacks || []) {
-          stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
-        }
-      }
-    }
-  }
+	const stackRepoCount = {};
+	if (data.repos && !isEmpty(data.repos)) {
+		for (const repo of data.repos) {
+			const stackData = data.perRepoReasoning?.[repo]?.stacks || {};
+			for (const stacks of Object.values(stackData)) {
+				for (const tech of stacks || []) {
+					stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
+				}
+			}
+		}
+	}
 
-  const topCount = Math.min(20, Object.keys(stackRepoCount).length);
-  const topStacks = Object.entries(stackRepoCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, topCount)
-    .map(([tech, count]) => ({
-      name: tech,
-      value: count,
-      percentage: ((count / totalRepos) * 100).toFixed(1),
-    }));
+	const topCount = Math.min(20, Object.keys(stackRepoCount).length);
+	const topStacks = Object.entries(stackRepoCount)
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, topCount)
+		.map(([tech, count]) => ({
+			name: tech,
+			value: count,
+			percentage: ((count / totalRepos) * 100).toFixed(1),
+		}));
 
-  const _topStacksData = JSON.stringify(topStacks);
-  const freqHeight = Math.max(300, 100 + topCount * 20);
+	const _topStacksData = JSON.stringify(topStacks);
+	const freqHeight = Math.max(300, 100 + topCount * 20);
 
-  return `
+	return `
 <div id="tab-stacks" class="tab-content">
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">技術棧統計展示團隊使用的所有技術及其採用頻率。單位為「Repo 數量」。</p>
   </div>
   <div class="card">
     <h2 class="section-title">所有技術棧</h2>
-    ${stacks.length > 0 ? `<div>${stacks.map((s) => badge(s, 'blue', getDescription(s))).join('')}</div>` : '<p style="color:#8b949e">無技術棧資料</p>'}
+    ${!isEmpty(stacks) ? `<div>${stacks.map((s) => badge(s, "blue", getDescription(s))).join("")}</div>` : '<p style="color:#8b949e">無技術棧資料</p>'}
   </div>
   ${
-    topCount > 0
-      ? `
+		topCount > 0
+			? `
   <div class="card">
     <h2 class="section-title">技術棧使用頻率（Top 20）</h2>
     <p class="section-desc">統計每個技術出現在多少個 repo 中，頻率越高表示該技術在團隊中越普及。</p>
     <div id="chart-tech-freq" style="height:${freqHeight}px"></div>
   </div>`
-      : ''
-  }
+			: ""
+	}
 </div>`;
 }
 
@@ -113,50 +115,58 @@ function renderTabTechStacks(data) {
  * 渲染 Tab 專案頁籤
  */
 function renderTabRepos(data) {
-  const perRepoReasoning = data.perRepoReasoning || {};
-  const repos = data.repos || [];
-  const roles = data.repoRoles || {};
-  const projects = data.projects || [];
+	const perRepoReasoning = data.perRepoReasoning || {};
+	const repos = data.repos || [];
+	const roles = data.repoRoles || {};
+	const projects = data.projects || [];
 
-  const repoKeys = repos.length > 0 ? repos : Object.keys(perRepoReasoning);
-  if (!repoKeys.length)
-    return '<div id="tab-repos" class="tab-content"><p style="color:#8b949e">無 Repo 資料</p></div>';
+	const repoKeys = !isEmpty(repos) ? repos : Object.keys(perRepoReasoning);
+	if (!repoKeys.length)
+		return '<div id="tab-repos" class="tab-content"><p style="color:#8b949e">無 Repo 資料</p></div>';
 
-  const roleIcon = { main: '⭐ 主力', temp: '🔄 臨時', tool: '🔧 工具' };
-  const typeLabel = { full: 'AI 生成', concise: '靜態模板', minimal: '最小' };
+	const roleIcon = { main: "⭐ 主力", temp: "🔄 臨時", tool: "🔧 工具" };
+	const typeLabel = { full: "AI 生成", concise: "靜態模板", minimal: "最小" };
 
-  const cards = repoKeys
-    .map((repo) => {
-      const shortName = repo.split('/')[1];
-      const repoData = perRepoReasoning[repo] || perRepoReasoning[shortName] || {};
-      const roleInfo = roles[repo] || {};
-      const proj = projects.find((p) => p.repo === repo);
-      const role = roleInfo.role || 'temp';
-      const categories = Object.keys(repoData.stacks || {}).join(',');
+	const cards = repoKeys
+		.map((repo) => {
+			const shortName = repo.split("/")[1];
+			const repoData =
+				perRepoReasoning[repo] || perRepoReasoning[shortName] || {};
+			const roleInfo = roles[repo] || {};
+			const proj = projects.find((p) => p.repo === repo);
+			const role = roleInfo.role || "temp";
+			const categories = Object.keys(repoData.stacks || {}).join(",");
 
-      const roleBadge = badge(roleIcon[role] || role, role === 'main' ? 'green' : 'grey');
+			const roleBadge = badge(
+				roleIcon[role] || role,
+				role === "main" ? "green" : "grey",
+			);
 
-      let stackBadges = '';
-      for (const [cat, techs] of Object.entries(repoData.stacks || {})) {
-        if (!techs?.length) continue;
-        stackBadges += `<div style="margin-top:6px"><span style="font-size:.78rem;color:#8b949e;margin-right:4px">${esc(cat)}:</span>${techs
-          .map((t) => {
-            const d = getDescription(t);
-            return d ? badge(t, 'blue', d) : badge(t, 'blue');
-          })
-          .join('')}</div>`;
-      }
+			let stackBadges = "";
+			for (const [cat, techs] of Object.entries(repoData.stacks || {})) {
+				if (!techs?.length) continue;
+				stackBadges += `<div style="margin-top:6px"><span style="font-size:.78rem;color:#8b949e;margin-right:4px">${esc(cat)}:</span>${techs
+					.map((t) => {
+						const d = getDescription(t);
+						return d ? badge(t, "blue", d) : badge(t, "blue");
+					})
+					.join("")}</div>`;
+			}
 
-      const localPath = roleInfo.localPath
-        ? roleInfo.localPath.replace(process.env.HOME || os.homedir(), '~')
-        : '未找到';
-      const claudeMd = proj ? typeLabel[proj.claudeMdType] || '—' : '—';
-      const roleDesc =
-        role === 'main' ? '完整 AI 分析 + 技術棧上下文' : role === 'tool' ? '最小配置' : '精簡模板';
+			const localPath = roleInfo.localPath
+				? roleInfo.localPath.replace(HOME, "~")
+				: "未找到";
+			const claudeMd = proj ? typeLabel[proj.claudeMdType] || "—" : "—";
+			const roleDesc =
+				role === "main"
+					? "完整 AI 分析 + 技術棧上下文"
+					: role === "tool"
+						? "最小配置"
+						: "精簡模板";
 
-      return `<div class="repo-card" data-categories="${esc(categories)}">
+			return `<div class="repo-card" data-categories="${esc(categories)}">
       <div class="name">${roleBadge} ${esc(repo)}</div>
-      ${repoData.reasoning ? `<div class="reasoning">${esc(repoData.reasoning)}</div>` : ''}
+      ${repoData.reasoning ? `<div class="reasoning">${esc(repoData.reasoning)}</div>` : ""}
       <table style="margin-top:8px;font-size:.85rem">
         <tr><td style="color:#8b949e;width:90px">路徑</td><td class="mono">${esc(localPath)}</td></tr>
         <tr><td style="color:#8b949e">CLAUDE.md</td><td>${esc(claudeMd)}</td></tr>
@@ -164,10 +174,10 @@ function renderTabRepos(data) {
       </table>
       ${stackBadges}
     </div>`;
-    })
-    .join('');
+		})
+		.join("");
 
-  return `
+	return `
 <div id="tab-repos" class="tab-content">
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">每個 Repo 卡片顯示角色、本機路徑、CLAUDE.md 狀態和 AI 分析的技術棧。使用搜尋框過濾，或從技術棧 Tab 的圖表點擊分類來篩選。</p>
@@ -182,23 +192,23 @@ function renderTabRepos(data) {
  * 渲染 Tab 安裝頁籤
  */
 function renderTabInstall(data) {
-  const hasEcc = (data.ecc?.sources?.length || 0) > 0;
+	const hasEcc = (data.ecc?.sources?.length || 0) > 0;
 
-  return `
+	return `
 <div id="tab-install" class="tab-content">
   <div class="card" style="margin-bottom:16px">
     <p class="section-desc" style="margin:0">所有安裝到 ~/.claude/ 的配置項目。每個 Command 是一個 Slash 指令（/xxx），Agent 是一個可 @mention 的 AI 助手，Rule 是自動載入的行為規範。</p>
   </div>
   ${renderInstalled(data.installed)}
   ${
-    hasEcc
-      ? `
+		hasEcc
+			? `
   <div class="card">
     <h2 class="section-title">Source 融合統計圖表</h2>
     <div class="chart-box" id="chart-ecc-install"></div>
   </div>`
-      : ''
-  }
+			: ""
+	}
   ${renderEcc(data.ecc)}
   ${renderStacks(data.stacks)}
 </div>`;
@@ -208,21 +218,21 @@ function renderTabInstall(data) {
  * 渲染 Tab 審計頁籤
  */
 function renderTabAudit(data) {
-  const auditHtml = data.auditSummary
-    ? section(
-        '審計日誌',
-        `<table>${Object.entries(data.auditSummary)
-          .map(
-            ([k, v]) =>
-              `<tr><td style="color:#8b949e">${esc(k)}</td><td>${esc(String(v))}</td></tr>`,
-          )
-          .join('')}</table>`,
-      )
-    : '';
+	const auditHtml = data.auditSummary
+		? section(
+				"審計日誌",
+				`<table>${Object.entries(data.auditSummary)
+					.map(
+						([k, v]) =>
+							`<tr><td style="color:#8b949e">${esc(k)}</td><td>${esc(String(v))}</td></tr>`,
+					)
+					.join("")}</table>`,
+			)
+		: "";
 
-  const backupHtml = renderBackup(data.backupDir);
+	const backupHtml = renderBackup(data.backupDir);
 
-  return `
+	return `
 <div id="tab-audit" class="tab-content">
   ${auditHtml}
   ${backupHtml}
@@ -235,51 +245,71 @@ function renderTabAudit(data) {
  * 渲染 ECharts 圖表及互動腳本
  */
 function renderCharts(data) {
-  const stacks = data.stacks || [];
-  const perRepoReasoning = data.perRepoReasoning || {};
-  const repos = data.repos || [];
-  const installed = data.installed || {};
+	const stacks = data.stacks || [];
+	const perRepoReasoning = data.perRepoReasoning || {};
+	const repos = data.repos || [];
+	const installed = data.installed || {};
 
-  const stackRepoCount = {};
-  if (repos.length > 0) {
-    for (const repo of repos) {
-      const stackData = perRepoReasoning[repo]?.stacks || {};
-      for (const techs of Object.values(stackData)) {
-        for (const tech of techs || []) {
-          stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
-        }
-      }
-    }
-  }
+	const stackRepoCount = {};
+	if (!isEmpty(repos)) {
+		for (const repo of repos) {
+			const stackData = perRepoReasoning[repo]?.stacks || {};
+			for (const techs of Object.values(stackData)) {
+				for (const tech of techs || []) {
+					stackRepoCount[tech] = (stackRepoCount[tech] || 0) + 1;
+				}
+			}
+		}
+	}
 
-  const topCount = Math.min(20, Object.keys(stackRepoCount).length);
-  const topStacks = Object.entries(stackRepoCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, topCount);
+	const topCount = Math.min(20, Object.keys(stackRepoCount).length);
+	const topStacks = Object.entries(stackRepoCount)
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, topCount);
 
-  const chartConfig = {
-    techFreq: topStacks.map(([name, count]) => ({ name, value: count })),
-    overview: [
-      { name: 'Commands', value: installed.commands?.length || 0 },
-      { name: 'Agents', value: installed.agents?.length || 0 },
-      { name: 'Rules', value: installed.rules?.length || 0 },
-      { name: 'ZSH 模組', value: installed.modules?.length || 0 },
-      { name: '技術棧', value: stacks.length },
-      { name: 'Repos', value: repos.length },
-    ].filter((d) => d.value > 0),
-    eccInstall: [
-      ...(data.ecc?.sources || []).map((s) => ({
-        name: s.name,
-        added:
-          (s.added?.commands?.length || 0) +
-          (s.added?.agents?.length || 0) +
-          (s.added?.rules?.length || 0),
-        skipped: Object.values(s.skipped || {}).reduce((a, b) => a + (b?.length || 0), 0),
-      })),
-    ],
-  };
+	// 計算 Token 消耗分佈（估算值）
+	// 假設文件大小估算：rules ~50KB，commands ~10KB，agents ~15KB，CLAUDE.md ~5KB，memory ~5KB
+	const tokenData = [
+		{ name: "Rules", value: estimateTokenSize(50000), percentage: 0 },
+		{ name: "Agents", value: estimateTokenSize(15000), percentage: 0 },
+		{ name: "Commands", value: estimateTokenSize(10000), percentage: 0 },
+		{ name: "CLAUDE.md", value: estimateTokenSize(5000), percentage: 0 },
+		{ name: "Memory", value: estimateTokenSize(5000), percentage: 0 },
+	].filter((d) => d.value > 0);
 
-  return `
+	const totalTokens = tokenData.reduce((sum, item) => sum + item.value, 0);
+	tokenData.forEach((item) => {
+		item.percentage =
+			totalTokens > 0 ? ((item.value / totalTokens) * 100).toFixed(1) : 0;
+	});
+
+	const chartConfig = {
+		techFreq: topStacks.map(([name, count]) => ({ name, value: count })),
+		overview: [
+			{ name: "Commands", value: installed.commands?.length || 0 },
+			{ name: "Agents", value: installed.agents?.length || 0 },
+			{ name: "Rules", value: installed.rules?.length || 0 },
+			{ name: "ZSH 模組", value: installed.modules?.length || 0 },
+			{ name: "技術棧", value: stacks.length },
+			{ name: "Repos", value: repos.length },
+		].filter((d) => d.value > 0),
+		eccInstall: [
+			...(data.ecc?.sources || []).map((s) => ({
+				name: s.name,
+				added:
+					(s.added?.commands?.length || 0) +
+					(s.added?.agents?.length || 0) +
+					(s.added?.rules?.length || 0),
+				skipped: Object.values(s.skipped || {}).reduce(
+					(a, b) => a + (b?.length || 0),
+					0,
+				),
+			})),
+		],
+		tokenDistribution: tokenData,
+	};
+
+	return `
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script>
 const chartConfig = ${JSON.stringify(chartConfig)};
@@ -327,7 +357,7 @@ function initTechFreqChart() {
 function initEccInstallChart() {
   const dom = document.getElementById('chart-ecc-install');
   if (!dom || !dom.offsetParent || dom._echarts) return;
-  if (!chartConfig.eccInstall || chartConfig.eccInstall.length === 0) return;
+  if (!chartConfig.eccInstall || isEmpty(chartConfig.eccInstall)) return;
   const chart = echarts.init(dom);
   dom._echarts = chart;
   const option = {
@@ -393,6 +423,48 @@ function initOverviewBar() {
   window.addEventListener('resize', () => chart.resize());
 }
 
+function initTokenChart() {
+  const dom = document.getElementById('chart-token-distribution');
+  if (!dom || !dom.offsetParent || dom._echarts) return;
+  if (!chartConfig.tokenDistribution || isEmpty(chartConfig.tokenDistribution)) return;
+  const chart = echarts.init(dom);
+  dom._echarts = chart;
+  const colors = ['#58a6ff', '#bc8cff', '#3fb950', '#f0883e', '#f778ba'];
+  const option = {
+    backgroundColor: 'transparent',
+    textStyle: { color: '#8b949e' },
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        if (params.data) {
+          return params.data.name + ': ' + params.data.value + ' Tokens (' + params.data.percentage + '%)';
+        }
+        return params.name;
+      }
+    },
+    legend: { bottom: 0, textStyle: { color: '#8b949e' } },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '60%'],
+      data: chartConfig.tokenDistribution.map(d => ({
+        value: d.value,
+        name: d.name,
+        percentage: d.percentage
+      })),
+      label: {
+        color: '#c9d1d9',
+        formatter: function(params) {
+          return params.name + '\\n' + params.value + 'T';
+        }
+      },
+      itemStyle: { borderColor: '#0d1117', borderWidth: 2 },
+      color: colors
+    }]
+  };
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+}
+
 // 搜尋功能
 const searchInput = document.getElementById('search');
 if (searchInput) {
@@ -418,6 +490,7 @@ if (searchInput) {
 // 初始化概覽 Tab 圖表（首屏）
 initOverviewPie();
 initOverviewBar();
+initTokenChart();
 </script>`;
 }
 
@@ -425,7 +498,7 @@ initOverviewBar();
  * 渲染 Tab 切換腳本（基礎版本）
  */
 function renderTabScript() {
-  return '';
+	return "";
 }
 
 // ── 主要匯出 ────────────────────────────────────────────────────
@@ -436,9 +509,10 @@ function renderTabScript() {
  * @returns {string} HTML
  */
 export function generateReport(data) {
-  const ts = data.timestamp ?? new Date().toISOString().replace('T', ' ').slice(0, 19);
+	const ts =
+		data.timestamp ?? new Date().toISOString().replace("T", " ").slice(0, 19);
 
-  const tabNav = `
+	const tabNav = `
 <nav class="tabs">
   <button class="tab active" data-tab="overview">概覽</button>
   <button class="tab" data-tab="stacks">技術棧</button>
@@ -447,33 +521,33 @@ export function generateReport(data) {
   <button class="tab" data-tab="audit">審計</button>
 </nav>`;
 
-  const body = [
-    tabNav,
-    renderTabOverview(data),
-    renderTabTechStacks(data),
-    renderTabRepos(data),
-    renderTabInstall(data),
-    renderTabAudit(data),
-    renderCharts(data),
-    renderTabScript(),
-  ].join('\n');
+	const body = [
+		tabNav,
+		renderTabOverview(data),
+		renderTabTechStacks(data),
+		renderTabRepos(data),
+		renderTabInstall(data),
+		renderTabAudit(data),
+		renderCharts(data),
+		renderTabScript(),
+	].join("\n");
 
-  return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ab-dotfiles 安裝報告</title>
+<title>ab-tao 安裝報告</title>
 <style>${getStyles()}</style>
 </head>
 <body>
 <div class="container">
 <header>
-  <h1>ab-dotfiles 安裝報告</h1>
+  <h1>ab-tao 安裝報告</h1>
   <div class="ts">${esc(ts)}</div>
 </header>
 ${body}
-<footer>Generated by ab-dotfiles · Powered by ECharts</footer>
+<footer>Generated by ab-tao · Powered by ECharts</footer>
 </div>
 </body>
 </html>`;
@@ -481,23 +555,27 @@ ${body}
 
 /** 儲存報告到檔案 */
 export function saveReport(html, outputDir) {
-  const dir = path.resolve(outputDir);
-  fs.mkdirSync(dir, { recursive: true });
-  const filePath = path.join(dir, 'report.html');
-  fs.writeFileSync(filePath, html, 'utf-8');
-  return filePath;
+	const dir = path.resolve(outputDir);
+	fs.mkdirSync(dir, { recursive: true });
+	const filePath = path.join(dir, "report.html");
+	fs.writeFileSync(filePath, html, "utf-8");
+	return filePath;
 }
 
 /** 在預設瀏覽器開啟 */
 export function openInBrowser(filePath) {
-  const abs = path.resolve(filePath);
-  const cmd =
-    process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  const args = process.platform === 'win32' ? ['', abs] : [abs];
-  try {
-    execFileSync(cmd, args);
-    return Promise.resolve();
-  } catch (err) {
-    return Promise.reject(err);
-  }
+	const abs = path.resolve(filePath);
+	const cmd =
+		process.platform === "darwin"
+			? "open"
+			: process.platform === "win32"
+				? "start"
+				: "xdg-open";
+	const args = process.platform === "win32" ? ["", abs] : [abs];
+	try {
+		execFileSync(cmd, args);
+		return Promise.resolve();
+	} catch (err) {
+		return Promise.reject(err);
+	}
 }

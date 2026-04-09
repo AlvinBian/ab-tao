@@ -1,46 +1,53 @@
 {
-  "name": "ab-tao",
-  "private": true,
-  "description": "ab-tao: 統一 monorepo — dotfiles 環境管理 + 共用資源庫",
-  "type": "module",
-  "packageManager": "pnpm@9.15.5",
-  "engines": {
-    "node": ">=18",
-    "pnpm": ">=9"
-  },
-  "scripts": {
-    "help": "node scripts/help.mjs",
-
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "format": "biome format --write .",
-    "check": "biome check --write .",
-    "check:ci": "biome check .",
-    "clean": "turbo clean && rm -rf node_modules",
-
-    "d:setup": "node apps/dotfiles/commands.mjs",
-    "d:scan": "node apps/dotfiles/commands.mjs",
-    "d:doctor": "node apps/dotfiles/commands.mjs",
-    "d:status": "node apps/dotfiles/commands.mjs",
-    "d:report": "node apps/dotfiles/commands.mjs",
-    "d:restore": "node apps/dotfiles/commands.mjs",
-    "d:hooks": "node apps/dotfiles/commands.mjs",
-    "d:uninstall": "node apps/dotfiles/commands.mjs",
-
-    "c:sync": "node packages/commons/commands.mjs",
-    "c:sync:select": "node packages/commons/commands.mjs",
-    "c:sync:all": "node packages/commons/commands.mjs",
-    "c:validate": "node packages/commons/commands.mjs",
-
-    "changeset": "changeset",
-    "version": "changeset version",
-    "release": "pnpm run build && changeset publish"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.4.10",
-    "@changesets/cli": "^2.29.0",
-    "turbo": "^2.0.0"
-  }
+	"name": "ab-tao",
+	"version": "1.0.0",
+	"private": true,
+	"description": "ab-tao: 統一 monorepo — dotfiles 環境管理 + 共用資源庫",
+	"type": "module",
+	"packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
+	"engines": {
+		"node": ">=18",
+		"pnpm": ">=9"
+	},
+	"scripts": {
+		"help": "node scripts/help.mjs",
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"lint": "turbo run lint",
+		"test": "turbo run test",
+		"format": "biome format --write .",
+		"check": "biome check --write .",
+		"check:ci": "biome check .",
+		"clean": "turbo clean && rm -rf node_modules",
+		"d:setup": "node apps/dotfiles/commands.mjs",
+		"d:scan": "node apps/dotfiles/commands.mjs",
+		"d:doctor": "node apps/dotfiles/commands.mjs",
+		"d:status": "node apps/dotfiles/commands.mjs",
+		"d:report": "node apps/dotfiles/commands.mjs",
+		"d:restore": "node apps/dotfiles/commands.mjs",
+		"d:hooks": "node apps/dotfiles/commands.mjs",
+		"d:uninstall": "node apps/dotfiles/commands.mjs",
+		"c:sync": "node packages/commons/commands.mjs",
+		"c:sync:select": "node packages/commons/commands.mjs",
+		"c:sync:all": "node packages/commons/commands.mjs",
+		"c:validate": "node packages/commons/commands.mjs",
+		"cheatsheet:update": "node apps/cheatsheet/update.mjs",
+		"cheatsheet:force": "node apps/cheatsheet/update.mjs --force",
+		"cheatsheet:open": "open apps/cheatsheet/index.html",
+		"changeset": "changeset",
+		"version": "changeset version",
+		"release": "pnpm run build && changeset publish",
+		"prepare": "lefthook install"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"lefthook"
+		]
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.10",
+		"@changesets/cli": "^2.29.0",
+		"lefthook": "^2.1.5",
+		"turbo": "^2.0.0"
+	}
 }

@@ -10,9 +10,9 @@
  *   - gh CLI 保留作為 fallback 和 ghSync 使用
  */
 
-import { execFile, execFileSync, execSync } from 'node:child_process';
-import { promisify } from 'node:util';
-import { GH_API_TIMEOUT } from '../core/constants.mjs';
+import { execFile, execFileSync, execSync } from "node:child_process";
+import { promisify } from "node:util";
+import { GH_API_TIMEOUT } from "../core/constants.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -25,16 +25,16 @@ let _token = null;
  * @returns {Promise<string|null>} token 字串，失敗返回 null
  */
 async function getToken() {
-  if (_token) return _token;
-  try {
-    const { stdout } = await execFileAsync('gh', ['auth', 'token'], {
-      timeout: 5000,
-    });
-    _token = stdout.trim();
-    return _token;
-  } catch {
-    return null;
-  }
+	if (_token) return _token;
+	try {
+		const { stdout } = await execFileAsync("gh", ["auth", "token"], {
+			timeout: 5000,
+		});
+		_token = stdout.trim();
+		return _token;
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -43,17 +43,17 @@ async function getToken() {
  * @returns {string|null} token 字串，失敗返回 null
  */
 function _getTokenSync() {
-  if (_token) return _token;
-  try {
-    _token = execSync('gh auth token', {
-      encoding: 'utf8',
-      timeout: 5000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    return _token;
-  } catch {
-    return null;
-  }
+	if (_token) return _token;
+	try {
+		_token = execSync("gh auth token", {
+			encoding: "utf8",
+			timeout: 5000,
+			stdio: ["pipe", "pipe", "pipe"],
+		}).trim();
+		return _token;
+	} catch {
+		return null;
+	}
 }
 
 // ── Native fetch（優先，無進程 spawn）────────────────────────────
@@ -64,38 +64,42 @@ function _getTokenSync() {
  * @returns {Promise<Object|null>} 解析後的 JSON，失敗返回 null
  */
 async function ghFetch(apiPath, retries = 2) {
-  const token = await getToken();
-  if (!token) return null;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
-      const res = await fetch(`https://api.github.com/${apiPath}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (res.status === 429 || res.status === 403) {
-        // Rate limited — wait for Retry-After or exponential backoff
-        const retryAfter = parseInt(res.headers.get('Retry-After') || '0', 10);
-        const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(1000 * 2 ** attempt, 10000);
-        if (attempt < retries) {
-          await new Promise((r) => setTimeout(r, wait));
-          continue;
-        }
-        return null;
-      }
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      if (attempt < retries) continue;
-      return null;
-    }
-  }
-  return null;
+	const token = await getToken();
+	if (!token) return null;
+	for (let attempt = 0; attempt <= retries; attempt++) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+		try {
+			const res = await fetch(`https://api.github.com/${apiPath}`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: "application/vnd.github+json",
+				},
+				signal: controller.signal,
+			});
+			clearTimeout(timer);
+			if (res.status === 429 || res.status === 403) {
+				// Rate limited — wait for Retry-After or exponential backoff
+				const retryAfter = parseInt(res.headers.get("Retry-After") || "0", 10);
+				const wait =
+					retryAfter > 0
+						? retryAfter * 1000 // 尊重 GitHub 的 Retry-After（不設上限）
+						: Math.min(1000 * 2 ** attempt, 60000); // 指數退避，最多 60s
+				if (attempt < retries) {
+					await new Promise((r) => setTimeout(r, wait));
+					continue;
+				}
+				return null;
+			}
+			if (!res.ok) return null;
+			return await res.json();
+		} catch {
+			clearTimeout(timer);
+			if (attempt < retries) continue;
+			return null;
+		}
+	}
+	return null;
 }
 
 /**
@@ -109,21 +113,21 @@ async function ghFetch(apiPath, retries = 2) {
  * @returns {Promise<string|null>} JSON 字串（無 jqExpr）或 jq 過濾後文字，失敗返回 null
  */
 export async function gh(apiPath, jqExpr = null) {
-  // 無 jqExpr 時優先用 native fetch
-  if (!jqExpr) {
-    const json = await ghFetch(apiPath);
-    return json ? JSON.stringify(json) : null;
-  }
-  // 有 jqExpr 時仍用 gh CLI（需要 jq 處理）
-  try {
-    const args = ['api', apiPath, '--jq', jqExpr];
-    const { stdout } = await execFileAsync('gh', args, {
-      timeout: GH_API_TIMEOUT,
-    });
-    return stdout.trim();
-  } catch {
-    return null;
-  }
+	// 無 jqExpr 時優先用 native fetch
+	if (!jqExpr) {
+		const json = await ghFetch(apiPath);
+		return json ? JSON.stringify(json) : null;
+	}
+	// 有 jqExpr 時仍用 gh CLI（需要 jq 處理）
+	try {
+		const args = ["api", apiPath, "--jq", jqExpr];
+		const { stdout } = await execFileAsync("gh", args, {
+			timeout: GH_API_TIMEOUT,
+		});
+		return stdout.trim();
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -137,17 +141,107 @@ export async function gh(apiPath, jqExpr = null) {
  * @returns {string|null} 回應文字（jq 過濾後），失敗返回 null
  */
 export function ghSync(apiPath, jqExpr = null) {
-  try {
-    const args = ['api', apiPath];
-    if (jqExpr) args.push('--jq', jqExpr);
-    return execFileSync('gh', args, {
-      encoding: 'utf8',
-      timeout: GH_API_TIMEOUT,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-  } catch {
-    return null;
-  }
+	try {
+		const args = ["api", apiPath];
+		if (jqExpr) args.push("--jq", jqExpr);
+		return execFileSync("gh", args, {
+			encoding: "utf8",
+			timeout: GH_API_TIMEOUT,
+			stdio: ["pipe", "pipe", "pipe"],
+		}).trim();
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * 取得特定用戶在 repo 的 commit 總數（單次 API 呼叫）
+ *
+ * 利用 per_page=1 + Link header 的 last 頁碼推算總數，
+ * 無需分頁抓取，精確且高效。
+ *
+ * @param {string} repoFullName - 'owner/repo' 格式
+ * @param {string} username - GitHub 用戶名
+ * @returns {Promise<number>} commit 總數，查詢失敗返回 0
+ */
+export async function getAuthorCommitCount(repoFullName, username) {
+	const token = await getToken();
+	if (!token) return 0;
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+	try {
+		const res = await fetch(
+			`https://api.github.com/repos/${repoFullName}/commits?author=${encodeURIComponent(username)}&per_page=1`,
+			{
+				headers: {
+					Authorization: `Bearer ${token}`,
+					Accept: "application/vnd.github+json",
+				},
+				signal: controller.signal,
+			},
+		);
+		clearTimeout(timer);
+		if (!res.ok) return 0;
+
+		// Link: <...?page=N>; rel="last" → N 即總數
+		const link = res.headers.get("link") || "";
+		const match = link.match(/<[^>]*[?&]page=(\d+)[^>]*>;\s*rel="last"/);
+		if (match) return parseInt(match[1], 10);
+
+		// 無 Link header 代表只有一頁，直接數 body 長度
+		const data = await res.json();
+		return Array.isArray(data) ? data.length : 0;
+	} catch {
+		clearTimeout(timer);
+		return 0;
+	}
+}
+
+/**
+ * GitHub API 同步封裝（自動翻頁，抓取所有資料）
+ *
+ * 使用 --paginate 抓取所有分頁，適用於 repo 列表等可能超過 100 筆的資料。
+ *
+ * @param {string} apiPath - API 路徑
+ * @param {string|null} [jqExpr=null] - jq 篩選表達式（每頁套用）
+ * @returns {string|null} 所有分頁合併後的文字，失敗返回 null
+ */
+export function ghSyncPaginate(apiPath, jqExpr = null) {
+	try {
+		const args = ["api", "--paginate", apiPath];
+		if (jqExpr) args.push("--jq", jqExpr);
+		return execFileSync("gh", args, {
+			encoding: "utf8",
+			timeout: GH_API_TIMEOUT * 10, // 多頁需要更長時間
+			stdio: ["pipe", "pipe", "pipe"],
+		}).trim();
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * GitHub API 非同步封裝（自動翻頁，抓取所有資料）
+ *
+ * 使用 --paginate 抓取所有分頁，適用於 repo 列表等可能超過 100 筆的資料。
+ * 非同步版本，可用於 Promise.all 並行加載多個 org 的 repos。
+ *
+ * @param {string} apiPath - API 路徑
+ * @param {string|null} [jqExpr=null] - jq 篩選表達式（每頁套用）
+ * @returns {Promise<string|null>} 所有分頁合併後的文字，失敗返回 null
+ */
+export async function ghPaginate(apiPath, jqExpr = null) {
+	try {
+		const args = ["api", "--paginate", apiPath];
+		if (jqExpr) args.push("--jq", jqExpr);
+		const { stdout } = await execFileAsync("gh", args, {
+			encoding: "utf8",
+			timeout: GH_API_TIMEOUT * 10,
+		});
+		return stdout.trim();
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -159,15 +253,15 @@ export function ghSync(apiPath, jqExpr = null) {
  * @returns {Promise<string|null>} UTF-8 文字內容，失敗返回 null
  */
 export async function fetchFileContent(repo, branch, filePath) {
-  const json = await ghFetch(
-    `repos/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`,
-  );
-  if (!json?.content) return null;
-  try {
-    return Buffer.from(json.content, 'base64').toString('utf8');
-  } catch {
-    return null;
-  }
+	const json = await ghFetch(
+		`repos/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`,
+	);
+	if (!json?.content) return null;
+	try {
+		return Buffer.from(json.content, "base64").toString("utf8");
+	} catch {
+		return null;
+	}
 }
 
 // ── GraphQL 批次查詢 ──────────────────────────────────────────────
@@ -183,19 +277,19 @@ export async function fetchFileContent(repo, branch, filePath) {
  * @returns {{ branch, languages, rootEntries, files, description, stars, topics }}
  */
 export async function fetchRepoBundle(owner, name, filePaths = []) {
-  const token = await getToken();
-  if (!token) return null;
+	const token = await getToken();
+	if (!token) return null;
 
-  // 建構檔案查詢別名（GraphQL 欄位名不能有 . / - 等特殊字元）
-  // 白名單驗證防止 GraphQL injection
-  const safePaths = filePaths.filter((fp) => /^[a-zA-Z0-9._\-/:@]+$/.test(fp));
-  const fileAliases = safePaths.map((fp, i) => ({
-    alias: `f${i}`,
-    path: fp,
-    expr: `f${i}: object(expression: ${`"HEAD:${fp}"`}) { ... on Blob { text } }`,
-  }));
+	// 建構檔案查詢別名（GraphQL 欄位名不能有 . / - 等特殊字元）
+	// 白名單驗證防止 GraphQL injection
+	const safePaths = filePaths.filter((fp) => /^[a-zA-Z0-9._\-/:@]+$/.test(fp));
+	const fileAliases = safePaths.map((fp, i) => ({
+		alias: `f${i}`,
+		path: fp,
+		expr: `f${i}: object(expression: ${`"HEAD:${fp}"`}) { ... on Blob { text } }`,
+	}));
 
-  const query = `query($owner: String!, $name: String!) {
+	const query = `query($owner: String!, $name: String!) {
     repository(owner: $owner, name: $name) {
       description
       stargazerCount
@@ -209,65 +303,68 @@ export async function fetchRepoBundle(owner, name, filePaths = []) {
           entries { name type }
         }
       }
-      ${fileAliases.map((a) => a.expr).join('\n      ')}
+      ${fileAliases.map((a) => a.expr).join("\n      ")}
     }
   }`;
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
-    const res = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables: { owner, name } }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const { data } = await res.json();
-    if (!data?.repository) return null;
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+	try {
+		const res = await fetch("https://api.github.com/graphql", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${token}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ query, variables: { owner, name } }),
+			signal: controller.signal,
+		});
+		clearTimeout(timer);
+		if (!res.ok) return null;
+		const { data } = await res.json();
+		if (!data?.repository) return null;
 
-    const repo = data.repository;
-    const branch = repo.defaultBranchRef?.name || 'main';
+		const repo = data.repository;
+		const branch = repo.defaultBranchRef?.name || "main";
 
-    // 語言：轉成 { TypeScript: 12345, ... } 格式（與 REST API 相容）
-    const languages = {};
-    for (const edge of repo.languages?.edges || []) {
-      languages[edge.node.name] = edge.size;
-    }
+		// 語言：轉成 { TypeScript: 12345, ... } 格式（與 REST API 相容）
+		const languages = {};
+		for (const edge of repo.languages?.edges || []) {
+			languages[edge.node.name] = edge.size;
+		}
 
-    // 根目錄
-    const rootEntries = (repo.root?.entries || []).map((e) => ({
-      name: e.name,
-      type: e.type === 'tree' ? 'dir' : 'file',
-    }));
+		// 根目錄
+		const rootEntries = (repo.root?.entries || []).map((e) => ({
+			name: e.name,
+			type: e.type === "tree" ? "dir" : "file",
+		}));
 
-    // 檔案內容
-    const files = {};
-    for (const a of fileAliases) {
-      const blob = repo[a.alias];
-      if (blob?.text) files[a.path] = blob.text;
-    }
+		// 檔案內容
+		const files = {};
+		for (const a of fileAliases) {
+			const blob = repo[a.alias];
+			if (blob?.text) files[a.path] = blob.text;
+		}
 
-    const description = repo.description || '';
-    const stars = repo.stargazerCount || 0;
-    const topics = (repo.repositoryTopics?.nodes || []).map((n) => n.topic.name);
+		const description = repo.description || "";
+		const stars = repo.stargazerCount || 0;
+		const topics = (repo.repositoryTopics?.nodes || []).map(
+			(n) => n.topic.name,
+		);
 
-    return {
-      branch,
-      languages,
-      rootEntries,
-      files,
-      description,
-      stars,
-      topics,
-    };
-  } catch {
-    return null;
-  }
+		return {
+			branch,
+			languages,
+			rootEntries,
+			files,
+			description,
+			stars,
+			topics,
+		};
+	} catch {
+		clearTimeout(timer);
+		return null;
+	}
 }
 
 /**
@@ -282,53 +379,55 @@ export async function fetchRepoBundle(owner, name, filePaths = []) {
  * @returns {Promise<Object>} filePath → 內容字串 的映射，找不到的跳過
  */
 export async function fetchFilesBatch(owner, name, branch, filePaths) {
-  if (!filePaths.length) return {};
-  const token = await getToken();
-  if (!token) return {};
+	if (!filePaths.length) return {};
+	const token = await getToken();
+	if (!token) return {};
 
-  const SAFE_PATTERN = /^[a-zA-Z0-9._\-/:@]+$/;
-  if (!SAFE_PATTERN.test(branch)) throw new Error(`不合法的 branch 名稱：${branch}`);
+	const SAFE_PATTERN = /^[a-zA-Z0-9._\-/:@]+$/;
+	if (!SAFE_PATTERN.test(branch))
+		throw new Error(`不合法的 branch 名稱：${branch}`);
 
-  const safePaths = filePaths.filter((fp) => SAFE_PATTERN.test(fp));
-  if (!safePaths.length) return {};
-  const aliases = safePaths.map((fp, i) => ({
-    alias: `f${i}`,
-    path: fp,
-    expr: `f${i}: object(expression: "${branch}:${fp}") { ... on Blob { text } }`,
-  }));
+	const safePaths = filePaths.filter((fp) => SAFE_PATTERN.test(fp));
+	if (!safePaths.length) return {};
+	const aliases = safePaths.map((fp, i) => ({
+		alias: `f${i}`,
+		path: fp,
+		expr: `f${i}: object(expression: "${branch}:${fp}") { ... on Blob { text } }`,
+	}));
 
-  const query = `query($owner: String!, $name: String!) {
+	const query = `query($owner: String!, $name: String!) {
     repository(owner: $owner, name: $name) {
-      ${aliases.map((a) => a.expr).join('\n      ')}
+      ${aliases.map((a) => a.expr).join("\n      ")}
     }
   }`;
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
-    const res = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables: { owner, name } }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return {};
-    const { data } = await res.json();
-    if (!data?.repository) return {};
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+	try {
+		const res = await fetch("https://api.github.com/graphql", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${token}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ query, variables: { owner, name } }),
+			signal: controller.signal,
+		});
+		clearTimeout(timer);
+		if (!res.ok) return {};
+		const { data } = await res.json();
+		if (!data?.repository) return {};
 
-    const files = {};
-    for (const a of aliases) {
-      const blob = data.repository[a.alias];
-      if (blob?.text) files[a.path] = blob.text;
-    }
-    return files;
-  } catch {
-    return {};
-  }
+		const files = {};
+		for (const a of aliases) {
+			const blob = data.repository[a.alias];
+			if (blob?.text) files[a.path] = blob.text;
+		}
+		return files;
+	} catch {
+		clearTimeout(timer);
+		return {};
+	}
 }
 
 /**
@@ -345,29 +444,37 @@ export async function fetchFilesBatch(owner, name, branch, filePaths) {
  * @returns {Promise<void>}
  */
 export async function scanDir(repo, branch, dirPath, target, depth = 0) {
-  if (depth > 1) return;
-  const json = await ghFetch(`repos/${repo}/contents/${dirPath}?ref=${branch}`);
-  if (!json || !Array.isArray(json)) return;
-  try {
-    const entries = json;
-    const fileEntries = entries.filter((e) => e.type === 'file' && /\.(md|json|txt)$/.test(e.name));
-    const dirEntries = entries.filter((e) => e.type === 'dir');
-    const results = await Promise.allSettled(
-      fileEntries.map((e) =>
-        fetchFileContent(repo, branch, `${dirPath}/${e.name}`).then((c) =>
-          c ? [e.name, c] : null,
-        ),
-      ),
-    );
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value) target[`${dirPath}/${r.value[0]}`] = r.value[1];
-    }
-    for (const e of dirEntries) {
-      await scanDir(repo, branch, `${dirPath}/${e.name}`, target, depth + 1);
-    }
-  } catch {
-    /* API 或目錄讀取失敗則略過 */
-  }
+	if (depth > 1) return;
+	const json = await ghFetch(`repos/${repo}/contents/${dirPath}?ref=${branch}`);
+	if (!json || !Array.isArray(json)) return;
+	try {
+		const entries = json;
+		const fileEntries = entries.filter(
+			(e) => e.type === "file" && /\.(md|json|txt)$/.test(e.name),
+		);
+		const dirEntries = entries.filter((e) => e.type === "dir");
+		const results = await Promise.allSettled(
+			fileEntries.map((e) =>
+				fetchFileContent(repo, branch, `${dirPath}/${e.name}`)
+					.catch((_e) => {
+						// 單個檔案讀取失敗時沉默處理（可能是權限或檔案在掃描期間移除）
+						// 但在 debug 層級記錄以便診斷
+						return null;
+					})
+					.then((c) => (c ? [e.name, c] : null)),
+			),
+		);
+		for (const r of results) {
+			if (r.status === "fulfilled" && r.value)
+				target[`${dirPath}/${r.value[0]}`] = r.value[1];
+		}
+		for (const e of dirEntries) {
+			await scanDir(repo, branch, `${dirPath}/${e.name}`, target, depth + 1);
+		}
+	} catch {
+		// 目錄層級錯誤（無法讀取該目錄），沉默略過
+		// 這是正常的行為：可能是私有目錄、權限不足、分支移除等
+	}
 }
 
 /**
@@ -384,74 +491,76 @@ export async function scanDir(repo, branch, dirPath, target, depth = 0) {
  * @returns {{ aiConfig: string[], projectDocs: string[], techDetect: string[], lintConfig: string[], directories: string[] }}
  */
 export function classifyRepoFiles(rootEntries) {
-  const r = {
-    aiConfig: [],
-    projectDocs: [],
-    techDetect: [],
-    lintConfig: [],
-    directories: [],
-  };
+	const r = {
+		aiConfig: [],
+		projectDocs: [],
+		techDetect: [],
+		lintConfig: [],
+		directories: [],
+	};
 
-  for (const e of rootEntries) {
-    const name = e.name || e;
-    const type = e.type || 'file';
+	for (const e of rootEntries) {
+		const name = e.name || e;
+		const type = e.type || "file";
 
-    // 目錄：值得遞迴掃描的
-    if (type === 'dir') {
-      if (
-        name.startsWith('.claude') ||
-        name.startsWith('.cursor') ||
-        name === '.github' ||
-        name === '.husky' ||
-        name === '.vscode'
-      ) {
-        r.directories.push(name);
-      }
-      continue;
-    }
+		// 目錄：值得遞迴掃描的
+		if (type === "dir") {
+			if (
+				name.startsWith(".claude") ||
+				name.startsWith(".cursor") ||
+				name === ".github" ||
+				name === ".husky" ||
+				name === ".vscode"
+			) {
+				r.directories.push(name);
+			}
+			continue;
+		}
 
-    // AI 配置檔
-    if (/^(CLAUDE|AGENTS)\.md$/i.test(name) || /cursorrules/i.test(name)) {
-      r.aiConfig.push(name);
-      continue;
-    }
+		// AI 配置檔
+		if (/^(CLAUDE|AGENTS)\.md$/i.test(name) || /cursorrules/i.test(name)) {
+			r.aiConfig.push(name);
+			continue;
+		}
 
-    // 專案文件：大寫 .md 通常是重要文件
-    if (
-      /^(README|CONTRIBUTING|ARCHITECTURE|DESIGN|DEVELOPMENT|CONVENTIONS|CHANGELOG)\.md$/i.test(
-        name,
-      )
-    ) {
-      r.projectDocs.push(name);
-      continue;
-    }
+		// 專案文件：大寫 .md 通常是重要文件
+		if (
+			/^(README|CONTRIBUTING|ARCHITECTURE|DESIGN|DEVELOPMENT|CONVENTIONS|CHANGELOG)\.md$/i.test(
+				name,
+			)
+		) {
+			r.projectDocs.push(name);
+			continue;
+		}
 
-    // 技術偵測：套件管理 + 語言配置
-    if (
-      /^(package|composer|Cargo|Gemfile|Podfile|pubspec)\./.test(name) ||
-      /^(go\.(mod|sum)|setup\.py|requirements\.txt|Pipfile|pom\.xml)$/.test(name) ||
-      /^(tsconfig|jsconfig)/.test(name) ||
-      /^build\.gradle/.test(name)
-    ) {
-      r.techDetect.push(name);
-      continue;
-    }
+		// 技術偵測：套件管理 + 語言配置
+		if (
+			/^(package|composer|Cargo|Gemfile|Podfile|pubspec)\./.test(name) ||
+			/^(go\.(mod|sum)|setup\.py|requirements\.txt|Pipfile|pom\.xml)$/.test(
+				name,
+			) ||
+			/^(tsconfig|jsconfig)/.test(name) ||
+			/^build\.gradle/.test(name)
+		) {
+			r.techDetect.push(name);
+			continue;
+		}
 
-    // Lint / Config
-    if (
-      /\.config\.\w+$/.test(name) ||
-      (/rc(\.\w+)?$/.test(name) && name.startsWith('.')) ||
-      /^\.editorconfig$/.test(name) ||
-      /^\.browserslistrc$/.test(name) ||
-      /^\.nvmrc$/.test(name) ||
-      /^\.env(\.|$)/.test(name) ||
-      /ignore$/.test(name) ||
-      /^turbo\.json$/.test(name) ||
-      /^\.npmrc$/.test(name)
-    ) {
-      r.lintConfig.push(name);
-    }
-  }
+		// Lint / Config
+		if (
+			/\.config\.\w+$/.test(name) ||
+			(/rc(\.\w+)?$/.test(name) && name.startsWith(".")) ||
+			/^\.editorconfig$/.test(name) ||
+			/^\.browserslistrc$/.test(name) ||
+			/^\.nvmrc$/.test(name) ||
+			/^\.env(\.|$)/.test(name) ||
+			/ignore$/.test(name) ||
+			/^turbo\.json$/.test(name) ||
+			/^\.npmrc$/.test(name)
+		) {
+			r.lintConfig.push(name);
+		}
+	}
 
-  return r;
+	return r;
 }

@@ -9,52 +9,65 @@
  *   - categories.json（標準分類詞表）
  */
 
-import { execSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import { getDirname } from '../core/paths.mjs';
+import { execSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { getDirname } from "../core/paths.mjs";
 
 const __dirname = getDirname(import.meta);
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const GENERATED_DIR = path.join(__dirname, '_generated'); // CI 預建（tracked）
-const CACHE_DIR = path.join(REPO_ROOT, '.cache', 'taxonomy'); // 本地 build（untracked）
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const GENERATED_DIR = path.join(__dirname, "_generated"); // CI 預建（tracked）
+const CACHE_DIR = path.join(REPO_ROOT, ".cache", "taxonomy"); // 本地 build（untracked）
 
 let _nodePackages = null;
 let _phpPackages = null;
 let _categories = null;
 
 function loadData() {
-  if (_nodePackages) return;
+	if (_nodePackages) return;
 
-  // 優先順序：CI 預建 → 本地快取 → 即時 build
-  let dataDir;
-  if (fs.existsSync(path.join(GENERATED_DIR, 'node-packages.json'))) {
-    dataDir = GENERATED_DIR;
-  } else if (fs.existsSync(path.join(CACHE_DIR, 'node-packages.json'))) {
-    dataDir = CACHE_DIR;
-  } else {
-    execSync('node lib/taxonomy/build.mjs', {
-      cwd: REPO_ROOT,
-      stdio: 'inherit',
-    });
-    dataDir = CACHE_DIR;
-  }
+	// 優先順序：CI 預建 → 本地快取 → 即時 build
+	let dataDir;
+	if (fs.existsSync(path.join(GENERATED_DIR, "node-packages.json"))) {
+		dataDir = GENERATED_DIR;
+	} else if (fs.existsSync(path.join(CACHE_DIR, "node-packages.json"))) {
+		dataDir = CACHE_DIR;
+	} else {
+		execSync("node lib/taxonomy/build.mjs", {
+			cwd: REPO_ROOT,
+			stdio: "inherit",
+		});
+		dataDir = CACHE_DIR;
+	}
 
-  _nodePackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'node-packages.json'), 'utf8'));
-  _phpPackages = JSON.parse(fs.readFileSync(path.join(dataDir, 'php-packages.json'), 'utf8'));
-  _categories = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories.json'), 'utf8'));
+	try {
+		_nodePackages = JSON.parse(
+			fs.readFileSync(path.join(dataDir, "node-packages.json"), "utf8"),
+		);
+		_phpPackages = JSON.parse(
+			fs.readFileSync(path.join(dataDir, "php-packages.json"), "utf8"),
+		);
+		_categories = JSON.parse(
+			fs.readFileSync(path.join(__dirname, "categories.json"), "utf8"),
+		);
+	} catch (err) {
+		console.error(`分類資料載入失敗: ${err.message}`);
+		_nodePackages = {};
+		_phpPackages = {};
+		_categories = { mapping: {} };
+	}
 }
 
 /**
  * 正規化套件名（去 scope、轉小寫、去 .js 後綴）
  */
 function normalize(name) {
-  return name
-    .toLowerCase()
-    .replace(/^@/, '')
-    .replace(/\//g, '-')
-    .replace(/\.js$/i, '')
-    .replace(/\.ts$/i, '');
+	return name
+		.toLowerCase()
+		.replace(/^@/, "")
+		.replace(/\//g, "-")
+		.replace(/\.js$/i, "")
+		.replace(/\.ts$/i, "");
 }
 
 /**
@@ -62,9 +75,9 @@ function normalize(name) {
  * @returns {string|null} 標準分類名，查不到返回 null
  */
 export function classifyNpm(packageName) {
-  loadData();
-  const lower = packageName.toLowerCase();
-  return _nodePackages[lower] || _nodePackages[normalize(lower)] || null;
+	loadData();
+	const lower = packageName.toLowerCase();
+	return _nodePackages[lower] || _nodePackages[normalize(lower)] || null;
 }
 
 /**
@@ -72,8 +85,8 @@ export function classifyNpm(packageName) {
  * @returns {string|null}
  */
 export function classifyPhp(packageName) {
-  loadData();
-  return _phpPackages[packageName.toLowerCase()] || null;
+	loadData();
+	return _phpPackages[packageName.toLowerCase()] || null;
 }
 
 /**
@@ -84,52 +97,52 @@ export function classifyPhp(packageName) {
  * @returns {{ classified: Map<category, string[]>, unclassified: string[] }}
  */
 export function classifyBatch(npmDeps = [], phpDeps = []) {
-  loadData();
-  const classified = new Map();
-  const unclassified = [];
+	loadData();
+	const classified = new Map();
+	const unclassified = [];
 
-  for (const dep of npmDeps) {
-    const cat = classifyNpm(dep);
-    if (cat) {
-      if (!classified.has(cat)) classified.set(cat, []);
-      classified.get(cat).push(dep);
-    } else {
-      unclassified.push(dep);
-    }
-  }
+	for (const dep of npmDeps) {
+		const cat = classifyNpm(dep);
+		if (cat) {
+			if (!classified.has(cat)) classified.set(cat, []);
+			classified.get(cat).push(dep);
+		} else {
+			unclassified.push(dep);
+		}
+	}
 
-  for (const dep of phpDeps) {
-    const cat = classifyPhp(dep);
-    if (cat) {
-      if (!classified.has(cat)) classified.set(cat, []);
-      classified.get(cat).push(dep);
-    } else {
-      unclassified.push(`[php] ${dep}`);
-    }
-  }
+	for (const dep of phpDeps) {
+		const cat = classifyPhp(dep);
+		if (cat) {
+			if (!classified.has(cat)) classified.set(cat, []);
+			classified.get(cat).push(dep);
+		} else {
+			unclassified.push(`[php] ${dep}`);
+		}
+	}
 
-  return { classified, unclassified };
+	return { classified, unclassified };
 }
 
 /**
  * 取得標準分類列表
  */
 export function getStandardCategories() {
-  loadData();
-  return _categories.standardCategories;
+	loadData();
+	return _categories.standardCategories;
 }
 
 /**
  * 查表覆蓋率統計
  */
 export function getCoverageStats(npmDeps = [], phpDeps = []) {
-  const { unclassified } = classifyBatch(npmDeps, phpDeps);
-  const total = npmDeps.length + phpDeps.length;
-  const covered = total - unclassified.length;
-  return {
-    total,
-    covered,
-    uncovered: unclassified.length,
-    rate: total ? `${((covered / total) * 100).toFixed(1)}%` : '0%',
-  };
+	const { unclassified } = classifyBatch(npmDeps, phpDeps);
+	const total = npmDeps.length + phpDeps.length;
+	const covered = total - unclassified.length;
+	return {
+		total,
+		covered,
+		uncovered: unclassified.length,
+		rate: total ? `${((covered / total) * 100).toFixed(1)}%` : "0%",
+	};
 }

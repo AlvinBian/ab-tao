@@ -7,14 +7,14 @@
  *   只載入一次（idempotent）。
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { getDirname } from './paths.mjs';
+import fs from "node:fs";
+import path from "node:path";
+import { getDirname } from "./paths.mjs";
 
 const __dirname = getDirname(import.meta);
-const ENV_PATH = path.resolve(__dirname, '../..', '.env');
+const ENV_PATH = path.resolve(__dirname, "../..", ".env");
 
-const TEMPLATE_PATH = path.resolve(__dirname, '../..', '.env.template');
+const TEMPLATE_PATH = path.resolve(__dirname, "../..", ".env.template");
 
 let _loaded = false;
 
@@ -30,27 +30,28 @@ let _loaded = false;
  * @returns {void}
  */
 export function loadEnv() {
-  if (_loaded) return;
-  // .env 不存在但 template 存在時，自動從 template 建立
-  if (!fs.existsSync(ENV_PATH) && fs.existsSync(TEMPLATE_PATH)) {
-    fs.copyFileSync(TEMPLATE_PATH, ENV_PATH);
-  }
-  if (!fs.existsSync(ENV_PATH)) return;
-  for (const line of fs.readFileSync(ENV_PATH, 'utf8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    // 去除 value 前後相符的成對引號（單引號或雙引號）
-    const raw = trimmed.slice(eq + 1).trim();
-    const val =
-      (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))
-        ? raw.slice(1, -1)
-        : raw;
-    if (!process.env[key]) process.env[key] = val;
-  }
-  _loaded = true;
+	if (_loaded) return;
+	// .env 不存在但 template 存在時，自動從 template 建立
+	if (!fs.existsSync(ENV_PATH) && fs.existsSync(TEMPLATE_PATH)) {
+		fs.copyFileSync(TEMPLATE_PATH, ENV_PATH);
+	}
+	if (!fs.existsSync(ENV_PATH)) return;
+	for (const line of fs.readFileSync(ENV_PATH, "utf8").split("\n")) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith("#")) continue;
+		const eq = trimmed.indexOf("=");
+		if (eq === -1) continue;
+		const key = trimmed.slice(0, eq).trim();
+		// 去除 value 前後相符的成對引號（單引號或雙引號）
+		const raw = trimmed.slice(eq + 1).trim();
+		const val =
+			(raw.startsWith('"') && raw.endsWith('"')) ||
+			(raw.startsWith("'") && raw.endsWith("'"))
+				? raw.slice(1, -1)
+				: raw;
+		if (!process.env[key]) process.env[key] = val;
+	}
+	_loaded = true;
 }
 
 /**
@@ -60,13 +61,14 @@ export function loadEnv() {
  * @returns {*}
  */
 export function env(key, fallback) {
-  loadEnv();
-  const val = process.env[key];
-  if (val === undefined || val === '') return fallback;
-  if (typeof fallback === 'number') {
-    const n = parseInt(val, 10);
-    return Number.isNaN(n) ? fallback : n;
-  }
-  if (typeof fallback === 'boolean') return val === 'true' || val === '1';
-  return val;
+	loadEnv();
+	const val = process.env[key];
+	if (val === undefined || val === "") return fallback;
+	if (typeof fallback === "number") {
+		const n = parseInt(val, 10);
+		if (Number.isNaN(n) || n < 0) return fallback;
+		return n;
+	}
+	if (typeof fallback === "boolean") return val === "true" || val === "1";
+	return val;
 }

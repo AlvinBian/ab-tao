@@ -1,6 +1,6 @@
 ---
 title: 環境檢查 — ensureEnvironment
-description: 7 工具依序檢查與自動安裝：brew → nvm → node → pnpm → gh → gh auth → claude，含依賴鏈與失敗回退
+description: 7 工具依序檢查與自動安裝：brew → Node 版本管理（fnm/nvm/n）→ node → pnpm → gh → gh auth → claude，含遷移提示與失敗回退
 links:
   - setup-main: 返回主流程
   - upgrade-legacy: 舊配置偵測（環境就緒後執行）
@@ -11,7 +11,7 @@ flowchart TD
     subgraph RunChecks ["平行建立 checks 陣列"]
         direction LR
         CK1["Homebrew<br/>which brew"]
-        CK2["nvm<br/>source nvm.sh && nvm --version"]
+        CK2["Node 版本管理<br/>fnm / nvm / n<br/>任一存在即通過"]
         CK3["Node.js<br/>which node"]
         CK4["pnpm<br/>which pnpm"]
         CK5["gh CLI<br/>which gh"]
@@ -21,8 +21,9 @@ flowchart TD
 
     RunChecks --> AllPass{"missing.length === 0?"}
 
-    AllPass -->|Yes| ShowVersions["顯示版本資訊<br/>brew · nvm · node · pnpm · gh · claude"]
-    ShowVersions --> ReturnTrue(["return true"])
+    AllPass -->|Yes| ShowVersions["顯示版本資訊<br/>brew · fnm/nvm/n · node · pnpm · gh · claude"]
+    ShowVersions --> Migrate["resolveNodeManager()"]
+    Migrate --> ReturnTrue(["return true"])
 
     AllPass -->|No| ShowStatus["顯示 checkLines<br/>✔ / ✘ 每工具狀態"]
     ShowStatus --> Confirm{"p.confirm 繼續安裝?"}
@@ -38,17 +39,21 @@ flowchart TD
         IBrewOk -->|No| EBrew["log.warn 手動安裝<br/>return false"]
         IBrewOk -->|Yes| NextTool
 
-        IB -->|nvm| INvm["curl nvm v0.40.0<br/>set NVM_DIR env<br/>justInstalled.add('nvm')"]
-        INvm --> INvmOk{"成功?"}
-        INvmOk -->|No| ENvm["log.warn 手動安裝<br/>return false"]
-        INvmOk -->|Yes| NextTool
+        IB -->|"Node 版本管理"| IFnm["brew install fnm<br/>justInstalled.add('fnm')"]
+        IFnm --> IFnmOk{"成功?"}
+        IFnmOk -->|No| EFnm["log.warn 手動安裝<br/>return false"]
+        IFnmOk -->|Yes| NextTool
 
-        IB -->|Node.js| INodeCheck{"nvmOk OR<br/>justInstalled.has('nvm')?"}
-        INodeCheck -->|Yes| INodeNvm["runNvm install --lts"]
-        INodeCheck -->|No| INodeBrew{"has brew?"}
+        IB -->|Node.js| INodeCheck{"fnm / nvm / n<br/>可用?"}
+        INodeCheck -->|fnm| INodeFnm["fnm install --lts<br/>fnm default lts-latest"]
+        INodeCheck -->|nvm| INodeNvm["runNvm install --lts"]
+        INodeCheck -->|n| INodeN["n lts"]
+        INodeCheck -->|None| INodeBrew{"has brew?"}
         INodeBrew -->|Yes| INodeBrewCmd["brew install node"]
         INodeBrew -->|No| INodeFail["Node 安裝失敗<br/>return false"]
-        INodeNvm --> INodeOk{"成功?"}
+        INodeFnm --> INodeOk{"成功?"}
+        INodeNvm --> INodeOk
+        INodeN --> INodeOk
         INodeBrewCmd --> INodeOk
         INodeOk -->|No| INodeFail
         INodeOk -->|Yes| NextTool
@@ -73,7 +78,7 @@ flowchart TD
         IGhAuthOk -->|No| EGhAuth["process.exit(1)<br/>gh auth login --with-token"]
         IGhAuthOk -->|Yes| NextTool
 
-        IB -->|"claude CLI"| IClaude["npm install -g<br/>@anthropic-ai/claude-code"]
+        IB -->|"claude CLI"| IClaude["官方安裝器 → brew → pnpm -g<br/>依序嘗試"]
         IClaude --> IClaudeOk{"has claude?"}
         IClaudeOk -->|No| EClaude["process.exit(1)"]
         IClaudeOk -->|Yes| NextTool
@@ -81,7 +86,20 @@ flowchart TD
         NextTool["繼續下一個 missing"]
     end
 
-    InstallLoop --> Done["log.success 環境就緒"]
+    InstallLoop --> MigratePost["resolveNodeManager(justInstalled)"]
+
+    subgraph MigratePost_Detail ["resolveNodeManager — Node 版本管理策略"]
+        direction TB
+        MG1{"fnm 已就緒?"}
+        MG1 -->|Yes| MG_FNM["AB_TAO_NODE_MGR = fnm<br/>（若有 nvm/n 共存，提示清理）"]
+        MG1 -->|No| MG2{"有 nvm / n?"}
+        MG2 -->|Yes| MG_Ask["p.select 遷移提示"]
+        MG_Ask -->|"切換為 fnm"| MG_Install["brew install fnm<br/>fnm install 現有版本<br/>fnm default"]
+        MG_Ask -->|"保留 nvm/n"| MG_Keep["AB_TAO_NODE_MGR = nvm/n<br/>ZSH 模組配置 cd 自動切換"]
+        MG2 -->|No| MG_None["AB_TAO_NODE_MGR = fnm"]
+    end
+
+    MigratePost --> Done["log.success 環境就緒"]
     Done --> ReturnTrue2(["return true"])
 
     classDef decision fill:#d29922,color:#000,stroke:#d29922
@@ -89,12 +107,14 @@ flowchart TD
     classDef error fill:#da3633,color:#fff,stroke:#da3633
     classDef check fill:#1f6feb,color:#fff,stroke:#1f6feb
     classDef tool fill:#3b3b3b,color:#ddd,stroke:#555
+    classDef migrate fill:#8957e5,color:#fff,stroke:#8957e5
 
-    class AllPass,Confirm,IBrewOk,INvmOk,INodeCheck,INodeBrew,INodeOk,IPnpm,IPnpmOk,IGh,IGhOk,IGhAuthOk,IClaudeOk,IB decision
+    class AllPass,Confirm,IBrewOk,IFnmOk,INodeCheck,INodeBrew,INodeOk,IPnpm,IPnpmOk,IGh,IGhOk,IGhAuthOk,IClaudeOk,IB,MG1,MG2 decision
     class ReturnTrue,ReturnTrue2,Done,ShowVersions success
-    class AbortEnv,EBrew,ENvm,INodeFail,EPnpm,EGh,EGhAuth,EClaude error
+    class AbortEnv,EBrew,EFnm,INodeFail,EPnpm,EGh,EGhAuth,EClaude error
     class CK1,CK2,CK3,CK4,CK5,CK6,CK7 check
-    class IBrew,INvm,INodeNvm,INodeBrewCmd,ICorepack,INpm,IGhCmd,IGhAuth,IClaude tool
+    class IBrew,IFnm,INodeFnm,INodeNvm,INodeN,INodeBrewCmd,ICorepack,INpm,IGhCmd,IGhAuth,IClaude tool
+    class Migrate,MigratePost,MG_FNM,MG_Ask,MG_Install,MG_Keep,MG_None migrate
 
     click Start "#setup-main"
     click Done "#upgrade-legacy"

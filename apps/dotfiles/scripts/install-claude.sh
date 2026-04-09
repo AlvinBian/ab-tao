@@ -6,7 +6,7 @@
 # 優先順序：
 #   1. 當前專案 .claude/（若 CWD 有 .claude/ 目錄）
 #   2. ~/.claude/ 中已本地修改的檔案（manifest hash 不一致 → 略過）
-#   3. ab-dotfiles 模板（只填補未修改 / 不存在的位置）
+#   3. ab-tao 模板（只填補未修改 / 不存在的位置）
 #
 # 用法：
 #   bash scripts/install-claude.sh                            ← 全部安裝
@@ -54,7 +54,7 @@ if [[ -z "$SELECTED_COMMANDS" && -z "$SELECTED_AGENTS" && -z "$SELECTED_RULES" &
   INSTALL_HOOKS=true
 fi
 
-# ── 偵測當前專案 .claude/（CWD 非 ab-dotfiles 本身）─────────────
+# ── 偵測當前專案 .claude/（CWD 非 ab-tao 本身）─────────────
 PROJECT_COMMANDS_DIR=""
 PROJECT_AGENTS_DIR=""
 
@@ -100,12 +100,12 @@ with open(manifest, 'w') as f:
 }
 
 # ── 智慧安裝（manifest 追蹤 + 優先順序）─────────────────────────
-# $1=src（ab-dotfiles 模板） $2=dest（~/.claude/...） $3=manifest key $4=label
+# $1=src（ab-tao 模板） $2=dest（~/.claude/...） $3=manifest key $4=label
 # $5=project_src（可選：專案自訂版本）
 _install_file() {
   local src="$1" dest="$2" key="$3" label="$4" project_src="${5:-}"
 
-  # 1. 有專案自訂版本 → 用專案版本（不更新 manifest，這不是 ab-dotfiles 的檔案）
+  # 1. 有專案自訂版本 → 用專案版本（不更新 manifest，這不是 ab-tao 的檔案）
   if [[ -n "$project_src" && -f "$project_src" ]]; then
     if [[ -f "$dest" ]] && diff -q "$project_src" "$dest" &>/dev/null; then
       echo -e "${DIM}  ─ $label 專案版本 無變更${NC}"
@@ -244,6 +244,30 @@ print("  \033[0;32m✅ hooks 合併完成\033[0m")
 PYEOF
     _manifest_set "hooks" "$HOOKS_HASH"
   fi
+
+  # 部署 hooks/ 目錄下的腳本
+  HOOKS_SCRIPTS_DIR="$REPO_DIR/claude/hooks"
+  if [[ -d "$HOOKS_SCRIPTS_DIR" ]]; then
+    mkdir -p "$HOME/.claude/hooks"
+    for script_file in "$HOOKS_SCRIPTS_DIR"/*; do
+      [[ -f "$script_file" ]] || continue
+      script_name=$(basename "$script_file")
+      dest_script="$HOME/.claude/hooks/$script_name"
+      if [[ "$script_name" != "slack-dispatch.sh" && "$script_name" != "filter-output.sh" ]]; then
+        continue
+      fi
+      cp "$script_file" "$dest_script"
+      chmod +x "$dest_script"
+      echo -e "${DIM}  ✅ /$script_name${NC}"
+    done
+  fi
+
+  # 部署 statusline
+  if [[ -f "$REPO_DIR/claude/statusline.sh" ]]; then
+    cp "$REPO_DIR/claude/statusline.sh" "$HOME/.claude/statusline.sh"
+    chmod +x "$HOME/.claude/statusline.sh"
+    echo -e "${DIM}  ✅ /statusline${NC}"
+  fi
 fi
 
 # ── 安裝 rules ────────────────────────────────────────────────────
@@ -268,6 +292,33 @@ if [[ -n "$SELECTED_RULES" ]]; then
       fi
     done
   fi
+fi
+
+# ── 安裝 skills ───────────────────────────────────────────────────
+# Skills 目錄結構：claude/skills/{skill-name}/SKILL.md
+# 目標：~/.claude/skills/{skill-name}/SKILL.md
+SKILLS_SRC="$REPO_DIR/claude/skills"
+if [[ -d "$SKILLS_SRC" ]]; then
+  echo -e "${BLUE}💡 Skills${NC}"
+  SKILLS_DIR="$CLAUDE_DIR/skills"
+  mkdir -p "$SKILLS_DIR"
+
+  for skill_dir in "$SKILLS_SRC"/*; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_name=$(basename "$skill_dir")
+    skill_file="$skill_dir/SKILL.md"
+
+    if [[ -f "$skill_file" ]]; then
+      dest_skill_dir="$SKILLS_DIR/$skill_name"
+      mkdir -p "$dest_skill_dir"
+
+      _install_file \
+        "$skill_file" \
+        "$dest_skill_dir/SKILL.md" \
+        "skills/$skill_name/SKILL.md" \
+        "/$skill_name"
+    fi
+  done
 fi
 
 echo ""

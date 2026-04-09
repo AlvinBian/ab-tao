@@ -40,7 +40,7 @@ flowchart TD
         R2["2. 重命名 kkday-conventions<br/>   → project-conventions"]
         R3["3. 更新 settings.json<br/>   補充權限規則"]
         R4["4. 更新 hooks.json<br/>   舊版 5 個 → 新版 10 個"]
-        R5["  非 ab-dotfiles 自訂配置<br/>  Commands/Agents/Rules（不會刪除）"]
+        R5["  非 ab-tao 自訂配置<br/>  Commands/Agents/Rules（不會刪除）"]
         R1 --> R2 --> R3 --> R4 --> R5
     end
 
@@ -62,7 +62,7 @@ flowchart TD
     subgraph DoUpgrade ["doUpgrade(legacyInfo)"]
         direction TB
         U1["Promise.all 備份<br/>upgrade/commands<br/>upgrade/agents<br/>upgrade/rules<br/>upgrade/hooks.json<br/>upgrade/settings.json<br/>upgrade/keybindings.json"]
-        U2["移除全局專案級 commands<br/>（只刪 ab-dotfiles 管理的）"]
+        U2["移除全局專案級 commands<br/>（只刪 ab-tao 管理的）"]
         U3["移除全局專案級 agents"]
         U4["移除全局專案級 rules"]
         U5{"hasOldKkday?"}

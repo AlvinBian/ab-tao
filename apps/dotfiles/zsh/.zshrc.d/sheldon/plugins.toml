@@ -1,0 +1,31 @@
+shell = "zsh"
+
+[templates]
+defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
+
+# ── 同步載入（其他插件依賴）──────────────────────────────────────
+
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
+
+# ── 延遲載入（首次 prompt 後非同步載入）──────────────────────────
+
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+apply = ["defer"]
+
+[plugins.fast-syntax-highlighting]
+github = "zdharma-continuum/fast-syntax-highlighting"
+apply = ["defer"]
+
+# fzf-tab 由 sheldon 下載，但在 90-plugins.zsh 中 compinit 之後手動載入
+[plugins.fzf-tab]
+github = "Aloxaf/fzf-tab"
+apply = ["fpath"]
+
+# ── 補全（加入 fpath，由 compinit 統一載入）──────────────────────
+
+[plugins.zsh-completions]
+github = "zsh-users/zsh-completions"
+dir = "src"
+apply = ["fpath"]

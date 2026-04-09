@@ -42,7 +42,7 @@ cat > "$BUILD_DIR/.claude-plugin/plugin.json" << JSON_EOF
   "name": "ab-slack-message",
   "version": "$PLUGIN_VERSION",
   "description": "Slack mrkdwn 訊息工具 — 起草、審查、格式化",
-  "author": "ab-dotfiles",
+  "author": "ab-tao",
   "keywords": ["slack", "mrkdwn", "messaging", "draft", "review"]
 }
 JSON_EOF

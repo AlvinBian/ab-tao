@@ -1,0 +1,8 @@
+# Lefthook — Git hooks 管理
+# pre-commit: 自動格式化 + lint，只處理本次暫存的檔案
+
+pre-commit:
+  commands:
+    biome:
+      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true   # 修正後自動重新 stage
