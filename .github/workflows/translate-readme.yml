@@ -32,8 +32,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet; then
-            git add README-zh-CN.md README-en.md
+          git add README-zh-CN.md README-en.md
+          if ! git diff --cached --quiet; then
             git commit -m "docs: auto translate README (zh-CN + EN)"
             git push
           fi

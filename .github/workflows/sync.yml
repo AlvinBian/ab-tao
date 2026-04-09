@@ -36,8 +36,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet; then
-            git add .
+          git add .
+          if ! git diff --cached --quiet; then
             git commit -m "chore(commons): sync external sources $(date +%Y-%m-%d)"
             git push
           fi
