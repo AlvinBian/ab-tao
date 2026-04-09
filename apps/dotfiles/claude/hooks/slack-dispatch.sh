@@ -17,9 +17,21 @@ for envfile in "$HOME/.claude/.env" "$HOME/.env"; do
   [ -f "$envfile" ] && . "$envfile" 2>/dev/null && break
 done
 
+# 通知模式：channel（預設）| dm | off
+MODE="${SLACK_NOTIFY_MODE:-channel}"
+[ "$MODE" = "off" ] && exit 0
+
 # per-repo 優先，否則用全局（~/.claude/.env 或 settings.json 注入的環境變數）
 CHANNEL="${REPO_CHANNEL:-${SLACK_NOTIFY_CHANNEL:-}}"
-[ -z "$CHANNEL" ] && exit 0
+
+# dm 模式使用 user_id，channel 模式使用 channel_id
+if [ "$MODE" = "dm" ]; then
+  TARGET="${SLACK_NOTIFY_USER_ID:-}"
+  [ -z "$TARGET" ] && exit 0
+else
+  TARGET="$CHANNEL"
+  [ -z "$TARGET" ] && exit 0
+fi
 MIN_SESSION="${CLAUDE_SLACK_MIN_SESSION_SECS:-300}"
 STATE_DIR="/tmp/claude-slack"
 SESSION="${CLAUDE_SESSION_ID:-$$}"
@@ -71,7 +83,11 @@ _${MSG}_"
     else
       JSON_TEXT="\"$(printf '%s' "$MSG_TEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' | tr -d '\n' | sed 's/\\n$//')\""
     fi
-    printf '{"channel_id":"%s","text":%s}\n' "$CHANNEL" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    if [ "$MODE" = "dm" ]; then
+      printf '{"user_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    else
+      printf '{"channel_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
+    fi
     rm -f "$start_file"
     ;;
 

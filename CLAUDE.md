@@ -54,7 +54,7 @@ pnpm run cheatsheet:open   # 在瀏覽器開啟本地 HTML 版本
 ```
   setup 互動精靈        — 5 階段部署（環境檢查 → 功能選擇 → 分析 → 確認 → 執行）
   /init 動態生成        — 各 repo 執行 claude /init 產生自訂 CLAUDE.md
-  commons 資源同步      — 1 個可選 AI 來源（ECC rules+skills）、版本追蹤、安全驗證
+  commons 資源同步      — 4 個可選 AI 來源（ECC · Anthropic · Superpowers · Context-Engineering）
   2 個 agents           — architect、debugger
   ZSH 模組化環境       — 7 個模組（~/.zshrc.d/ + sheldon 插件管理）
   Rules                 — 只保留 paths 條件載入 + Hooks 過濾
@@ -63,7 +63,7 @@ pnpm run cheatsheet:open   # 在瀏覽器開啟本地 HTML 版本
 推薦安裝層（第三方輪子）：
 ```
   Token 優化            — RTK（Bash 輸出 -89%，brew install rtk）· Claude-Mem（跨會話記憶）
-  官方 Plugins          — code-review · commit-commands · simplify
+  官方 Plugins          — code-review · commit-commands · feature-dev · security-guidance · hookify · ralph-loop · session-report · code-simplifier
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
   監控與診斷            — statusline（自動部署）· doctor（環境診斷）
 ```

@@ -34,6 +34,7 @@ SELECTED_COMMANDS=""
 SELECTED_AGENTS=""
 SELECTED_RULES=""
 INSTALL_HOOKS=false
+INSTALL_SLACK=false
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
@@ -42,6 +43,7 @@ while [[ $# -gt 0 ]]; do
     --agents)   SELECTED_AGENTS="$2";   shift 2 ;;
     --rules)    SELECTED_RULES="$2";    shift 2 ;;
     --hooks)    INSTALL_HOOKS=true;     shift ;;
+    --slack)    INSTALL_SLACK=true;     shift ;;
     --force)    FORCE=true;             shift ;;
     *)          shift ;;
   esac
@@ -245,21 +247,51 @@ PYEOF
     _manifest_set "hooks" "$HOOKS_HASH"
   fi
 
-  # 部署 hooks/ 目錄下的腳本
-  HOOKS_SCRIPTS_DIR="$REPO_DIR/claude/hooks"
-  if [[ -d "$HOOKS_SCRIPTS_DIR" ]]; then
-    mkdir -p "$HOME/.claude/hooks"
-    for script_file in "$HOOKS_SCRIPTS_DIR"/*; do
-      [[ -f "$script_file" ]] || continue
-      script_name=$(basename "$script_file")
-      dest_script="$HOME/.claude/hooks/$script_name"
-      if [[ "$script_name" != "slack-dispatch.sh" && "$script_name" != "filter-output.sh" ]]; then
-        continue
-      fi
-      cp "$script_file" "$dest_script"
-      chmod +x "$dest_script"
-      echo -e "${DIM}  ✅ /$script_name${NC}"
-    done
+  # Slack hooks（僅在 --slack 時合併）
+  if [[ "$INSTALL_SLACK" == true ]]; then
+    SLACK_HOOKS_FILE="$REPO_DIR/claude/hooks-slack.json"
+    if [[ -f "$SLACK_HOOKS_FILE" ]]; then
+      python3 - "$SETTINGS_FILE" "$SLACK_HOOKS_FILE" << 'PYEOF'
+import json, sys, os
+
+settings_path = sys.argv[1]
+hooks_path    = sys.argv[2]
+
+new_hooks = json.load(open(hooks_path))["hooks"]
+existing  = {}
+
+if os.path.exists(settings_path):
+  with open(settings_path) as f:
+    try: existing = json.load(f)
+    except: pass
+
+if "hooks" not in existing:
+  existing["hooks"] = {}
+
+for event, hooks in new_hooks.items():
+  if event not in existing["hooks"]:
+    existing["hooks"][event] = hooks
+  else:
+    matchers = {h.get("matcher", "") for h in existing["hooks"][event]}
+    for h in hooks:
+      if h.get("matcher", "") not in matchers:
+        existing["hooks"][event].append(h)
+
+with open(settings_path, "w") as f:
+  json.dump(existing, f, indent=2, ensure_ascii=False)
+
+print("  \033[0;32m✅ Slack hooks 合併完成\033[0m")
+PYEOF
+    fi
+
+    # 部署 slack-dispatch.sh
+    DISPATCH_SRC="$REPO_DIR/claude/hooks/slack-dispatch.sh"
+    if [[ -f "$DISPATCH_SRC" ]]; then
+      mkdir -p "$HOME/.claude/hooks"
+      cp "$DISPATCH_SRC" "$HOME/.claude/hooks/slack-dispatch.sh"
+      chmod +x "$HOME/.claude/hooks/slack-dispatch.sh"
+      echo -e "${DIM}  ✅ /slack-dispatch.sh${NC}"
+    fi
   fi
 
   # 部署 statusline

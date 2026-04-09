@@ -17,6 +17,7 @@
 		"build": "echo 'commons build completed'",
 		"sync": "node scripts/sync-sources.mjs",
 		"validate": "node scripts/validate-structure.mjs",
+		"translate": "node scripts/generate-translations.mjs",
 		"lint": "biome check .",
 		"test": "node --test __tests__/*.test.mjs"
 	},

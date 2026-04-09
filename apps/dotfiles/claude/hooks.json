@@ -1,18 +1,6 @@
 {
-	"description": "ab-tao hooks：格式化、檔案保護、危險攔截、macOS 通知、Slack session 通知",
+	"description": "ab-tao hooks：檔案保護、危險命令攔截、macOS 通知",
 	"hooks": {
-		"PostToolUse": [
-			{
-				"matcher": "Edit|Write",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty' 2>/dev/null); [ -z \"$FILE\" ] && exit 0; ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo '.'); if [ -f \"$ROOT/.prettierrc\" ] || [ -f \"$ROOT/.prettierrc.json\" ] || [ -f \"$ROOT/prettier.config.js\" ] || [ -f \"$ROOT/prettier.config.mjs\" ] || grep -q prettier \"$ROOT/package.json\" 2>/dev/null; then npx prettier --write \"$FILE\" 2>/dev/null; fi; exit 0",
-						"timeout": 15
-					}
-				]
-			}
-		],
 		"PreToolUse": [
 			{
 				"matcher": "Edit|Write",
@@ -31,23 +19,6 @@
 						"type": "command",
 						"command": "CMD=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.command // empty' 2>/dev/null); [ -z \"$CMD\" ] && exit 0; for p in 'rm -rf /' 'git push --force main' 'git push --force master' 'git reset --hard' 'DROP TABLE' 'DROP DATABASE' 'curl.*|.*bash' 'curl.*|.*sh' 'wget.*|.*bash' 'wget.*|.*sh' 'eval.*base64'; do echo \"$CMD\" | grep -qiE \"$p\" && { echo \"Blocked: dangerous command detected: $p\" >&2; exit 2; }; done; exit 0",
 						"timeout": 5
-					},
-					{
-						"type": "command",
-						"command": "~/.claude/hooks/filter-output.sh",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"SessionStart": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-start; exit 0",
-						"timeout": 3
 					}
 				]
 			}
@@ -59,18 +30,6 @@
 					{
 						"type": "command",
 						"command": "osascript -e 'display notification \"Claude Code 需要注意\" with title \"ab-tao\"' 2>/dev/null; exit 0",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"Stop": [
-			{
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-stop; exit 0",
 						"timeout": 5
 					}
 				]

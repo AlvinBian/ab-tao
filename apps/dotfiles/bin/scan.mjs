@@ -17,7 +17,7 @@
  * 用法：
  *   pnpm run scan              ← 掃描 config.json，增量更新 stacks/
  *   pnpm run scan -- --init    ← 清空 stacks/ 重新生成
- *   pnpm run scan -- --no-ai   ← 不用 Claude API（預設有 ANTHROPIC_API_KEY 自動生成）
+ *   pnpm run scan -- --no-ai   ← 不用 Claude（預設有 CLI 自動生成）
  *   pnpm run scan -- --skills typescript,vue  ← 只生成指定的 stacks
  *   pnpm run scan -- --org kkday-it
  */
@@ -33,11 +33,11 @@ import {
 	parseRepoEntry,
 	REPO_DIR,
 	STACKS_DIR,
-} from "../lib/detect/skill-detect.mjs";
+} from "../libs/detect/skill-detect.mjs";
 // 多生態技術偵測：整合 npm/PHP/Python/Go API 的統一入口
-import { identifySignificantTechs } from "../lib/detect/tech-detect-api.mjs";
+import { identifySignificantTechs } from "../libs/detect/tech-detect-api.mjs";
 // AI 生成：可用性檢查 + stack 目錄建立（含 AI 生成 / 預設模板 fallback）
-import { ensureStack, isAIAvailable } from "../lib/external/ai-generate.mjs";
+import { ensureStack, isAIAvailable } from "../libs/external/ai-generate.mjs";
 
 // ── CLI 參數解析 ────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -90,8 +90,24 @@ function getRepos() {
 				{ encoding: "utf8", timeout: 30000, stdio: ["pipe", "pipe", "pipe"] },
 			);
 			return raw.trim().split("\n").filter(Boolean);
-		} catch (_e) {
-			console.error(`無法取得 ${orgName} repos`);
+		} catch (e) {
+			const msg = e?.stderr?.toString() || e?.message || "";
+			if (msg.includes("auth login") || msg.includes("not logged")) {
+				console.error(
+					`gh CLI 未登入，請先執行：gh auth login\n` +
+						`然後重試：pnpm run scan -- --org ${orgName}`,
+				);
+			} else if (msg.includes("ENOENT") || msg.includes("not found")) {
+				console.error(
+					`gh CLI 未安裝。安裝方式：brew install gh\n` +
+						`安裝後執行：gh auth login`,
+				);
+			} else {
+				console.error(
+					`無法取得 ${orgName} repos：${msg.slice(0, 120)}\n` +
+						`請確認 gh 已登入（gh auth status）且有該組織的讀取權限`,
+				);
+			}
 			process.exit(1);
 		}
 	}
@@ -283,7 +299,7 @@ async function main() {
 
 	if (created > 0 && !canUseAI) {
 		console.log(
-			`\n💡 ${created} 個 stack 使用預設模板。設定 ANTHROPIC_API_KEY 後重跑可 AI 生成`,
+			`\n💡 ${created} 個 stack 使用預設模板。安裝 Claude Code CLI 後重跑可 AI 生成`,
 		);
 	}
 }

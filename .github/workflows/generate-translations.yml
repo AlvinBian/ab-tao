@@ -1,0 +1,54 @@
+name: Generate Translations
+
+on:
+  schedule:
+    # 週一 04:00 UTC（sync.yml 之後 1 小時）
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '強制重新翻譯全部項目'
+        type: boolean
+        default: false
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate translations
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FORCE_FLAG: ${{ inputs.force }}
+        run: |
+          ARGS=""
+          if [ "$FORCE_FLAG" = "true" ]; then
+            ARGS="--force"
+          fi
+          node packages/commons/scripts/generate-translations.mjs $ARGS
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet packages/commons/resources/translations.json; then
+            git add packages/commons/resources/translations.json
+            git commit -m "chore(commons): 自動翻譯更新 $(date +%Y-%m-%d)"
+            git push
+          fi

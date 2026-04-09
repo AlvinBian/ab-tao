@@ -23,14 +23,14 @@
 		"setup": "node bin/setup.mjs",
 		"scan": "node bin/scan.mjs",
 		"status": "node bin/status.mjs",
-		"report": "node bin/status.mjs --report",
+		"report": "node bin/report.mjs",
 		"flow": "node bin/flow.mjs",
 		"restore": "node bin/restore.mjs",
 		"uninstall": "node bin/uninstall.mjs",
 		"hooks": "node bin/hooks.mjs",
 		"doctor": "node bin/doctor.mjs",
 		"workspace": "bash scripts/generate-workspace.sh",
-		"taxonomy:build": "node lib/taxonomy/build.mjs",
+		"taxonomy:build": "node libs/taxonomy/build.mjs",
 		"lint": "biome check .",
 		"test": "node --test __tests__/*.test.mjs"
 	}

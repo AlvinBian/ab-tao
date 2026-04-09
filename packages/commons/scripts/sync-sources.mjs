@@ -31,8 +31,29 @@ const SOURCES_CONFIG = {
 	ecc: {
 		url: "https://github.com/affaan-m/everything-claude-code.git",
 		icon: "🌐",
-		description: "語言特定 Rules + 框架 Skills（可選，不含 commands/agents）",
+		description: "Commands / Agents / Rules / Skills（社群最大集合）",
 		validatePaths: ["rules", "skills"],
+		optional: true,
+	},
+	anthropic: {
+		url: "https://github.com/anthropics/skills.git",
+		icon: "📚",
+		description: "Anthropic 官方 Skills（claude-api、pdf、xlsx 等）",
+		validatePaths: ["skills"],
+		optional: true,
+	},
+	superpowers: {
+		url: "https://github.com/obra/superpowers.git",
+		icon: "🚀",
+		description: "Agents / Commands / Hooks（brainstorm、execute-plan）",
+		validatePaths: ["agents", "commands", "skills"],
+		optional: true,
+	},
+	"context-engineering": {
+		url: "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git",
+		icon: "🧠",
+		description: "Context 最佳化 / Multi-Agent 模式 / 記憶系統",
+		validatePaths: ["skills"],
 		optional: true,
 	},
 };

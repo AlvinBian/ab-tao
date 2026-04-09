@@ -6,7 +6,7 @@ import {
 	ResourceLoader,
 	sanitizeContent,
 	validateFileContent,
-} from "../lib/external/commons-integration.mjs";
+} from "../libs/external/commons-integration.mjs";
 
 describe("commons-integration 橋接模組", () => {
 	it("應重新匯出安全驗證", () => {

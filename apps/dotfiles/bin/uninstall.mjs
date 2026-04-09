@@ -14,8 +14,8 @@ import {
 	ALL_AGENTS,
 	ALL_COMMANDS,
 	ALL_RULES,
-} from "../lib/config/config-classifier.mjs";
-import { HOME } from "../lib/core/paths.mjs";
+} from "../libs/config/config-classifier.mjs";
+import { HOME } from "../libs/core/paths.mjs";
 
 const CLAUDE_DIR = path.join(HOME, ".claude");
 

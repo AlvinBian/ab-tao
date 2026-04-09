@@ -31,6 +31,7 @@
 		"c:sync:select": "node packages/commons/commands.mjs",
 		"c:sync:all": "node packages/commons/commands.mjs",
 		"c:validate": "node packages/commons/commands.mjs",
+		"c:translate": "node packages/commons/scripts/generate-translations.mjs",
 		"cheatsheet:update": "node apps/cheatsheet/update.mjs",
 		"cheatsheet:force": "node apps/cheatsheet/update.mjs --force",
 		"cheatsheet:open": "open apps/cheatsheet/index.html",
