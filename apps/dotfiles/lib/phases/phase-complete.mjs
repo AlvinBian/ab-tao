@@ -31,6 +31,16 @@ function detectRtk() {
 	}
 }
 
+/** 偵測 MemPalace 是否已安裝（pip package 或 claude plugin） */
+function detectMempalace() {
+	try {
+		execFileSync("python3", ["-c", "import mempalace"], { stdio: "pipe" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** 可選增強工具配置（模組級常數） */
 const ENHANCERS = [
 	{
@@ -41,6 +51,14 @@ const ENHANCERS = [
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
+	},
+	{
+		name: "MemPalace",
+		desc: "跨會話語義記憶 — 本地 ChromaDB 儲存完整對話，與 Auto Memory 互補",
+		install: `pip install mempalace && mempalace init ~ && claude mcp add mempalace -- python3 -m mempalace.mcp_server`,
+		failHint: `pip install mempalace  （再執行 mempalace init ~）\n參考：https://github.com/milla-jovovich/mempalace`,
+		doneHint: "已就緒，Claude 可透過 MCP 搜尋歷史對話",
+		detect: detectMempalace,
 	},
 ];
 

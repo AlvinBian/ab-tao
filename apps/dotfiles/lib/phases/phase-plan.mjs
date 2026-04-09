@@ -28,6 +28,10 @@ const RECOMMENDED_PLUGINS = [
 	{ name: "hookify", desc: "分析對話模式自動生成 hooks" },
 	{ name: "ralph-loop", desc: "持續迭代迴圈 — 自動重試直到完成" },
 	{ name: "session-report", desc: "Session 分析報告 — 回顧工作成果" },
+	{
+		name: "mempalace",
+		desc: "跨會話語義記憶 — 本地 ChromaDB 儲存完整對話歷史，語義搜尋",
+	},
 ];
 
 /** 偵測已安裝的 plugins */

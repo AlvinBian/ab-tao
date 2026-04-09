@@ -226,6 +226,7 @@
     "pptx": "PowerPoint 簡報 — pptx 生成與編輯",
     "mcp-builder": "MCP 建構器 — 建立 MCP Server",
     "skill-creator": "技能建立器 — 建立自訂 Claude 技能",
-    "webapp-testing": "Web 應用測試 — 瀏覽器自動化測試"
+    "webapp-testing": "Web 應用測試 — 瀏覽器自動化測試",
+    "mempalace": "記憶宮殿 — 跨會話語義記憶，本地 ChromaDB 儲存與搜尋"
   }
 }
