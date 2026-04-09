@@ -308,6 +308,170 @@ export function formatAiResResources(plan, claudeDir) {
 }
 
 /**
+ * 統一 AI 資源視圖 — 合併外部源與 Commons 來源，按類型分組顯示
+ *
+ * @param {Object} plan - 計畫物件
+ * @param {string} claudeDir - ~/.claude 路徑
+ * @param {Object} selected - 已選擇的資源（{ commands: Set, agents: Set, rules: Set, skills: Set }）
+ * @param {number} minStars - 最低預選星級（預設 5）
+ * @returns {string[]} 格式化後的行陣列
+ */
+export function formatUnifiedAiResources(
+	plan,
+	claudeDir,
+	selected = null,
+	minStars = 5,
+) {
+	const lines = [];
+
+	// 來源標籤對照
+	const SOURCE_LABELS = {
+		ecc: "ECC",
+		anthropic: "Anthropic",
+		superpowers: "Superpowers",
+		"context-engineering": "CtxEng",
+	};
+
+	// ── 收集所有資源（外部 + Commons）──
+	const unified = { commands: [], agents: [], rules: [], skills: [] };
+	const itemsMap = {}; // 用於去重：{ "type:name" => item }
+
+	// 1. 外部資源（plan.aiRes）
+	const aiResTypeMap = plan._fetchedSources?.aiResTypeMap || {};
+	for (const name of plan.aiRes || []) {
+		const clean = name.replace(".md", "");
+		const type =
+			aiResTypeMap[clean] ||
+			(fs.existsSync(path.join(claudeDir, "agents", `${clean}.md`))
+				? "agents"
+				: null) ||
+			(fs.existsSync(path.join(claudeDir, "rules", `${clean}.md`))
+				? "rules"
+				: null) ||
+			"commands";
+
+		const rating = getRating(clean, type) || 0;
+		const desc = getDescription(clean, type, claudeDir);
+		const key = `${type}:${clean}`;
+
+		itemsMap[key] = {
+			name: clean,
+			source: "ecc",
+			type,
+			rating,
+			desc,
+			isPreselected: rating >= minStars,
+		};
+	}
+
+	// 2. Commons 資源
+	const commSources = plan._pipelineResult?.commonsResources?.sources || [];
+	for (const src of commSources) {
+		// Commands, Agents, Rules
+		for (const type of ["commands", "agents", "rules"]) {
+			for (const item of src[type] || []) {
+				const clean = item.name?.replace(".md", "") || item;
+				const rating = getRating(clean, type) || 0;
+				const desc = getDescription(clean, type, claudeDir);
+				const key = `${type}:${clean}`;
+
+				// 去重：保留評級更高的版本
+				if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+				itemsMap[key] = {
+					name: clean,
+					source: src.name,
+					type,
+					rating,
+					desc,
+					isPreselected: rating >= minStars,
+				};
+			}
+		}
+
+		// Skills
+		for (const sk of src.skills || []) {
+			const name = typeof sk === "string" ? sk : sk.name;
+			const content = typeof sk === "string" ? "" : sk.content || "";
+			const rating = getRating(name, "skills") || 0;
+			const transDesc = getDescription(name, "skills", null);
+			const desc = transDesc || extractSkillDesc(content);
+			const key = `skills:${name}`;
+
+			if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+			itemsMap[key] = {
+				name,
+				source: src.name,
+				type: "skills",
+				rating,
+				desc,
+				isPreselected: rating >= minStars,
+			};
+		}
+	}
+
+	// ── 按類型分組並排序 ──
+	for (const key of Object.keys(itemsMap)) {
+		const item = itemsMap[key];
+		if (!unified[item.type]) unified[item.type] = [];
+		unified[item.type].push(item);
+	}
+
+	// 每個類型按星級降序排序
+	for (const type of Object.keys(unified)) {
+		unified[type].sort((a, b) => b.rating - a.rating);
+	}
+
+	// ── 計算統計 ──
+	const countPreselected = Object.values(unified).reduce(
+		(sum, items) => sum + items.filter((i) => i.isPreselected).length,
+		0,
+	);
+	const countTotal = Object.values(unified).reduce(
+		(sum, items) => sum + items.length,
+		0,
+	);
+
+	lines.push(`🌐 AI 資源（${countPreselected} 個預選 / ${countTotal} 個可用）`);
+
+	// ── 按類型輸出 ──
+	const types = ["commands", "agents", "rules", "skills"];
+	for (const type of types) {
+		const items = unified[type];
+		if (items.length === 0) continue;
+
+		const typeLabel = {
+			commands: "Commands",
+			agents: "Agents",
+			rules: "Rules",
+			skills: "Skills",
+		}[type];
+
+		lines.push(`  ${typeLabel}（${items.length} 個）`);
+
+		for (const item of items) {
+			const sourceLabel = SOURCE_LABELS[item.source] || item.source;
+			const isSelected = selected
+				? selected[type]?.has(item.name)
+				: item.isPreselected;
+			const preselectedTag = isSelected ? pc.cyan("[預選]") : "      ";
+			const stars =
+				item.rating > 0
+					? `${"★".repeat(item.rating)}${"☆".repeat(5 - item.rating)}`
+					: "☆☆☆☆☆";
+			const desc = item.desc ? ` — ${item.desc}` : "";
+
+			lines.push(
+				`     · ${preselectedTag} ${sourceLabel.padEnd(10)} ${item.name} ${stars}${desc}`,
+			);
+		}
+	}
+
+	return lines;
+}
+
+/**
  * 格式化 Commons 匹配的 AI 資源（按技術棧篩選後）
  *
  * @param {Object} plan - 完整計畫物件

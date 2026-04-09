@@ -12,24 +12,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { isEmpty } from "lodash-es";
 import {
-	formatAiResResources,
 	formatClaudeMd,
-	formatCommonsResources,
 	formatTechStacks,
+	formatUnifiedAiResources,
 } from "../cli/plan-view.mjs";
 import { BACK, handleCancel, smartSelect } from "../cli/prompts.mjs";
 import { generateInstallPlan } from "../config/auto-plan.mjs";
+import { getDescription, getRating } from "../config/descriptions.mjs";
 import { HOME } from "../core/paths.mjs";
-
-/** AI 來源圖示對照 */
-const SOURCE_ICONS = {
-	ecc: "🌐",
-	anthropic: "📚",
-	superpowers: "🚀",
-	"context-engineering": "🧠",
-};
 
 export default {
 	id: "project-install",
@@ -150,66 +141,179 @@ export default {
 	},
 
 	/**
-	 * 5. 確認 — 顯示計畫摘要，使用者可選擇全裝 / 逐項確認 / 跳過
+	 * 5. 確認 — 新流程：技術棧 → CLAUDE.md → 星級閾值 → 統一 AI 資源 → 安裝方式 → 分類調整
 	 */
 	async confirm(ctx, plan) {
 		if (!plan) return false;
 		if (ctx.flags?.all || ctx.flags?.quick) return true;
 
-		// ── 顯示計畫摘要 ──
-		const summaryLines = [];
-
-		const techLines = formatTechStacks(plan);
-		if (techLines.length) summaryLines.push(...techLines);
-
 		const claudeDir = path.join(HOME, ".claude");
-		const aiLines = formatAiResResources(plan, claudeDir);
-		if (aiLines.length) summaryLines.push(...aiLines);
-
-		const commLines = formatCommonsResources(plan);
-		if (commLines.length) summaryLines.push(...commLines);
-
-		const mdLines = formatClaudeMd(plan);
-		if (mdLines.length) summaryLines.push(...mdLines);
-
-		if (summaryLines.length) {
-			p.log.info(summaryLines.join("\n"));
-		}
-
-		// ── 選擇安裝方式 ──
-		const hasAiRes = !isEmpty(plan.aiRes);
 		const commSources = plan._commonsResources?.sources || [];
-		const hasCommons = !isEmpty(commSources);
 
-		// 如果沒有可選項目，直接確認
-		if (!hasAiRes && !hasCommons) {
-			const ok = handleCancel(
-				await p.confirm({
-					message: "確認安裝？",
-					initialValue: true,
-				}),
-			);
-			return ok === true;
+		// ── Step 1: 技術棧 ──
+		const techLines = formatTechStacks(plan);
+		if (techLines.length) {
+			p.log.info(techLines.join("\n"));
 		}
 
+		// ── Step 2: CLAUDE.md ──
+		const mdLines = formatClaudeMd(plan);
+		if (mdLines.length) {
+			p.log.info(mdLines.join("\n"));
+		}
+
+		// ── Step 3: 星級閾值選擇 ──
+		const thresholdOptions = [
+			{ value: 5, label: "★★★★★ 只選最高品質（預設）", hint: "推薦" },
+			{ value: 4, label: "★★★★☆ 四星以上" },
+			{ value: 3, label: "★★★☆☆ 三星以上" },
+			{ value: 2, label: "★★☆☆☆ 二星以上" },
+			{ value: 1, label: "★☆☆☆☆ 一星以上" },
+			{ value: 0, label: "全部預選" },
+		];
+
+		const minStars = handleCancel(
+			await p.select({
+				message: "◆ AI 資源預選門檻（按星級篩選）",
+				options: thresholdOptions,
+				initialValue: 5,
+			}),
+		);
+
+		if (minStars === BACK) return false;
+
+		// ── 收集並組織統一資源 ──
+		const unified = { commands: [], agents: [], rules: [], skills: [] };
+		const itemsMap = {}; // 用於去重
+
+		// 外部資源
+		const aiResTypeMap = plan._fetchedSources?.aiResTypeMap || {};
+		for (const name of plan.aiRes || []) {
+			const clean = name.replace(".md", "");
+			const type =
+				aiResTypeMap[clean] ||
+				(fs.existsSync(path.join(claudeDir, "agents", `${clean}.md`))
+					? "agents"
+					: null) ||
+				(fs.existsSync(path.join(claudeDir, "rules", `${clean}.md`))
+					? "rules"
+					: null) ||
+				"commands";
+
+			const rating = getRating(clean, type) || 0;
+			const desc = getDescription(clean, type, claudeDir);
+			const key = `${type}:${clean}`;
+
+			itemsMap[key] = {
+				name: clean,
+				source: "ecc",
+				type,
+				rating,
+				desc,
+				isPreselected: rating >= minStars,
+			};
+		}
+
+		// Commons 資源
+		for (const src of commSources) {
+			for (const type of ["commands", "agents", "rules"]) {
+				for (const item of src[type] || []) {
+					const clean = item.name?.replace(".md", "") || item;
+					const rating = getRating(clean, type) || 0;
+					const desc = getDescription(clean, type, claudeDir);
+					const key = `${type}:${clean}`;
+
+					if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+					itemsMap[key] = {
+						name: clean,
+						source: src.name,
+						type,
+						rating,
+						desc,
+						isPreselected: rating >= minStars,
+					};
+				}
+			}
+
+			// Skills
+			for (const sk of src.skills || []) {
+				const name = typeof sk === "string" ? sk : sk.name;
+				const rating = getRating(name, "skills") || 0;
+				const transDesc = getDescription(name, "skills", null);
+				const desc = transDesc || "";
+				const key = `skills:${name}`;
+
+				if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+				itemsMap[key] = {
+					name,
+					source: src.name,
+					type: "skills",
+					rating,
+					desc,
+					isPreselected: rating >= minStars,
+				};
+			}
+		}
+
+		// 按類型分組
+		for (const key of Object.keys(itemsMap)) {
+			const item = itemsMap[key];
+			if (!unified[item.type]) unified[item.type] = [];
+			unified[item.type].push(item);
+		}
+
+		// 每個類型按星級降序排序
+		for (const type of Object.keys(unified)) {
+			unified[type].sort((a, b) => b.rating - a.rating);
+		}
+
+		// ── 初始化選擇（基於星級閾值）──
+		const selected = {
+			commands: new Set(),
+			agents: new Set(),
+			rules: new Set(),
+			skills: new Set(),
+		};
+
+		for (const type of Object.keys(unified)) {
+			for (const item of unified[type]) {
+				if (item.isPreselected) {
+					selected[type].add(item.name);
+				}
+			}
+		}
+
+		// ── Step 4: 顯示統一 AI 資源 ──
+		const unifiedLines = formatUnifiedAiResources(
+			plan,
+			claudeDir,
+			selected,
+			minStars,
+		);
+		if (unifiedLines.length) {
+			p.log.info(unifiedLines.join("\n"));
+		}
+
+		// ── Step 5: 安裝方式選擇 ──
 		const action = handleCancel(
 			await p.select({
-				message: "AI 資源安裝方式",
+				message: "◆ AI 資源安裝方式",
 				options: [
 					{
-						value: "all",
-						label: "安裝全部",
+						value: "confirm",
+						label: "確認安裝預選項目",
 						hint: "推薦",
 					},
 					{
-						value: "detail",
-						label: "逐項確認",
-						hint: "手動選擇 AI 資源與 Commons",
+						value: "adjust",
+						label: "調整選擇",
+						hint: "按分類微調",
 					},
 					{
 						value: "skip",
-						label: "跳過",
-						hint: "不安裝 AI 資源",
+						label: "跳過 AI 資源",
 					},
 				],
 			}),
@@ -223,85 +327,154 @@ export default {
 			return true;
 		}
 
-		if (action === "all") {
-			return true;
-		}
+		// ── Step 6: 分類調整流程（若選擇「調整選擇」）──
+		if (action === "adjust") {
+			let adjusting = true;
+			while (adjusting) {
+				// 計算各分類的選中 / 可用數量
+				const categoryCounts = {
+					commands: [selected.commands.size, unified.commands.length],
+					agents: [selected.agents.size, unified.agents.length],
+					rules: [selected.rules.size, unified.rules.length],
+					skills: [selected.skills.size, unified.skills.length],
+				};
 
-		// ── 逐項確認模式 ──
+				const categoryOptions = [
+					...(unified.commands.length > 0
+						? [
+								{
+									value: "commands",
+									label: `Commands（${categoryCounts.commands[0]} 個已選 / ${categoryCounts.commands[1]} 個可用）`,
+								},
+							]
+						: []),
+					...(unified.agents.length > 0
+						? [
+								{
+									value: "agents",
+									label: `Agents（${categoryCounts.agents[0]} 個已選 / ${categoryCounts.agents[1]} 個可用）`,
+								},
+							]
+						: []),
+					...(unified.rules.length > 0
+						? [
+								{
+									value: "rules",
+									label: `Rules（${categoryCounts.rules[0]} 個已選 / ${categoryCounts.rules[1]} 個可用）`,
+								},
+							]
+						: []),
+					...(unified.skills.length > 0
+						? [
+								{
+									value: "skills",
+									label: `Skills（${categoryCounts.skills[0]} 個已選 / ${categoryCounts.skills[1]} 個可用）`,
+								},
+							]
+						: []),
+					{
+						value: "done",
+						label: "← 返回確認",
+					},
+				];
 
-		// AI 外部資源選擇
-		if (hasAiRes) {
-			const aiItems = plan.aiRes.map((name) => ({
-				value: name,
-				label: name,
-				hint: "",
-			}));
-			const selectedAiRes = await smartSelect({
-				title: "🌐 AI 資源",
-				items: aiItems,
-				preselected: plan.aiRes,
-				autoSelectThreshold: 0,
-			});
-			if (selectedAiRes === BACK) return false;
-			plan.aiRes = selectedAiRes;
-		}
+				const categoryToAdjust = handleCancel(
+					await p.select({
+						message: "◆ 調整哪個分類？",
+						options: categoryOptions,
+					}),
+				);
 
-		// Commons 資源逐來源多選
-		if (hasCommons) {
-			plan.commonsSelections = {};
+				if (categoryToAdjust === BACK) return false;
 
-			for (const src of commSources) {
-				const icon = SOURCE_ICONS[src.name] || "📦";
-				const types = [
-					{ key: "commands", items: src.commands || [], label: "commands" },
-					{ key: "agents", items: src.agents || [], label: "agents" },
-					{ key: "rules", items: src.rules || [], label: "rules" },
-					{ key: "skills", items: src.skills || [], label: "skills" },
-				].filter((t) => t.items.length > 0);
-
-				if (isEmpty(types)) continue;
-
-				// 合併所有資源類型為一個選擇清單（帶類型前綴）
-				const allItems = [];
-				const allPreselected = [];
-				for (const t of types) {
-					for (const item of t.items) {
-						const name = item.name?.replace(".md", "") || item.name;
-						const key = `${t.key}:${name}`;
-						allItems.push({
-							value: key,
-							label: name,
-							hint: t.label,
-						});
-						allPreselected.push(key);
-					}
+				if (categoryToAdjust === "done") {
+					adjusting = false;
+					break;
 				}
 
-				const typeSummary = types
-					.map((t) => `${t.items.length} ${t.label}`)
-					.join(" · ");
-				const selected = await smartSelect({
-					title: `${icon} ${src.name}（${typeSummary}）`,
-					items: allItems,
-					preselected: allPreselected,
+				// 該分類的項目轉成選擇選項
+				const categoryItems = unified[categoryToAdjust];
+				const categorySelected = selected[categoryToAdjust];
+				const items = categoryItems.map((item) => ({
+					value: item.name,
+					label: item.name,
+					hint: item.desc ? item.desc.slice(0, 40) : "",
+				}));
+
+				const preselected = Array.from(categorySelected);
+				const selectedInCategory = await smartSelect({
+					title: `調整 ${categoryToAdjust}`,
+					items,
+					preselected,
 					autoSelectThreshold: 0,
 				});
-				if (selected === BACK) return false;
 
-				// 解析選擇結果回各類型
-				const selections = {
-					commands: [],
-					agents: [],
-					rules: [],
-					skills: [],
-				};
-				for (const key of selected) {
-					const [type, ...nameParts] = key.split(":");
-					const name = nameParts.join(":");
-					if (selections[type]) selections[type].push(name);
+				if (selectedInCategory === BACK) {
+					// 返回分類選擇菜單
+					continue;
 				}
-				plan.commonsSelections[src.name] = selections;
+
+				// 更新該分類的選擇
+				selected[categoryToAdjust] = new Set(selectedInCategory);
 			}
+
+			// 重新顯示統一 AI 資源，反映調整後的選擇
+			const updatedLines = formatUnifiedAiResources(
+				plan,
+				claudeDir,
+				selected,
+				minStars,
+			);
+			if (updatedLines.length) {
+				p.log.info(updatedLines.join("\n"));
+			}
+		}
+
+		// ── Step 7: 最終確認 ──
+		const confirmed = handleCancel(
+			await p.confirm({
+				message: "確認安裝？",
+				initialValue: true,
+			}),
+		);
+
+		if (confirmed !== true) return false;
+
+		// ── Step 8: 寫回選擇到 plan ──
+
+		// 外部資源（aiRes）
+		plan.aiRes = [
+			...selected.commands,
+			...selected.agents,
+			...selected.rules,
+		].filter((name) =>
+			(plan.aiRes || []).some((n) => n.replace(".md", "") === name),
+		);
+
+		// Commons 資源選擇
+		plan.commonsSelections = {};
+		for (const src of commSources) {
+			const srcSelections = {
+				commands: [],
+				agents: [],
+				rules: [],
+				skills: [],
+			};
+
+			for (const type of ["commands", "agents", "rules", "skills"]) {
+				const srcItems = type === "skills" ? src.skills || [] : src[type] || [];
+				for (const item of srcItems) {
+					const name = (item.name?.replace(".md", "") || item).replace(
+						".md",
+						"",
+					);
+					if (selected[type].has(name)) {
+						srcSelections[type].push(name);
+					}
+				}
+			}
+
+			plan.commonsSelections[src.name] = srcSelections;
 		}
 
 		return true;
