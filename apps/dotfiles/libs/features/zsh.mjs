@@ -247,7 +247,7 @@ export default {
 	complete(results) {
 		if (!results) return [];
 		return [
-			"── ZSH 模組（~/.zshrc.d/ + sheldon）──",
+			"🐚 ZSH 模組（~/.zshrc.d/ + sheldon）",
 			`  已安裝：${results.modules?.join("、") || "無"}`,
 			"  執行 exec zsh 立即套用",
 		];

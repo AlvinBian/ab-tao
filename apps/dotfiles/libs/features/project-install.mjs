@@ -42,7 +42,7 @@ export default {
 	 * 1. 環境檢查 — AI 資源為附加安裝，無額外環境需求
 	 */
 	async envCheck() {
-		return { ok: true, message: "AI 資源安裝就緒" };
+		return { ok: true, message: "📦 AI 資源安裝就緒" };
 	},
 
 	/**
@@ -378,7 +378,7 @@ export default {
 		if (!results) return [];
 		const lines = [];
 
-		lines.push("── 專案配置（AI 資源 + CLAUDE.md）──");
+		lines.push("📦 專案配置");
 
 		// 安裝統計
 		const sel = results.installSelections || {};

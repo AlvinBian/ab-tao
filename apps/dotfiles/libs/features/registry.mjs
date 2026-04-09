@@ -52,7 +52,7 @@ const FEATURE_DEFS = [
 	},
 	{
 		id: "project-install",
-		label: "📁 專案配置",
+		label: "📦 專案配置",
 		hint: "repos + AI 資源 + 技術棧 + CLAUDE.md",
 		load: () => import("./project-install.mjs"),
 		dependsOn: ["repos", "tech-analysis"],

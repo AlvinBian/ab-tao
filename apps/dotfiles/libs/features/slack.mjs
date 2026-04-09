@@ -22,7 +22,7 @@ export default {
 	 * 1. 環境檢查 — Slack 無前置依賴，永遠通過
 	 */
 	async envCheck() {
-		return { ok: true, message: "Slack 通知無前置依賴" };
+		return { ok: true, message: "💬 Slack 無前置依賴" };
 	},
 
 	/**
@@ -207,7 +207,7 @@ export default {
 				: results.mode === "dm"
 					? "DM 私發"
 					: "已關閉";
-		return ["── Slack 通知 ──", `  模式：${modeLabel}`];
+		return ["💬 Slack 通知", `  模式：${modeLabel}`];
 	},
 
 	/**

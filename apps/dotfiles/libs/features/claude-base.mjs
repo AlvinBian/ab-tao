@@ -29,9 +29,9 @@ export default {
 		try {
 			const { warmupCli } = await import("../external/claude-cli.mjs");
 			warmupCli();
-			return { ok: true, message: "Claude CLI ✔" };
+			return { ok: true, message: "🤖 Claude CLI ✔" };
 		} catch {
-			return { ok: false, message: "Claude CLI 不可用" };
+			return { ok: false, message: "🤖 Claude CLI 不可用" };
 		}
 	},
 
@@ -245,7 +245,7 @@ export default {
 
 		return parts.length
 			? [
-					"── Claude 配置 ──",
+					"🤖 Claude 配置",
 					`  已安裝：${parts.join(" · ")}`,
 					`  Model: ${results.model || "opusplan"}`,
 				]

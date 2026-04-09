@@ -33,7 +33,7 @@ export default {
 	 * 1. 環境檢查 — 分析不需要額外工具（repos 已檢查過 GitHub CLI）
 	 */
 	async envCheck() {
-		return { ok: true, message: "分析 pipeline 就緒" };
+		return { ok: true, message: "🔬 分析 pipeline 就緒" };
 	},
 
 	/**
@@ -296,7 +296,7 @@ export default {
 		const techCount = results.techStacks?.length || 0;
 		const aiCount = results.aiResResult?.recommended?.length || 0;
 		return [
-			`── 技術分析 ──`,
+			`🔬 技術分析`,
 			`  ${repoCount} repos · ${techCount} 技術棧 · ${aiCount} AI 資源候選`,
 		];
 	},

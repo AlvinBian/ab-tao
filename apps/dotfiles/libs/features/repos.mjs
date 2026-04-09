@@ -67,7 +67,7 @@ export default {
 			}
 		}
 
-		return { ok, message: checks.join(" · ") };
+		return { ok, message: `📁 ${checks.join(" · ")}` };
 	},
 
 	/**
@@ -368,7 +368,7 @@ export default {
 		if (!results) return [];
 		const { repos, mainCount, tempCount } = results;
 		return [
-			`── Repos 選擇 ──`,
+			`📁 Repos 選擇`,
 			`  ${repos?.length || 0} repos（${mainCount} ⭐ 主力 · ${tempCount} 🔄 臨時）`,
 		];
 	},

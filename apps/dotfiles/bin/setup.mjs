@@ -421,8 +421,15 @@ async function main() {
 		_path: path,
 	};
 
-	for (const feature of loaded) {
-		p.log.step(pc.bold(feature.label));
+	for (let i = 0; i < loaded.length; i++) {
+		const feature = loaded[i];
+		const step = `[${i + 1}/${loaded.length}]`;
+
+		// 視覺分隔（第一個 feature 前不需要）
+		if (i > 0) console.log();
+
+		p.log.step(`${step} ${pc.bold(feature.label)}`);
+		const featureStart = Date.now();
 
 		// 依賴注入：提供上游 feature 的結果
 		const deps = {};
@@ -450,11 +457,17 @@ async function main() {
 
 		// configure
 		const config = await feature.configure(ctx);
-		if (!config) continue;
+		if (!config) {
+			p.log.info(`  ${pc.dim("略過")}`);
+			continue;
+		}
 
 		// plan
 		const plan = await feature.plan(ctx, config);
-		if (!plan) continue;
+		if (!plan) {
+			p.log.info(`  ${pc.dim("略過")}`);
+			continue;
+		}
 
 		// confirm
 		const confirmed = await feature.confirm(ctx, plan);
@@ -483,9 +496,14 @@ async function main() {
 		// complete
 		const guideLines = feature.complete(featureResults[feature.id]);
 		if (guideLines.length) p.log.info(guideLines.join("\n"));
+
+		// 單一 feature 耗時
+		const featureElapsed = ((Date.now() - featureStart) / 1000).toFixed(1);
+		p.log.success(`  ${step} 完成（${featureElapsed}s）`);
 	}
 
 	// ── 彙總結果 ──
+	console.log();
 	const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
 	// 彙總所有 feature 的 installSelections
@@ -575,7 +593,7 @@ async function main() {
 		install: aggregatedSelections,
 	});
 
-	p.log.success(`✅ 安裝完成（耗時 ${elapsed}s）`);
+	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);
 
 	// 可選：生成 HTML 報告（僅在有 project 結果時）
 	if (pipelineResult) {

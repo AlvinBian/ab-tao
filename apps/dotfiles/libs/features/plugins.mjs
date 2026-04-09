@@ -53,12 +53,12 @@ export default {
 		if (installed === null) {
 			return {
 				ok: false,
-				message: "Claude CLI 不可用（需要 claude plugin 指令）",
+				message: "🔌 Claude CLI 不可用",
 			};
 		}
 		return {
 			ok: true,
-			message: `Claude CLI ✔（已安裝 ${installed.size} 個 plugin）`,
+			message: `🔌 Claude CLI ✔（已安裝 ${installed.size} 個 plugin）`,
 		};
 	},
 
@@ -207,7 +207,7 @@ export default {
 	 */
 	complete(results) {
 		if (!results) return [];
-		const lines = ["── 官方 Plugins ──"];
+		const lines = ["🔌 官方 Plugins"];
 		if (results.plugins?.length)
 			lines.push(`  ✔ 已安裝：${results.plugins.join("、")}`);
 		if (results.pluginsFailed?.length)
