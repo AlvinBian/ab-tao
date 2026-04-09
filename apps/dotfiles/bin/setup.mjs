@@ -11,24 +11,24 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import { cloneDeep, countBy, isEmpty } from "lodash-es";
 import pc from "picocolors";
-import { BACK, handleCancel, smartSelect } from "../lib/cli/prompts.mjs";
-import { phaseHeader } from "../lib/cli/task-runner.mjs";
+import { BACK, handleCancel, smartSelect } from "../libs/cli/prompts.mjs";
+import { phaseHeader } from "../libs/cli/task-runner.mjs";
 import {
 	detectLegacyInstallation,
 	runUpgrade,
-} from "../lib/config/upgrade.mjs";
-import { cleanOldBackups } from "../lib/core/backup.mjs";
-import { APP_VERSION } from "../lib/core/constants.mjs";
-import { env } from "../lib/core/env.mjs";
-import { getDirname, HOME } from "../lib/core/paths.mjs";
-import { checkIncompleteSession, loadSession } from "../lib/core/session.mjs";
-import { ensureEnvironment } from "../lib/detect/doctor.mjs";
-import { interactiveRepoSelect } from "../lib/detect/repo-select.mjs";
-import { warmupCli } from "../lib/external/claude-cli.mjs";
-import { phaseAnalyze } from "../lib/phases/phase-analyze.mjs";
-import { phaseComplete } from "../lib/phases/phase-complete.mjs";
-import { phaseExecute } from "../lib/phases/phase-execute.mjs";
-import { phasePlan } from "../lib/phases/phase-plan.mjs";
+} from "../libs/config/upgrade.mjs";
+import { cleanOldBackups } from "../libs/core/backup.mjs";
+import { APP_VERSION } from "../libs/core/constants.mjs";
+import { env } from "../libs/core/env.mjs";
+import { getDirname, HOME } from "../libs/core/paths.mjs";
+import { checkIncompleteSession, loadSession } from "../libs/core/session.mjs";
+import { ensureEnvironment } from "../libs/detect/doctor.mjs";
+import { interactiveRepoSelect } from "../libs/detect/repo-select.mjs";
+import { warmupCli } from "../libs/external/claude-cli.mjs";
+import { phaseAnalyze } from "../libs/phases/phase-analyze.mjs";
+import { phaseComplete } from "../libs/phases/phase-complete.mjs";
+import { phaseExecute } from "../libs/phases/phase-execute.mjs";
+import { phasePlan } from "../libs/phases/phase-plan.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
@@ -218,7 +218,7 @@ async function main() {
 
 		// 應用 session 保存的角色
 		const { getClaudeMdType } = await import(
-			"../lib/config/config-classifier.mjs"
+			"../libs/config/config-classifier.mjs"
 		);
 		for (const r of plan.repos) {
 			if (sessionPrev.roles?.[r.fullName])
@@ -304,7 +304,7 @@ async function main() {
 		if (action === "report") {
 			const reportPath = path.join(REPO, "dist", "report.html");
 			if (fs.existsSync(reportPath)) {
-				const { openInBrowser } = await import("../lib/report.mjs");
+				const { openInBrowser } = await import("../libs/report.mjs");
 				await openInBrowser(reportPath);
 			} else {
 				p.log.warn("⚠️ 找不到上次報告");
@@ -314,14 +314,16 @@ async function main() {
 		}
 		if (action === "status") {
 			// 展示完整配置狀態，並提供快速調整選項
-			const { getConfigStatus } = await import("../lib/core/config-status.mjs");
+			const { getConfigStatus } = await import(
+				"../libs/core/config-status.mjs"
+			);
 			const {
 				adjustClaude,
 				adjustGlobalSettings,
 				adjustSlack,
 				adjustClaudeMd,
 				adjustZsh,
-			} = await import("../lib/phases/phase-adjust.mjs");
+			} = await import("../libs/phases/phase-adjust.mjs");
 
 			const status = getConfigStatus();
 			const { summary, claude, claudeMd, zsh, slack, env: envStatus } = status;
@@ -537,7 +539,7 @@ async function main() {
 	if (standaloneFeatures.length > 0 && needsReposFeatures.length === 0) {
 		// 純 standalone — 跳過 repos / AI 分析 / 環境全檢，走獨立 pipeline
 		const { loadFeatures, topoSort } = await import(
-			"../lib/features/registry.mjs"
+			"../libs/features/registry.mjs"
 		);
 		const loadedFeatures = topoSort(await loadFeatures(standaloneFeatures));
 		const startTime = Date.now();
@@ -587,7 +589,7 @@ async function main() {
 			// Node 版本管理策略（ZSH 安裝前確保 AB_TAO_NODE_MGR 已設定）
 			if (feature.id === "zsh" && !process.env.AB_TAO_NODE_MGR) {
 				const { resolveNodeManager } = await import(
-					"../lib/detect/node-manager.mjs"
+					"../libs/detect/node-manager.mjs"
 				);
 				await resolveNodeManager();
 			}
@@ -622,7 +624,7 @@ async function main() {
 
 		// session
 		const { saveSession, clearSessionProgress } = await import(
-			"../lib/core/session.mjs"
+			"../libs/core/session.mjs"
 		);
 		clearSessionProgress();
 		saveSession({
@@ -661,9 +663,9 @@ async function main() {
 			].join("\n"),
 		);
 		const { selectAiSources } = await import(
-			"../lib/external/ai-source-select.mjs"
+			"../libs/external/ai-source-select.mjs"
 		);
-		const { BACK: B } = await import("../lib/cli/prompts.mjs");
+		const { BACK: B } = await import("../libs/cli/prompts.mjs");
 		const result = await selectAiSources();
 		if (result === B) {
 			p.outro("已取消");
@@ -680,7 +682,7 @@ async function main() {
 	if (has("slack")) {
 		p.log.step(pc.bold("Slack 通知設定"));
 		const { setupSlackNotify } = await import(
-			"../lib/external/slack-setup.mjs"
+			"../libs/external/slack-setup.mjs"
 		);
 		const slackResult = await setupSlackNotify(prev);
 		if (slackResult) {
@@ -726,7 +728,7 @@ async function main() {
 		const roles = {};
 		if (needsRepos && !isEmpty(repos)) {
 			const { determineRole } = await import(
-				"../lib/config/config-classifier.mjs"
+				"../libs/config/config-classifier.mjs"
 			);
 			for (const r of repos) {
 				roles[r.fullName] = prev?.roles?.[r.fullName] || determineRole(r);
@@ -901,7 +903,7 @@ async function main() {
 							if (action === "back" || action === BACK) break; // break inner, continue outer while
 							if (action === "skip") {
 								const { generateInstallPlan } = await import(
-									"../lib/config/auto-plan.mjs"
+									"../libs/config/auto-plan.mjs"
 								);
 								analyzeCache = {
 									key: reposKey,
@@ -932,7 +934,7 @@ async function main() {
 					analyzeCache.plan.toolCount = roleCounts2.tool || 0;
 					// 更新 projects（只有找到 localPath 的才生成 CLAUDE.md）
 					const { getClaudeMdType } = await import(
-						"../lib/config/config-classifier.mjs"
+						"../libs/config/config-classifier.mjs"
 					);
 					analyzeCache.plan.projects = analyzeCache.plan.repos
 						.filter((r) => r.localPath)
@@ -946,7 +948,7 @@ async function main() {
 			} else {
 				// 不需要 AI 分析（只選了 ZSH / Slack）→ 直接生成最小 plan
 				const { generateInstallPlan } = await import(
-					"../lib/config/auto-plan.mjs"
+					"../libs/config/auto-plan.mjs"
 				);
 				analyzeCache = {
 					key: reposKey || "no-analysis",
@@ -965,7 +967,7 @@ async function main() {
 		// 不需要 repos，或 repos 為空（GitHub 無倉庫）時建最小 plan
 		if (!analyzeCache) {
 			const { generateInstallPlan } = await import(
-				"../lib/config/auto-plan.mjs"
+				"../libs/config/auto-plan.mjs"
 			);
 			analyzeCache = {
 				key: "no-repos",
@@ -1036,7 +1038,7 @@ async function main() {
 
 		// 執行安裝管線前，先保存 Slack 配置到 session（若安裝失敗也不會遺失）
 		if (pendingSlackConfig && prev) {
-			await (await import("../lib/core/session.mjs")).patchSession({
+			await (await import("../libs/core/session.mjs")).patchSession({
 				slackChannel: pendingSlackConfig.channelId,
 				slackChannelName: pendingSlackConfig.channelName || "",
 				slackMode: pendingSlackConfig.mode,

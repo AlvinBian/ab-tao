@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
-import { getDirname } from "../lib/core/paths.mjs";
+import { getDirname } from "../libs/core/paths.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");

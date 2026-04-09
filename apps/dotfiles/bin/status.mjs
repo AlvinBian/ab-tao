@@ -14,14 +14,14 @@ import { ECC_DIR } from "@ab-tao/commons/paths";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
-import { getDirname, HOME } from "../lib/core/paths.mjs";
+import { getDirname, HOME } from "../libs/core/paths.mjs";
 import {
 	collectFullStatus,
 	estimateTokenSavings,
 	formatBytes,
 	humanizeProjectPath,
 	scanUsageStats,
-} from "../lib/core/usage-scanner.mjs";
+} from "../libs/core/usage-scanner.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");

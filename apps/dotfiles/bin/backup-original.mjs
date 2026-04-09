@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
-import { HOME } from "../lib/core/paths.mjs";
+import { HOME } from "../libs/core/paths.mjs";
 
 const BACKUP_DIR = path.join(HOME, ".ab-tao-backup-original");
 const LEGACY_BACKUP_DIR = path.join(HOME, ".ab-dotfiles-original");

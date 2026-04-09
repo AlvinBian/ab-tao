@@ -7,7 +7,7 @@ import {
 	buildSyncResult,
 	filterItems,
 	writeSyncedFiles,
-} from "../lib/external/source-sync.mjs";
+} from "../libs/external/source-sync.mjs";
 
 describe("filterItems", () => {
 	const index = {

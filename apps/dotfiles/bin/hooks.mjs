@@ -8,8 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
-import { getDescription } from "../lib/config/descriptions.mjs";
-import { HOME } from "../lib/core/paths.mjs";
+import { getDescription } from "../libs/config/descriptions.mjs";
+import { HOME } from "../libs/core/paths.mjs";
 
 const HOOKS_PATH = path.join(HOME, ".claude", "hooks.json");
 const HOOKS_BACKUP = path.join(HOME, ".claude", "hooks.json.bak");

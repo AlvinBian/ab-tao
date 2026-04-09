@@ -23,7 +23,7 @@ export const getDirname = (importMeta) =>
 /**
  * 取得專案根目錄的絕對路徑
  *
- * 假設專案結構為 <repo-root>/lib/<subdir>/此模組，
+ * 假設專案結構為 <repo-root>/libs/<subdir>/此模組，
  * 因此從 importMeta.url 向上兩層即為根目錄。
  *
  * @param {ImportMeta} importMeta - 模組的 import.meta 物件

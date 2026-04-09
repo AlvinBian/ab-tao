@@ -19,7 +19,7 @@ if (!fs.existsSync(reportPath)) {
 	process.exit(1);
 }
 
-const { openInBrowser } = await import("../lib/report.mjs");
+const { openInBrowser } = await import("../libs/report.mjs");
 try {
 	await openInBrowser(reportPath);
 } catch {

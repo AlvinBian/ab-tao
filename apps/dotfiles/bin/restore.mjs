@@ -13,8 +13,8 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
-import { cpDir } from "../lib/core/backup.mjs";
-import { getDirname, HOME } from "../lib/core/paths.mjs";
+import { cpDir } from "../libs/core/backup.mjs";
+import { getDirname, HOME } from "../libs/core/paths.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");

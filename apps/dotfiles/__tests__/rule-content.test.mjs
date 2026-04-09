@@ -4,7 +4,7 @@ import {
 	CODING_STYLE_CONTENT,
 	GIT_WORKFLOW_CONTENT,
 	TESTING_CONTENT,
-} from "../lib/config/rule-content.mjs";
+} from "../libs/config/rule-content.mjs";
 
 describe("rule-content 常數", () => {
 	it("CODING_STYLE_CONTENT 是非空字串", () => {

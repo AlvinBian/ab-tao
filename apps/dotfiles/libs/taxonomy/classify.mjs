@@ -33,7 +33,7 @@ function loadData() {
 	} else if (fs.existsSync(path.join(CACHE_DIR, "node-packages.json"))) {
 		dataDir = CACHE_DIR;
 	} else {
-		execSync("node lib/taxonomy/build.mjs", {
+		execSync("node libs/taxonomy/build.mjs", {
 			cwd: REPO_ROOT,
 			stdio: "inherit",
 		});

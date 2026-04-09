@@ -1,3 +1,3 @@
-import { ensureEnvironment } from "../lib/detect/doctor.mjs";
+import { ensureEnvironment } from "../libs/detect/doctor.mjs";
 
 await ensureEnvironment();

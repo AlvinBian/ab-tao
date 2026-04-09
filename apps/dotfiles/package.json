@@ -30,7 +30,7 @@
 		"hooks": "node bin/hooks.mjs",
 		"doctor": "node bin/doctor.mjs",
 		"workspace": "bash scripts/generate-workspace.sh",
-		"taxonomy:build": "node lib/taxonomy/build.mjs",
+		"taxonomy:build": "node libs/taxonomy/build.mjs",
 		"lint": "biome check .",
 		"test": "node --test __tests__/*.test.mjs"
 	}

@@ -33,11 +33,11 @@ import {
 	parseRepoEntry,
 	REPO_DIR,
 	STACKS_DIR,
-} from "../lib/detect/skill-detect.mjs";
+} from "../libs/detect/skill-detect.mjs";
 // 多生態技術偵測：整合 npm/PHP/Python/Go API 的統一入口
-import { identifySignificantTechs } from "../lib/detect/tech-detect-api.mjs";
+import { identifySignificantTechs } from "../libs/detect/tech-detect-api.mjs";
 // AI 生成：可用性檢查 + stack 目錄建立（含 AI 生成 / 預設模板 fallback）
-import { ensureStack, isAIAvailable } from "../lib/external/ai-generate.mjs";
+import { ensureStack, isAIAvailable } from "../libs/external/ai-generate.mjs";
 
 // ── CLI 參數解析 ────────────────────────────────────────────────
 const args = process.argv.slice(2);

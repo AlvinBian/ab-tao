@@ -2,8 +2,8 @@
 /**
  * 從 awesome-* 列表建構套件分類索引
  *
- * 用法：node lib/taxonomy/build.mjs
- * 產出：lib/taxonomy/node-packages.json + php-packages.json
+ * 用法：node libs/taxonomy/build.mjs
+ * 產出：libs/taxonomy/node-packages.json + php-packages.json
  *
  * 資料來源：
  *   - sindresorhus/awesome-nodejs (npm)
