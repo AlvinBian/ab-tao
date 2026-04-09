@@ -11,6 +11,24 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// ── 載入 commons translations.json（版控維護的繁中翻譯）──
+import { createRequire } from "node:module";
+
+let _translations = null;
+function loadTranslations() {
+	if (_translations) return _translations;
+	try {
+		const req = createRequire(import.meta.url);
+		const pkgPath = req.resolve("@ab-tao/commons/package.json");
+		const commonsRoot = path.dirname(pkgPath);
+		const transPath = path.join(commonsRoot, "resources", "translations.json");
+		_translations = JSON.parse(fs.readFileSync(transPath, "utf8"));
+	} catch {
+		_translations = {};
+	}
+	return _translations;
+}
+
 // ── ab-tao 管理的配置描述（穩定）──
 
 const AB_DESCRIPTIONS = {
@@ -77,10 +95,16 @@ function readFrontmatterDesc(filePath) {
  * @returns {string} 描述文字，無描述時返回空字串
  */
 export function getDescription(name, type, claudeDir) {
-	// 1. ab-tao 自己的
+	// 1. ab-tao 自己的（核心項目）
 	if (AB_DESCRIPTIONS[name]) return AB_DESCRIPTIONS[name];
 
-	// 2. 即時讀 frontmatter
+	// 2. translations.json（版控維護的繁中翻譯）
+	const trans = loadTranslations();
+	const transType =
+		type === "agents" ? "agents" : type === "rules" ? "rules" : "commands";
+	if (trans[transType]?.[name]) return trans[transType][name];
+
+	// 3. 即時讀 frontmatter（fallback）
 	if (type && claudeDir) {
 		const filePath = path.join(claudeDir, type, `${name}.md`);
 		const desc = readFrontmatterDesc(filePath);

@@ -226,6 +226,12 @@ export function formatEccResources(plan, claudeDir) {
 export function formatCommonsResources(plan) {
 	const lines = [];
 	const commSources = plan._pipelineResult?.commonsResources?.sources || [];
+	const sourceIcons = {
+		ecc: "🌐",
+		anthropic: "📚",
+		superpowers: "🚀",
+		"context-engineering": "🧠",
+	};
 
 	if (!isEmpty(commSources)) {
 		const commTotal = commSources.reduce(
@@ -241,13 +247,19 @@ export function formatCommonsResources(plan) {
 			`   🤖 技術棧匹配 AI 資源（${commSources.length} 個來源 · ${commTotal} 個資源）`,
 		);
 		for (const src of commSources) {
+			const icon = sourceIcons[src.name] || "📦";
 			const parts = [];
 			if (src.commands.length) parts.push(`${src.commands.length} 指令`);
 			if (src.agents.length) parts.push(`${src.agents.length} 代理`);
 			if (src.rules.length) parts.push(`${src.rules.length} 規則`);
 			if (src.skills.length) parts.push(`${src.skills.length} 技能`);
 			if (parts.length)
-				lines.push(`       · ${src.name} — ${parts.join(" · ")}`);
+				lines.push(`       ${icon} ${src.name} — ${parts.join(" · ")}`);
+
+			// 列出個別項目（skills 有名稱）
+			for (const sk of src.skills || []) {
+				lines.push(descBullet(sk.name, null, null, "         "));
+			}
 		}
 	}
 
