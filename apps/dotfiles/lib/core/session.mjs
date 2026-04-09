@@ -6,7 +6,7 @@
  *   存放在 .cache/last-session.json（不汙染 config.json）。
  *
  * 保存內容：
- *   - targets, mode, org, repos, techCategories, techStacks, eccSelections, install
+ *   - targets, mode, org, repos, techCategories, techStacks, aiResSelections, install
  *   - progress：斷點續裝進度（lastPhase, completedTargets, pendingTargets）
  */
 

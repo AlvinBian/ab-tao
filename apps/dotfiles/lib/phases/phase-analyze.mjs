@@ -33,7 +33,7 @@ import { generateProfile } from "../pipeline/profile-generator.mjs";
  *
  * @param {Object} opts
  * @param {Object[]} opts.repos - 含 fullName/commits/pct 的完整 repo 物件陣列
- * @param {Object[]} opts.sources - ECC 來源配置（來自 config.json）
+ * @param {Object[]} opts.sources - AI 資源來源配置（來自 config.json）
  * @param {string} opts.baseDir - @ab-tao/dotfiles 根目錄（快取和審計儲存位置）
  * @param {Array} [opts.projectFolders] - 專案文件夾映射（name → localPath）
  * @returns {Promise<Object>} plan - 完整安裝計畫，附帶 _pipelineResult 和 _fetchedSources
@@ -48,7 +48,7 @@ export async function phaseAnalyze({
 	let pipelineResult = null;
 	let detectResult = { paths: {}, roleOverrides: {} };
 	let profile = null;
-	let eccResult = { recommended: [] };
+	let aiResResult = { recommended: [] };
 
 	const tasks = new Listr(
 		[
@@ -86,19 +86,19 @@ export async function phaseAnalyze({
 									pipelineResult.detectedSkills = allTechs;
 									pipelineResult.preselectedTechs = allTechs;
 
-									// ECC 規則匹配（從 pipeline 結果取）
-									if (pipelineResult.eccAiPromise) {
+									// AI 資源匹配（從 pipeline 結果取）
+									if (pipelineResult.aiResAiPromise) {
 										try {
-											eccResult = (await pipelineResult.eccAiPromise) || {
+											aiResResult = (await pipelineResult.aiResAiPromise) || {
 												recommended: [],
 											};
 										} catch (e) {
-											eccResult = { recommended: [] };
-											subtask.output = `ECC 匹配失敗：${e.message?.slice(0, 40) || "未知錯誤"}`;
+											aiResResult = { recommended: [] };
+											subtask.output = `AI 資源匹配失敗：${e.message?.slice(0, 40) || "未知錯誤"}`;
 										}
 									}
 
-									subtask.output = `${repos.length} repos · ${allTechs.length} 技術棧 · ${eccResult.recommended?.length || 0} ECC`;
+									subtask.output = `${repos.length} repos · ${allTechs.length} 技術棧 · ${aiResResult.recommended?.length || 0} AI 資源`;
 								},
 							},
 							{
@@ -152,29 +152,29 @@ export async function phaseAnalyze({
 	const plan = generateInstallPlan({
 		repos,
 		pipelineResult,
-		eccResult,
+		aiResResult,
 		localPaths: detectResult.paths,
 		roleOverrides: detectResult.roleOverrides,
 		profile,
 	});
 
-	// 附帶 pipelineResult 供後續階段使用（phaseComplete 的報告、ECC 融合等）
+	// 附帶 pipelineResult 供後續階段使用（phaseComplete 的報告、AI 資源融合等）
 	plan._pipelineResult = pipelineResult;
 	// 將 commons AI 來源附到 plan，供 phasePlan 逐來源確認
 	plan._commonsResources = pipelineResult?.commonsResources || { sources: [] };
-	const fetchResult = pipelineResult?.eccFetchResult || null;
-	// 建立 ECC type map（name → commands/agents/rules），供 phasePlan 顯示分組用
+	const fetchResult = pipelineResult?.aiResFetchResult || null;
+	// 建立 AI 資源 type map（name → commands/agents/rules），供 phasePlan 顯示分組用
 	if (fetchResult?.sources) {
-		const eccTypeMap = {};
+		const aiResTypeMap = {};
 		for (const src of fetchResult.sources) {
 			for (const f of src.allFiles?.commands || [])
-				eccTypeMap[f.name.replace(".md", "")] = "commands";
+				aiResTypeMap[f.name.replace(".md", "")] = "commands";
 			for (const f of src.allFiles?.agents || [])
-				eccTypeMap[f.name.replace(".md", "")] = "agents";
+				aiResTypeMap[f.name.replace(".md", "")] = "agents";
 			for (const f of src.allFiles?.rules || [])
-				eccTypeMap[f.name.replace(".md", "")] = "rules";
+				aiResTypeMap[f.name.replace(".md", "")] = "rules";
 		}
-		if (fetchResult) fetchResult.eccTypeMap = eccTypeMap;
+		if (fetchResult) fetchResult.aiResTypeMap = aiResTypeMap;
 	}
 	plan._fetchedSources = fetchResult;
 

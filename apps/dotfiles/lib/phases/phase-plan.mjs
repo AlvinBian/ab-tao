@@ -214,21 +214,21 @@ async function detailConfirm(originalPlan) {
 	}
 
 	// 6. 技術棧（如果 pipeline 有 tech-select 邏輯，這裡直接用預選）
-	// 7. ECC 選擇
-	if (!isEmpty(plan.ecc)) {
-		const eccItems = plan.ecc.map((name) => ({
+	// 7. AI 資源選擇
+	if (!isEmpty(plan.aiRes)) {
+		const aiResItems = plan.aiRes.map((name) => ({
 			value: name,
 			label: name,
 			hint: "",
 		}));
-		const selectedEcc = await smartSelect({
-			title: "🌐 AI 外部資源（ECC）",
-			items: eccItems,
-			preselected: plan.ecc,
+		const selectedAiRes = await smartSelect({
+			title: "🌐 AI 資源",
+			items: aiResItems,
+			preselected: plan.aiRes,
 			autoSelectThreshold: 0,
 		});
-		if (selectedEcc === BACK) return BACK;
-		plan.ecc = selectedEcc;
+		if (selectedAiRes === BACK) return BACK;
+		plan.aiRes = selectedAiRes;
 	}
 
 	// 7.5. 每個 AI 來源的資源確認

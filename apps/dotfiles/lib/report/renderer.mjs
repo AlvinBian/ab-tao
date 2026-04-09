@@ -17,9 +17,9 @@ import {
 	esc,
 	estimateTokenSize,
 	getStyles,
+	renderAiRes,
 	renderBackup,
 	renderCleanup,
-	renderEcc,
 	renderInstalled,
 	renderOverview,
 	renderPlugins,
@@ -229,7 +229,7 @@ function renderTabRepos(data) {
  * 渲染 Tab 安裝頁籤
  */
 function renderTabInstall(data) {
-	const hasEcc = (data.ecc?.sources?.length || 0) > 0;
+	const hasAiRes = (data.aiRes?.sources?.length || 0) > 0;
 
 	return `
 <div id="tab-install" class="tab-content">
@@ -238,15 +238,15 @@ function renderTabInstall(data) {
   </div>
   ${renderInstalled(data.installed)}
   ${
-		hasEcc
+		hasAiRes
 			? `
   <div class="card">
     <h2 class="section-title">Source 融合統計圖表</h2>
-    <div class="chart-box" id="chart-ecc-install"></div>
+    <div class="chart-box" id="chart-aiRes-install"></div>
   </div>`
 			: ""
 	}
-  ${renderEcc(data.ecc)}
+  ${renderAiRes(data.aiRes)}
   ${renderStacks(data.stacks)}
 </div>`;
 }
@@ -330,8 +330,8 @@ function renderCharts(data) {
 			{ name: "技術棧", value: stacks.length },
 			{ name: "Repos", value: repos.length },
 		].filter((d) => d.value > 0),
-		eccInstall: [
-			...(data.ecc?.sources || []).map((s) => ({
+		aiResInstall: [
+			...(data.aiRes?.sources || []).map((s) => ({
 				name: s.name,
 				added:
 					(s.added?.commands?.length || 0) +
@@ -363,7 +363,7 @@ tabButtons.forEach(btn => {
     
     setTimeout(() => {
       if (btn.dataset.tab === 'stacks') initTechFreqChart();
-      if (btn.dataset.tab === 'install') initEccInstallChart();
+      if (btn.dataset.tab === 'install') initAiResInstallChart();
     }, 100);
   });
 });
@@ -391,10 +391,10 @@ function initTechFreqChart() {
   window.addEventListener('resize', () => chart.resize());
 }
 
-function initEccInstallChart() {
-  const dom = document.getElementById('chart-ecc-install');
+function initAiResInstallChart() {
+  const dom = document.getElementById('chart-aiRes-install');
   if (!dom || !dom.offsetParent || dom._echarts) return;
-  if (!chartConfig.eccInstall || isEmpty(chartConfig.eccInstall)) return;
+  if (!chartConfig.aiResInstall || isEmpty(chartConfig.aiResInstall)) return;
   const chart = echarts.init(dom);
   dom._echarts = chart;
   const option = {
@@ -405,7 +405,7 @@ function initEccInstallChart() {
     series: [{
       type: 'pie',
       radius: ['30%', '55%'],
-      data: chartConfig.eccInstall.map(s => ({ value: s.added, name: s.name + ' (+' + s.added + ')' })),
+      data: chartConfig.aiResInstall.map(s => ({ value: s.added, name: s.name + ' (+' + s.added + ')' })),
       label: { color: '#c9d1d9' },
       itemStyle: { borderColor: '#0d1117', borderWidth: 2 }
     }]

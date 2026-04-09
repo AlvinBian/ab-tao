@@ -182,23 +182,23 @@ export function formatTechStacks(plan) {
 }
 
 /**
- * 格式化 ECC（外部 AI 資源）
+ * 格式化 AI 資源
  *
  * @param {Object} plan - 完整計畫物件
  * @param {string} claudeDir - ~/.claude 路徑
  * @returns {string[]} 格式化後的行陣列
  */
-export function formatEccResources(plan, claudeDir) {
+export function formatAiResResources(plan, claudeDir) {
 	const lines = [];
 
-	if (!isEmpty(plan.ecc)) {
-		const eccTypeMap = plan._fetchedSources?.eccTypeMap || {};
-		const eccByType = { commands: [], agents: [], rules: [] };
+	if (!isEmpty(plan.aiRes)) {
+		const aiResTypeMap = plan._fetchedSources?.aiResTypeMap || {};
+		const aiResByType = { commands: [], agents: [], rules: [] };
 
-		for (const name of plan.ecc) {
+		for (const name of plan.aiRes) {
 			const clean = name.replace(".md", "");
 			const type =
-				eccTypeMap[clean] ||
+				aiResTypeMap[clean] ||
 				(fs.existsSync(path.join(claudeDir, "agents", `${clean}.md`))
 					? "agents"
 					: null) ||
@@ -206,26 +206,28 @@ export function formatEccResources(plan, claudeDir) {
 					? "rules"
 					: null) ||
 				"commands";
-			eccByType[type].push(clean);
+			aiResByType[type].push(clean);
 		}
 
-		lines.push(`5. 🌐 AI 外部資源（${plan.ecc.length} 個）`);
-		if (eccByType.commands.length) {
-			lines.push(`   5.1 Commands（${eccByType.commands.length}）`);
+		lines.push(`5. 🌐 AI 資源（${plan.aiRes.length} 個）`);
+		if (aiResByType.commands.length) {
+			lines.push(`   5.1 Commands（${aiResByType.commands.length}）`);
 			lines.push(
-				...eccByType.commands.map((n) => descBullet(n, "commands", claudeDir)),
+				...aiResByType.commands.map((n) =>
+					descBullet(n, "commands", claudeDir),
+				),
 			);
 		}
-		if (eccByType.agents.length) {
-			lines.push(`   5.2 Agents（${eccByType.agents.length}）`);
+		if (aiResByType.agents.length) {
+			lines.push(`   5.2 Agents（${aiResByType.agents.length}）`);
 			lines.push(
-				...eccByType.agents.map((n) => descBullet(n, "agents", claudeDir)),
+				...aiResByType.agents.map((n) => descBullet(n, "agents", claudeDir)),
 			);
 		}
-		if (eccByType.rules.length) {
-			lines.push(`   5.3 Rules（${eccByType.rules.length}）`);
+		if (aiResByType.rules.length) {
+			lines.push(`   5.3 Rules（${aiResByType.rules.length}）`);
 			lines.push(
-				...eccByType.rules.map((n) => descBullet(n, "rules", claudeDir)),
+				...aiResByType.rules.map((n) => descBullet(n, "rules", claudeDir)),
 			);
 		}
 	}
@@ -391,7 +393,7 @@ export function buildPlanSummary(plan, existing, HOME, claudeDir) {
 	lines.push("");
 
 	// 1. Repos（僅 project 相關）
-	if (has("project") || has("claudemd") || has("ecc")) {
+	if (has("project") || has("claudemd")) {
 		lines.push(
 			...formatRepos(
 				plan.repos,
@@ -418,9 +420,9 @@ export function buildPlanSummary(plan, existing, HOME, claudeDir) {
 		lines.push(...formatTechStacks(plan));
 	}
 
-	// 5. ECC 資源（僅 project 相關）
-	if (has("project") || has("ecc")) {
-		lines.push(...formatEccResources(plan, claudeDir));
+	// 5. AI 資源（僅 project 相關）
+	if (has("project")) {
+		lines.push(...formatAiResResources(plan, claudeDir));
 		lines.push(...formatCommonsResources(plan));
 	}
 

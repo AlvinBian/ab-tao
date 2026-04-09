@@ -4,7 +4,7 @@
  * 包含：
  *   [1] 全局配置（settings + hooks dispatch）
  *   [2] Claude 安裝（commands + agents + rules）
- *   [3] 專案配置（ECC + Stacks）
+ *   [3] 專案配置（AI 資源 + Stacks）
  */
 
 import { spawn } from "node:child_process";
@@ -59,11 +59,7 @@ export function buildClaudeTasks(
 		{
 			title: "🤖 Claude Code + 📁 專案配置",
 			enabled: () =>
-				has("claude") ||
-				has("slack") ||
-				has("claudemd") ||
-				has("ecc") ||
-				has("project"),
+				has("claude") || has("slack") || has("claudemd") || has("project"),
 			task: (_, branchTask) =>
 				branchTask.newListr(
 					[
@@ -277,44 +273,44 @@ export function buildClaudeTasks(
 						// ━━━ Group 2: 專案配置（repos + AI）━━━
 						{
 							title: "📁 專案配置（repos + AI）",
-							enabled: () => has("claudemd") || has("ecc") || has("project"),
+							enabled: () => has("claudemd") || has("project"),
 							task: (_, task) =>
 								task.newListr(
 									[
-										// [3] AI 外部資源 + 技術棧 Stacks
+										// [3] AI 資源 + 技術棧 Stacks
 										{
-											title: `🌐 AI 資源（${plan.ecc?.length ?? 0}）+ Stacks（${plan.techStacks?.length ?? 0}）`,
+											title: `🌐 AI 資源（${plan.aiRes?.length ?? 0}）+ Stacks（${plan.techStacks?.length ?? 0}）`,
 											enabled: () =>
-												(has("ecc") || has("project")) &&
-												((plan.ecc?.length ?? 0) > 0 ||
+												has("project") &&
+												((plan.aiRes?.length ?? 0) > 0 ||
 													(plan.techStacks?.length ?? 0) > 0),
 											task: (_, subtask) =>
 												subtask.newListr(
 													[
 														{
-															title: `🌐 AI 資源融合 — ${plan.ecc?.length ?? 0} 個外部 commands/agents/rules`,
+															title: `🌐 AI 資源融合 — ${plan.aiRes?.length ?? 0} 個外部 commands/agents/rules`,
 															task: async (_, sub) => {
 																if (
-																	(plan.ecc?.length ?? 0) > 0 &&
+																	(plan.aiRes?.length ?? 0) > 0 &&
 																	!isEmpty(fetchedSources?.sources)
 																) {
 																	try {
-																		const eccTypeMap =
-																			fetchedSources.eccTypeMap || {};
-																		const eccByType = {
+																		const aiResTypeMap =
+																			fetchedSources.aiResTypeMap || {};
+																		const aiResByType = {
 																			commands: new Set(),
 																			agents: new Set(),
 																			rules: new Set(),
 																		};
-																		for (const name of plan.ecc) {
+																		for (const name of plan.aiRes) {
 																			const type =
-																				eccTypeMap[name.replace(".md", "")] ||
+																				aiResTypeMap[name.replace(".md", "")] ||
 																				"commands";
-																			eccByType[type]?.add(name);
+																			aiResByType[type]?.add(name);
 																		}
 																		shared.syncResult = buildSyncResult(
 																			fetchedSources,
-																			eccByType,
+																			aiResByType,
 																		);
 																		const claudePreview = path.join(
 																			previewDir,
@@ -330,9 +326,9 @@ export function buildClaudeTasks(
 																				shared.syncResult.downloaded,
 																				path.join(HOME, ".claude"),
 																			);
-																		// 更新 installSelections 以反映 ECC 安裝
+																		// 更新 installSelections 以反映 AI 資源安裝
 																		for (const [type, names] of Object.entries(
-																			eccByType,
+																			aiResByType,
 																		)) {
 																			for (const name of names) {
 																				const n = name.replace(".md", "");
@@ -347,10 +343,10 @@ export function buildClaudeTasks(
 																		const added =
 																			shared.syncResult.downloaded?.length || 0;
 																		sub.output = skipped.length
-																			? `ECC 已融合 ${added} 個（跳過 ${skipped.length} 個自訂）`
-																			: `ECC 已融合 ${added} 個`;
-																	} catch (eccErr) {
-																		sub.output = `ECC 融合失敗（${eccErr.message?.slice(0, 60)}）`;
+																			? `AI 資源已融合 ${added} 個（跳過 ${skipped.length} 個自訂）`
+																			: `AI 資源已融合 ${added} 個`;
+																	} catch (aiResErr) {
+																		sub.output = `AI 資源融合失敗（${aiResErr.message?.slice(0, 60)}）`;
 																	}
 																}
 

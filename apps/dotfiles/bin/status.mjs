@@ -186,7 +186,7 @@ async function showDetail(data) {
 			const sourceLabel = (s) =>
 				s === "core"
 					? pc.blue("核心")
-					: s === "ecc"
+					: s === "ext"
 						? pc.magenta("ECC")
 						: pc.dim("自訂");
 			for (const c of data.commands) {
@@ -205,7 +205,7 @@ async function showDetail(data) {
 				const src =
 					a.source === "core"
 						? pc.blue("核心")
-						: a.source === "ecc"
+						: a.source === "ext"
 							? pc.magenta("ECC")
 							: pc.dim("自訂");
 				console.log(`  ${src} @${a.name}  ${used}  ${last}`);
@@ -219,7 +219,7 @@ async function showDetail(data) {
 				const src =
 					r.source === "core"
 						? pc.blue("核心")
-						: r.source === "ecc"
+						: r.source === "ext"
 							? pc.magenta("ECC")
 							: pc.dim("自訂");
 				console.log(`  ${status} ${src} ${r.name}`);
@@ -473,9 +473,9 @@ async function manageConfig(data) {
 	if (category === "commands" || category === "agents") {
 		const items = category === "commands" ? data.commands : data.agents;
 		const dir = path.join(CLAUDE_DIR, category);
-		const eccItems =
-			category === "commands" ? data.ecc.commands : data.ecc.agents;
-		const notInstalled = eccItems.filter(
+		const aiResItems =
+			category === "commands" ? data.aiRes.commands : data.aiRes.agents;
+		const notInstalled = aiResItems.filter(
 			(name) => !items.find((i) => i.name === name),
 		);
 
@@ -528,9 +528,9 @@ async function manageConfig(data) {
 				required: false,
 			});
 			if (!p.isCancel(selected) && !isEmpty(selected)) {
-				const eccCategoryDir = path.join(ECC_DIR, category);
+				const aiResCategoryDir = path.join(ECC_DIR, category);
 				for (const name of selected) {
-					const src = path.join(eccCategoryDir, `${name}.md`);
+					const src = path.join(aiResCategoryDir, `${name}.md`);
 					const dest = path.join(dir, `${name}.md`);
 					if (fs.existsSync(src)) {
 						fs.copyFileSync(src, dest);
@@ -608,7 +608,7 @@ async function manageConfig(data) {
 				}
 			}
 		} else if (action === "add") {
-			const notInstalled = data.ecc.rules.filter(
+			const notInstalled = data.aiRes.rules.filter(
 				(name) => !data.rules.find((r) => r.name === name),
 			);
 			if (isEmpty(notInstalled)) {
@@ -621,9 +621,9 @@ async function manageConfig(data) {
 				required: false,
 			});
 			if (!p.isCancel(selected) && !isEmpty(selected)) {
-				const eccRulesDir = path.join(ECC_DIR, "rules");
+				const aiResRulesDir = path.join(ECC_DIR, "rules");
 				for (const name of selected) {
-					const src = path.join(eccRulesDir, `${name}.md`);
+					const src = path.join(aiResRulesDir, `${name}.md`);
 					const dest = path.join(rulesDir, `${name}.md`);
 					if (fs.existsSync(src)) {
 						fs.copyFileSync(src, dest);
@@ -819,11 +819,11 @@ async function generateHtmlReport(data) {
 	}
 
 	// 來源統計
-	const cmdBySource = { core: 0, ecc: 0, user: 0 };
+	const cmdBySource = { core: 0, ext: 0, user: 0 };
 	for (const c of data.commands) cmdBySource[c.source]++;
-	const agentBySource = { core: 0, ecc: 0, user: 0 };
+	const agentBySource = { core: 0, ext: 0, user: 0 };
 	for (const a of data.agents) agentBySource[a.source]++;
-	const ruleBySource = { core: 0, ecc: 0, user: 0 };
+	const ruleBySource = { core: 0, ext: 0, user: 0 };
 	for (const r of data.rules) ruleBySource[r.source]++;
 
 	const escHtml = (s) =>
@@ -919,7 +919,7 @@ async function generateHtmlReport(data) {
   .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
   .tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
   .tag-core { background: #1e40af; color: #93c5fd; }
-  .tag-ecc { background: #7e22ce; color: #d8b4fe; }
+  .tag-ext { background: #7e22ce; color: #d8b4fe; }
   .tag-user { background: #374151; color: #9ca3af; }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #475569; color: #94a3b8; font-size: 12px; text-transform: uppercase; }
@@ -959,7 +959,7 @@ async function generateHtmlReport(data) {
   <div class="section-title">⌨️ Commands <span class="text-sm text-gray-400 font-normal">${data.commands.length} 個｜使用率 ${data.overview.commandUsageRate}%</span></div>
   <div class="flex gap-2 mb-3">
     <span class="tag tag-core">核心 ${cmdBySource.core}</span>
-    <span class="tag tag-ecc">ECC ${cmdBySource.ecc}</span>
+    <span class="tag tag-ext">外部 ${cmdBySource.ext}</span>
     <span class="tag tag-user">自訂 ${cmdBySource.user}</span>
   </div>
   <div style="max-height:400px;overflow-y:auto">
@@ -973,7 +973,7 @@ async function generateHtmlReport(data) {
   <div class="section-title">🤖 Agents <span class="text-sm text-gray-400 font-normal">${data.agents.length} 個｜使用率 ${data.overview.agentUsageRate}%</span></div>
   <div class="flex gap-2 mb-3">
     <span class="tag tag-core">核心 ${agentBySource.core}</span>
-    <span class="tag tag-ecc">ECC ${agentBySource.ecc}</span>
+    <span class="tag tag-ext">外部 ${agentBySource.ext}</span>
     <span class="tag tag-user">自訂 ${agentBySource.user}</span>
   </div>
   <div style="max-height:400px;overflow-y:auto">
@@ -987,7 +987,7 @@ async function generateHtmlReport(data) {
   <div class="section-title">📐 Rules <span class="text-sm text-gray-400 font-normal">${data.rules.length} 個</span></div>
   <div class="flex gap-2 mb-3">
     <span class="tag tag-core">核心 ${ruleBySource.core}</span>
-    <span class="tag tag-ecc">ECC ${ruleBySource.ecc}</span>
+    <span class="tag tag-ext">外部 ${ruleBySource.ext}</span>
     <span class="tag tag-user">自訂 ${ruleBySource.user}</span>
   </div>
   <table><thead><tr><th>狀態</th><th>來源</th><th>名稱</th></tr></thead>

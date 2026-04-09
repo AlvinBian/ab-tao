@@ -17,7 +17,7 @@ import { isEmpty } from "lodash-es";
 import { pMap } from "../core/concurrency.mjs";
 import {
 	AI_CONCURRENCY,
-	AI_ECC_TIMEOUT,
+	AI_RES_TIMEOUT,
 	GH_CONCURRENCY,
 	GH_REPO_ANALYZE_TIMEOUT,
 } from "../core/constants.mjs";
@@ -33,7 +33,7 @@ import { mergeRepoResults } from "./merge-dedup.mjs";
 import { buildRepoSummary, classifyRepo } from "./repo-analyzer.mjs";
 
 /**
- * 從 ECC 檔案內容提取描述（跳過 frontmatter 和標題）
+ * 從 AI 資源檔案內容提取描述（跳過 frontmatter 和標題）
  *
  * 優先從 frontmatter 的 description 欄位讀取，
  * 找不到時取第一個非空非標題行（最多 80 字元）。
@@ -42,7 +42,7 @@ import { buildRepoSummary, classifyRepo } from "./repo-analyzer.mjs";
  * @param {string} fallbackName - 無法提取時的備用名稱
  * @returns {string} 描述文字
  */
-function extractEccDesc(content, fallbackName) {
+function extractAiResDesc(content, fallbackName) {
 	if (!content) return fallbackName.replace(".md", "");
 	const lines = content.split("\n");
 	let inFrontmatter = false;
@@ -68,12 +68,12 @@ function extractEccDesc(content, fallbackName) {
 /**
  * 執行完整分析 Pipeline
  *
- * 並行抓取所有 repos 和 ECC 來源，完成後進行 per-repo AI 分類、
- * 跨 repo 整合去重，最後建立 ECC 規則推薦（即時，不需 AI）。
+ * 並行抓取所有 repos 和 AI 資源來源，完成後進行 per-repo AI 分類、
+ * 跨 repo 整合去重，最後建立 AI 資源規則推薦（即時，不需 AI）。
  *
  * @param {Object} options
  * @param {string[]} options.repos - 選擇的 repo（owner/name 格式，如 'org/repo'）
- * @param {Array} options.sources - ECC sources 配置（來自 config.json）
+ * @param {Array} options.sources - AI 資源 sources 配置（來自 config.json）
  * @param {string} options.baseDir - 專案根目錄（快取儲存位置）
  * @param {Object} options.aiConfig - AI 配置
  * @param {string} [options.aiConfig.model='haiku'] - 使用的 AI 模型
@@ -93,8 +93,8 @@ function extractEccDesc(content, fallbackName) {
  *   repoNpmMap: Object,
  *   allLangs: string[],
  *   coreCategories: Set,
- *   eccFetchResult: Object|null,
- *   eccAiPromise: Promise|null,
+ *   aiResFetchResult: Object|null,
+ *   aiResAiPromise: Promise|null,
  *   conflicts: Array,
  *   audit: Object
  * }>}
@@ -110,11 +110,11 @@ export async function runAnalysisPipeline({
 }) {
 	const audit = createAuditTrail();
 	const repoNames = repos.map((r) => r.split("/")[1]);
-	const hasEcc = !isEmpty(sources);
+	const hasAiRes = !isEmpty(sources);
 
 	// ── TIER 1：repos fetch + AI 資源載入（並行）──
 	onPhase("fetch", {
-		message: hasEcc ? "分析 repos + 取得 AI 資源..." : "分析 repos...",
+		message: hasAiRes ? "分析 repos + 取得 AI 資源..." : "分析 repos...",
 	});
 
 	// 載入 commons 已同步的 AI 來源（僅使用者選擇的，本地零 API）
@@ -134,7 +134,7 @@ export async function runAnalysisPipeline({
 	}
 
 	const t0 = Date.now();
-	const [analysisResults, eccFetchResult] = await Promise.all([
+	const [analysisResults, aiResFetchResult] = await Promise.all([
 		// GitHub API 限流（GH_CONCURRENCY=8），防止 rate limit 403
 		(async () => {
 			const results = [];
@@ -161,7 +161,7 @@ export async function runAnalysisPipeline({
 			return results;
 		})(),
 		// 廣泛覆蓋常見語言（此時 repo 分析尚未完成，無法用真實語言）
-		hasEcc
+		hasAiRes
 			? fetchAllSources(
 					sources,
 					[
@@ -184,11 +184,11 @@ export async function runAnalysisPipeline({
 
 	audit.record({
 		phase: "fetch",
-		action: "repos+ecc",
+		action: "repos+aiRes",
 		duration: Date.now() - t0,
 		output: {
 			repoCount: analysisResults.filter((r) => r.status === "fulfilled").length,
-			eccSources: eccFetchResult?.sources?.length || 0,
+			aiResSources: aiResFetchResult?.sources?.length || 0,
 		},
 	});
 
@@ -207,8 +207,8 @@ export async function runAnalysisPipeline({
 		for (const lang of meta.languages) allLangs.add(lang);
 	}
 
-	const eccFileCount = eccFetchResult
-		? eccFetchResult.sources.reduce(
+	const aiResFileCount = aiResFetchResult
+		? aiResFetchResult.sources.reduce(
 				(s, src) =>
 					s +
 					src.allFiles.commands.length +
@@ -218,7 +218,7 @@ export async function runAnalysisPipeline({
 			)
 		: 0;
 
-	onPhase("fetch-done", { repoCount: repoData.length, eccFileCount });
+	onPhase("fetch-done", { repoCount: repoData.length, aiResFileCount });
 
 	// ── TIER 2：per-repo AI 分類（並行，AI_CONCURRENCY 控制）──
 	onPhase("classify", { total: repoData.length });
@@ -299,17 +299,17 @@ export async function runAnalysisPipeline({
 		}
 	}
 
-	// ── ECC AI 推薦（背景用，返回 promise）──
+	// ── AI 資源推薦（背景用，返回 promise）──
 	const allDetectedTechs = [...categorizedTechs.values()].flatMap((m) => [
 		...m.keys(),
 	]);
-	let eccAiPromise = null;
+	let aiResAiPromise = null;
 
-	if (hasEcc && eccFetchResult) {
-		const existingNames = eccFetchResult.localNames || new Set();
-		const eccCandidates = [];
+	if (hasAiRes && aiResFetchResult) {
+		const existingNames = aiResFetchResult.localNames || new Set();
+		const aiResCandidates = [];
 
-		for (const src of eccFetchResult.sources) {
+		for (const src of aiResFetchResult.sources) {
 			const filtered = filterItems(
 				{
 					commands: src.allFiles.commands,
@@ -323,17 +323,17 @@ export async function runAnalysisPipeline({
 			);
 			for (const type of ["commands", "agents", "rules"]) {
 				for (const item of filtered[type] || []) {
-					eccCandidates.push({
+					aiResCandidates.push({
 						type,
 						name: item.name,
-						desc: extractEccDesc(item.content, item.name),
+						desc: extractAiResDesc(item.content, item.name),
 					});
 				}
 			}
 		}
 
 		// 規則匹配推薦（即時，不需 AI）+ 背景翻譯
-		if (!isEmpty(eccCandidates)) {
+		if (!isEmpty(aiResCandidates)) {
 			// ── 規則匹配 ──
 			const techSet = new Set(allDetectedTechs.map((t) => t.toLowerCase()));
 			const langSet = new Set([...allLangs].map((l) => l.toLowerCase()));
@@ -420,7 +420,7 @@ export async function runAnalysisPipeline({
 			for (const lang of langSet) expandedKeywords.add(lang);
 
 			const recommended = [];
-			for (const c of eccCandidates) {
+			for (const c of aiResCandidates) {
 				const name = c.name.replace(".md", "").toLowerCase();
 
 				// 語言專用 → 只在語言匹配時推薦
@@ -461,13 +461,13 @@ export async function runAnalysisPipeline({
 
 			// 去重：同一資源可能從多來源 + 多條件重複匹配
 			const dedupedRecommended = [...new Set(recommended)];
-			eccAiPromise = Promise.resolve({ recommended: dedupedRecommended });
+			aiResAiPromise = Promise.resolve({ recommended: dedupedRecommended });
 			audit.record({
-				phase: "ecc",
+				phase: "aiRes",
 				action: "rule-recommend",
 				output: {
 					count: dedupedRecommended.length,
-					total: eccCandidates.length,
+					total: aiResCandidates.length,
 				},
 			});
 
@@ -482,7 +482,7 @@ export async function runAnalysisPipeline({
 				/* commons 翻譯檔不存在，使用空物件 */
 			}
 
-			const untranslated = eccCandidates.filter((c) => {
+			const untranslated = aiResCandidates.filter((c) => {
 				const key = c.name.replace(".md", "");
 				return !translations[c.type]?.[key];
 			});
@@ -502,7 +502,7 @@ ${batchList}
 				callClaudeJSON(transPrompt, {
 					model: "haiku",
 					effort: "low",
-					timeoutMs: AI_ECC_TIMEOUT,
+					timeoutMs: AI_RES_TIMEOUT,
 					retries: 0,
 				})
 					.then((r) => {
@@ -529,7 +529,7 @@ ${batchList}
 							);
 							fs.renameSync(tmpPath, transPath);
 							audit.record({
-								phase: "ecc",
+								phase: "aiRes",
 								action: "auto-translate",
 								output: { translated: Object.keys(r.translations).length },
 							});
@@ -538,7 +538,7 @@ ${batchList}
 					.catch((e) => {
 						// logger 在此作用域不可用，降級使用 stderr
 						process.stderr.write(
-							`[pipeline] ECC 自動翻譯失敗（已跳過）：${e?.message ?? String(e)}\n`,
+							`[pipeline] AI 資源自動翻譯失敗（已跳過）：${e?.message ?? String(e)}\n`,
 						);
 					});
 			}
@@ -565,8 +565,8 @@ ${batchList}
 		repoNpmMap,
 		allLangs: [...allLangs],
 		coreCategories,
-		eccFetchResult,
-		eccAiPromise,
+		aiResFetchResult,
+		aiResAiPromise,
 		commonsResources: filteredCommons,
 		conflicts,
 		audit,

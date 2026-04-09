@@ -101,9 +101,9 @@ function loadProjectFolders(config, session) {
 }
 
 function loadSources(configSources) {
-	const eccEnv = env("ECC_SOURCES", "");
-	if (!eccEnv) return configSources || [];
-	return eccEnv
+	const srcEnv = env("ECC_SOURCES", "");
+	if (!srcEnv) return configSources || [];
+	return srcEnv
 		.split(",")
 		.map((entry) => {
 			const [name, repo, priority] = entry.trim().split("|");
@@ -645,8 +645,8 @@ async function main() {
 	await runLegacyCheckIfNeeded();
 	await ensureSetupEnvironment();
 
-	// project = claudemd + ecc 合併，向下兼容
-	const hasProject = has("project") || has("claudemd") || has("ecc");
+	// project = claudemd + AI 資源合併，向下兼容
+	const hasProject = has("project") || has("claudemd");
 	const needsRepos = hasProject;
 
 	// ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
@@ -908,7 +908,7 @@ async function main() {
 									plan: generateInstallPlan({
 										repos,
 										pipelineResult: null,
-										eccResult: { recommended: [] },
+										aiResResult: { recommended: [] },
 										localPaths: {},
 										roleOverrides: {},
 										profile: null,
@@ -953,7 +953,7 @@ async function main() {
 					plan: generateInstallPlan({
 						repos: [],
 						pipelineResult: null,
-						eccResult: { recommended: [] },
+						aiResResult: { recommended: [] },
 						localPaths: {},
 						roleOverrides: {},
 						profile: null,
@@ -972,7 +972,7 @@ async function main() {
 				plan: generateInstallPlan({
 					repos: [],
 					pipelineResult: null,
-					eccResult: { recommended: [] },
+					aiResResult: { recommended: [] },
 					localPaths: {},
 					roleOverrides: {},
 					profile: null,
@@ -1001,7 +1001,7 @@ async function main() {
 				);
 			}
 			if (!hasProject) {
-				planForReview.ecc = [];
+				planForReview.aiRes = [];
 				planForReview.projects = [];
 			}
 			if (!has("slack")) {

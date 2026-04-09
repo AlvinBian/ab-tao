@@ -2,7 +2,7 @@
  * 配置項描述
  *
  * ab-tao 管理的項目：硬編碼中文描述（穩定）
- * ECC/第三方項目：從 frontmatter 讀取描述
+ * AI 資源/第三方項目：從 frontmatter 讀取描述
  */
 
 import fs from "node:fs";

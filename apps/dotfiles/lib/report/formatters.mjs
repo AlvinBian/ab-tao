@@ -129,8 +129,8 @@ footer{text-align:center;font-size:.75rem;color:#484f58;margin-top:32px}
  * 渲染概覽區塊
  */
 export function renderOverview(data) {
-	const eccAdded = sumBy(
-		data.ecc?.sources || [],
+	const aiResAdded = sumBy(
+		data.aiRes?.sources || [],
 		(r) =>
 			(r.added?.commands?.length || 0) +
 			(r.added?.agents?.length || 0) +
@@ -142,7 +142,7 @@ export function renderOverview(data) {
 		{ label: "模式", value: data.mode === "auto" ? "自動" : "手動" },
 		{ label: "Repos", value: data.repos?.length ?? 0 },
 		{ label: "技術棧", value: data.stacks?.length ?? 0 },
-		{ label: "AI 資源融合", value: `+${eccAdded}` },
+		{ label: "AI 資源融合", value: `+${aiResAdded}` },
 	];
 	const inner = items
 		.map(
@@ -156,11 +156,11 @@ export function renderOverview(data) {
 /**
  * 渲染 AI 資源融合區塊
  */
-export function renderEcc(ecc) {
-	if (!ecc?.sources?.length) return "";
+export function renderAiRes(aiRes) {
+	if (!aiRes?.sources?.length) return "";
 	const claudeDir = path.join(HOME, ".claude");
 	let inner = "";
-	for (const src of ecc.sources) {
+	for (const src of aiRes.sources) {
 		inner += `<div class="source-header">
       <span class="name">${esc(src.name)}</span>
       <span class="meta">${esc(src.repo)} · ${src.version || "?"}${src.cached ? " · 快取" : ""}</span>

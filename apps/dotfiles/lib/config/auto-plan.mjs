@@ -55,7 +55,7 @@ const ALL_ZSH_MODULES = ["history", "keys", "aliases", "git", "tools"];
  * @param {Object} opts
  * @param {Array} opts.repos - 含 fullName/commits/pct/desc/stars 的 repo 物件
  * @param {Object} opts.pipelineResult - Pipeline 分析結果
- * @param {Object} opts.eccResult - ECC 規則匹配結果
+ * @param {Object} opts.aiResResult - AI 資源推薦結果
  * @param {Object} opts.localPaths - { fullName: localPath } 映射
  * @param {Object} opts.profile - 開發者畫像
  * @returns {Object} plan
@@ -63,7 +63,7 @@ const ALL_ZSH_MODULES = ["history", "keys", "aliases", "git", "tools"];
 export function generateInstallPlan({
 	repos,
 	pipelineResult,
-	eccResult,
+	aiResResult,
 	localPaths,
 	roleOverrides,
 	profile,
@@ -118,8 +118,8 @@ export function generateInstallPlan({
 		techStacks:
 			pipelineResult?.preselectedTechs || pipelineResult?.detectedSkills || [],
 
-		// ECC
-		ecc: eccResult?.recommended || [],
+		// AI 資源
+		aiRes: aiResResult?.recommended || [],
 
 		// 全局配置（全部統一裝到 ~/.claude/）
 		global: {
@@ -153,7 +153,7 @@ export function generateInstallPlan({
  * 從完整計畫生成精簡安裝計畫
  *
  * 精簡模式只保留核心 commands/agents/rules，
- * 移除 ECC 規則、專案配置和 ZSH 模組。
+ * 移除 AI 資源、專案配置和 ZSH 模組。
  * 適合快速上手或低權限環境。
  *
  * @param {Object} fullPlan - generateInstallPlan 返回的完整計畫
@@ -175,7 +175,7 @@ export function generateMinimalPlan(fullPlan) {
 			settings: fullPlan.global.settings,
 		},
 		projects: [],
-		ecc: [],
+		aiRes: [],
 		zshModules: [],
 	};
 }

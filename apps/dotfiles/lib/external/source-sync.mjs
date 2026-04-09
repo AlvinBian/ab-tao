@@ -518,20 +518,21 @@ export function buildSyncResult(fetched, selectedNames) {
 		});
 	}
 
-	// ECC type map：name → type（供 plan 展示分類用）
-	const eccTypeMap = {};
+	// AI 資源 type map：name → type（供 plan 展示分類用）
+	const aiResTypeMap = {};
 	for (const src of allDownloaded) {
 		for (const f of src.commands)
-			eccTypeMap[f.name.replace(".md", "")] = "commands";
+			aiResTypeMap[f.name.replace(".md", "")] = "commands";
 		for (const f of src.agents)
-			eccTypeMap[f.name.replace(".md", "")] = "agents";
-		for (const f of src.rules) eccTypeMap[f.name.replace(".md", "")] = "rules";
+			aiResTypeMap[f.name.replace(".md", "")] = "agents";
+		for (const f of src.rules)
+			aiResTypeMap[f.name.replace(".md", "")] = "rules";
 	}
 
 	return {
 		results: allResults,
 		downloaded: allDownloaded,
-		eccTypeMap,
+		aiResTypeMap,
 		timestamp: new Date().toISOString(),
 	};
 }

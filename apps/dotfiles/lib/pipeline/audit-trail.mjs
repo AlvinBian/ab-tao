@@ -30,7 +30,7 @@ export function createAuditTrail() {
 		 * 記錄一筆審計條目
 		 *
 		 * @param {Object} entry - 任意結構，會自動加上 timestamp
-		 * @param {string} entry.phase - 執行階段（fetch / classify / merge / ecc）
+		 * @param {string} entry.phase - 執行階段（fetch / classify / merge / aiRes）
 		 * @param {string} [entry.repo] - 對應的 repo 名稱
 		 * @param {string} entry.action - 動作描述
 		 * @param {string} [entry.reasoning] - AI 推理說明

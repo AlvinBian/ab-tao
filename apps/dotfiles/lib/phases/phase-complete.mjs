@@ -51,7 +51,7 @@ const ENHANCERS = [
  * @param {Object} opts
  * @param {string} opts.repoDir - @ab-tao/dotfiles 根目錄（用於報告相對路徑）
  * @param {Object} opts.installSelections - phaseExecute 回傳的安裝選項（commands/agents/rules/hooks/modules）
- * @param {Object|null} opts.syncResult - ECC 同步結果（buildSyncResult 產出）
+ * @param {Object|null} opts.syncResult - AI 資源同步結果（buildSyncResult 產出）
  * @param {number} opts.startTime - 安裝開始時間戳（Date.now()）
  * @param {Object|null} opts.pipelineResult - runAnalysisPipeline 產出（用於報告中的技術棧與 reasoning）
  * @param {Array} opts.projectFolders - 專案文件夾映射（儲存到 session）
@@ -81,7 +81,7 @@ export async function phaseComplete(
 					.map((f) => f.replace(".md", ""))
 			: [];
 
-	// 從實際安裝目錄讀取已安裝項目（含 ECC + commons）
+	// 從實際安裝目錄讀取已安裝項目（含 AI 資源 + commons）
 	const installed = {
 		commands: installSelections.commands?.length
 			? installSelections.commands
@@ -332,7 +332,7 @@ export async function phaseComplete(
 					)
 				: {},
 		auditSummary: pipelineResult?.audit?.toSummary() || [],
-		ecc: syncResult
+		aiRes: syncResult
 			? {
 					sources: syncResult.results?.map((r) => ({
 						name: r.source,
@@ -411,8 +411,8 @@ export async function phaseComplete(
 		techStacks: plan.techStacks,
 		projectFolders: projectFolders || [],
 		selectedAiSources: selectedAiSources || [],
-		eccSelections:
-			(plan.ecc?.length ?? 0) > 0 ? { recommended: plan.ecc } : null,
+		aiResSelections:
+			(plan.aiRes?.length ?? 0) > 0 ? { recommended: plan.aiRes } : null,
 		install: {
 			commands: installSelections.commands || [],
 			agents: installSelections.agents || [],

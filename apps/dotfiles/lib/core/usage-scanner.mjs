@@ -192,30 +192,30 @@ export async function collectFullStatus() {
 	const usage = await scanUsage(installed.agents);
 
 	// ECC 資源（從 @ab-tao/commons 讀取）
-	const { ECC_DIR: eccDir } = await import("@ab-tao/commons/paths");
-	const ecc = {
-		commands: safeReadDir(path.join(eccDir, "commands"))
+	const { ECC_DIR: aiResDir } = await import("@ab-tao/commons/paths");
+	const extRes = {
+		commands: safeReadDir(path.join(aiResDir, "commands"))
 			.filter((f) => f.endsWith(".md"))
 			.map((f) => f.replace(".md", "")),
-		agents: safeReadDir(path.join(eccDir, "agents"))
+		agents: safeReadDir(path.join(aiResDir, "agents"))
 			.filter((f) => f.endsWith(".md"))
 			.map((f) => f.replace(".md", "")),
-		rules: safeReadDir(path.join(eccDir, "rules"))
+		rules: safeReadDir(path.join(aiResDir, "rules"))
 			.filter((f) => f.endsWith(".md"))
 			.map((f) => f.replace(".md", "")),
 	};
 
 	// 分類每個 command/agent/rule 的來源
-	const classify = (name, allManaged, eccList) => {
+	const classify = (name, allManaged, extList) => {
 		if (allManaged.includes(name)) return "core";
-		if (eccList.includes(name)) return "ecc";
+		if (extList.includes(name)) return "ext";
 		return "user";
 	};
 
 	const commandsDetail = installed.commands
 		.map((name) => ({
 			name,
-			source: classify(name, ALL_COMMANDS, ecc.commands),
+			source: classify(name, ALL_COMMANDS, extRes.commands),
 			count: usage.commands.get(name)?.count || 0,
 			lastUsed: usage.commands.get(name)?.lastUsed || null,
 		}))
@@ -224,7 +224,7 @@ export async function collectFullStatus() {
 	const agentsDetail = installed.agents
 		.map((name) => ({
 			name,
-			source: classify(name, ALL_AGENTS, ecc.agents),
+			source: classify(name, ALL_AGENTS, extRes.agents),
 			count: usage.agents.get(name)?.count || 0,
 			lastUsed: usage.agents.get(name)?.lastUsed || null,
 		}))
@@ -233,13 +233,13 @@ export async function collectFullStatus() {
 	const rulesDetail = installed.rules
 		.map((name) => ({
 			name,
-			source: classify(name, ALL_RULES, ecc.rules),
+			source: classify(name, ALL_RULES, extRes.rules),
 			enabled: true,
 		}))
 		.concat(
 			installed.disabledRules.map((name) => ({
 				name,
-				source: classify(name, ALL_RULES, ecc.rules),
+				source: classify(name, ALL_RULES, extRes.rules),
 				enabled: false,
 			})),
 		);
@@ -433,7 +433,7 @@ export async function collectFullStatus() {
 		diskUsage,
 		envHealth,
 		sessions: usage.sessions,
-		ecc,
+		aiRes: extRes,
 		configStatus,
 	};
 }

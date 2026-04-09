@@ -68,11 +68,11 @@ export const AI_REPO_MAX_CATEGORIES = env("AI_REPO_MAX_CATEGORIES", 6);
 // 單一 repo 最多列出幾項技術棧
 export const AI_REPO_MAX_TECHS = env("AI_REPO_MAX_TECHS", 15);
 
-// ── ECC AI 推薦（匹配已有分類到資源，haiku 足夠）──
-export const AI_ECC_MODEL = env("AI_ECC_MODEL", "haiku");
-export const AI_ECC_EFFORT = env("AI_ECC_EFFORT", "low");
-// ECC 任務量較大，逾時設定為 90 秒
-export const AI_ECC_TIMEOUT = env("AI_ECC_TIMEOUT", 90000);
+// ── AI 資源推薦（匹配已有分類到資源，haiku 足夠）──
+export const AI_RES_MODEL = env("AI_RES_MODEL", "haiku");
+export const AI_RES_EFFORT = env("AI_RES_EFFORT", "low");
+// AI 資源任務量較大，逾時設定為 90 秒
+export const AI_RES_TIMEOUT = env("AI_RES_TIMEOUT", 90000);
 
 // ── 開發者畫像（裝飾性摘要，最低成本）──
 export const AI_PROFILE_MODEL = env("AI_PROFILE_MODEL", "haiku");

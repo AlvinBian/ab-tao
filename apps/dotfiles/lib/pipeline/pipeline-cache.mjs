@@ -2,11 +2,11 @@
  * 統一快取層（content-addressed）
  *
  * 所有快取都基於內容 hash，輸入不變 → 快取命中。
- * 支援 per-repo AI 分類、整合結果、ECC AI 推薦。
+ * 支援 per-repo AI 分類、整合結果、AI 資源推薦。
  *
  * 快取目錄結構：
  *   .cache/
- *     {type}/         （如 repo-ai / ecc-ai / merge）
+ *     {type}/         （如 repo-ai / aiRes-ai / merge）
  *       {key}.json
  */
 
