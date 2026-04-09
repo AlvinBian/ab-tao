@@ -7,7 +7,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
-import { descBullet, getDescription } from "../config/descriptions.mjs";
+import {
+	descBullet,
+	getDescription,
+	getRating,
+} from "../config/descriptions.mjs";
 
 /** 從 SKILL.md 內容提取簡短描述（frontmatter description 或首行非標題文字） */
 function extractSkillDesc(content) {
@@ -274,12 +278,18 @@ export function formatCommonsResources(plan) {
 			if (parts.length)
 				lines.push(`       ${icon} ${src.name} — ${parts.join(" · ")}`);
 
-			// 列出個別項目（優先使用繁中翻譯，fallback 到 SKILL.md 提取描述）
+			// 列出個別 skills（優先使用繁中翻譯，fallback 到 SKILL.md 提取描述）
 			for (const sk of src.skills || []) {
-				const transDesc = getDescription(sk.name, "skills", null);
-				const desc = transDesc || extractSkillDesc(sk.content);
+				const name = typeof sk === "string" ? sk : sk.name;
+				const content = typeof sk === "string" ? "" : sk.content || "";
+				const transDesc = getDescription(name, "skills", null);
+				const desc = transDesc || extractSkillDesc(content);
+				const rating = getRating(name, "skills");
+				const stars = rating
+					? `${"★".repeat(rating)}${"☆".repeat(5 - rating)} `
+					: "";
 				lines.push(
-					desc ? `         · ${sk.name} — ${desc}` : `         · ${sk.name}`,
+					desc ? `         · ${name} ${stars}— ${desc}` : `         · ${name}`,
 				);
 			}
 		}
