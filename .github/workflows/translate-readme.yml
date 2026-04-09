@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      models: read
 
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +29,7 @@ jobs:
 
       - name: 翻譯 README
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/translate-readme.mjs
 
       - name: Commit 翻譯結果
