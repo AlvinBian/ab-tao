@@ -54,7 +54,7 @@ export default {
 		}
 
 		const depsRepos = reposDep.repos;
-		const sources = reposDep.sources || [];
+		const sources = ctx.sources || [];
 
 		// Quick 模式仍需執行分析，但跳過 AI 來源互動選擇
 		if (ctx.flags?.quick) {
