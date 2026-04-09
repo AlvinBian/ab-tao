@@ -288,15 +288,14 @@ export async function installAiResources(opts) {
 		}
 
 		// 安裝 skills（SKILL.md 格式，按用戶選擇過濾）
+		// 注意：writeSkillFiles 使用 src.source 作為目錄名，commons 物件用 src.name
 		const skillSources = commSources
 			.map((s) => {
 				const sel = selections[s.name]?.skills;
-				if (!sel) return s;
-				const nameSet = new Set(sel);
-				return {
-					...s,
-					skills: s.skills.filter((sk) => nameSet.has(sk.name)),
-				};
+				const filtered = sel
+					? s.skills.filter((sk) => new Set(sel).has(sk.name))
+					: s.skills;
+				return { ...s, source: s.name, skills: filtered || [] };
 			})
 			.filter((s) => !isEmpty(s.skills));
 		if (!isEmpty(skillSources)) {
