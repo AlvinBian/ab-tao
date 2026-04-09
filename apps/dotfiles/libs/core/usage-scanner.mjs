@@ -311,7 +311,7 @@ export async function collectFullStatus() {
 		walkProjects(projectsDir);
 	}
 
-	// Plugin 構建狀態
+	// Plugin 構建狀態（dist/release/*.plugin）
 	const distDir = path.join(REPO_ROOT, "dist");
 	const plugins = [];
 	const releaseDir = path.join(distDir, "release");
@@ -322,6 +322,22 @@ export async function collectFullStatus() {
 				plugins.push({ name: f, mtime: stat.mtime.toISOString() });
 			}
 		}
+	}
+
+	// 已安裝的 Claude plugins（claude plugin list --json）
+	let installedPlugins = null;
+	try {
+		const out = execFileSync("claude", ["plugin", "list", "--json"], {
+			stdio: ["pipe", "pipe", "pipe"],
+			timeout: 10000,
+		});
+		installedPlugins = JSON.parse(out.toString()).map((pl) => ({
+			name: pl.name,
+			version: pl.version || "",
+			repo: pl.repo || "",
+		}));
+	} catch {
+		// claude CLI 不可用或不支援 --json，installedPlugins 保持 null
 	}
 
 	// 備份
@@ -429,6 +445,7 @@ export async function collectFullStatus() {
 		},
 		claudeMd: claudeMdProjects,
 		plugins,
+		installedPlugins,
 		backups,
 		diskUsage,
 		envHealth,

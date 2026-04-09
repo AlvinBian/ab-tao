@@ -97,6 +97,8 @@ export async function phaseComplete(
 			!isEmpty(installSelections.hooks) ||
 			fs.existsSync(path.join(claudeDir, "hooks.json")),
 		modules: installSelections.modules || [],
+		plugins: installSelections.plugins || [],
+		pluginsFailed: installSelections.pluginsFailed || [],
 	};
 
 	// 安裝摘要 — 數量 + 前 10 個名稱（避免列表太長）
@@ -125,6 +127,14 @@ export async function phaseComplete(
 	if (installed.modules?.length)
 		instLines.push(
 			`  ZSH 模組（${installed.modules.length}）：${installed.modules.join("、")}`,
+		);
+	if (installed.plugins.length)
+		instLines.push(
+			`  Plugins ✔（${installed.plugins.length}）：${installed.plugins.join("、")}`,
+		);
+	if (installed.pluginsFailed.length)
+		instLines.push(
+			`  Plugins ✘（${installed.pluginsFailed.length} 失敗）：${installed.pluginsFailed.join("、")} — 可手動執行 claude plugin install <name>@claude-plugins-official`,
 		);
 	if (plan.techStacks?.length)
 		instLines.push(
@@ -271,13 +281,6 @@ export async function phaseComplete(
 
 	// ── 以下區塊僅在選了 claude 時顯示 ──
 	if (has("claude")) {
-		// 顯示已安裝的 plugins
-		if (installSelections.plugins?.length) {
-			instLines.push(
-				`  Plugins（${installSelections.plugins.length}）：${installSelections.plugins.join("、")}`,
-			);
-		}
-
 		// ── 其他推薦 ──
 		const buildLspRecommendations = (techStacks = []) => {
 			const recommended = [];
