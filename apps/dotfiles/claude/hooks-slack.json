@@ -1,0 +1,29 @@
+{
+	"description": "Slack session 通知（僅在 slack feature 啟用時合併）",
+	"hooks": {
+		"SessionStart": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-start; exit 0",
+						"timeout": 3
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-stop; exit 0",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	}
+}

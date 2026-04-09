@@ -131,6 +131,41 @@ export function buildClaudeTasks(
 															} else {
 																sub.skip("來源檔案不存在");
 															}
+															// 合併 Slack hooks 到 settings.json
+															const slackHooksPath = path.join(
+																repoDir,
+																"claude",
+																"hooks-slack.json",
+															);
+															if (fs.existsSync(slackHooksPath)) {
+																const settingsPath = path.join(
+																	HOME,
+																	".claude",
+																	"settings.json",
+																);
+																let settings = {};
+																try {
+																	settings = JSON.parse(
+																		fs.readFileSync(settingsPath, "utf8"),
+																	);
+																} catch {
+																	/* 略 */
+																}
+																const slackHooks = JSON.parse(
+																	fs.readFileSync(slackHooksPath, "utf8"),
+																).hooks;
+																if (!settings.hooks) settings.hooks = {};
+																for (const [event, matchers] of Object.entries(
+																	slackHooks,
+																)) {
+																	if (!settings.hooks[event])
+																		settings.hooks[event] = matchers;
+																}
+																fs.writeFileSync(
+																	settingsPath,
+																	`${JSON.stringify(settings, null, 2)}\n`,
+																);
+															}
 															// 同步 Slack 設定到 ~/.claude/.env 和 settings.json
 															const repoEnv = path.join(repoDir, ".env");
 															if (fs.existsSync(repoEnv)) {
