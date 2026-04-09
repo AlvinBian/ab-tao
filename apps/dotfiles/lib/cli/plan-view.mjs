@@ -9,6 +9,22 @@ import path from "node:path";
 import { isEmpty } from "lodash-es";
 import { descBullet } from "../config/descriptions.mjs";
 
+/** 從 SKILL.md 內容提取簡短描述（frontmatter description 或首行非標題文字） */
+function extractSkillDesc(content) {
+	if (!content) return "";
+	const descMatch = content.match(
+		/^---\n[\s\S]*?description:\s*["']?(.+?)["']?\s*$/m,
+	);
+	if (descMatch) return descMatch[1].trim().slice(0, 60);
+	// fallback：首行非空非標題
+	for (const line of content.split("\n")) {
+		const t = line.trim();
+		if (!t || t.startsWith("#") || t.startsWith("---")) continue;
+		return t.slice(0, 60);
+	}
+	return "";
+}
+
 /**
  * 網格排列：固定列寬，每行多個項目
  *
@@ -256,9 +272,12 @@ export function formatCommonsResources(plan) {
 			if (parts.length)
 				lines.push(`       ${icon} ${src.name} — ${parts.join(" · ")}`);
 
-			// 列出個別項目（skills 有名稱）
+			// 列出個別項目（從 SKILL.md 提取描述）
 			for (const sk of src.skills || []) {
-				lines.push(descBullet(sk.name, null, null, "         "));
+				const desc = extractSkillDesc(sk.content);
+				lines.push(
+					desc ? `         · ${sk.name} — ${desc}` : `         · ${sk.name}`,
+				);
 			}
 		}
 	}
