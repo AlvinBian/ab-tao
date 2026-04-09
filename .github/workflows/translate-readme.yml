@@ -1,4 +1,4 @@
-name: 自動翻譯 README
+name: Translate README
 
 on:
   push:
@@ -22,6 +22,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: 翻譯 README
         env:

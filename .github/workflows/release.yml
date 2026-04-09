@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Version PR or Tag Releases
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          commit: "chore: version packages"
+          title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      # 當 Version PR 合併後（無待處理 changesets），建立 git tags
+      - name: Tag released packages
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        id: tag
+        run: |
+          BEFORE=$(git tag --list "@ab-tao/*" | sort)
+          pnpm changeset tag
+          git push --follow-tags
+          AFTER=$(git tag --list "@ab-tao/*" | sort)
+          NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | tr '\n' ',' | sed 's/,$//')
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+
+      # 為每個新 tag 建立 GitHub Release
+      - name: Create GitHub Releases
+        if: steps.tag.outputs.new != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          NEW_TAGS: ${{ steps.tag.outputs.new }}
+        run: |
+          IFS=',' read -ra TAGS <<< "$NEW_TAGS"
+          for tag in "${TAGS[@]}"; do
+            [ -z "$tag" ] && continue
+            gh release create "$tag" \
+              --title "$tag" \
+              --generate-notes \
+              --verify-tag
+            echo "✅ GitHub Release 已建立：$tag"
+          done

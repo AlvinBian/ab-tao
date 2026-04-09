@@ -1,4 +1,4 @@
-name: GitFlow
+name: Git Flow
 
 on:
   pull_request:
@@ -88,8 +88,11 @@ jobs:
           fetch-depth: 0
 
       - name: 校驗 Conventional Commits
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          COMMITS=$(git log --format="%s" origin/${{ github.base_ref }}..${{ github.sha }})
+          COMMITS=$(git log --format="%s" "origin/$BASE_REF..$HEAD_SHA")
           PATTERN="^(feat|fix|refactor|docs|test|chore|perf|ci|build|style|revert)(\(.+\))?!?: .+"
           FAILED=0
           while IFS= read -r msg; do
@@ -102,6 +105,46 @@ jobs:
           if [ "$FAILED" -eq 1 ]; then
             echo "::notice::建議格式：{type}({scope}): {description}"
           fi
+
+
+  # ── PR changeset 校驗（packages/ 有變更時必須附帶 changeset 記錄）──
+  validate-changeset:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 校驗 Changeset
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # develop → main 是整合 PR，不需要 changeset
+          if [[ "$BASE_REF" == "main" ]]; then
+            echo "✅ 整合 PR，跳過 changeset 校驗"
+            exit 0
+          fi
+          # 檢查 packages/ 是否有變更
+          CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" | grep '^packages/' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "✅ packages/ 無變更，跳過 changeset 校驗"
+            exit 0
+          fi
+          echo "📦 packages/ 有變更："
+          echo "$CHANGED"
+          # 檢查是否有 changeset 記錄（.changeset/*.md 排除 README.md）
+          CHANGESETS=$(find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" 2>/dev/null || true)
+          if [ -z "$CHANGESETS" ]; then
+            echo "::error::packages/ 有變更但缺少 changeset 記錄"
+            echo "  請執行：pnpm run changeset"
+            echo "  選擇變更的套件並填寫說明，提交 .changeset/*.md 到本 PR"
+            exit 1
+          fi
+          echo "✅ Changeset 已存在"
+          echo "$CHANGESETS" | xargs -n1 basename
 
   # ── Release：自動合併到 develop ──
   sync-develop:
