@@ -1135,7 +1135,17 @@ function copyScript() {
 
 	fs.writeFileSync(outputPath, html);
 	p.log.success(`報告已生成：${outputPath}`);
-	execFileSync("open", [outputPath]);
+	try {
+		const cmd =
+			process.platform === "darwin"
+				? "open"
+				: process.platform === "win32"
+					? "start"
+					: "xdg-open";
+		execFileSync(cmd, [outputPath]);
+	} catch {
+		p.log.info(`請手動打開：${outputPath}`);
+	}
 }
 
 main().catch(console.error);

@@ -258,10 +258,10 @@ export async function ensureEnvironment() {
 			);
 			if (!ok) {
 				p.log.warn(
-					`gh CLI 安裝失敗，請手動安裝後重新執行：\n  ${pc.cyan("brew install gh")}  或  ${pc.cyan("https://cli.github.com")}`,
+					`gh CLI 安裝失敗，請手動安裝：\n  ${pc.cyan("brew install gh")}  或  ${pc.cyan("https://cli.github.com")}\n` +
+						`  安裝後重新執行 pnpm run d:setup`,
 				);
-				p.outro(pc.red("環境準備失敗"));
-				process.exit(1);
+				return false;
 			}
 		}
 
@@ -272,12 +272,12 @@ export async function ensureEnvironment() {
 			const ok = run("gh auth login --web");
 			if (!ok) {
 				p.log.warn(
-					`GitHub 登入失敗，請手動執行後重新運行：\n` +
+					`GitHub 登入失敗，請手動執行：\n` +
 						`  ${pc.cyan("gh auth login")}          # 互動式（瀏覽器）\n` +
-						`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token`,
+						`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token\n` +
+						`  登入後可繼續使用，倉庫相關功能會暫時跳過`,
 				);
-				p.outro(pc.red("環境準備失敗"));
-				process.exit(1);
+				return false;
 			}
 			p.log.success(`${pc.green("✔")} GitHub 登入完成`);
 		}

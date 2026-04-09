@@ -44,7 +44,18 @@ import {
  * @returns {Promise<string[]>} 選中的倉庫 full_name 陣列
  */
 export async function interactiveRepoSelect(session = null) {
-	// 1. 檢查 gh 登入（未登入則引導登入）
+	// 1. 檢查 gh CLI 安裝 + 登入狀態
+	try {
+		execSync("which gh", { stdio: "pipe" });
+	} catch {
+		p.log.error(
+			`gh CLI 未安裝，無法選擇倉庫。\n` +
+				`  請先安裝：${pc.cyan("brew install gh")}  或  ${pc.cyan("https://cli.github.com")}\n` +
+				`  安裝後執行：${pc.cyan("gh auth login")}`,
+		);
+		return [];
+	}
+
 	try {
 		execSync("gh auth status", { stdio: ["pipe", "pipe", "pipe"] });
 	} catch {
@@ -59,7 +70,7 @@ export async function interactiveRepoSelect(session = null) {
 					`  ${pc.cyan("gh auth login")}          # 互動式（瀏覽器）\n` +
 					`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token`,
 			);
-			process.exit(1);
+			return [];
 		}
 		p.log.info(
 			`🔑 請在瀏覽器完成授權：\n  ${pc.dim("按 Enter 開啟瀏覽器 → 複製一次性驗證碼 → 完成授權")}`,
@@ -68,8 +79,12 @@ export async function interactiveRepoSelect(session = null) {
 			execSync("gh auth login --web", { stdio: "inherit", timeout: 120000 });
 			p.log.success(`${pc.green("✔")} GitHub 登入完成`);
 		} catch {
-			p.log.warn("GitHub 登入失敗，請手動執行 gh auth login 後重試");
-			process.exit(1);
+			p.log.warn(
+				`GitHub 登入失敗，請手動執行後重試：\n` +
+					`  ${pc.cyan("gh auth login")}          # 互動式（瀏覽器）\n` +
+					`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token`,
+			);
+			return [];
 		}
 	}
 

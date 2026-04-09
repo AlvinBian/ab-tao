@@ -283,13 +283,32 @@ export async function phaseComplete(
 
 	// ── 以下區塊僅在選了 claude 時顯示 ──
 	if (has("claude")) {
+		// 檢查 claude CLI 是否可用
+		let claudeCliAvailable = false;
+		try {
+			execFileSync("which", ["claude"], { stdio: "pipe" });
+			claudeCliAvailable = true;
+		} catch {
+			/* claude CLI 不存在 */
+		}
+
+		if (!claudeCliAvailable) {
+			p.log.warn(
+				`Claude CLI 未安裝，跳過 Plugin 安裝。\n` +
+					`  安裝方式：${`curl -fsSL https://claude.ai/install.sh | sh`}\n` +
+					`  安裝後可手動執行：claude plugin install <name>@claude-plugins-official`,
+			);
+		}
+
 		// ── 官方 Plugin 互動安裝 ──
-		const installedPlugins = getInstalledPlugins();
+		const installedPlugins = claudeCliAvailable
+			? getInstalledPlugins()
+			: new Set();
 		const missingPlugins = RECOMMENDED_PLUGINS.filter(
 			(pl) => !installedPlugins.has(pl.name),
 		);
 
-		if (!isEmpty(missingPlugins)) {
+		if (!isEmpty(missingPlugins) && claudeCliAvailable) {
 			const pluginsToInstall = handleCancel(
 				await p.multiselect({
 					message:

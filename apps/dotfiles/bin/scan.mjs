@@ -90,8 +90,24 @@ function getRepos() {
 				{ encoding: "utf8", timeout: 30000, stdio: ["pipe", "pipe", "pipe"] },
 			);
 			return raw.trim().split("\n").filter(Boolean);
-		} catch (_e) {
-			console.error(`無法取得 ${orgName} repos`);
+		} catch (e) {
+			const msg = e?.stderr?.toString() || e?.message || "";
+			if (msg.includes("auth login") || msg.includes("not logged")) {
+				console.error(
+					`gh CLI 未登入，請先執行：gh auth login\n` +
+						`然後重試：pnpm run scan -- --org ${orgName}`,
+				);
+			} else if (msg.includes("ENOENT") || msg.includes("not found")) {
+				console.error(
+					`gh CLI 未安裝。安裝方式：brew install gh\n` +
+						`安裝後執行：gh auth login`,
+				);
+			} else {
+				console.error(
+					`無法取得 ${orgName} repos：${msg.slice(0, 120)}\n` +
+						`請確認 gh 已登入（gh auth status）且有該組織的讀取權限`,
+				);
+			}
 			process.exit(1);
 		}
 	}

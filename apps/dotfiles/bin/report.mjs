@@ -20,4 +20,8 @@ if (!fs.existsSync(reportPath)) {
 }
 
 const { openInBrowser } = await import("../lib/report.mjs");
-await openInBrowser(reportPath);
+try {
+	await openInBrowser(reportPath);
+} catch {
+	console.log(`請手動打開：${reportPath}`);
+}
