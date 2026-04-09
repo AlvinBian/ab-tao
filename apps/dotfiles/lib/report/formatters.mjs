@@ -317,18 +317,28 @@ export function renderPlugins(_installed = {}) {
 			category: "開發流程",
 		},
 		{
+			name: "commit-commands",
+			desc: "智能 commit 訊息生成",
+			category: "開發流程",
+		},
+		{
+			name: "security-guidance",
+			desc: "安全漏洞掃描與修復建議",
+			category: "安全",
+		},
+		{
 			name: "hookify",
 			desc: "分析對話模式自動生成 hooks",
 			category: "助手",
 		},
 		{
-			name: "ralph-wiggum",
-			desc: "自動恢復被中斷的會話",
-			category: "助手",
-		},
-		{
 			name: "feature-dev",
 			desc: "7 階段結構化功能開發",
+			category: "開發流程",
+		},
+		{
+			name: "code-simplifier",
+			desc: "審查變更代碼的品質與效率",
 			category: "開發流程",
 		},
 	];

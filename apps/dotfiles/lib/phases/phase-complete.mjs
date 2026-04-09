@@ -31,6 +31,73 @@ function detectRtk() {
 	}
 }
 
+/** 官方推薦 Plugins（marketplace: anthropics/claude-plugins-official） */
+const MARKETPLACE_REPO = "anthropics/claude-plugins-official";
+const RECOMMENDED_PLUGINS = [
+	{
+		name: "code-review",
+		desc: "多 agent 並行 PR 審查",
+	},
+	{
+		name: "commit-commands",
+		desc: "智能 commit 訊息生成",
+	},
+	{
+		name: "security-guidance",
+		desc: "安全漏洞掃描與修復建議",
+	},
+	{
+		name: "hookify",
+		desc: "分析對話模式自動生成 hooks",
+	},
+	{
+		name: "feature-dev",
+		desc: "7 階段結構化功能開發",
+	},
+	{
+		name: "code-simplifier",
+		desc: "審查變更代碼的品質與效率",
+	},
+];
+
+/** 取得已安裝的 plugin 名稱列表 */
+function getInstalledPlugins() {
+	try {
+		const out = execFileSync("claude", ["plugin", "list", "--json"], {
+			stdio: ["pipe", "pipe", "pipe"],
+			timeout: 10000,
+		});
+		const list = JSON.parse(out.toString());
+		return new Set(list.map((p) => p.name));
+	} catch {
+		return new Set();
+	}
+}
+
+/** 確保官方 marketplace 已加入 */
+function ensureMarketplace() {
+	try {
+		const out = execFileSync(
+			"claude",
+			["plugin", "marketplace", "list", "--json"],
+			{ stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
+		);
+		const list = JSON.parse(out.toString());
+		if (list.some((m) => m.repo === MARKETPLACE_REPO)) return true;
+	} catch {
+		/* ignore */
+	}
+	try {
+		execSync(`claude plugin marketplace add ${MARKETPLACE_REPO}`, {
+			stdio: ["pipe", "pipe", "pipe"],
+			timeout: 120000,
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** 可選增強工具配置（模組級常數） */
 const ENHANCERS = [
 	{
@@ -205,7 +272,57 @@ export async function phaseComplete(
 
 	// ── 以下區塊僅在選了 claude 時顯示 ──
 	if (has("claude")) {
-		// 三層推薦系統
+		// ── 官方 Plugin 互動安裝 ──
+		const installedPlugins = getInstalledPlugins();
+		const missingPlugins = RECOMMENDED_PLUGINS.filter(
+			(pl) => !installedPlugins.has(pl.name),
+		);
+
+		if (!isEmpty(missingPlugins)) {
+			const pluginsToInstall = handleCancel(
+				await p.multiselect({
+					message:
+						"🔌 選擇要安裝的官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+					options: missingPlugins.map((pl) => ({
+						value: pl.name,
+						label: pl.name,
+						hint: pl.desc,
+					})),
+					required: false,
+					initialValues: missingPlugins.map((pl) => pl.name),
+				}),
+			);
+
+			if (pluginsToInstall !== BACK && !isEmpty(pluginsToInstall)) {
+				const hasMarketplace = ensureMarketplace();
+				if (!hasMarketplace) {
+					p.log.warn(
+						"⚠️ 無法加入官方 marketplace，請手動執行：\n  claude plugin marketplace add anthropics/claude-plugins-official",
+					);
+				} else {
+					for (const name of pluginsToInstall) {
+						try {
+							execSync(
+								`claude plugin install ${name}@claude-plugins-official`,
+								{
+									stdio: ["pipe", "pipe", "pipe"],
+									timeout: 60000,
+								},
+							);
+							p.log.success(`✔ ${name} 已安裝`);
+						} catch {
+							p.log.warn(
+								`⚠️ ${name} 安裝失敗，請手動：claude plugin install ${name}@claude-plugins-official`,
+							);
+						}
+					}
+				}
+			}
+		} else {
+			p.log.success("✔ 所有推薦 Plugins 已安裝");
+		}
+
+		// ── 其他推薦 ──
 		const buildLspRecommendations = (techStacks = []) => {
 			const recommended = [];
 			if (
@@ -225,38 +342,22 @@ export async function phaseComplete(
 				: "LSP 按語言：/plugin 中搜索 language server";
 		};
 
-		const lspLine = buildLspRecommendations(plan.techStacks || []);
-
 		p.log.info(
 			[
-				"💡 推薦安裝（提升 Claude Code 能力）",
+				"💡 其他推薦（手動安裝）",
 				"",
-				"  ── 官方 Plugin（強烈推薦）──",
-				"  /plugin install code-review@claude-plugins-official",
-				"  /plugin install commit-commands@claude-plugins-official",
-				"  /plugin install security-guidance@claude-plugins-official",
-				`  ${lspLine}`,
-				"",
-				"  ── 官方 Marketplace（按需）──",
-				"  /plugin marketplace add anthropics/knowledge-work-plugins",
-				"",
-				"  ── CI/CD 自動化 ──",
-				"  /install-github-app（PR 自動審查 + Issue 分類）",
-				"",
-				"  ── Token 優化 ──",
-				"  RTK — brew install rtk && rtk init -g",
+				`  ${buildLspRecommendations(plan.techStacks || [])}`,
 				"",
 				"  ── 官方內建功能（無需安裝）──",
 				"  Auto Memory · /init · /plan · /simplify · /debug · /batch",
 			].join("\n"),
 		);
 
-		// 增強工具互動安裝
+		// ── 增強工具互動安裝 ──
 		const missingEnhancers = ENHANCERS.filter((e) => !e.detect());
 		if (!isEmpty(missingEnhancers)) {
 			let toInstall = [];
 
-			// 如果只有一個增強工具，使用 confirm；否則使用 multiselect
 			if (missingEnhancers.length === 1) {
 				const confirmed = handleCancel(
 					await p.confirm({
