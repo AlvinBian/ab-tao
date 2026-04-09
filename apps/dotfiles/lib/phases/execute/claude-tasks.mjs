@@ -326,6 +326,20 @@ export function buildClaudeTasks(
 																				shared.syncResult.downloaded,
 																				path.join(HOME, ".claude"),
 																			);
+																		// 更新 installSelections 以反映 ECC 安裝
+																		for (const [type, names] of Object.entries(
+																			eccByType,
+																		)) {
+																			for (const name of names) {
+																				const n = name.replace(".md", "");
+																				if (!installSelections[type])
+																					installSelections[type] = [];
+																				if (
+																					!installSelections[type].includes(n)
+																				)
+																					installSelections[type].push(n);
+																			}
+																		}
 																		const added =
 																			shared.syncResult.downloaded?.length || 0;
 																		sub.output = skipped.length
@@ -422,6 +436,53 @@ export function buildClaudeTasks(
 																					skillSources,
 																					path.join(HOME, ".claude"),
 																				);
+																			}
+																		}
+
+																		// 更新 installSelections 以反映實際安裝
+																		for (const d of downloaded) {
+																			for (const cmd of d.commands || []) {
+																				const n = cmd.name.replace(".md", "");
+																				if (!installSelections.commands)
+																					installSelections.commands = [];
+																				if (
+																					!installSelections.commands.includes(
+																						n,
+																					)
+																				)
+																					installSelections.commands.push(n);
+																			}
+																			for (const a of d.agents || []) {
+																				const n = a.name.replace(".md", "");
+																				if (!installSelections.agents)
+																					installSelections.agents = [];
+																				if (
+																					!installSelections.agents.includes(n)
+																				)
+																					installSelections.agents.push(n);
+																			}
+																			for (const r of d.rules || []) {
+																				const n = r.name.replace(".md", "");
+																				if (!installSelections.rules)
+																					installSelections.rules = [];
+																				if (
+																					!installSelections.rules.includes(n)
+																				)
+																					installSelections.rules.push(n);
+																			}
+																		}
+																		for (const s of skillSources) {
+																			for (const sk of s.skills || []) {
+																				if (!installSelections.skills)
+																					installSelections.skills = [];
+																				if (
+																					!installSelections.skills.includes(
+																						sk.name,
+																					)
+																				)
+																					installSelections.skills.push(
+																						sk.name,
+																					);
 																			}
 																		}
 

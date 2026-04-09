@@ -159,7 +159,7 @@ export async function phaseComplete(
 					.map((f) => f.replace(".md", ""))
 			: [];
 
-	// 從實際安裝目錄讀取已安裝項目
+	// 從實際安裝目錄讀取已安裝項目（含 ECC + commons）
 	const installed = {
 		commands: installSelections.commands?.length
 			? installSelections.commands
@@ -170,25 +170,34 @@ export async function phaseComplete(
 		rules: installSelections.rules?.length
 			? installSelections.rules
 			: readDir(path.join(claudeDir, "rules")),
+		skills: installSelections.skills || [],
 		hooks:
 			!isEmpty(installSelections.hooks) ||
 			fs.existsSync(path.join(claudeDir, "hooks.json")),
 		modules: installSelections.modules || [],
 	};
 
-	// 安裝摘要 — 詳細列出所有已安裝項目
+	// 安裝摘要 — 數量 + 前 10 個名稱（避免列表太長）
+	const summarize = (items, max = 10) => {
+		if (items.length <= max) return items.join("、");
+		return `${items.slice(0, max).join("、")}… 等 ${items.length} 個`;
+	};
 	const instLines = [];
 	if (installed.commands.length)
 		instLines.push(
-			`  Commands（${installed.commands.length}）：${installed.commands.join("、")}`,
+			`  Commands（${installed.commands.length}）：${summarize(installed.commands)}`,
 		);
 	if (installed.agents.length)
 		instLines.push(
-			`  Agents（${installed.agents.length}）：${installed.agents.join("、")}`,
+			`  Agents（${installed.agents.length}）：${summarize(installed.agents)}`,
 		);
 	if (installed.rules.length)
 		instLines.push(
-			`  Rules（${installed.rules.length}）：${installed.rules.join("、")}`,
+			`  Rules（${installed.rules.length}）：${summarize(installed.rules)}`,
+		);
+	if (installed.skills.length)
+		instLines.push(
+			`  Skills（${installed.skills.length}）：${summarize(installed.skills)}`,
 		);
 	if (installed.hooks) instLines.push("  Hooks：已啟用");
 	if (installed.modules?.length)
@@ -197,7 +206,7 @@ export async function phaseComplete(
 		);
 	if (plan.techStacks?.length)
 		instLines.push(
-			`  Stacks（${plan.techStacks.length}）：${plan.techStacks.join("、")}`,
+			`  Stacks（${plan.techStacks.length}）：${summarize(plan.techStacks)}`,
 		);
 
 	const summaryLines = [
