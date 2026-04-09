@@ -618,7 +618,7 @@ async function main() {
 				timestamp: new Date().toISOString(),
 			};
 			const html = generateReport(reportData);
-			const reportPath = saveReport(html, REPO);
+			const reportPath = saveReport(html, path.join(REPO, "dist"));
 			const openIt = handleCancel(
 				await p.confirm({ message: "開啟安裝報告？", initialValue: false }),
 			);
