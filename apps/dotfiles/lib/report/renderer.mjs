@@ -62,7 +62,6 @@ function renderTabOverview(data) {
  */
 function renderTabTechStacks(data) {
 	const stacks = data.stacks || [];
-	const totalRepos = (data.repos || []).length;
 	const perRepoReasoning = data.perRepoReasoning || {};
 
 	// 按分類聚合技術棧
