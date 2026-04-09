@@ -1,0 +1,253 @@
+name: Nightly Work Plan
+
+on:
+  schedule:
+    # 每天 02:00 UTC = 台北 10:00
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: '分析的 repos（逗號分隔，格式 owner/repo）'
+        required: false
+        default: ''
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: 收集 repo 資料
+        id: data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOS_INPUT: ${{ inputs.repos }}
+          DEFAULT_REPOS: ${{ vars.NIGHTLY_PLAN_REPOS }}
+        run: |
+          # 決定分析的 repos
+          REPOS="${REPOS_INPUT:-$DEFAULT_REPOS}"
+          if [ -z "$REPOS" ]; then
+            # fallback：取當前登入用戶最近活躍的前 5 個 repos
+            REPOS=$(gh api graphql -f query='
+              query {
+                viewer {
+                  repositories(first: 5, orderBy: {field: PUSHED_AT, direction: DESC}, isFork: false) {
+                    nodes { nameWithOwner }
+                  }
+                }
+              }' --jq '.data.viewer.repositories.nodes[].nameWithOwner' | tr '\n' ',' | sed 's/,$//')
+          fi
+          echo "REPOS=$REPOS" >> $GITHUB_ENV
+
+          SINCE=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)
+          TODAY=$(date -u +%Y-%m-%d)
+          echo "TODAY=$TODAY" >> $GITHUB_ENV
+
+          # 逐一收集每個 repo 的資料
+          REPORT=""
+          IFS=',' read -ra REPO_LIST <<< "$REPOS"
+          for REPO in "${REPO_LIST[@]}"; do
+            REPO=$(echo "$REPO" | xargs)  # trim spaces
+            [ -z "$REPO" ] && continue
+
+            echo "=== 分析 $REPO ==="
+
+            # 近 7 天 commits
+            COMMITS=$(gh api "repos/$REPO/commits?since=$SINCE&per_page=100" \
+              --jq '[.[] | {msg: .commit.message | split("\n")[0], author: .commit.author.name}] | length' 2>/dev/null || echo "0")
+
+            # commit 訊息摘要（前 10 條）
+            COMMIT_MSGS=$(gh api "repos/$REPO/commits?since=$SINCE&per_page=10" \
+              --jq '[.[] | "- " + (.commit.message | split("\n")[0])] | join("\n")' 2>/dev/null || echo "")
+
+            # 開放 PRs
+            OPEN_PRS=$(gh api "repos/$REPO/pulls?state=open&per_page=50" \
+              --jq '[.[] | {title: .title, age: (.created_at), draft: .draft, labels: [.labels[].name]}]' 2>/dev/null || echo "[]")
+            PR_COUNT=$(echo "$OPEN_PRS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "0")
+
+            # 開放 Issues（排除 PRs）
+            OPEN_ISSUES=$(gh api "repos/$REPO/issues?state=open&per_page=50" \
+              --jq '[.[] | select(.pull_request == null) | {title: .title, labels: [.labels[].name], created: .created_at}]' 2>/dev/null || echo "[]")
+            ISSUE_COUNT=$(echo "$OPEN_ISSUES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "0")
+
+            # 最近 CI 狀態
+            CI_STATUS=$(gh api "repos/$REPO/actions/runs?per_page=5" \
+              --jq '.workflow_runs[:3] | map(.conclusion + "(" + .name + ")") | join(", ")' 2>/dev/null || echo "unknown")
+
+            # 拼接該 repo 的摘要
+            REPORT="${REPORT}
+### ${REPO}
+- 近 7 天 commits：${COMMITS} 次
+最近 commits：
+${COMMIT_MSGS}
+- 開放 PRs：${PR_COUNT} 個
+- 開放 Issues：${ISSUE_COUNT} 個
+- 近期 CI：${CI_STATUS}
+
+PR 詳情：$(echo "$OPEN_PRS" | python3 -c "
+import sys, json
+from datetime import datetime, timezone
+d = json.load(sys.stdin)
+now = datetime.now(timezone.utc)
+lines = []
+for p in d[:10]:
+    try:
+        age = (now - datetime.fromisoformat(p['age'].replace('Z','+00:00'))).days
+    except:
+        age = '?'
+    labels = ','.join(p.get('labels', []))
+    draft = '[draft]' if p.get('draft') else ''
+    lines.append(f'  - {p[\"title\"]} ({age}天) {draft} [{labels}]')
+print('\n'.join(lines) if lines else '  (無)')
+" 2>/dev/null)
+
+Issues 詳情：$(echo "$OPEN_ISSUES" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+lines = []
+for i in d[:10]:
+    labels = ','.join(i.get('labels', []))
+    lines.append(f'  - {i[\"title\"]} [{labels}]')
+print('\n'.join(lines) if lines else '  (無)')
+" 2>/dev/null)
+"
+          done
+
+          # 寫入 file（避免 env 大小限制）
+          echo "$REPORT" > /tmp/repo_report.txt
+          echo "Report 行數: $(wc -l < /tmp/repo_report.txt)"
+
+      - name: 用 GitHub Models 生成計畫
+        id: plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPORT=$(cat /tmp/repo_report.txt)
+          TODAY=${{ env.TODAY }}
+
+          # 構建 prompt
+          PROMPT="你是一位資深工程師兼技術主管。根據以下 GitHub 倉庫的最新數據，為今天（${TODAY}）生成一份具體可執行的工作計畫。
+
+## 倉庫數據
+${REPORT}
+
+## 要求
+生成的計畫必須：
+1. 優先考慮能直接改善 KPI 的任務（PR 合併率、Issue 解決率、CI 通過率、代碼覆蓋率）
+2. 每個任務附帶預估時間和預期成效
+3. 辨識可重構的技術債（讓數據更好看）
+4. 找出「快速勝利」（30 分鐘內可完成，立即提升指標的任務）
+5. 基於 commit 頻率評估團隊速度，調整任務量
+
+## 輸出格式（Markdown）
+
+### 🎯 今日優先任務（按 KPI 影響排序）
+| 優先級 | 任務 | 預估時間 | KPI 影響 |
+|--------|------|----------|----------|
+（3-5 個具體任務）
+
+### ⚡ 快速勝利（≤30 分鐘）
+（2-3 個立即可做的小任務）
+
+### 📊 KPI 改善機會
+（基於數據分析的具體改善建議，含量化目標）
+
+### 🔧 技術債整理
+（可重構的部分，說明重構後的收益）
+
+### 📈 本週進展
+（根據近 7 天 commits 評估速度，給出本週完成目標）
+
+### ⚠️ 需要注意
+（滯留的 PR、老舊 Issues、CI 失敗等風險）
+
+只輸出 Markdown 內容，不要額外說明。"
+
+          # 呼叫 GitHub Models API（gpt-4o-mini，免費）
+          RESPONSE=$(curl -s -X POST \
+            "https://models.inference.ai.azure.com/chat/completions" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(python3 -c "
+import json, sys
+payload = {
+    'model': 'gpt-4o-mini',
+    'messages': [{'role': 'user', 'content': sys.stdin.read()}],
+    'temperature': 0.3,
+    'max_tokens': 2000
+}
+print(json.dumps(payload))
+" <<< "$PROMPT")")
+
+          # 提取內容
+          PLAN=$(echo "$RESPONSE" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(d['choices'][0]['message']['content'])
+except Exception as e:
+    print(f'AI 生成失敗：{e}\n\n原始回應：')
+    import sys
+    print(sys.argv)
+" 2>/dev/null)
+
+          if [ -z "$PLAN" ]; then
+            PLAN="⚠️ 計畫生成失敗，請檢查 GitHub Models API 狀態。\n\n原始回應：\n\`\`\`\n$RESPONSE\n\`\`\`"
+          fi
+
+          echo "$PLAN" > /tmp/plan.txt
+          echo "計畫生成完成，字數：$(wc -c < /tmp/plan.txt)"
+
+      - name: 建立 GitHub Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_REPO: ${{ vars.NIGHTLY_PLAN_ISSUE_REPO || github.repository }}
+        run: |
+          TODAY=${{ env.TODAY }}
+          TITLE="📋 每日工作計畫 ${TODAY}"
+          PLAN=$(cat /tmp/plan.txt)
+
+          BODY="## 自動生成的每日工作計畫
+
+> 由 GitHub Actions + GitHub Models (gpt-4o-mini) 自動生成
+> 分析倉庫：\`${{ env.REPOS }}\`
+> 生成時間：${TODAY} 02:00 UTC
+
+---
+
+${PLAN}
+
+---
+*[Nightly Plan Workflow](../../actions/workflows/nightly-plan.yml)*"
+
+          # 檢查今天的 Issue 是否已存在
+          EXISTING=$(gh issue list \
+            --repo "$ISSUE_REPO" \
+            --label "nightly-plan" \
+            --search "$TITLE" \
+            --json number \
+            --jq '.[0].number' 2>/dev/null)
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            # 更新已有 Issue
+            gh issue edit "$EXISTING" \
+              --repo "$ISSUE_REPO" \
+              --body "$BODY"
+            echo "更新 Issue #$EXISTING"
+          else
+            # 建立 label（如果不存在）
+            gh label create "nightly-plan" \
+              --repo "$ISSUE_REPO" \
+              --color "0075ca" \
+              --description "每日自動生成的工作計畫" 2>/dev/null || true
+
+            # 建立新 Issue
+            gh issue create \
+              --repo "$ISSUE_REPO" \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "nightly-plan"
+            echo "建立新 Issue：$TITLE"
+          fi
