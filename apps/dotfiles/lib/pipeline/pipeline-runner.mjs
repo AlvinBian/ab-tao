@@ -472,12 +472,19 @@ export async function runAnalysisPipeline({
 			});
 
 			// ── 背景翻譯（僅未翻譯的，不阻塞）──
+			// 優先讀 commons 靜態翻譯檔（版控維護），cache 為執行期補充
 			const transPath = path.join(baseDir, ".cache", "translations.json");
 			let translations = {};
 			try {
-				translations = JSON.parse(fs.readFileSync(transPath, "utf8"));
+				const { TRANSLATIONS_PATH } = await import("@ab-tao/commons/paths");
+				translations = JSON.parse(fs.readFileSync(TRANSLATIONS_PATH, "utf8"));
 			} catch {
-				/* 翻譯檔不存在則略過，使用空物件 */
+				// commons 翻譯檔不存在，嘗試 cache
+				try {
+					translations = JSON.parse(fs.readFileSync(transPath, "utf8"));
+				} catch {
+					/* 都不存在，使用空物件 */
+				}
 			}
 
 			const untranslated = eccCandidates.filter((c) => {

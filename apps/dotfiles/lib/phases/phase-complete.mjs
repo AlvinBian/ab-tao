@@ -315,8 +315,7 @@ export async function phaseComplete(
 						"🔌 選擇要安裝的官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
 					options: missingPlugins.map((pl) => ({
 						value: pl.name,
-						label: pl.name,
-						hint: pl.desc,
+						label: `${pl.name} — ${pl.desc}`,
 					})),
 					required: false,
 					initialValues: missingPlugins.map((pl) => pl.name),
