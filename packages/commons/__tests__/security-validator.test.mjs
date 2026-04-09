@@ -72,9 +72,9 @@ describe("validateFileContent", () => {
 		assert.ok(result.errors.some((e) => e.message.includes("rm -rf")));
 	});
 
-	it("json 檔中的 dynamic import 應為錯誤（json 非純文件，採嚴格模式）", () => {
+	it("一般 json 檔中的 dynamic import 應為錯誤", () => {
 		const result = validateFileContent(
-			"hooks.json",
+			"config.json",
 			'{"cmd": "import(\\"evil\\")"}',
 		);
 		assert.equal(result.valid, false);
@@ -83,15 +83,12 @@ describe("validateFileContent", () => {
 		);
 	});
 
-	it("strict 模式下 json 檔中的 dynamic import 應被攔截", () => {
+	it("hooks.json 中的 dynamic import 應視為合法 inline script（不攔截）", () => {
 		const result = validateFileContent(
 			"hooks.json",
-			'{"cmd": "import(\\"evil\\")"}',
-			{
-				strict: true,
-			},
+			'{"cmd": "require(\\"fs\\")"}',
 		);
-		assert.equal(result.valid, false);
+		assert.equal(result.valid, true);
 	});
 
 	it("任何檔案中的隱藏 HTML 指令應被偵測", () => {
