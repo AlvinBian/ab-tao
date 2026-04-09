@@ -44,17 +44,33 @@ import {
  * @returns {Promise<string[]>} 選中的倉庫 full_name 陣列
  */
 export async function interactiveRepoSelect(session = null) {
-	// 1. 檢查 gh 登入
+	// 1. 檢查 gh 登入（未登入則引導登入）
 	try {
 		execSync("gh auth status", { stdio: ["pipe", "pipe", "pipe"] });
 	} catch {
-		p.log.warn(
-			`GitHub CLI 未登入，請先執行：\n` +
-				`  ${pc.cyan("gh auth login")}          # 互動式（瀏覽器）\n` +
-				`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token\n` +
-				`完成後重新執行 pnpm setup`,
+		p.log.warn("GitHub CLI 未登入，需要登入才能選擇倉庫");
+		const doLogin = await p.confirm({
+			message: "現在登入 GitHub？（瀏覽器授權）",
+			initialValue: true,
+		});
+		if (p.isCancel(doLogin) || !doLogin) {
+			p.log.info(
+				`請手動執行後重新運行：\n` +
+					`  ${pc.cyan("gh auth login")}          # 互動式（瀏覽器）\n` +
+					`  ${pc.cyan("gh auth login --with-token")}  # 貼上 Personal Access Token`,
+			);
+			process.exit(1);
+		}
+		p.log.info(
+			`🔑 請在瀏覽器完成授權：\n  ${pc.dim("按 Enter 開啟瀏覽器 → 複製一次性驗證碼 → 完成授權")}`,
 		);
-		process.exit(1);
+		try {
+			execSync("gh auth login --web", { stdio: "inherit", timeout: 120000 });
+			p.log.success(`${pc.green("✔")} GitHub 登入完成`);
+		} catch {
+			p.log.warn("GitHub 登入失敗，請手動執行 gh auth login 後重試");
+			process.exit(1);
+		}
 	}
 
 	// 2. 取得用戶名 + 組織

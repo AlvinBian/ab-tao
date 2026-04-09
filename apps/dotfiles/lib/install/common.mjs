@@ -66,7 +66,8 @@ export function buildCmdArgs(selected, selectableDefs, repoDir) {
 		if (!values?.length || !selectableDefs[key]) continue;
 		const def = selectableDefs[key];
 		total += countExisting(repoDir, def.dir, values, def.ext);
-		cmdArgs.push(`--${key} "${values.join(",")}"`);
+		// 不加引號：spawn 不走 shell，引號會被原樣傳入導致匹配失敗
+		cmdArgs.push(`--${key} ${values.join(",")}`);
 	}
 
 	return { cmdArgs, total };

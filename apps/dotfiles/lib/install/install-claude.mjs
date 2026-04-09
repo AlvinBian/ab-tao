@@ -176,7 +176,7 @@ export async function handleInstallClaude(
 		} else {
 			total += rulesArg.split(",").length;
 		}
-		cmdArgs.push(`--rules "${rulesArg}"`);
+		cmdArgs.push(`--rules ${rulesArg}`);
 	}
 
 	if (installHooks) {

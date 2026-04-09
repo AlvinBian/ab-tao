@@ -124,7 +124,11 @@ fi
 # ── 計算進度總數（動態，供 JS 層讀取）─────────────────────────────
 _total=0
 (( _total += 1 ))  # sheldon
-(( _total += 1 ))  # fnm
+(( _total += 1 ))  # node manager（fnm install 或 info）
+# 遷移步驟（fnm 模式 + .zshrc 有 nvm/n 設定時多一步）
+if [[ "${AB_TAO_NODE_MGR:-auto}" == "fnm" || "${AB_TAO_NODE_MGR:-auto}" == "auto" ]]; then
+  [[ -f ~/.zshrc ]] && grep -qE '^[^#]*(nvm\.sh|NVM_DIR|export N_PREFIX)' ~/.zshrc 2>/dev/null && (( _total += 1 ))
+fi
 NEEDS_BREW=false
 for m in $SELECTED_MODULES; do
   [[ "$m" == "tools" || "$m" == "git" ]] && NEEDS_BREW=true && break
@@ -157,17 +161,94 @@ else
   fi
 fi
 
-# ── fnm（Node 版本管理，Rust，取代 nvm）─────────────────────────
-step "安裝 fnm"
-if command -v fnm &>/dev/null; then
-  info "fnm 已安裝"
-else
-  if command -v brew &>/dev/null; then
-    info "安裝 fnm..."
-    brew install fnm 2>/dev/null && success "fnm 安裝完成" || warn "fnm 安裝失敗"
+# ── Node 版本管理（依據 doctor.mjs 的選擇）─────────────────────
+# AB_TAO_NODE_MGR 由 doctor.mjs 設定（fnm/nvm/n），獨立執行時自動偵測
+NODE_MGR="${AB_TAO_NODE_MGR:-auto}"
+if [[ "$NODE_MGR" == "auto" ]]; then
+  # 獨立執行（非 pipeline）→ 自動偵測，可互動
+  local _has_fnm=0 _has_nvm=0 _has_n=0
+  command -v fnm &>/dev/null && _has_fnm=1
+  [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]] && _has_nvm=1
+  command -v n &>/dev/null && _has_n=1
+
+  # 判斷是否為互動終端（pipeline 透過 spawn 執行時 stdin 不是 tty）
+  local _interactive=false
+  [[ -t 0 ]] && _interactive=true
+
+  if (( _has_fnm )) && (( _has_nvm || _has_n )); then
+    local _other=$( (( _has_nvm )) && echo "nvm" || echo "n" )
+    if $_interactive; then
+      echo ""
+      echo -e "  ${YELLOW}偵測到 fnm + ${_other} 共存${RESET}"
+      echo -e "  ${CYAN}[1]${RESET} 使用 fnm（註解 ${_other} 設定）"
+      echo -e "  ${CYAN}[2]${RESET} 保留 ${_other}（略過 fnm 設定）"
+      printf "  > "
+      read -r _nm_choice
+      [[ "$_nm_choice" == "2" ]] && NODE_MGR="$_other" || NODE_MGR="fnm"
+    else
+      NODE_MGR="fnm"  # 非互動 → 預設 fnm
+    fi
+  elif (( _has_fnm )); then NODE_MGR="fnm"
+  elif (( _has_nvm )); then
+    if $_interactive; then
+      echo ""
+      echo -e "  ${YELLOW}偵測到 nvm，建議切換為 fnm（啟動 ~1ms vs ~1s）${RESET}"
+      echo -e "  ${CYAN}[1]${RESET} 切換為 fnm"
+      echo -e "  ${CYAN}[2]${RESET} 保留 nvm"
+      printf "  > "
+      read -r _nm_choice
+      [[ "$_nm_choice" == "2" ]] && NODE_MGR="nvm" || NODE_MGR="fnm"
+    else
+      NODE_MGR="fnm"
+    fi
+  elif (( _has_n )); then
+    if $_interactive; then
+      echo ""
+      echo -e "  ${YELLOW}偵測到 n，建議切換為 fnm（啟動 ~1ms vs ~1s）${RESET}"
+      echo -e "  ${CYAN}[1]${RESET} 切換為 fnm"
+      echo -e "  ${CYAN}[2]${RESET} 保留 n"
+      printf "  > "
+      read -r _nm_choice
+      [[ "$_nm_choice" == "2" ]] && NODE_MGR="n" || NODE_MGR="fnm"
+    else
+      NODE_MGR="fnm"
+    fi
   else
-    warn "未偵測到 brew，請手動安裝 fnm：https://github.com/Schniz/fnm"
+    NODE_MGR="fnm"
   fi
+fi
+
+if [[ "$NODE_MGR" == "fnm" ]]; then
+  step "安裝 fnm"
+  if command -v fnm &>/dev/null; then
+    info "fnm 已安裝"
+  else
+    if command -v brew &>/dev/null; then
+      info "安裝 fnm..."
+      brew install fnm 2>/dev/null && success "fnm 安裝完成" || warn "fnm 安裝失敗"
+    else
+      warn "未偵測到 brew，請手動安裝 fnm：https://github.com/Schniz/fnm"
+    fi
+  fi
+
+  # 遷移：註解 .zshrc 中的 nvm/n 設定（safety net，doctor.mjs 通常已處理）
+  if [[ -f ~/.zshrc ]] && grep -qE '^[^#]*(nvm\.sh|NVM_DIR|export N_PREFIX)' ~/.zshrc 2>/dev/null; then
+    step "遷移：nvm/n → fnm"
+    # 標題註解替換為遷移說明
+    sed -i '' 's/^# *nvm[[:space:]（(].*/# nvm（node 版本管理, 已由 ab-tao 遷移至 fnm 統一管理）/' ~/.zshrc 2>/dev/null || true
+    sed -i '' 's/^# *n[[:space:]（(].*/# n（node 版本管理, 已由 ab-tao 遷移至 fnm 統一管理）/' ~/.zshrc 2>/dev/null || true
+    # 程式碼行前加 #
+    sed -i '' '/^[^#]*export NVM_DIR=/s/^/# /' ~/.zshrc 2>/dev/null || true
+    sed -i '' '/^[^#]*\[ -s.*nvm\.sh/s/^/# /' ~/.zshrc 2>/dev/null || true
+    sed -i '' '/^[^#]*source.*nvm\.sh/s/^/# /' ~/.zshrc 2>/dev/null || true
+    sed -i '' '/^[^#]*\. .*nvm\.sh/s/^/# /' ~/.zshrc 2>/dev/null || true
+    sed -i '' '/^[^#]*\[ -s.*nvm.*bash_completion/s/^/# /' ~/.zshrc 2>/dev/null || true
+    sed -i '' '/^[^#]*export N_PREFIX=/s/^/# /' ~/.zshrc 2>/dev/null || true
+    success "已註解 nvm/n 設定"
+  fi
+else
+  step "Node 版本管理"
+  info "使用 $NODE_MGR 管理 Node 版本（略過 fnm 安裝）"
 fi
 
 # ── Homebrew CLI 工具 ─────────────────────────────────────────────
@@ -344,8 +425,10 @@ if [[ -f ~/.zshrc ]]; then
   if $_has_slow; then
     echo ""
     echo -e "  ${YELLOW}💡 啟動加速提示：${RESET}"
-    grep -q 'nvm\.sh' ~/.zshrc 2>/dev/null && \
-      echo -e "  ${DIM}  移除 source nvm.sh 可省 ~1s（ab-tao 已改用 fnm，自動讀取 .nvmrc）${RESET}"
+    # 只在用戶保留 nvm 時提示（fnm 模式下已自動註解）
+    if [[ "$NODE_MGR" != "fnm" ]] && grep -q 'nvm\.sh' ~/.zshrc 2>/dev/null; then
+      echo -e "  ${DIM}  移除 source nvm.sh 可省 ~1s（00-env.zsh 已配置 cd 自動切換）${RESET}"
+    fi
     grep -q 'pyenv init' ~/.zshrc 2>/dev/null && \
       echo -e "  ${DIM}  移除 eval \"\$(pyenv init -)\" 可省 ~300ms（ab-tao 已提供 lazy load）${RESET}"
   fi

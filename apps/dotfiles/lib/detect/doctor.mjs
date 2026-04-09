@@ -1,139 +1,46 @@
 /**
  * 環境檢查 + 自動修復
  *
- * 檢查順序：Homebrew → nvm → Node.js → pnpm → gh CLI → gh 登入 → claude CLI
+ * 檢查順序：Homebrew → Node 版本管理（fnm/nvm/n）→ Node.js → pnpm → gh CLI → gh 登入 → claude CLI
  */
 
-import { execFileSync, execSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { HOME } from "../core/paths.mjs";
-
-// claude CLI 可能的安裝路徑（官方安裝器、npm 全局、Homebrew）
-const CLAUDE_CANDIDATES = [
-	`${HOME}/.local/bin/claude`,
-	"/usr/local/bin/claude",
-	"/opt/homebrew/bin/claude",
-	`${HOME}/.npm-global/bin/claude`,
-	`${HOME}/.nvm/versions/node/current/bin/claude`,
-];
-
-function has(cmd) {
-	try {
-		execFileSync("which", [cmd], { stdio: "pipe" });
-		return true;
-	} catch {
-		/* which 失敗，對 claude 額外檢查已知路徑 */
-		if (cmd === "claude") return !!findClaudeCli();
-		return false;
-	}
-}
-
-/** 找到 claude CLI 的實際路徑 */
-function findClaudeCli() {
-	// 先嘗試 which
-	try {
-		return execSync("which claude", { encoding: "utf8", stdio: "pipe" }).trim();
-	} catch {
-		/* 不在 PATH 中 */
-	}
-	// 逐一檢查候選路徑
-	for (const p of CLAUDE_CANDIDATES) {
-		if (existsSync(p)) return p;
-	}
-	return null;
-}
-
-function ver(cmd, flag = "--version") {
-	const bin = cmd === "claude" ? findClaudeCli() || cmd : cmd;
-	try {
-		return execFileSync(bin, [flag], { encoding: "utf8", stdio: "pipe" })
-			.trim()
-			.split("\n")[0];
-	} catch {
-		return null;
-	}
-}
-
-function run(cmd) {
-	try {
-		// 檢查是否需要 shell 特性（管道、環境變數擴展、重定向等）
-		const needsShell = /[|&;><$()`]/.test(cmd) || /&&|\|\|/.test(cmd);
-		execSync(cmd, { stdio: "inherit", shell: needsShell, timeout: 300000 });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-/**
- * 透過 bash source nvm.sh 執行 nvm 命令（nvm 是 shell function，不在 PATH）
- * 使用 $NVM_DIR 或 fallback 到 $HOME/.nvm（剛安裝時 env 尚未更新）
- */
-function runNvm(nvmCmd) {
-	const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
-	try {
-		execFileSync(
-			"bash",
-			["-c", `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm ${nvmCmd}`],
-			{
-				stdio: "inherit",
-				timeout: 120000,
-			},
-		);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-function checkNvm() {
-	const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
-	try {
-		execFileSync(
-			"bash",
-			["-c", `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm --version`],
-			{
-				stdio: "pipe",
-				timeout: 3000,
-			},
-		);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-function nvmVersion() {
-	const nvmDir = process.env.NVM_DIR || `${HOME}/.nvm`;
-	try {
-		return execFileSync(
-			"bash",
-			["-c", `source "${nvmDir}/nvm.sh" 2>/dev/null && nvm --version`],
-			{
-				encoding: "utf8",
-				stdio: "pipe",
-				timeout: 3000,
-			},
-		).trim();
-	} catch {
-		return null;
-	}
-}
+import {
+	checkNvm,
+	nvmVersion,
+	resolveNodeManager,
+	runFnm,
+	runNvm,
+} from "./node-manager.mjs";
+import { findClaudeCli, has, run, ver } from "./shell-utils.mjs";
 
 /**
  * 檢查並確保開發環境完整
  *
- * 依序檢查 Homebrew、nvm、Node.js、pnpm、gh CLI、gh 登入、claude CLI。
+ * 依序檢查 Homebrew、Node 版本管理（fnm/nvm/n）、Node.js、pnpm、gh CLI、gh 登入、claude CLI。
  * 若有缺失，提示用戶確認後自動安裝。
  * 全部通過則顯示版本資訊並返回 true。
  *
  * @returns {Promise<boolean>} 環境就緒返回 true，安裝失敗返回 false
  */
 export async function ensureEnvironment() {
+	const fnmOk = has("fnm");
 	const nvmOk = checkNvm();
+	const nOk = has("n");
+	const anyNodeMgr = fnmOk || nvmOk || nOk;
+	const nodeMgrLabel = fnmOk ? "fnm" : nvmOk ? "nvm" : nOk ? "n" : null;
+	const nodeMgrVer = fnmOk
+		? ver("fnm")?.match(/[\d.]+/)?.[0]
+		: nvmOk
+			? nvmVersion()
+			: nOk
+				? ver("n")?.match(/[\d.]+/)?.[0]
+				: null;
 
 	const checks = [
 		{
@@ -144,11 +51,11 @@ export async function ensureEnvironment() {
 			actionLabel: "安裝 Homebrew",
 		},
 		{
-			name: "nvm",
-			ok: nvmOk,
-			ver: nvmVersion(),
-			failLabel: "未安裝",
-			actionLabel: "安裝 nvm",
+			name: "Node 版本管理",
+			ok: anyNodeMgr,
+			ver: nodeMgrVer ? `${nodeMgrLabel} ${nodeMgrVer}` : null,
+			failLabel: "未安裝（fnm / nvm / n）",
+			actionLabel: "安裝 fnm",
 		},
 		{
 			name: "Node.js",
@@ -207,6 +114,10 @@ export async function ensureEnvironment() {
 			)
 			.join(" · ");
 		p.log.success(`✅ 環境檢查通過  ${info}`);
+
+		// Node 版本管理策略（遷移提示）
+		await resolveNodeManager();
+
 		return true;
 	}
 
@@ -243,7 +154,7 @@ export async function ensureEnvironment() {
 	// 記錄哪些工具本次被安裝（影響後續步驟的判斷）
 	const justInstalled = new Set();
 
-	// 只安裝必須項目（排除可選項）
+	// 只安裝必須項目
 	for (const m of missing) {
 		const s = p.spinner();
 
@@ -261,36 +172,42 @@ export async function ensureEnvironment() {
 				);
 				return false;
 			}
-			// Apple Silicon: brew 安裝後需要更新 PATH 才能立即使用
 			run(
 				'eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null',
 			);
 			justInstalled.add("brew");
 		}
 
-		if (m.name === "nvm") {
-			s.start("📦 安裝 nvm（Node 版本管理）...");
-			const ok = run(
-				"curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash",
+		if (m.name === "Node 版本管理") {
+			s.start("📦 安裝 fnm（Node 版本管理）...");
+			let fnmInstallOk = false;
+			if (has("brew") || justInstalled.has("brew")) {
+				fnmInstallOk = run("brew install fnm");
+			}
+			s.stop(
+				fnmInstallOk ? `${pc.green("✔")} fnm 安裝完成` : pc.red("fnm 安裝失敗"),
 			);
-			s.stop(ok ? `${pc.green("✔")} nvm 安裝完成` : pc.red("nvm 安裝失敗"));
-			if (!ok) {
+			if (!fnmInstallOk) {
 				p.log.warn(
-					`nvm 安裝失敗，請手動安裝後重新執行：\n  ${pc.cyan("curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash")}`,
+					`fnm 安裝失敗，請手動安裝後重新執行：\n  ${pc.cyan("brew install fnm")}`,
 				);
 				return false;
 			}
-			// 安裝後設定 NVM_DIR，讓後續 runNvm 不需要重啟終端就能使用
-			if (!process.env.NVM_DIR) process.env.NVM_DIR = `${HOME}/.nvm`;
-			justInstalled.add("nvm");
+			justInstalled.add("fnm");
 		}
 
 		if (m.name === "Node.js") {
 			s.start("📦 安裝 Node.js...");
 			let ok = false;
-			const nvmAvailable = nvmOk || justInstalled.has("nvm"); // 本次剛裝的也算
-			if (nvmAvailable) {
+			const useFnm = has("fnm") || justInstalled.has("fnm");
+			const useNvm = nvmOk || justInstalled.has("nvm");
+			if (useFnm) {
+				ok = runFnm("install --lts");
+				if (ok) runFnm("default lts-latest");
+			} else if (useNvm) {
 				ok = runNvm("install --lts");
+			} else if (nOk) {
+				ok = run("n lts");
 			} else if (has("brew")) {
 				ok = run("brew install node");
 			}
@@ -301,7 +218,7 @@ export async function ensureEnvironment() {
 			);
 			if (!ok) {
 				p.log.warn(
-					`Node.js 安裝失敗，請手動安裝後重新執行：\n  ${pc.cyan("nvm install --lts")}  或  ${pc.cyan("brew install node")}`,
+					`Node.js 安裝失敗，請手動安裝後重新執行：\n  ${pc.cyan("fnm install --lts")}  或  ${pc.cyan("brew install node")}`,
 				);
 				return false;
 			}
@@ -366,7 +283,6 @@ export async function ensureEnvironment() {
 		}
 
 		if (m.name === "claude CLI") {
-			// 可能只是 PATH/hash 問題，先用完整路徑再確認一次
 			const existingPath = findClaudeCli();
 			if (existingPath) {
 				s.start("🔍 檢查 Claude CLI...");
@@ -375,7 +291,6 @@ export async function ensureEnvironment() {
 					`若終端找不到 claude，請執行 ${pc.cyan("hash -r")} 或開新終端視窗`,
 				);
 			} else {
-				// 安裝優先級：curl 官方安裝器 → brew → pnpm -g
 				const installMethods = [
 					{
 						label: "官方安裝器",
@@ -389,7 +304,6 @@ export async function ensureEnvironment() {
 					if (installed) break;
 					s.start(`📦 安裝 Claude CLI（${method.label}）...`);
 					const ok = run(method.cmd);
-					// 確保 ~/.local/bin 在 PATH 中（官方安裝器裝到這裡）
 					const localBin = `${HOME}/.local/bin`;
 					if (
 						existsSync(`${localBin}/claude`) &&
@@ -422,6 +336,9 @@ export async function ensureEnvironment() {
 			}
 		}
 	}
+
+	// Node 版本管理策略（遷移提示）
+	await resolveNodeManager(justInstalled);
 
 	p.log.success("✅ 環境就緒");
 	return true;

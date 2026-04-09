@@ -29,7 +29,7 @@ export function runWithProgress(cmd, { cwd, total, parseProgress, logger }) {
 		let dynamicTotal = total;
 
 		const [spawnCmd, ...spawnArgs] = cmd.trim().split(/\s+/);
-		const child = spawn(spawnCmd, spawnArgs, { cwd });
+		const child = spawn(spawnCmd, spawnArgs, { cwd, env: process.env });
 		let buf = "";
 		const stderrChunks = [];
 		const decoder = new StringDecoder("utf8");

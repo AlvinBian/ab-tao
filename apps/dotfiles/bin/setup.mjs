@@ -584,6 +584,14 @@ async function main() {
 			const confirmed = await feature.confirm(sharedCtx, plan);
 			if (!confirmed) continue;
 
+			// Node 版本管理策略（ZSH 安裝前確保 AB_TAO_NODE_MGR 已設定）
+			if (feature.id === "zsh" && !process.env.AB_TAO_NODE_MGR) {
+				const { resolveNodeManager } = await import(
+					"../lib/detect/node-manager.mjs"
+				);
+				await resolveNodeManager();
+			}
+
 			// install
 			if (!flagDryRun) {
 				const result = await feature.install(sharedCtx, plan);
