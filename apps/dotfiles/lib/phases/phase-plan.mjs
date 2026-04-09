@@ -8,6 +8,7 @@
  *   - 上一步（返回 BACK symbol）
  */
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
@@ -16,6 +17,41 @@ import { buildPlanSummary } from "../cli/plan-view.mjs";
 import { BACK, handleCancel, smartSelect } from "../cli/prompts.mjs";
 import { generateMinimalPlan } from "../config/auto-plan.mjs";
 import { HOME } from "../core/paths.mjs";
+
+/** 官方推薦 Plugins */
+const RECOMMENDED_PLUGINS = [
+	{ name: "code-review", desc: "多 agent 並行 PR 審查" },
+	{ name: "commit-commands", desc: "智能 commit 訊息生成" },
+	{ name: "feature-dev", desc: "7 階段結構化功能開發" },
+	{ name: "code-simplifier", desc: "審查變更代碼的品質與效率" },
+	{ name: "security-guidance", desc: "安全漏洞掃描與修復建議" },
+	{ name: "hookify", desc: "分析對話模式自動生成 hooks" },
+	{ name: "ralph-loop", desc: "持續迭代迴圈 — 自動重試直到完成" },
+	{ name: "session-report", desc: "Session 分析報告 — 回顧工作成果" },
+];
+
+/** 偵測已安裝的 plugins */
+function getInstalledPlugins() {
+	try {
+		const out = execFileSync("claude", ["plugin", "list", "--json"], {
+			stdio: ["pipe", "pipe", "pipe"],
+			timeout: 10000,
+		});
+		return new Set(JSON.parse(out.toString()).map((pl) => pl.name));
+	} catch {
+		return null; // claude CLI 不可用
+	}
+}
+
+/** 取得推薦但未安裝的 plugins */
+function getMissingPlugins() {
+	const installed = getInstalledPlugins();
+	if (!installed) return { available: false, missing: [] };
+	return {
+		available: true,
+		missing: RECOMMENDED_PLUGINS.filter((pl) => !installed.has(pl.name)),
+	};
+}
 
 /**
  * 展示安裝計畫並讓用戶確認
@@ -63,9 +99,45 @@ export async function phasePlan(plan) {
 	);
 
 	if (action === BACK || action === "back") return BACK;
-	if (action === "minimal") return generateMinimalPlan(plan);
-	if (action === "detail") return await detailConfirm(plan);
-	return plan; // full
+
+	let finalPlan;
+	if (action === "minimal") finalPlan = generateMinimalPlan(plan);
+	else if (action === "detail") finalPlan = await detailConfirm(plan);
+	else finalPlan = plan;
+
+	if (finalPlan === BACK) return BACK;
+
+	// ── Plugin 選擇（所有模式共用，安裝前選好）──
+	const feats = new Set(finalPlan.features || []);
+	if (feats.has("claude")) {
+		const { available, missing } = getMissingPlugins();
+		if (!available) {
+			p.log.warn(
+				"Claude CLI 未安裝，跳過 Plugin 選擇。安裝後可手動執行：\n" +
+					"  claude plugin install <name>@claude-plugins-official",
+			);
+			finalPlan.plugins = [];
+		} else if (isEmpty(missing)) {
+			p.log.success("✔ 所有推薦 Plugins 已安裝");
+			finalPlan.plugins = [];
+		} else {
+			const selected = handleCancel(
+				await p.multiselect({
+					message:
+						"🔌 選擇要安裝的官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+					options: missing.map((pl) => ({
+						value: pl.name,
+						label: `${pl.name} — ${pl.desc}`,
+					})),
+					required: false,
+					initialValues: missing.map((pl) => pl.name),
+				}),
+			);
+			finalPlan.plugins = selected === BACK || !selected ? [] : selected;
+		}
+	}
+
+	return finalPlan;
 }
 
 /**

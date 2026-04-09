@@ -31,84 +31,6 @@ function detectRtk() {
 	}
 }
 
-/** 官方推薦 Plugins（marketplace: anthropics/claude-plugins-official） */
-const MARKETPLACE_REPO = "anthropics/claude-plugins-official";
-const RECOMMENDED_PLUGINS = [
-	// ── 開發流程 ──
-	{
-		name: "code-review",
-		desc: "多 agent 並行 PR 審查",
-	},
-	{
-		name: "commit-commands",
-		desc: "智能 commit 訊息生成",
-	},
-	{
-		name: "feature-dev",
-		desc: "7 階段結構化功能開發",
-	},
-	{
-		name: "code-simplifier",
-		desc: "審查變更代碼的品質與效率",
-	},
-	// ── 安全與品質 ──
-	{
-		name: "security-guidance",
-		desc: "安全漏洞掃描與修復建議",
-	},
-	// ── 工作流自動化 ──
-	{
-		name: "hookify",
-		desc: "分析對話模式自動生成 hooks",
-	},
-	{
-		name: "ralph-loop",
-		desc: "持續迭代迴圈 — 自動重試直到任務完成",
-	},
-	{
-		name: "session-report",
-		desc: "Session 分析報告 — 回顧工作成果與模式",
-	},
-];
-
-/** 取得已安裝的 plugin 名稱列表 */
-function getInstalledPlugins() {
-	try {
-		const out = execFileSync("claude", ["plugin", "list", "--json"], {
-			stdio: ["pipe", "pipe", "pipe"],
-			timeout: 10000,
-		});
-		const list = JSON.parse(out.toString());
-		return new Set(list.map((p) => p.name));
-	} catch {
-		return new Set();
-	}
-}
-
-/** 確保官方 marketplace 已加入 */
-function ensureMarketplace() {
-	try {
-		const out = execFileSync(
-			"claude",
-			["plugin", "marketplace", "list", "--json"],
-			{ stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
-		);
-		const list = JSON.parse(out.toString());
-		if (list.some((m) => m.repo === MARKETPLACE_REPO)) return true;
-	} catch {
-		/* ignore */
-	}
-	try {
-		execSync(`claude plugin marketplace add ${MARKETPLACE_REPO}`, {
-			stdio: ["pipe", "pipe", "pipe"],
-			timeout: 120000,
-		});
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 /** 可選增強工具配置（模組級常數） */
 const ENHANCERS = [
 	{
@@ -292,72 +214,11 @@ export async function phaseComplete(
 
 	// ── 以下區塊僅在選了 claude 時顯示 ──
 	if (has("claude")) {
-		// 檢查 claude CLI 是否可用
-		let claudeCliAvailable = false;
-		try {
-			execFileSync("which", ["claude"], { stdio: "pipe" });
-			claudeCliAvailable = true;
-		} catch {
-			/* claude CLI 不存在 */
-		}
-
-		if (!claudeCliAvailable) {
-			p.log.warn(
-				`Claude CLI 未安裝，跳過 Plugin 安裝。\n` +
-					`  安裝方式：${`curl -fsSL https://claude.ai/install.sh | sh`}\n` +
-					`  安裝後可手動執行：claude plugin install <name>@claude-plugins-official`,
+		// 顯示已安裝的 plugins
+		if (installSelections.plugins?.length) {
+			instLines.push(
+				`  Plugins（${installSelections.plugins.length}）：${installSelections.plugins.join("、")}`,
 			);
-		}
-
-		// ── 官方 Plugin 互動安裝 ──
-		const installedPlugins = claudeCliAvailable
-			? getInstalledPlugins()
-			: new Set();
-		const missingPlugins = RECOMMENDED_PLUGINS.filter(
-			(pl) => !installedPlugins.has(pl.name),
-		);
-
-		if (!isEmpty(missingPlugins) && claudeCliAvailable) {
-			const pluginsToInstall = handleCancel(
-				await p.multiselect({
-					message:
-						"🔌 選擇要安裝的官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
-					options: missingPlugins.map((pl) => ({
-						value: pl.name,
-						label: `${pl.name} — ${pl.desc}`,
-					})),
-					required: false,
-					initialValues: missingPlugins.map((pl) => pl.name),
-				}),
-			);
-
-			if (pluginsToInstall !== BACK && !isEmpty(pluginsToInstall)) {
-				const hasMarketplace = ensureMarketplace();
-				if (!hasMarketplace) {
-					p.log.warn(
-						"⚠️ 無法加入官方 marketplace，請手動執行：\n  claude plugin marketplace add anthropics/claude-plugins-official",
-					);
-				} else {
-					for (const name of pluginsToInstall) {
-						try {
-							execSync(
-								`claude plugin install ${name}@claude-plugins-official`,
-								{
-									stdio: ["pipe", "pipe", "pipe"],
-									timeout: 60000,
-								},
-							);
-							p.log.success(`✔ ${name} 已安裝`);
-						} catch {
-							p.log.warn(
-								`⚠️ ${name} 安裝失敗，請手動：claude plugin install ${name}@claude-plugins-official`,
-							);
-						}
-					}
-				}
-			}
-		} else {
-			p.log.success("✔ 所有推薦 Plugins 已安裝");
 		}
 
 		// ── 其他推薦 ──

@@ -16,6 +16,7 @@
  *   - execute/install-zsh.mjs — Branch C（ZSH 模組）
  */
 
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { Listr } from "listr2";
@@ -134,7 +135,52 @@ export async function phaseExecute(
 				},
 			},
 
-			// [1] 驗證安裝完整性
+			// [1] 官方 Plugins 安裝（plan.plugins 由 phasePlan 選擇）
+			{
+				title: `🔌 官方 Plugins（${plan.plugins?.length || 0}）`,
+				enabled: () => !isEmpty(plan.plugins),
+				task: async (_, subtask) => {
+					const MARKETPLACE_REPO = "anthropics/claude-plugins-official";
+					// 確保 marketplace 已加入
+					try {
+						const out = execSync("claude plugin marketplace list --json", {
+							stdio: ["pipe", "pipe", "pipe"],
+							timeout: 10000,
+						}).toString();
+						const list = JSON.parse(out);
+						if (!list.some((m) => m.repo === MARKETPLACE_REPO)) {
+							execSync(`claude plugin marketplace add ${MARKETPLACE_REPO}`, {
+								stdio: ["pipe", "pipe", "pipe"],
+								timeout: 120000,
+							});
+						}
+					} catch {
+						subtask.output = "marketplace 加入失敗，跳過";
+						return;
+					}
+					const installed = [];
+					const failed = [];
+					for (const name of plan.plugins) {
+						try {
+							execSync(
+								`claude plugin install ${name}@claude-plugins-official`,
+								{ stdio: ["pipe", "pipe", "pipe"], timeout: 60000 },
+							);
+							installed.push(name);
+						} catch {
+							failed.push(name);
+						}
+					}
+					const parts = [];
+					if (installed.length) parts.push(`✔ ${installed.length} 個已安裝`);
+					if (failed.length) parts.push(`✘ ${failed.length} 個失敗`);
+					subtask.output = parts.join(" · ") || "完成";
+					// 記錄到 installSelections
+					if (installed.length) installSelections.plugins = installed;
+				},
+			},
+
+			// [2] 驗證安裝完整性
 			{
 				title: "✅ 驗證",
 				task: (_, task) =>
