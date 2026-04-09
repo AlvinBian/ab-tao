@@ -55,8 +55,8 @@ const ENHANCERS = [
 	{
 		name: "MemPalace",
 		desc: "跨會話語義記憶 — 本地 ChromaDB 儲存完整對話，與 Auto Memory 互補",
-		install: `pip install mempalace && mempalace init ~ && claude mcp add mempalace -- python3 -m mempalace.mcp_server`,
-		failHint: `pip install mempalace  （再執行 mempalace init ~）\n參考：https://github.com/milla-jovovich/mempalace`,
+		install: `python3 -m pip install mempalace && python3 -m mempalace init ~ && claude mcp add mempalace python3 -m mempalace.mcp_server`,
+		failHint: `python3 -m pip install mempalace  （再執行 python3 -m mempalace init ~）\n參考：https://github.com/milla-jovovich/mempalace`,
 		doneHint: "已就緒，Claude 可透過 MCP 搜尋歷史對話",
 		detect: detectMempalace,
 	},
