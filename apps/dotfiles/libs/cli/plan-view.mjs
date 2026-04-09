@@ -7,11 +7,24 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
+import pc from "picocolors";
 import {
 	descBullet,
 	getDescription,
 	getRating,
 } from "../config/descriptions.mjs";
+
+// ── 資源 Model 對照 ──
+const CMD_MODEL = {
+	check: "haiku",
+	test: "sonnet",
+	"db-migration": "sonnet",
+	slack: "haiku",
+};
+const AGENT_MODEL = {
+	architect: "opus",
+	debugger: "sonnet",
+};
 
 /** 從 SKILL.md 內容提取簡短描述（frontmatter description 或首行非標題文字） */
 function extractSkillDesc(content) {
@@ -139,14 +152,22 @@ export function formatGlobalConfig(globalConfig) {
 	const lines = [];
 	const g = globalConfig;
 
-	lines.push(`2. 全局配置 → ~/.claude/`);
-	lines.push(`   Commands（${g.commands.length}）`);
-	lines.push(...grid(g.commands));
-	lines.push(`   Agents（${g.agents.length}）`);
-	lines.push(...grid(g.agents));
+	lines.push(`2. 全局配置 → ~/.claude/ 推薦`);
+	lines.push(`   Commands（${g.commands.length}）推薦`);
+	const cmdItems = g.commands.map((c) => {
+		const m = CMD_MODEL[c];
+		return m ? `${c} ${pc.dim(m)}` : c;
+	});
+	lines.push(...grid(cmdItems));
+	lines.push(`   Agents（${g.agents.length}）推薦`);
+	const agentItems = g.agents.map((a) => {
+		const m = AGENT_MODEL[a];
+		return m ? `${a} ${pc.dim(m)}` : a;
+	});
+	lines.push(...grid(agentItems));
 	lines.push(`   Rules（${g.rules.length}）`);
 	lines.push(...grid(g.rules, 3, 24));
-	lines.push(`   Hooks（${g.hooks.length}）`);
+	lines.push(`   Hooks（${g.hooks.length}）推薦`);
 	const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ["", h])[1]);
 	lines.push(...grid(hookNames, 4, 16));
 	lines.push(
@@ -166,13 +187,40 @@ export function formatGlobalConfig(globalConfig) {
 export function formatTechStacks(plan) {
 	const lines = [];
 
+	const CATEGORY_ORDER = [
+		"前端框架",
+		"測試框架",
+		"建構工具",
+		"CSS 與樣式",
+		"狀態管理",
+		"UI 元件庫",
+		"HTTP 與 API",
+		"國際化",
+		"表單驗證",
+		"第三方整合",
+		"安全與認證",
+		"後端框架",
+		"基礎設施",
+		"容器化",
+		"監控與追蹤",
+		"工具函式",
+		"CLI 工具",
+		"即時通訊",
+		"其他",
+	];
+
 	if (!isEmpty(plan.techStacks)) {
 		const categorized = plan._pipelineResult?.categorizedTechs;
 		if (categorized instanceof Map && categorized.size > 0) {
 			lines.push(
-				`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`,
+				`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）推薦`,
 			);
-			for (const [cat, techMap] of categorized) {
+			const sorted = [...categorized.entries()].sort((a, b) => {
+				const ia = CATEGORY_ORDER.indexOf(a[0]);
+				const ib = CATEGORY_ORDER.indexOf(b[0]);
+				return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+			});
+			for (const [cat, techMap] of sorted) {
 				const techs = [...techMap.keys()];
 				lines.push(`   ${cat}（${techs.length}）：${techs.join("、")}`);
 			}
@@ -213,7 +261,7 @@ export function formatAiResResources(plan, claudeDir) {
 			aiResByType[type].push(clean);
 		}
 
-		lines.push(`5. 🌐 AI 資源（${plan.aiRes.length} 個）`);
+		lines.push(`5. 🌐 AI 外部資源（${plan.aiRes.length} 個）可選`);
 		if (aiResByType.commands.length) {
 			lines.push(`   5.1 Commands（${aiResByType.commands.length}）`);
 			lines.push(
@@ -309,7 +357,7 @@ export function formatZshModules(plan) {
 
 	if (!isEmpty(plan.zshModules)) {
 		lines.push(
-			`ZSH 模組 → ~/.zshrc.d/（${plan.zshModules.length} 可選 + 2 恆常 + sheldon 插件）`,
+			`ZSH 模組 → ~/.zshrc.d/（${plan.zshModules.length} 可選 + 2 恆常 + sheldon 插件）推薦`,
 		);
 		lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
 	}
