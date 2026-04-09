@@ -13,7 +13,7 @@ export const commands = {
 	scan: "技術棧掃描 + 技能庫生成",
 	doctor: "環境診斷",
 	status: "配置狀態儀表板",
-	report: "瀏覽器 HTML Dashboard",
+	report: "打開上次 setup 部署報告",
 	restore: "還原備份",
 	hooks: "Hook 管理",
 	uninstall: "移除 ab-tao",
