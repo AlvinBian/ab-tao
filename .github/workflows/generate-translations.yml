@@ -34,7 +34,7 @@ jobs:
 
       - name: Generate translations
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           FORCE_FLAG: ${{ inputs.force }}
         run: |
           ARGS=""
