@@ -29,6 +29,20 @@ export PNPM_HOME="$HOME/Library/pnpm"
 if _command_exists fnm; then
   # fnm — 官方推薦寫法，無 guard（冪等 ~1ms，避免 IDE 繼承 stale 環境）
   eval "$(fnm env --use-on-cd --version-file-strategy=recursive --shell zsh)"
+  # fnm — 自動安裝缺少的版本（--use-on-cd 只切換不安裝，這裡補足）
+  _auto_fnm_install() {
+    { [[ -f ".node-version" ]] || [[ -f ".nvmrc" ]]; } || return
+    local _want
+    _want=$(cat .node-version 2>/dev/null || cat .nvmrc 2>/dev/null)
+    [[ -z "$_want" ]] && return
+    # 已安裝則跳過（避免每次 cd 都呼叫 fnm list）
+    fnm list 2>/dev/null | grep -qF "$_want" && return
+    echo "fnm: 安裝 Node $_want ..."
+    fnm install "$_want" && fnm use "$_want"
+  }
+  autoload -U add-zsh-hook
+  add-zsh-hook chpwd _auto_fnm_install
+  _auto_fnm_install
 elif [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
   # nvm — 用戶選擇保留，確保 nvm.sh 已載入 + cd 自動切換（讀取 .nvmrc）
   # 用戶 .zshrc 中的 source nvm.sh 可能已被註解，這裡補載入
