@@ -34,6 +34,7 @@ function detectRtk() {
 /** 官方推薦 Plugins（marketplace: anthropics/claude-plugins-official） */
 const MARKETPLACE_REPO = "anthropics/claude-plugins-official";
 const RECOMMENDED_PLUGINS = [
+	// ── 開發流程 ──
 	{
 		name: "code-review",
 		desc: "多 agent 並行 PR 審查",
@@ -43,20 +44,30 @@ const RECOMMENDED_PLUGINS = [
 		desc: "智能 commit 訊息生成",
 	},
 	{
-		name: "security-guidance",
-		desc: "安全漏洞掃描與修復建議",
-	},
-	{
-		name: "hookify",
-		desc: "分析對話模式自動生成 hooks",
-	},
-	{
 		name: "feature-dev",
 		desc: "7 階段結構化功能開發",
 	},
 	{
 		name: "code-simplifier",
 		desc: "審查變更代碼的品質與效率",
+	},
+	// ── 安全與品質 ──
+	{
+		name: "security-guidance",
+		desc: "安全漏洞掃描與修復建議",
+	},
+	// ── 工作流自動化 ──
+	{
+		name: "hookify",
+		desc: "分析對話模式自動生成 hooks",
+	},
+	{
+		name: "ralph-loop",
+		desc: "持續迭代迴圈 — 自動重試直到任務完成",
+	},
+	{
+		name: "session-report",
+		desc: "Session 分析報告 — 回顧工作成果與模式",
 	},
 ];
 

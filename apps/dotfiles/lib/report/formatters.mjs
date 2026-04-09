@@ -322,16 +322,6 @@ export function renderPlugins(_installed = {}) {
 			category: "開發流程",
 		},
 		{
-			name: "security-guidance",
-			desc: "安全漏洞掃描與修復建議",
-			category: "安全",
-		},
-		{
-			name: "hookify",
-			desc: "分析對話模式自動生成 hooks",
-			category: "助手",
-		},
-		{
 			name: "feature-dev",
 			desc: "7 階段結構化功能開發",
 			category: "開發流程",
@@ -340,6 +330,26 @@ export function renderPlugins(_installed = {}) {
 			name: "code-simplifier",
 			desc: "審查變更代碼的品質與效率",
 			category: "開發流程",
+		},
+		{
+			name: "security-guidance",
+			desc: "安全漏洞掃描與修復建議",
+			category: "安全",
+		},
+		{
+			name: "hookify",
+			desc: "分析對話模式自動生成 hooks",
+			category: "自動化",
+		},
+		{
+			name: "ralph-loop",
+			desc: "持續迭代迴圈 — 自動重試直到任務完成",
+			category: "自動化",
+		},
+		{
+			name: "session-report",
+			desc: "Session 分析報告 — 回顧工作成果與模式",
+			category: "自動化",
 		},
 	];
 
