@@ -18,8 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 校驗合併來源
+        env:
+          SOURCE: ${{ github.head_ref }}
         run: |
-          SOURCE="${{ github.head_ref }}"
           if [[ "$SOURCE" == "develop" || "$SOURCE" == release/* ]]; then
             echo "✅ 合併來源符合規範：$SOURCE → main"
           else
@@ -34,8 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 校驗分支命名
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
-          BRANCH="${{ github.head_ref }}"
+          # develop / main / release/* 是保護分支，跳過命名校驗
+          if [[ "$BRANCH" == "develop" || "$BRANCH" == "main" || "$BRANCH" == release/* ]]; then
+            echo "✅ 保護分支，跳過命名校驗：$BRANCH"
+            exit 0
+          fi
           VALID_PATTERN="^(feature|fix|hotfix|release|refactor|docs|chore|ci|test)/.+"
           if [[ ! "$BRANCH" =~ $VALID_PATTERN ]]; then
             echo "::error::分支名不符合規範：$BRANCH"
