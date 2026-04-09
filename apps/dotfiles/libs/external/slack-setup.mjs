@@ -86,29 +86,8 @@ export async function setupSlackNotify(prev) {
 	}
 
 	// channel 模式：確認頻道 → 取得 Channel ID
-	let username = "";
-	try {
-		const { execSync } = await import("node:child_process");
-		const login = execSync("gh api user --jq .login", {
-			encoding: "utf8",
-			timeout: 5000,
-		})
-			.trim()
-			.toLowerCase();
-		const name = execSync("gh api user --jq .name", {
-			encoding: "utf8",
-			timeout: 5000,
-		})
-			.trim()
-			.toLowerCase();
-		username = name
-			? name.replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
-			: login;
-	} catch {
-		/* gh not available */
-	}
-
-	const channelName = username ? `${username}-notify` : "claude-code-notify";
+	const channelName = "你的名稱-notify";
+	p.log.info("建議頻道名稱格式：#你的名稱-notify（例：#alvin-notify）");
 
 	const hasChannel = handleCancel(
 		await p.select({
