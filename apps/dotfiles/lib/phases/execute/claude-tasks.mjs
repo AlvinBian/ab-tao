@@ -155,11 +155,30 @@ export function buildClaudeTasks(
 																	fs.readFileSync(slackHooksPath, "utf8"),
 																).hooks;
 																if (!settings.hooks) settings.hooks = {};
-																for (const [event, matchers] of Object.entries(
-																	slackHooks,
-																)) {
-																	if (!settings.hooks[event])
-																		settings.hooks[event] = matchers;
+																for (const [
+																	event,
+																	newMatchers,
+																] of Object.entries(slackHooks)) {
+																	if (!settings.hooks[event]) {
+																		settings.hooks[event] = newMatchers;
+																	} else {
+																		const existingCmds = new Set(
+																			settings.hooks[event].flatMap((m) =>
+																				(m.hooks || []).map(
+																					(h) => h.command || "",
+																				),
+																			),
+																		);
+																		for (const m of newMatchers) {
+																			const cmds = (m.hooks || []).map(
+																				(h) => h.command || "",
+																			);
+																			if (
+																				cmds.some((c) => !existingCmds.has(c))
+																			)
+																				settings.hooks[event].push(m);
+																		}
+																	}
 																}
 																fs.writeFileSync(
 																	settingsPath,
