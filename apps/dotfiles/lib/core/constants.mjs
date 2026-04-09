@@ -89,7 +89,3 @@ export const DESC_MAX_LENGTH = env("DESC_MAX_LENGTH", 40);
 // ── 進度條 ───────────────────────────────────────────────────────
 // 進度條的字元寬度（26 個字元）
 export const PROGRESS_BAR_SIZE = env("PROGRESS_BAR_SIZE", 26);
-
-// ── GitHub Org ───────────────────────────────────────────────────
-// 目標 GitHub 組織名稱（空字串表示只掃個人 repo）
-export const GITHUB_ORG = env("GITHUB_ORG", "");

@@ -8,9 +8,8 @@
  *   - code-style.md — 命名慣例和格式規範
  *
  * 生成策略（按優先級）：
- *   1. ANTHROPIC_API_KEY → Claude API 直接生成
- *   2. claude CLI → 本地 CLI 生成
- *   3. 預設模板 → 通用的 code review / test / style 模板
+ *   1. Claude Code CLI → 本地 CLI 生成（走 OAuth）
+ *   2. 預設模板 → 通用的 code review / test / style 模板
  *
  * 被 scan.mjs 使用（pnpm run scan 時批量生成）
  */
@@ -23,8 +22,7 @@ import { callClaude, isClaudeAvailable } from "./claude-cli.mjs";
 // ── AI 可用性檢查 ──────────────────────────────────────────────
 
 /**
- * 檢查是否有可用的 AI 生成方式
- * 優先 ANTHROPIC_API_KEY，其次 claude CLI
+ * 檢查是否有可用的 AI 生成方式（Claude Code CLI）
  */
 export { isClaudeAvailable as isAIAvailable };
 

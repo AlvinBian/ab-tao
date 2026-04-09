@@ -17,7 +17,7 @@
  * 用法：
  *   pnpm run scan              ← 掃描 config.json，增量更新 stacks/
  *   pnpm run scan -- --init    ← 清空 stacks/ 重新生成
- *   pnpm run scan -- --no-ai   ← 不用 Claude API（預設有 ANTHROPIC_API_KEY 自動生成）
+ *   pnpm run scan -- --no-ai   ← 不用 Claude（預設有 CLI 自動生成）
  *   pnpm run scan -- --skills typescript,vue  ← 只生成指定的 stacks
  *   pnpm run scan -- --org kkday-it
  */
@@ -283,7 +283,7 @@ async function main() {
 
 	if (created > 0 && !canUseAI) {
 		console.log(
-			`\n💡 ${created} 個 stack 使用預設模板。設定 ANTHROPIC_API_KEY 後重跑可 AI 生成`,
+			`\n💡 ${created} 個 stack 使用預設模板。安裝 Claude Code CLI 後重跑可 AI 生成`,
 		);
 	}
 }
