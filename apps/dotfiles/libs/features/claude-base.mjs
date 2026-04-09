@@ -217,8 +217,8 @@ export default {
 			}
 		}
 
-		// 檢查獨立檔案
-		for (const f of ["settings.json", "hooks.json"]) {
+		// 檢查獨立檔案（hooks.json 由 Slack feature 負責）
+		for (const f of ["settings.json"]) {
 			total++;
 			if (fs.existsSync(path.join(CLAUDE_DIR, f))) {
 				passed++;
