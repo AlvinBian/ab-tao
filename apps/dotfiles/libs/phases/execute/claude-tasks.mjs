@@ -94,11 +94,20 @@ export function buildClaudeTasks(
 																		"settings.template.json 格式錯誤，跳過設定部署";
 																	return;
 																}
-																const result = deploySettings(template);
+																const result = deploySettings(template, {
+																	model: plan.model ?? undefined,
+																});
+																const parts = [];
+																if (result.modelSet)
+																	parts.push(`model → ${result.modelSet}`);
+																if (result.permissionsAdded > 0)
+																	parts.push(
+																		`新增 ${result.permissionsAdded} 條 permission 規則`,
+																	);
 																sub.output =
-																	result.permissionsAdded > 0
-																		? `新增 ${result.permissionsAdded} 條 permission 規則`
-																		: "permissions 已是最新";
+																	parts.length > 0
+																		? parts.join("，")
+																		: "settings 已是最新";
 															}
 														},
 													},

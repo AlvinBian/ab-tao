@@ -111,6 +111,53 @@ export async function phasePlan(plan) {
 
 	if (finalPlan === BACK) return BACK;
 
+	// ── Model 選擇 ──
+	const currentModel = (() => {
+		try {
+			const s = JSON.parse(
+				fs.readFileSync(path.join(HOME, ".claude", "settings.json"), "utf8"),
+			);
+			return s.model || null;
+		} catch {
+			return null;
+		}
+	})();
+
+	const modelChoice = handleCancel(
+		await p.select({
+			message: `🤖 Claude Code 模型策略${currentModel ? `  (目前：${currentModel})` : ""}`,
+			options: [
+				{
+					value: "opusplan",
+					label: "opusplan — 規劃用 Opus，執行用 Sonnet",
+					hint: "推薦：品質與成本平衡，省 68%",
+				},
+				{
+					value: "sonnet",
+					label: "sonnet — 均衡",
+					hint: "一般開發的預設選擇",
+				},
+				{
+					value: "haiku",
+					label: "haiku — 速度優先",
+					hint: "成本最低，適合簡單任務",
+				},
+				{
+					value: "opus",
+					label: "opus — 最高品質",
+					hint: "複雜架構設計、全程 Opus",
+				},
+				{
+					value: null,
+					label: "← 保留現有設定",
+					hint: currentModel ? `目前：${currentModel}` : "未設定",
+				},
+			],
+			initialValue: currentModel || "opusplan",
+		}),
+	);
+	if (modelChoice !== BACK) finalPlan.model = modelChoice;
+
 	// ── Plugin 選擇（所有模式共用，安裝前選好）──
 	const feats = new Set(finalPlan.features || []);
 	if (feats.has("claude")) {

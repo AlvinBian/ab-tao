@@ -27,12 +27,15 @@ const CLAUDE_DIR = path.join(HOME, ".claude");
  * @param {string} [template.effortLevel] - 推理強度（如 'medium'）
  * @param {boolean} [template.autoMemoryEnabled] - 是否啟用自動記憶
  * @param {Object} [template.env] - 環境變數設定
- * @returns {{ path: string, permissionsAdded: number, isNew: boolean }}
+ * @param {Object} [overrides] - 用戶顯式選擇的設定（優先寫入，不受「不覆蓋」保護）
+ * @param {string} [overrides.model] - 用戶選擇的模型（如 'opusplan'、'sonnet'）
+ * @returns {{ path: string, permissionsAdded: number, isNew: boolean, modelSet: string|null }}
  *   path: settings.json 的絕對路徑
  *   permissionsAdded: 新增的 allow 規則數量
  *   isNew: 是否為首次建立（原本不存在）
+ *   modelSet: 實際寫入的 model（null = 未變更）
  */
-export function deploySettings(template) {
+export function deploySettings(template, overrides = {}) {
 	const settingsPath = path.join(CLAUDE_DIR, "settings.json");
 	let existing = {};
 
@@ -52,7 +55,13 @@ export function deploySettings(template) {
 		merged.permissions = existing.permissions;
 	}
 
-	// model/effortLevel: 不寫入，由用戶自行在 Claude Code 中設定
+	// model: 用戶顯式選擇時寫入，否則保留現有設定
+	let modelSet = null;
+	if (overrides.model !== undefined && overrides.model !== null) {
+		merged.model = overrides.model;
+		modelSet = overrides.model;
+	}
+
 	if (existing.autoMemoryEnabled === undefined)
 		merged.autoMemoryEnabled = template.autoMemoryEnabled;
 
@@ -79,5 +88,6 @@ export function deploySettings(template) {
 			(merged.permissions?.allow?.length || 0) -
 			(existing.permissions?.allow?.length || 0),
 		isNew,
+		modelSet,
 	};
 }
