@@ -23,7 +23,7 @@ jobs:
       - name: 偵測目標 repos
         id: discover
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           REPOS_INPUT: ${{ inputs.repos }}
           DEFAULT_REPOS: ${{ vars.NIGHTLY_PLAN_REPOS }}
         run: |
@@ -184,12 +184,10 @@ MDEOF
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          REPORT=$(cat /tmp/report.md)
-
           python3 - << PYEOF > /tmp/payload.json
-import json
+import json, os
 report = open('/tmp/report.md').read()
-today = "$TODAY"
+today = os.environ.get('TODAY', '')
 prompt = f"""你是資深工程師兼技術主管。根據以下 GitHub 倉庫數據，為 {today} 生成具體可執行的工作計畫。
 
 ## 倉庫數據
@@ -232,27 +230,20 @@ print(json.dumps({
 }))
 PYEOF
 
-          RESPONSE=$(curl -s -X POST \
+          curl -s -X POST \
             "https://models.inference.ai.azure.com/chat/completions" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
-            -d @/tmp/payload.json)
+            -d @/tmp/payload.json > /tmp/response.json
 
-          python3 - << PYEOF > /tmp/plan.md
-import sys, json
-raw = open('/tmp/payload.json').read()  # for debug if needed
-resp = """$RESPONSE"""
+          python3 - << 'PYEOF' > /tmp/plan.md
+import json
 try:
-    d = json.loads(resp)
-    content = d['choices'][0]['message']['content']
-    print(content)
+    d = json.loads(open('/tmp/response.json').read())
+    print(d['choices'][0]['message']['content'])
 except Exception as e:
-    print(f"⚠️ AI 生成失敗：{e}")
-    print()
-    print("**原始回應：**")
-    print("```")
-    print(resp[:2000])
-    print("```")
+    resp = open('/tmp/response.json').read()
+    print(f"⚠️ AI 生成失敗：{e}\n\n**原始回應：**\n```\n{resp[:2000]}\n```")
 PYEOF
 
           echo "計畫生成完成（$(wc -c < /tmp/plan.md) bytes）"
@@ -265,7 +256,7 @@ PYEOF
         run: |
           TITLE="📋 每日工作計畫 $TODAY"
 
-          BODY=$(python3 - << PYEOF
+          BODY=$(python3 - << 'PYEOF'
 import os
 plan = open('/tmp/plan.md').read()
 repos = os.environ.get('REPOS', '')
@@ -284,6 +275,7 @@ print(f"""## 每日工作計畫
 *[查看 Workflow 記錄](../../actions/workflows/nightly-plan.yml)*""")
 PYEOF
 )
+          echo "$BODY" > /tmp/issue-body.md
 
           # 確保 label 存在
           gh label create "nightly-plan" \
@@ -301,15 +293,15 @@ PYEOF
             2>/dev/null | head -1)
 
           if [ -n "$EXISTING" ]; then
-            echo "$BODY" | gh issue edit "$EXISTING" \
+            gh issue edit "$EXISTING" \
               --repo "$ISSUE_REPO" \
-              --body-file -
+              --body-file /tmp/issue-body.md
             echo "✅ 更新 Issue #$EXISTING"
           else
-            echo "$BODY" | gh issue create \
+            gh issue create \
               --repo "$ISSUE_REPO" \
               --title "$TITLE" \
               --label "nightly-plan" \
-              --body-file -
+              --body-file /tmp/issue-body.md
             echo "✅ 建立 Issue：$TITLE"
           fi
