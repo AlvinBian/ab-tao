@@ -128,17 +128,17 @@ jobs:
             exit 0
           fi
           # 檢查 packages/ 是否有變更
-          CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" | grep '^packages/' || true)
+          CHANGED=$(git diff --name-only "origin/$BASE_REF...HEAD" | grep -E '^(packages|apps/dotfiles)/' || true)
           if [ -z "$CHANGED" ]; then
-            echo "✅ packages/ 無變更，跳過 changeset 校驗"
+            echo "✅ 套件無變更，跳過 changeset 校驗"
             exit 0
           fi
-          echo "📦 packages/ 有變更："
+          echo "📦 套件有變更："
           echo "$CHANGED"
           # 檢查是否有 changeset 記錄（.changeset/*.md 排除 README.md）
           CHANGESETS=$(find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" 2>/dev/null || true)
           if [ -z "$CHANGESETS" ]; then
-            echo "::error::packages/ 有變更但缺少 changeset 記錄"
+            echo "::error::套件有變更但缺少 changeset 記錄"
             echo "  請執行：pnpm run changeset"
             echo "  選擇變更的套件並填寫說明，提交 .changeset/*.md 到本 PR"
             exit 1
