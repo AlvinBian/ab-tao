@@ -34,7 +34,7 @@
 					},
 					{
 						"type": "command",
-						"command": "F=\"$HOME/.claude/hooks/filter-output.sh\"; [ -x \"$F\" ] && exec \"$F\"; exit 0",
+						"command": "command -v rtk >/dev/null && exit 0; F=\"$HOME/.claude/hooks/filter-output.sh\"; [ -x \"$F\" ] && exec \"$F\"; exit 0",
 						"timeout": 5
 					}
 				]
