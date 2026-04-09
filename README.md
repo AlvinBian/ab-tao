@@ -240,9 +240,19 @@ git checkout main && git checkout -b hotfix/xxx
 | -------------- | --------------------- | ------------------------------------------------ |
 | **CI**         | push → main           | lint + build + test + 資源同步驗證               |
 | **GitFlow**    | PR + push + tag       | 分支校驗 + PR 來源校驗 + commit 校驗 + Release   |
-| **Translate**  | README.md 變更 → main | 自動翻譯 zh-CN + EN                              |
+| **Translate**  | README.md 變更 → main | 自動翻譯 zh-CN + EN（需要 `GH_PAT` secret）      |
 | **Sync**       | 每週一 03:00 UTC      | 自動同步外部 AI 資源                             |
 | **Cheatsheet** | 每日 03:00 UTC        | 同步 Claude Code 快速參考表並部署至 GitHub Pages |
+
+### 必要 Secrets 設定
+
+**Translate workflow** 使用 [GitHub Models API](https://models.inference.ai.azure.com)，需要有 `models` 權限的 PAT：
+
+1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens**
+2. 建立新 token，勾選 **Models** 權限（read access）
+3. Repo → Settings → Secrets and variables → Actions → 新增 secret：`GH_PAT`
+
+> 預設的 `GITHUB_TOKEN` 不含 `models` 權限，必須另外設定 `GH_PAT`。
 
 ## License
 

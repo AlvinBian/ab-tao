@@ -22,7 +22,7 @@ jobs:
       # ── Step 1：初始化時間與偵測 repos ────────────────────────
       - name: 初始化
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TODAY=$(date -u +%Y-%m-%d)
           HOUR=$(date -u +%H)
@@ -71,7 +71,7 @@ jobs:
       # ── Step 2：收集所有 repo 資料 ────────────────────────────
       - name: 收集 repo 資料
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           > /tmp/report.md
 
@@ -152,7 +152,7 @@ MDEOF
       # ── Step 3：判斷是初始化還是深化 ─────────────────────────
       - name: 判斷模式
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           ISSUE_REPO: ${{ vars.NIGHTLY_PLAN_ISSUE_REPO || github.repository }}
           FORCE_INIT: ${{ inputs.force_init || 'false' }}
         run: |
@@ -193,7 +193,7 @@ MDEOF
       - name: 初始化 5 個 Issue
         if: env.MODE == 'init'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           python3 - << PYEOF > /tmp/init-payload.json
 import json, os
@@ -291,7 +291,7 @@ PYEOF
       - name: 深化分析
         if: env.MODE == 'deepen'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           python3 - << 'PYEOF'
 import json, os, subprocess
