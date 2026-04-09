@@ -165,7 +165,7 @@ async function detailConfirm(originalPlan) {
 		const sourceIcons = {
 			ecc: "🌐",
 			anthropic: "🏛️",
-			superpowers: "⚡",
+			superpowers: "🚀",
 			"context-engineering": "🧠",
 		};
 		plan.commonsSelections = {};

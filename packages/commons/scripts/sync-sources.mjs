@@ -44,7 +44,7 @@ const SOURCES_CONFIG = {
 	},
 	superpowers: {
 		url: "https://github.com/obra/superpowers.git",
-		icon: "⚡",
+		icon: "🚀",
 		description: "Agents / Commands / Hooks（brainstorm、execute-plan）",
 		validatePaths: ["agents", "commands", "skills"],
 		optional: true,
