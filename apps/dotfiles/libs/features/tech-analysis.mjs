@@ -274,10 +274,10 @@ export default {
 	},
 
 	/**
-	 * 6. 安裝 — 純資料功能，無需安裝
+	 * 6. 安裝 — 純資料功能，傳遞分析結果供下游 feature 使用
 	 */
-	async install() {
-		return null;
+	async install(_ctx, plan) {
+		return plan;
 	},
 
 	/**
