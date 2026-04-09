@@ -338,31 +338,35 @@ export async function runAnalysisPipeline({
 			const techSet = new Set(allDetectedTechs.map((t) => t.toLowerCase()));
 			const langSet = new Set([...allLangs].map((l) => l.toLowerCase()));
 
+			// 官方 plugins 名稱 — 與這些重複的外部資源不推薦
+			const OFFICIAL_PLUGIN_NAMES = new Set([
+				"code-review",
+				"commit-commands",
+				"feature-dev",
+				"code-simplifier",
+				"security-guidance",
+				"hookify",
+				"ralph-loop",
+				"session-report",
+			]);
+
 			// 通用工具關鍵字：名稱包含這些詞就推薦
 			const UNIVERSAL_KEYWORDS = [
 				"review",
 				"test",
 				"lint",
 				"format",
-				"style",
 				"quality",
 				"debug",
-				"clean",
 				"fix",
 				"plan",
-				"docs",
-				"doc",
 				"commit",
 				"git",
 				"pr",
 				"ci",
 				"deploy",
-				"accessibility",
-				"a11y",
 				"tdd",
 				"coverage",
-				"mock",
-				"stub",
 			];
 
 			// 語言專用前綴 → 對應語言
@@ -375,29 +379,55 @@ export async function runAnalysisPipeline({
 				"react-": "react",
 				"node-": "node",
 				"go-": "go",
+				"golang-": "go",
 				"python-": "python",
 				"py-": "python",
 				"php-": "php",
 				"rust-": "rust",
 				"java-": "java",
 				"swift-": "swift",
+				"kotlin-": "kotlin",
+				"flutter-": "dart",
+				"dart-": "dart",
+				"csharp-": "csharp",
+				"cpp-": "cpp",
+				"android-": "kotlin",
+				"pytorch-": "python",
+			};
+
+			// 語言相關框架關鍵字 → 對應語言（名稱含這些詞視為語言專用）
+			const LANG_KEYWORDS = {
+				flutter: "dart",
+				dart: "dart",
+				swift: "swift",
+				kotlin: "kotlin",
+				android: "kotlin",
+				pytorch: "python",
+				django: "python",
+				fastapi: "python",
+				laravel: "php",
+				spring: "java",
+				dotnet: "csharp",
+				csharp: "csharp",
+				rails: "ruby",
+				ruby: "ruby",
 			};
 
 			// 技術棧相關關鍵字擴展（tech → 額外匹配詞）
 			const TECH_EXPAND = {
-				vue: ["vue", "frontend", "component", "ui"],
-				nuxt: ["nuxt", "ssr", "frontend"],
-				typescript: ["typescript", "ts", "type"],
-				jest: ["jest", "test", "spec"],
-				vitest: ["vitest", "test", "spec"],
-				webpack: ["webpack", "bundle", "build"],
-				vite: ["vite", "bundle", "build"],
-				docker: ["docker", "container", "devops"],
-				eslint: ["eslint", "lint", "format"],
-				sass: ["sass", "scss", "css", "style"],
-				postcss: ["postcss", "css", "style"],
-				pinia: ["pinia", "store", "state"],
-				vuex: ["vuex", "store", "state"],
+				vue: ["vue", "frontend", "component"],
+				nuxt: ["nuxt", "ssr"],
+				typescript: ["typescript", "ts"],
+				jest: ["jest", "spec"],
+				vitest: ["vitest", "spec"],
+				webpack: ["webpack", "bundle"],
+				vite: ["vite"],
+				docker: ["docker", "container"],
+				eslint: ["eslint", "lint"],
+				sass: ["sass", "scss", "css"],
+				postcss: ["postcss", "css"],
+				pinia: ["pinia", "store"],
+				vuex: ["vuex", "store"],
 			};
 
 			// 建立擴展匹配集（硬編碼 + 未知 tech 用名稱本身）
@@ -423,7 +453,10 @@ export async function runAnalysisPipeline({
 			for (const c of aiResCandidates) {
 				const name = c.name.replace(".md", "").toLowerCase();
 
-				// 語言專用 → 只在語言匹配時推薦
+				// 排除與官方 plugins 衝突的外部資源
+				if (OFFICIAL_PLUGIN_NAMES.has(name)) continue;
+
+				// 語言專用前綴 → 只在語言匹配時推薦
 				let isLangSpecific = false;
 				for (const [prefix, lang] of Object.entries(LANG_PREFIX)) {
 					if (name.startsWith(prefix)) {
@@ -440,6 +473,24 @@ export async function runAnalysisPipeline({
 				}
 				if (isLangSpecific) continue;
 
+				// 名稱含語言框架關鍵字 → 視為語言專用（只在匹配時推薦）
+				let isFrameworkSpecific = false;
+				for (const [kw, lang] of Object.entries(LANG_KEYWORDS)) {
+					if (name.includes(kw)) {
+						isFrameworkSpecific = true;
+						if (
+							techSet.has(lang) ||
+							techSet.has(kw) ||
+							langSet.has(lang) ||
+							expandedKeywords.has(lang)
+						) {
+							recommended.push(c.name);
+						}
+						break;
+					}
+				}
+				if (isFrameworkSpecific) continue;
+
 				// 通用關鍵字匹配（名稱包含任一關鍵字）
 				if (UNIVERSAL_KEYWORDS.some((kw) => name.includes(kw))) {
 					recommended.push(c.name);
@@ -452,9 +503,9 @@ export async function runAnalysisPipeline({
 					continue;
 				}
 
-				// 描述包含技術棧關鍵字
+				// 描述匹配：只匹配技術棧名稱本身（不含擴展詞，避免過度匹配）
 				const descLower = (c.desc || "").toLowerCase();
-				if ([...expandedKeywords].some((k) => descLower.includes(k))) {
+				if ([...techSet].some((k) => descLower.includes(k))) {
 					recommended.push(c.name);
 				}
 			}

@@ -101,7 +101,13 @@ export function getDescription(name, type, claudeDir) {
 	// 2. translations.json（版控維護的繁中翻譯）
 	const trans = loadTranslations();
 	const transType =
-		type === "agents" ? "agents" : type === "rules" ? "rules" : "commands";
+		type === "agents"
+			? "agents"
+			: type === "rules"
+				? "rules"
+				: type === "skills"
+					? "skills"
+					: "commands";
 	if (trans[transType]?.[name]) return trans[transType][name];
 
 	// 3. 即時讀 frontmatter（fallback）

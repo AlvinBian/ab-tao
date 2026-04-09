@@ -387,20 +387,18 @@ async function doUpgrade(legacyInfo) {
 }
 
 async function doClean() {
-	// 先保存用戶自訂設定（permissions、hooks、skipDangerousModePermissionPrompt 等）
+	// 先保存用戶自訂設定（permissions、hooks 等）
 	let savedUserSettings = null;
 	const settingsPath = path.join(CLAUDE_DIR, "settings.json");
 	if (fs.existsSync(settingsPath)) {
 		try {
 			const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
 			// 保留所有用戶自訂欄位（ab-tao 只管 env 和 autoMemoryEnabled）
+			// 注意：不再保留 skipDangerousModePermissionPrompt（安全風險）
 			savedUserSettings = {};
 			if (settings.permissions)
 				savedUserSettings.permissions = settings.permissions;
 			if (settings.hooks) savedUserSettings.hooks = settings.hooks;
-			if (settings.skipDangerousModePermissionPrompt !== undefined)
-				savedUserSettings.skipDangerousModePermissionPrompt =
-					settings.skipDangerousModePermissionPrompt;
 			if (settings.autoMemoryEnabled !== undefined)
 				savedUserSettings.autoMemoryEnabled = settings.autoMemoryEnabled;
 		} catch {
@@ -456,8 +454,6 @@ async function doClean() {
 		if (savedUserSettings.permissions)
 			parts.push(`${savedUserSettings.permissions.allow?.length || 0} 條權限`);
 		if (savedUserSettings.hooks) parts.push("hooks");
-		if (savedUserSettings.skipDangerousModePermissionPrompt)
-			parts.push("bypass 模式");
 		p.log.success(`已保留用戶設定：${parts.join(" · ")}`);
 	}
 

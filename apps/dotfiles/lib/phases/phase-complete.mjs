@@ -155,35 +155,92 @@ export async function phaseComplete(
 	];
 	p.log.success(`✅ 安裝完成\n${summaryLines.join("\n")}`);
 
-	// 安裝後引導（按 features 過濾）
+	// 安裝後引導（按 features + 實際安裝內容動態生成）
 	const feats = new Set(plan.features || []);
 	const has = (f) => feats.has(f);
 	const guideLines = ["🎓 快速上手", ""];
 
+	// 讀取 commons 來源名稱對應的圖示
+	const SOURCE_ICON = {
+		ecc: "🌐",
+		anthropic: "📚",
+		superpowers: "🚀",
+		"context-engineering": "🧠",
+	};
+
 	if (has("claude")) {
+		// 動態列出已安裝的 commands
+		if (installed.commands.length) {
+			guideLines.push(
+				`── Commands（${installed.commands.length} 個 /指令）──`,
+				`  ${summarize(
+					installed.commands.map((c) => `/${c}`),
+					8,
+				)}`,
+				"",
+			);
+		}
+
+		// 動態列出已安裝的 agents
+		if (installed.agents.length) {
+			guideLines.push(
+				`── Agents（${installed.agents.length} 個 @代理）──`,
+				`  ${summarize(
+					installed.agents.map((a) => `@${a}`),
+					6,
+				)}`,
+				"",
+			);
+		}
+
+		// 動態列出已安裝的 skills
+		if (installed.skills.length) {
+			guideLines.push(
+				`── Skills（${installed.skills.length} 個技能庫）──`,
+				`  ${summarize(
+					installed.skills.map((s) => `/${s}`),
+					6,
+				)}`,
+				"",
+			);
+		}
+
+		// 動態列出已安裝的 rules
+		if (installed.rules.length) {
+			guideLines.push(
+				`── Rules（${installed.rules.length} 個，自動套用）──`,
+				`  ${summarize(installed.rules, 8)}`,
+				"",
+			);
+		}
+
+		// 外部 AI 來源摘要（按來源分組）
+		const commSources = pipelineResult?.commonsResources?.sources || [];
+		if (commSources.length) {
+			guideLines.push("── AI 來源 ──");
+			for (const src of commSources) {
+				const icon = SOURCE_ICON[src.name] || "📦";
+				const count =
+					(src.commands?.length || 0) +
+					(src.agents?.length || 0) +
+					(src.rules?.length || 0) +
+					(src.skills?.length || 0);
+				guideLines.push(`  ${icon} ${src.name}（${count} 個資源）`);
+			}
+			guideLines.push("");
+		}
+
 		guideLines.push(
-			"── Commands（/指令）──",
-			"  /check · /slack · /test · /db-migration",
-			"",
-			"── Agents（@代理）──",
-			"  @architect · @debugger",
-			"",
-			"── Skills（/技能庫）──",
-			"  /runbook · /incident（按需）",
-			"",
-			"── Rules（自動套用）──",
-			"  api-and-data（碰到 API/DB 檔案時自動載入）",
-			"",
 			"── CLAUDE.md（每個 repo 各自生成）──",
 			"  cd {repo} && claude /init",
 			"",
 		);
 	}
 
-	if (has("zsh")) {
+	if (has("zsh") && installed.modules?.length) {
 		guideLines.push(
-			"── ZSH 模組（~/.zshrc.d/ + sheldon）──",
-			"  history · keys · aliases · git · tools + sheldon 插件管理",
+			`── ZSH 模組（${installed.modules.length} 個，~/.zshrc.d/ + sheldon）──`,
+			`  ${installed.modules.join(" · ")}`,
 			"  執行 exec zsh 立即套用",
 			"",
 		);
@@ -192,7 +249,7 @@ export async function phaseComplete(
 	if (has("slack")) {
 		guideLines.push(
 			"── Slack ──",
-			"  💬 Slack 通知頻道 → .env SLACK_NOTIFY_CHANNEL",
+			"  💬 Slack 通知 → .env SLACK_NOTIFY_MODE（channel / dm / off）",
 			"",
 		);
 	}
@@ -201,8 +258,8 @@ export async function phaseComplete(
 		"── Model 自動路由（opusplan 模式）──",
 		"  預設 opusplan：/plan 用 Opus 思考，執行自動切回 Sonnet",
 		"  @architect → Opus（架構決策）",
-		"  @debugger · /test · /db-migration · /incident → Sonnet（日常開發）",
-		"  /check · /slack · /runbook → Haiku（模板/腳本）",
+		"  @debugger · /test · /db-migration → Sonnet（日常開發）",
+		"  /check · /slack → Haiku（模板/腳本）",
 		"",
 		"── 維護 ──",
 		"  pnpm run status   — 配置管理中心",

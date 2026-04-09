@@ -9,7 +9,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { TECH_TO_LANG } from "@ab-tao/commons/detect";
 import { RESOURCES_DIR } from "@ab-tao/commons/paths";
-import { isEmpty } from "lodash-es";
 
 /**
  * 從目錄中載入所有 .md 檔案
@@ -135,6 +134,11 @@ const FRAMEWORK_KEYWORDS = new Set([
 	"spring",
 	"laravel",
 	"nest",
+	"android",
+	"pytorch",
+	"csharp",
+	"dotnet",
+	"perl",
 ]);
 
 function matchesTechStack(fileName, matchedLangs) {
@@ -199,10 +203,15 @@ export function filterByTechStack(commonsResources, detectedTechs) {
 			}
 			return false;
 		});
-		// skills 不按語言過濾（SKILL.md 格式更通用）
-		const skills = src.skills;
-		filtered += skills.length;
-		total += skills.length;
+		// skills 也按技術棧過濾（名稱含框架關鍵字時排除不匹配的）
+		const skills = src.skills.filter((f) => {
+			total++;
+			if (matchesTechStack(f.name, matchedLangs)) {
+				filtered++;
+				return true;
+			}
+			return false;
+		});
 
 		return { ...src, commands, agents, rules, skills };
 	});
@@ -210,10 +219,8 @@ export function filterByTechStack(commonsResources, detectedTechs) {
 	return {
 		sources: filteredSources.filter(
 			(s) =>
-				s.commands.length +
-				s.agents.length +
-				s.rules.length +
-				!isEmpty(s.skills),
+				s.commands.length + s.agents.length + s.rules.length + s.skills.length >
+				0,
 		),
 		stats: { filtered, total },
 	};

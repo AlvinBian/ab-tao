@@ -46,7 +46,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-start; exit 0",
+						"command": "M=\"${SLACK_NOTIFY_MODE:-off}\"; [ \"$M\" = \"off\" ] && exit 0; D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-start; exit 0",
 						"timeout": 3
 					}
 				]
@@ -70,7 +70,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-stop; exit 0",
+						"command": "M=\"${SLACK_NOTIFY_MODE:-off}\"; [ \"$M\" = \"off\" ] && exit 0; D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-stop; exit 0",
 						"timeout": 5
 					}
 				]

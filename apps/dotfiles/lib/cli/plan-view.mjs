@@ -7,7 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
-import { descBullet } from "../config/descriptions.mjs";
+import { descBullet, getDescription } from "../config/descriptions.mjs";
 
 /** 從 SKILL.md 內容提取簡短描述（frontmatter description 或首行非標題文字） */
 function extractSkillDesc(content) {
@@ -274,9 +274,10 @@ export function formatCommonsResources(plan) {
 			if (parts.length)
 				lines.push(`       ${icon} ${src.name} — ${parts.join(" · ")}`);
 
-			// 列出個別項目（從 SKILL.md 提取描述）
+			// 列出個別項目（優先使用繁中翻譯，fallback 到 SKILL.md 提取描述）
 			for (const sk of src.skills || []) {
-				const desc = extractSkillDesc(sk.content);
+				const transDesc = getDescription(sk.name, "skills", null);
+				const desc = transDesc || extractSkillDesc(sk.content);
 				lines.push(
 					desc ? `         · ${sk.name} — ${desc}` : `         · ${sk.name}`,
 				);
