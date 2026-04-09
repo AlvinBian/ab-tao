@@ -1,37 +1,23 @@
 #!/bin/bash
 # Claude Code Slack 通知分發器
 #
-# session-stop → 寫入 /tmp/claude-slack/notify-pending.json
-# Stop hook prompt 讀取後呼叫 mcp__claude_ai_Slack__slack_send_message
+# 用法：slack-dispatch.sh session-start | session-stop [--msg "訊息"]
+#
+# 設定（~/.claude/.env）：
+#   SLACK_NOTIFY_CHANNEL=C0XXXXXXXXX   # 必填：頻道 ID
+#   SLACK_NOTIFY_MODE=off              # 可選：設為 off 關閉通知
+#   CLAUDE_SLACK_MIN_SESSION_SECS=300  # 可選：最短通知門檻（預設 5 分鐘）
 
 set -uo pipefail
 
-# 載入 .env（優先級：repo .env → ~/.claude/.env → ~/.env → 環境變數）
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
-REPO_CHANNEL=""
-if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/.env" ]; then
-  REPO_CHANNEL=$(grep -m1 '^SLACK_NOTIFY_CHANNEL=' "$REPO_ROOT/.env" 2>/dev/null | cut -d= -f2-)
-fi
+# 從 ~/.claude/.env 載入設定
+[ -f "$HOME/.claude/.env" ] && . "$HOME/.claude/.env" 2>/dev/null
 
-for envfile in "$HOME/.claude/.env" "$HOME/.env"; do
-  [ -f "$envfile" ] && . "$envfile" 2>/dev/null && break
-done
+[ "${SLACK_NOTIFY_MODE:-}" = "off" ] && exit 0
 
-# 通知模式：channel（預設）| dm | off
-MODE="${SLACK_NOTIFY_MODE:-channel}"
-[ "$MODE" = "off" ] && exit 0
+CHANNEL="${SLACK_NOTIFY_CHANNEL:-}"
+[ -z "$CHANNEL" ] && exit 0
 
-# per-repo 優先，否則用全局（~/.claude/.env 或 settings.json 注入的環境變數）
-CHANNEL="${REPO_CHANNEL:-${SLACK_NOTIFY_CHANNEL:-}}"
-
-# dm 模式使用 user_id，channel 模式使用 channel_id
-if [ "$MODE" = "dm" ]; then
-  TARGET="${SLACK_NOTIFY_USER_ID:-}"
-  [ -z "$TARGET" ] && exit 0
-else
-  TARGET="$CHANNEL"
-  [ -z "$TARGET" ] && exit 0
-fi
 MIN_SESSION="${CLAUDE_SLACK_MIN_SESSION_SECS:-300}"
 STATE_DIR="/tmp/claude-slack"
 SESSION="${CLAUDE_SESSION_ID:-$$}"
@@ -39,23 +25,13 @@ SESSION_SHORT="${SESSION:0:8}"
 
 mkdir -p "$STATE_DIR"
 
-get_context() {
-  REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo 'unknown')")
-  BRANCH=$(git branch --show-current 2>/dev/null || echo "")
-  TICKET=$(echo "$BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1 || echo "")
-  PROJECT_INFO="$REPO"
-  [ -n "$BRANCH" ] && PROJECT_INFO="$PROJECT_INFO / $BRANCH"
-  [ -n "$TICKET" ] && PROJECT_INFO="$PROJECT_INFO · $TICKET"
-}
-
 EVENT="${1:-}"
 shift || true
 
 MSG=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --msg)  MSG="$2"; shift 2 ;;
-    --file|--cmd) shift 2 ;;
+    --msg) MSG="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
@@ -71,23 +47,20 @@ case "$EVENT" in
     [ ! -f "$start_file" ] && exit 0
     DURATION=$(( $(date +%s) - $(cat "$start_file") ))
     [ "$DURATION" -lt "$MIN_SESSION" ] && exit 0
-    get_context
-    MINS=$(( DURATION / 60 ))
+
+    REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || echo 'unknown')")
+    BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+    PROJECT_INFO="$REPO"
+    [ -n "$BRANCH" ] && PROJECT_INFO="$PROJECT_INFO / $BRANCH"
+
     MSG_TEXT="✅ *Claude Code：任務完成*
 • 專案：${PROJECT_INFO}
-• 耗時：${MINS} 分鐘"
+• 耗時：$(( DURATION / 60 )) 分鐘"
     [ -n "$MSG" ] && MSG_TEXT="${MSG_TEXT}
 _${MSG}_"
-    if command -v python3 >/dev/null 2>&1; then
-      JSON_TEXT=$(printf '%s' "$MSG_TEXT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-    else
-      JSON_TEXT="\"$(printf '%s' "$MSG_TEXT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' | tr -d '\n' | sed 's/\\n$//')\""
-    fi
-    if [ "$MODE" = "dm" ]; then
-      printf '{"user_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
-    else
-      printf '{"channel_id":"%s","text":%s}\n' "$TARGET" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
-    fi
+
+    JSON_TEXT=$(printf '%s' "$MSG_TEXT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+    printf '{"channel_id":"%s","text":%s}\n' "$CHANNEL" "$JSON_TEXT" > "$STATE_DIR/notify-pending.json"
     rm -f "$start_file"
     ;;
 
