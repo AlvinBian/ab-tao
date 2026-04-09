@@ -34,7 +34,8 @@ export async function selectAiSources() {
 		const tag = synced ? pc.green("✔") : pc.dim("✗");
 		return {
 			value: name,
-			label: `${config.icon} ${name} ${tag} ${pc.dim(config.description)}`,
+			label: `${config.icon} ${name} ${tag}`,
+			hint: config.description,
 		};
 	});
 

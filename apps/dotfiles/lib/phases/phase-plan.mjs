@@ -236,7 +236,7 @@ async function detailConfirm(originalPlan) {
 	if (!isEmpty(commSources)) {
 		const sourceIcons = {
 			ecc: "🌐",
-			anthropic: "🏛️",
+			anthropic: "📚",
 			superpowers: "🚀",
 			"context-engineering": "🧠",
 		};

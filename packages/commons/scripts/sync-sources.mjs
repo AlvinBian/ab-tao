@@ -37,7 +37,7 @@ const SOURCES_CONFIG = {
 	},
 	anthropic: {
 		url: "https://github.com/anthropics/skills.git",
-		icon: "🏛️",
+		icon: "📚",
 		description: "Anthropic 官方 Skills（claude-api、pdf、xlsx 等）",
 		validatePaths: ["skills"],
 		optional: true,
