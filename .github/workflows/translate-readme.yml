@@ -1,4 +1,4 @@
-name: 自動翻譯 README
+name: Translate README
 
 on:
   push:
@@ -23,6 +23,9 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: 翻譯 README
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
@@ -32,8 +35,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet; then
-            git add README-zh-CN.md README-en.md
+          git add README-zh-CN.md README-en.md
+          if ! git diff --cached --quiet; then
             git commit -m "docs: auto translate README (zh-CN + EN)"
             git push
           fi

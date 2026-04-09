@@ -31,16 +31,6 @@ function detectRtk() {
 	}
 }
 
-/** 偵測 MemPalace 是否已安裝（pip package 或 claude plugin） */
-function detectMempalace() {
-	try {
-		execFileSync("python3", ["-c", "import mempalace"], { stdio: "pipe" });
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 /** 可選增強工具配置（模組級常數） */
 const ENHANCERS = [
 	{
@@ -51,14 +41,6 @@ const ENHANCERS = [
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
-	},
-	{
-		name: "MemPalace",
-		desc: "跨會話語義記憶 — 本地 ChromaDB 儲存完整對話，與 Auto Memory 互補",
-		install: `pip install mempalace && mempalace init ~ && claude mcp add mempalace -- python3 -m mempalace.mcp_server`,
-		failHint: `pip install mempalace  （再執行 mempalace init ~）\n參考：https://github.com/milla-jovovich/mempalace`,
-		doneHint: "已就緒，Claude 可透過 MCP 搜尋歷史對話",
-		detect: detectMempalace,
 	},
 ];
 
@@ -115,6 +97,8 @@ export async function phaseComplete(
 			!isEmpty(installSelections.hooks) ||
 			fs.existsSync(path.join(claudeDir, "hooks.json")),
 		modules: installSelections.modules || [],
+		plugins: installSelections.plugins || [],
+		pluginsFailed: installSelections.pluginsFailed || [],
 	};
 
 	// 安裝摘要 — 數量 + 前 10 個名稱（避免列表太長）
@@ -143,6 +127,14 @@ export async function phaseComplete(
 	if (installed.modules?.length)
 		instLines.push(
 			`  ZSH 模組（${installed.modules.length}）：${installed.modules.join("、")}`,
+		);
+	if (installed.plugins.length)
+		instLines.push(
+			`  Plugins ✔（${installed.plugins.length}）：${installed.plugins.join("、")}`,
+		);
+	if (installed.pluginsFailed.length)
+		instLines.push(
+			`  Plugins ✘（${installed.pluginsFailed.length} 失敗）：${installed.pluginsFailed.join("、")} — 可手動執行 claude plugin install <name>@claude-plugins-official`,
 		);
 	if (plan.techStacks?.length)
 		instLines.push(
@@ -289,13 +281,6 @@ export async function phaseComplete(
 
 	// ── 以下區塊僅在選了 claude 時顯示 ──
 	if (has("claude")) {
-		// 顯示已安裝的 plugins
-		if (installSelections.plugins?.length) {
-			instLines.push(
-				`  Plugins（${installSelections.plugins.length}）：${installSelections.plugins.join("、")}`,
-			);
-		}
-
 		// ── 其他推薦 ──
 		const buildLspRecommendations = (techStacks = []) => {
 			const recommended = [];

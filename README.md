@@ -58,8 +58,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 ```
 ab-tao/
 ├── apps/
-│   ├── dotfiles/          @ab-tao/dotfiles — 智能篩選、互動安裝、動態配置
-│   └── cheatsheet/        Claude Code 快速參考表（繁體中文 GitHub Pages）
+│   └── dotfiles/          @ab-tao/dotfiles — 智能篩選、互動安裝、動態配置
 └── packages/
     ├── commons/           @ab-tao/commons  — 純資源池：同步、驗證、提供 API
     └── share/             @ab-tao/share    — 共用工具庫（utils/libs）
@@ -139,14 +138,6 @@ pnpm run help              # 查看所有指令
 | `pnpm run c:validate`    | 驗證資源結構 + 安全檢查               |
 
 指定同步：`pnpm run c:sync -- --pick ecc,superpowers`
-
-### cheatsheet（Claude Code 快速參考表）
-
-| 指令                         | 說明                           |
-| ---------------------------- | ------------------------------ |
-| `pnpm run cheatsheet:update` | 從原站同步最新版並轉換繁體中文 |
-| `pnpm run cheatsheet:force`  | 強制更新（忽略版本比對）       |
-| `pnpm run cheatsheet:open`   | 在瀏覽器開啟本地 HTML 版本     |
 
 ### 版本與發布
 
@@ -238,11 +229,11 @@ git checkout main && git checkout -b hotfix/xxx
 
 | Workflow       | 觸發                  | 說明                                             |
 | -------------- | --------------------- | ------------------------------------------------ |
-| **CI**         | push → main           | lint + build + test + 資源同步驗證               |
-| **GitFlow**    | PR + push + tag       | 分支校驗 + PR 來源校驗 + commit 校驗 + Release   |
-| **Translate**  | README.md 變更 → main | 自動翻譯 zh-CN + EN（需要 `GH_PAT` secret）      |
-| **Sync**       | 每週一 03:00 UTC      | 自動同步外部 AI 資源                             |
-| **Cheatsheet** | 每日 03:00 UTC        | 同步 Claude Code 快速參考表並部署至 GitHub Pages |
+| **CI**        | push → main           | lint + build + test + 資源同步驗證             |
+| **Git Flow**  | PR + push + tag       | 分支校驗 + PR 來源校驗 + commit 校驗 + Release |
+| **Release**   | push → main           | Version PR 自動建立 + changeset tag + Release  |
+| **Translate** | README.md 變更 → main | 自動翻譯 zh-CN + EN（需要 `GH_PAT` secret）    |
+| **Sync**      | 每週一 03:00 UTC      | 自動同步外部 AI 資源                            |
 
 ### 必要 Secrets 設定
 

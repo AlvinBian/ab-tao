@@ -177,6 +177,7 @@ export async function phaseExecute(
 					subtask.output = parts.join(" · ") || "完成";
 					// 記錄到 installSelections
 					if (installed.length) installSelections.plugins = installed;
+					if (failed.length) installSelections.pluginsFailed = failed;
 				},
 			},
 

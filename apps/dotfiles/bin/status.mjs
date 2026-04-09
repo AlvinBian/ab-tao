@@ -140,7 +140,11 @@ function showOverview(data) {
 	);
 	console.log(`  🧠 AI         ${pc.cyan(ai.model)} / ${ai.effort}`);
 	console.log(`  📝 CLAUDE.md  ${pc.cyan(data.claudeMd.length)} 個項目`);
-	console.log(`  📦 Plugins    ${pc.cyan(data.plugins.length)} 個`);
+	const pluginStr =
+		data.installedPlugins === null
+			? pc.dim("CLI 不可用")
+			: pc.cyan(`${data.installedPlugins.length} 個已安裝`);
+	console.log(`  📦 Plugins    ${pluginStr}`);
 	console.log(
 		`  💾 備份       ${pc.cyan(data.backups.length)} 份  ${pc.dim(`磁碟 ${formatBytes(data.diskUsage.cache + data.diskUsage.dist)}`)}`,
 	);
@@ -169,7 +173,10 @@ async function showDetail(data) {
 				value: "claudemd",
 				label: `📝 CLAUDE.md (${data.claudeMd.length} 項目)`,
 			},
-			{ value: "plugins", label: `📦 Plugins (${data.plugins.length})` },
+			{
+				value: "plugins",
+				label: `📦 Plugins (${data.installedPlugins === null ? "?" : data.installedPlugins.length} 已安裝)`,
+			},
 			{ value: "sessions", label: `📈 Sessions (${data.sessions.total})` },
 			{ value: "cleanup", label: `⏱️ 清理未使用配置（30天+）` },
 			{ value: "env", label: `🔧 環境變數健康檢查` },
@@ -266,9 +273,34 @@ async function showDetail(data) {
 		case "plugins":
 			console.log();
 			p.log.step(pc.bold("📦 Plugins"));
-			if (isEmpty(data.plugins)) console.log(pc.dim("  無已構建的 plugin"));
-			for (const pl of data.plugins)
-				console.log(`  ${pl.name}  ${pc.dim(pl.mtime.slice(0, 10))}`);
+			// 已安裝的 Claude plugins（官方 marketplace）
+			if (data.installedPlugins === null) {
+				console.log(pc.dim("  Claude CLI 不可用，無法讀取已安裝 plugins"));
+			} else if (isEmpty(data.installedPlugins)) {
+				console.log(pc.dim("  尚未安裝任何 Anthropic 官方 plugin"));
+				console.log(
+					pc.dim(
+						"  安裝：claude plugin install <name>@claude-plugins-official",
+					),
+				);
+			} else {
+				console.log(
+					pc.bold(
+						`  Anthropic 官方 Plugins（${data.installedPlugins.length} 個）`,
+					),
+				);
+				for (const pl of data.installedPlugins) {
+					const ver = pl.version ? pc.dim(` v${pl.version}`) : "";
+					console.log(`    ${pc.green("✔")} ${pl.name}${ver}`);
+				}
+			}
+			// 本地構建的 .plugin 檔（dist/release/）
+			if (!isEmpty(data.plugins)) {
+				console.log();
+				console.log(pc.bold(`  本地構建（${data.plugins.length} 個）`));
+				for (const pl of data.plugins)
+					console.log(`    ${pl.name}  ${pc.dim(pl.mtime.slice(0, 10))}`);
+			}
 			break;
 		case "slack":
 			console.log();
@@ -906,6 +938,26 @@ async function generateHtmlReport(data) {
 		})
 		.join("");
 
+	// shell 命令字串必須定義在模板外，避免 ${...} 被 Biome 誤解析為模板表達式
+	const NODE_TOGGLE_CMDS = {
+		commands: {
+			off: 'for f in ~/.claude/commands/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			on: 'for f in ~/.claude/commands/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
+		},
+		agents: {
+			off: 'for f in ~/.claude/agents/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			on: 'for f in ~/.claude/agents/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
+		},
+		rules: {
+			off: 'for f in ~/.claude/rules/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			on: 'for f in ~/.claude/rules/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
+		},
+		hooks: {
+			off: "[ -f ~/.claude/hooks.json ] && cp ~/.claude/hooks.json ~/.claude/hooks.json.bak && printf '{\"hooks\":{}}' > ~/.claude/hooks.json",
+			on: "[ -f ~/.claude/hooks.json.bak ] && cp ~/.claude/hooks.json.bak ~/.claude/hooks.json",
+		},
+	};
+
 	const html = `<!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -926,11 +978,21 @@ async function generateHtmlReport(data) {
   td { border-bottom: 1px solid #1e293b; }
   .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .health-ring { width: 120px; height: 120px; }
-  .stat-card { text-align: center; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
-  .stat-num { font-size: 36px; font-weight: 700; color: #38bdf8; line-height: 1.1; }
-  .stat-label { font-size: 14px; color: #94a3b8; margin-top: 8px; }
+  .stat-card { position: relative; text-align: center; padding: 44px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stat-num { font-size: 48px; font-weight: 700; color: #38bdf8; line-height: 1.1; }
+  .stat-label { font-size: 15px; color: #94a3b8; margin-top: 10px; }
+  .card-switch { position: absolute; top: 12px; right: 14px; }
+  .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: #22c55e; border-radius: 22px; transition: background .25s; }
+  .slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .25s; }
+  input:not(:checked) + .slider { background: #475569; }
+  input:checked + .slider:before { transform: translateX(20px); }
+  .stat-card.disabled { opacity: 0.4; }
   .grid-12 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
   #mgmt-output { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; display: none; }
+  #toggle-panel { background: #0f172a; border: 1px solid #7f1d1d; border-radius: 10px; padding: 16px; margin-bottom: 24px; display: none; }
+  #toggle-output { font-family: monospace; font-size: 13px; white-space: pre-wrap; color: #fca5a5; margin-top: 10px; }
 </style>
 </head>
 <body class="p-6 max-w-7xl mx-auto">
@@ -938,18 +1000,43 @@ async function generateHtmlReport(data) {
 <p class="text-gray-400 mb-6">掃描時間：${new Date().toLocaleString("zh-TW")}</p>
 
 <!-- 1. 總覽 -->
-<div style="display:grid;grid-template-columns:2fr repeat(4,1fr);gap:16px;margin-bottom:24px">
-  <div class="card" style="display:flex;align-items:center;justify-content:center;gap:24px;min-height:120px">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:16px">
+  <div class="card stat-card" style="flex-direction:row;gap:20px">
     <canvas id="healthRing" class="health-ring"></canvas>
-    <div style="text-align:center">
+    <div>
       <div class="stat-num">${data.overview.healthPct}%</div>
       <div class="stat-label">配置健康度</div>
     </div>
   </div>
-  <div class="card stat-card"><div class="stat-num">${data.commands.length}</div><div class="stat-label">⌨️ Commands</div></div>
-  <div class="card stat-card"><div class="stat-num">${data.agents.length}</div><div class="stat-label">🤖 Agents</div></div>
-  <div class="card stat-card"><div class="stat-num">${data.rules.filter((r) => r.enabled).length}</div><div class="stat-label">📐 Rules</div></div>
-  <div class="card stat-card"><div class="stat-num">${data.hooks.reduce((s, h) => s + h.subHooks, 0)}</div><div class="stat-label">🪝 Hooks</div></div>
+  <div class="card stat-card" id="card-commands">
+    <div class="card-switch"><label class="switch"><input type="checkbox" checked onchange="toggleFeature('commands',this)"><span class="slider"></span></label></div>
+    <div class="stat-num">${data.commands.length}</div>
+    <div class="stat-label">⌨️ Commands</div>
+  </div>
+  <div class="card stat-card" id="card-agents">
+    <div class="card-switch"><label class="switch"><input type="checkbox" checked onchange="toggleFeature('agents',this)"><span class="slider"></span></label></div>
+    <div class="stat-num">${data.agents.length}</div>
+    <div class="stat-label">🤖 Agents</div>
+  </div>
+  <div class="card stat-card" id="card-rules">
+    <div class="card-switch"><label class="switch"><input type="checkbox" checked onchange="toggleFeature('rules',this)"><span class="slider"></span></label></div>
+    <div class="stat-num">${data.rules.filter((r) => r.enabled).length}</div>
+    <div class="stat-label">📐 Rules</div>
+  </div>
+  <div class="card stat-card" id="card-hooks">
+    <div class="card-switch"><label class="switch"><input type="checkbox" checked onchange="toggleFeature('hooks',this)"><span class="slider"></span></label></div>
+    <div class="stat-num">${data.hooks.reduce((s, h) => s + h.subHooks, 0)}</div>
+    <div class="stat-label">🪝 Hooks</div>
+  </div>
+</div>
+
+<!-- 開關操作面板（有開關關閉時顯示） -->
+<div id="toggle-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-weight:600;color:#fca5a5">⚠️ 待執行的關閉操作</span>
+    <button onclick="copyToggleScript()" style="padding:4px 12px;background:#7f1d1d;color:#fca5a5;border-radius:6px;font-size:13px;cursor:pointer;border:none">📋 複製指令</button>
+  </div>
+  <div id="toggle-output"></div>
 </div>
 
 <div class="grid-12">
@@ -1044,16 +1131,30 @@ async function generateHtmlReport(data) {
 
 <!-- 10. Plugins -->
 <div class="card">
-  <div class="section-title">📦 Plugins <span class="text-sm text-gray-400 font-normal">${data.plugins.length} 個</span></div>
+  <div class="section-title">📦 Plugins</div>
   ${
-		isEmpty(data.plugins)
-			? '<p class="text-gray-500">無已構建的 plugin</p>'
-			: data.plugins
+		data.installedPlugins === null
+			? '<p class="text-gray-500 text-sm">Claude CLI 不可用</p>'
+			: isEmpty(data.installedPlugins)
+				? '<p class="text-gray-500 text-sm">尚未安裝任何 Anthropic 官方 plugin</p>'
+				: `<p class="text-xs text-gray-400 mb-2">Anthropic 官方 Plugins（${data.installedPlugins.length} 個）</p>` +
+					data.installedPlugins
+						.map(
+							(pl) =>
+								`<p class="font-mono text-sm text-green-400">✔ ${escHtml(pl.name)}${pl.version ? ` <span class="text-gray-400">v${escHtml(pl.version)}</span>` : ""}</p>`,
+						)
+						.join("")
+	}
+  ${
+		!isEmpty(data.plugins)
+			? `<p class="text-xs text-gray-400 mt-3 mb-1">本地構建（${data.plugins.length} 個）</p>` +
+				data.plugins
 					.map(
 						(pl) =>
-							`<p class="font-mono text-sm">${escHtml(pl.name)} <span class="text-gray-400">${pl.mtime.slice(0, 10)}</span></p>`,
+							`<p class="font-mono text-sm text-gray-400">${escHtml(pl.name)} <span class="text-gray-500">${pl.mtime.slice(0, 10)}</span></p>`,
 					)
 					.join("")
+			: ""
 	}
 </div>
 
@@ -1128,6 +1229,38 @@ function generateScript() {
 
 function copyScript() {
   const text = document.getElementById('mgmt-output').textContent;
+  if (text) navigator.clipboard.writeText(text).then(() => alert('已複製到剪貼板'));
+}
+
+// ── Toggle 開關（資料來自外層 Node.js 注入，避免被模板解析）──
+const TOGGLE_CMDS = ${JSON.stringify(NODE_TOGGLE_CMDS)};
+const toggleState = { commands: true, agents: true, rules: true, hooks: true };
+
+function toggleFeature(feat, el) {
+  toggleState[feat] = el.checked;
+  document.getElementById('card-' + feat).classList.toggle('disabled', !el.checked);
+  updateTogglePanel();
+}
+
+function updateTogglePanel() {
+  const pending = Object.entries(toggleState).filter(([, v]) => !v);
+  const panel = document.getElementById('toggle-panel');
+  const output = document.getElementById('toggle-output');
+  if (!pending.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const lines = ['#!/bin/bash', '# 關閉選定的 Claude 配置功能', ''];
+  for (const [feat] of pending) {
+    lines.push('# ' + feat);
+    lines.push(TOGGLE_CMDS[feat].off);
+    lines.push('');
+  }
+  lines.push('# ── 恢復指令（重新開啟開關後執行）──');
+  for (const [feat] of pending) lines.push('# ' + feat + ': ' + TOGGLE_CMDS[feat].on);
+  output.textContent = lines.join('\n');
+}
+
+function copyToggleScript() {
+  const text = document.getElementById('toggle-output').textContent;
   if (text) navigator.clipboard.writeText(text).then(() => alert('已複製到剪貼板'));
 }
 </script>

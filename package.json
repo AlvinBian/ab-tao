@@ -32,12 +32,10 @@
 		"c:sync:all": "node packages/commons/commands.mjs",
 		"c:validate": "node packages/commons/commands.mjs",
 		"c:translate": "node packages/commons/scripts/generate-translations.mjs",
-		"cheatsheet:update": "node apps/cheatsheet/update.mjs",
-		"cheatsheet:force": "node apps/cheatsheet/update.mjs --force",
-		"cheatsheet:open": "open apps/cheatsheet/index.html",
-		"changeset": "changeset",
+		"changeset": "changeset add",
+		"changeset:status": "changeset status",
 		"version": "changeset version",
-		"release": "pnpm run build && changeset publish",
+		"release": "changeset tag && git push --follow-tags",
 		"prepare": "lefthook install"
 	},
 	"pnpm": {

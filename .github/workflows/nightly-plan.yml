@@ -236,10 +236,15 @@ PYEOF
 
           # 解析並建立 5 個 Issue
           python3 - << 'PYEOF'
-import json, os, subprocess
+import json, os, subprocess, sys
 
-resp = json.loads(open('/tmp/init-response.json').read())
-content = resp['choices'][0]['message']['content'].strip()
+raw = open('/tmp/init-response.json').read()
+try:
+    resp = json.loads(raw)
+    content = resp['choices'][0]['message']['content'].strip()
+except (json.JSONDecodeError, KeyError, IndexError) as e:
+    print(f"❌ API 回應解析失敗: {e}\nRaw: {raw[:500]}")
+    sys.exit(1)
 
 # 清理可能的 markdown code block
 if content.startswith('```'):
@@ -247,7 +252,11 @@ if content.startswith('```'):
 if content.endswith('```'):
     content = '\n'.join(content.split('\n')[:-1])
 
-dimensions = json.loads(content)
+try:
+    dimensions = json.loads(content)
+except json.JSONDecodeError as e:
+    print(f"❌ LLM 輸出不是合法 JSON: {e}\nContent: {content[:500]}")
+    sys.exit(1)
 today = os.environ.get('TODAY', '')
 issue_repo = os.environ.get('ISSUE_REPO', '')
 
@@ -366,8 +375,12 @@ for num in issue_numbers[:5]:
         '-d', f'@/tmp/deepen-payload.json'
     ], capture_output=True, text=True)
 
-    result = json.loads(resp.stdout)
-    insight = result['choices'][0]['message']['content'].strip()
+    try:
+        result = json.loads(resp.stdout)
+        insight = result['choices'][0]['message']['content'].strip()
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        print(f"❌ Issue #{num} API 解析失敗: {e}\nRaw: {resp.stdout[:300]}")
+        continue
     comment = f"### 🕐 UTC {hour}:00 深化（第 {len(comments)+1} 輪）\n\n{insight}"
 
     subprocess.run([

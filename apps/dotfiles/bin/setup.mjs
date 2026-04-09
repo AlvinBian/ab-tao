@@ -9,9 +9,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { cloneDeep, countBy, isEmpty } from "lodash-es";
+import { isEmpty } from "lodash-es";
 import pc from "picocolors";
-import { BACK, handleCancel, smartSelect } from "../libs/cli/prompts.mjs";
+import { BACK, handleCancel } from "../libs/cli/prompts.mjs";
 import { phaseHeader } from "../libs/cli/task-runner.mjs";
 import {
 	detectLegacyInstallation,
@@ -23,12 +23,7 @@ import { env } from "../libs/core/env.mjs";
 import { getDirname, HOME } from "../libs/core/paths.mjs";
 import { checkIncompleteSession, loadSession } from "../libs/core/session.mjs";
 import { ensureEnvironment } from "../libs/detect/doctor.mjs";
-import { interactiveRepoSelect } from "../libs/detect/repo-select.mjs";
 import { warmupCli } from "../libs/external/claude-cli.mjs";
-import { phaseAnalyze } from "../libs/phases/phase-analyze.mjs";
-import { phaseComplete } from "../libs/phases/phase-complete.mjs";
-import { phaseExecute } from "../libs/phases/phase-execute.mjs";
-import { phasePlan } from "../libs/phases/phase-plan.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
@@ -52,40 +47,6 @@ async function ensureSetupEnvironment() {
 	const envReady = await ensureEnvironment();
 	if (!envReady) return;
 	warmupCli();
-}
-
-/**
- * 執行安裝管線：分析 + 執行 + 完成
- */
-async function runInstallPipeline(
-	plan,
-	{ repoDir, previewDir, targets, prev, projectFolders, selectedAiSources },
-) {
-	phaseHeader("🚀 安裝中", 3, 3);
-	const { installSelections, syncResult, startTime } = await phaseExecute(
-		plan,
-		{
-			repoDir,
-			previewDir,
-			targets,
-			prev,
-			pipelineResult: plan._pipelineResult || null,
-			fetchedSources: plan._fetchedSources || null,
-		},
-	);
-
-	phaseHeader("✅ 完成", 3, 3);
-	await phaseComplete(plan, {
-		repoDir,
-		installSelections,
-		syncResult,
-		startTime,
-		pipelineResult: plan._pipelineResult || null,
-		projectFolders,
-		selectedAiSources,
-	});
-
-	return { installSelections, syncResult, startTime };
 }
 
 function loadConfig() {
@@ -136,11 +97,11 @@ async function main() {
 	const args = process.argv.slice(2);
 	const flagAll = args.includes("--all");
 	const flagManual = args.includes("--manual");
-	const flagQuick = args.includes("--quick");
+	let flagQuick = args.includes("--quick");
 	const flagDryRun = args.includes("--dry-run");
 	let prev = loadSession();
 	let projectFolders = loadProjectFolders(config, prev);
-	let selectedAiSources = prev?.selectedAiSources || [];
+	const selectedAiSources = prev?.selectedAiSources || [];
 
 	// 斷點續裝偵測
 	const incomplete = checkIncompleteSession();
@@ -171,109 +132,29 @@ async function main() {
 		}
 	}
 
-	// 快速重裝（--quick 和 reinstall 共享邏輯）
-	async function runQuickInstall({
-		prev: sessionPrev,
-		flagManual: isManual,
-		sources: srcs,
-		targets: tgts,
-		projectFolders: folders,
-		selectedAiSources: selectedAis,
-	}) {
-		if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
-
-		// 環境準備
-		await ensureSetupEnvironment();
-
-		// 為舊 session 補全新欄位的 default 值
-		if (!sessionPrev.features) sessionPrev.features = [];
-		if (!sessionPrev.techStacks) sessionPrev.techStacks = [];
-		if (!sessionPrev.install) {
-			sessionPrev.install = {
-				commands: [],
-				agents: [],
-				rules: [],
-				hooks: [],
-				modules: [],
-			};
-		}
-
-		// 用 session 重建 repo 物件
-		if (!sessionPrev.roles)
-			p.log.warn("⚠️ 上次 session 無角色資訊，全部預設為 🔄 臨時");
-		const repoObjects = (sessionPrev.repos || []).map((r) => ({
-			fullName: r,
-			commits: 10, // quick 模式假設都是主力
-			pct: 0,
-			_roleOverride: sessionPrev.roles?.[r] || "temp",
-		}));
-		phaseHeader("🧭 快速分析");
-		const plan = await phaseAnalyze({
-			repos: repoObjects,
-			sources: srcs,
-			selectedAiSources: selectedAis,
-			baseDir: REPO,
-			projectFolders: folders,
-		});
-
-		// 應用 session 保存的角色
-		const { getClaudeMdType } = await import(
-			"../libs/config/config-classifier.mjs"
-		);
-		for (const r of plan.repos) {
-			if (sessionPrev.roles?.[r.fullName])
-				r.role = sessionPrev.roles[r.fullName];
-		}
-		const rc = countBy(plan.repos, "role");
-		plan.mainCount = rc.main || 0;
-		plan.tempCount = rc.temp || 0;
-		plan.toolCount = rc.tool || 0;
-		plan.projects = plan.repos
-			.filter((r) => r.localPath)
-			.map((r) => ({
-				repo: r.fullName,
-				role: r.role,
-				localPath: r.localPath,
-				claudeMdType: getClaudeMdType(r.role),
-			}));
-
-		if (isManual) plan.mode = "manual";
-
-		// 執行安裝管線
-		await runInstallPipeline(plan, {
-			repoDir: REPO,
-			previewDir: PREVIEW_DIR,
-			targets: tgts,
-			prev: sessionPrev,
-			projectFolders: folders,
-			selectedAiSources: selectedAis,
-		});
-
-		p.outro("設定完成");
-	}
-
 	// --quick + --dry-run 衝突檢查
 	if (flagQuick && flagDryRun) {
 		p.log.warn("⚠️ --quick 和 --dry-run 不能同時使用，已忽略 --dry-run");
 	}
 
-	// --quick：直接用上次 session 重裝，跳過所有互動
+	// 用於 --quick / reinstall 的 selectedIds，後續共用 Feature Registry lifecycle
+	let selectedIds;
+
+	// --quick：從 session 重建 features，走 Feature Registry lifecycle
 	if (flagQuick) {
 		if (!prev) {
 			p.log.error("❌ 無歷史記錄，無法 --quick。請先執行 pnpm run d:setup");
 			process.exit(1);
 		}
-		p.log.info(`⚡ Quick 模式：重放上次安裝（${prev.repos?.length} repos）`);
+		p.log.info(
+			`⚡ Quick 模式：重放上次安裝（${prev.features?.length || 0} 功能）`,
+		);
 		await runLegacyCheckIfNeeded();
-		await runQuickInstall({
-			prev,
-			flagManual,
-			sources,
-			targets,
-			projectFolders,
-			selectedAiSources,
-		});
-		return;
+
+		// 從 session 的 features 清單重建，fallback 基礎功能
+		selectedIds = prev.features?.length
+			? prev.features
+			: ["claude-base", "slack", "zsh"];
 	}
 
 	// 重入
@@ -455,57 +336,32 @@ async function main() {
 		}
 		if (action === "reinstall") {
 			await runLegacyCheckIfNeeded();
-			// 等同 --quick
-			await runQuickInstall({
-				prev,
-				flagManual,
-				sources,
-				targets,
-				projectFolders,
-				selectedAiSources,
-			});
+			// 從 session 重建 features，等同 --quick fall-through
+			selectedIds = prev.features?.length
+				? prev.features
+				: ["claude-base", "slack", "zsh"];
+			flagQuick = true;
+		}
+	}
+
+	// ── 功能選擇（Feature Registry）──
+	const { selectFeatures, loadFeatures, topoSort } = await import(
+		"../libs/features/registry.mjs"
+	);
+
+	// --quick / reinstall 已設定 selectedIds，否則走互動選擇
+	if (!selectedIds) {
+		selectedIds = await selectFeatures();
+		if (isEmpty(selectedIds)) {
+			p.log.warn("未選擇任何功能");
+			p.outro("已取消");
 			return;
 		}
 	}
 
-	if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
-
-	// ── 功能選擇（第一步）──
-	const featureChoices = [
-		{
-			value: "claude",
-			label: `🤖 Claude Code 開發配置 ${pc.dim("commands · agents · rules · hooks · settings")}`,
-		},
-		{
-			value: "project",
-			label: `📁 專案配置（repos + AI）${pc.dim("CLAUDE.md + AI 資源 + 技術棧")}`,
-		},
-		{
-			value: "zsh",
-			label: `🐚 ZSH 環境模組 ${pc.dim("history · keys · aliases · git · tools + sheldon 插件")}`,
-		},
-		{
-			value: "slack",
-			label: `💬 Slack 通知 ${pc.dim("Channel / DM")}`,
-		},
-	];
-	const features = handleCancel(
-		await p.multiselect({
-			message: "選擇安裝功能  Space 選擇 · Enter 確認（直接 Enter 取消）",
-			options: featureChoices,
-			initialValues: [],
-			required: false,
-		}),
-	);
-	if (features === BACK || !features || isEmpty(features)) {
-		p.log.warn("未選擇任何功能");
-		p.outro("已取消");
-		return;
-	}
-
-	// 對可能修改系統配置的選項給出簡短提示
-	const riskySelected = features.filter((f) => ["zsh", "slack"].includes(f));
-	if (!isEmpty(riskySelected)) {
+	// 風險提示（ZSH/Slack 修改系統配置）— quick 模式跳過
+	const riskySelected = selectedIds.filter((f) => ["zsh", "slack"].includes(f));
+	if (!flagQuick && !isEmpty(riskySelected)) {
 		const hints = {
 			zsh: "在 ~/.zshrc 追加 loader + 部署 ~/.zshrc.d/",
 			slack: "設定 Slack 通知頻道",
@@ -526,575 +382,250 @@ async function main() {
 		}
 	}
 
-	const has = (f) => features.includes(f);
-
-	// ── Standalone 路由：只選了 ZSH / Slack → 走 Feature Registry pipeline ──
-	const standaloneFeatures = features.filter((f) =>
-		["zsh", "slack"].includes(f),
+	// ── 環境準備（只在需要時）──
+	const needsEnvSetup = selectedIds.some((f) =>
+		[
+			"claude-base",
+			"plugins",
+			"repos",
+			"tech-analysis",
+			"project-install",
+		].includes(f),
 	);
-	const needsReposFeatures = features.filter((f) =>
-		["claude", "project"].includes(f),
-	);
+	if (needsEnvSetup) {
+		await runLegacyCheckIfNeeded();
+		await ensureSetupEnvironment();
+	}
 
-	if (standaloneFeatures.length > 0 && needsReposFeatures.length === 0) {
-		// 純 standalone — 跳過 repos / AI 分析 / 環境全檢，走獨立 pipeline
-		const { loadFeatures, topoSort } = await import(
-			"../libs/features/registry.mjs"
-		);
-		const loadedFeatures = topoSort(await loadFeatures(standaloneFeatures));
-		const startTime = Date.now();
-		const allResults = {};
-		const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-		const sharedCtx = {
-			repoDir: REPO,
-			flags: {
-				all: flagAll,
-				quick: flagQuick,
-				manual: flagManual,
-				dryRun: flagDryRun,
-			},
+	// ── 統一 Feature Lifecycle 迴圈 ──
+	if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
+
+	const loaded = topoSort(await loadFeatures(selectedIds));
+	const startTime = Date.now();
+	const featureResults = {};
+	const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+
+	const rootCtx = {
+		repoDir: REPO,
+		previewDir: PREVIEW_DIR,
+		targets,
+		prev,
+		sources,
+		projectFolders,
+		flags: {
+			all: flagAll,
+			quick: flagQuick,
+			manual: flagManual,
+			dryRun: flagDryRun,
+		},
+		_path: path,
+	};
+
+	for (let i = 0; i < loaded.length; i++) {
+		const feature = loaded[i];
+		const step = `[${i + 1}/${loaded.length}]`;
+
+		// 視覺分隔（第一個 feature 前不需要）
+		if (i > 0) console.log();
+
+		p.log.step(`${step} ${pc.bold(feature.label)}`);
+		const featureStart = Date.now();
+
+		// 依賴注入：提供上游 feature 的結果
+		const deps = {};
+		for (const depId of feature.dependsOn || []) {
+			deps[depId] = featureResults[depId];
+		}
+		const ctx = {
+			...rootCtx,
+			deps,
+			backupDir: path.join(REPO, "dist", "backup", ts, feature.id),
 		};
 
-		for (const feature of loadedFeatures) {
-			// envCheck
-			const envResult = await feature.envCheck();
-			if (envResult.message)
-				p.log.info(`🔍 ${feature.label}：${envResult.message}`);
-			if (!envResult.ok) {
-				p.log.warn(`${feature.label} 環境檢查未通過，略過`);
-				continue;
-			}
+		// envCheck
+		const envResult = await feature.envCheck();
+		if (envResult.message) p.log.info(`🔍 ${envResult.message}`);
+		if (!envResult.ok) {
+			p.log.warn(`${feature.label} 環境檢查未通過，略過`);
+			continue;
+		}
 
-			// backup
-			const backupResult = await feature.backup({
-				...sharedCtx,
-				backupDir: path.join(REPO, "dist", "backup", ts, feature.id),
-			});
-			if (backupResult.files?.length) {
-				p.log.info(`🗂️ 已備份：${backupResult.files.join("、")}`);
-			}
+		// backup
+		const backupResult = await feature.backup(ctx);
+		if (backupResult.files?.length)
+			p.log.info(`🗂️ 已備份：${backupResult.files.join("、")}`);
 
-			// configure
-			const config = await feature.configure(sharedCtx);
-			if (!config) continue;
+		// configure
+		const config = await feature.configure(ctx);
+		if (!config) {
+			p.log.info(`  ${pc.dim("略過")}`);
+			continue;
+		}
 
-			// plan
-			const plan = await feature.plan(sharedCtx, config);
-			if (!plan) continue;
+		// plan
+		const plan = await feature.plan(ctx, config);
+		if (!plan) {
+			p.log.info(`  ${pc.dim("略過")}`);
+			continue;
+		}
 
-			// confirm
-			const confirmed = await feature.confirm(sharedCtx, plan);
-			if (!confirmed) continue;
+		// confirm
+		const confirmed = await feature.confirm(ctx, plan);
+		if (!confirmed) continue;
 
-			// Node 版本管理策略（ZSH 安裝前確保 AB_TAO_NODE_MGR 已設定）
-			if (feature.id === "zsh" && !process.env.AB_TAO_NODE_MGR) {
-				const { resolveNodeManager } = await import(
-					"../libs/detect/node-manager.mjs"
+		// install
+		if (!flagDryRun) {
+			const result = await feature.install(ctx, plan);
+			featureResults[feature.id] = result;
+
+			// verify
+			const verification = await feature.verify(ctx);
+			if (verification.missing?.length) {
+				p.log.warn(
+					`驗證：${verification.passed}/${verification.total}，缺少：${verification.missing.join("、")}`,
 				);
-				await resolveNodeManager();
+			} else if (verification.total > 0) {
+				p.log.success(
+					`驗證：${verification.passed}/${verification.total} 全部就位 ✓`,
+				);
 			}
-
-			// install
-			if (!flagDryRun) {
-				const result = await feature.install(sharedCtx, plan);
-				allResults[feature.id] = result;
-
-				// verify
-				const verification = await feature.verify(sharedCtx);
-				if (verification.missing?.length) {
-					p.log.warn(
-						`驗證：${verification.passed}/${verification.total} 就位，缺少：${verification.missing.join("、")}`,
-					);
-				} else if (verification.total > 0) {
-					p.log.success(
-						`驗證：${verification.passed}/${verification.total} 全部就位 ✓`,
-					);
-				}
-			} else {
-				p.log.info(`[DRY RUN] ${feature.label} — 跳過安裝`);
-			}
-
-			// complete
-			const guideLines = feature.complete(allResults[feature.id]);
-			if (guideLines.length) p.log.info(guideLines.join("\n"));
-		}
-
-		const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-		p.log.success(`✅ 安裝完成（耗時 ${elapsed}s）`);
-
-		// session
-		const { saveSession, clearSessionProgress } = await import(
-			"../libs/core/session.mjs"
-		);
-		clearSessionProgress();
-		saveSession({
-			features: standaloneFeatures,
-			targets: standaloneFeatures,
-			mode: flagManual ? "manual" : "auto",
-			installMode: "standalone",
-			repos: [],
-			techStacks: [],
-			install: Object.fromEntries(
-				Object.entries(allResults).map(([id, r]) => [id, r || {}]),
-			),
-		});
-
-		p.outro("設定完成");
-		return;
-	}
-
-	// ── Needs-repos 路由：選了 Claude / Project → 走原有流程 ──
-	await runLegacyCheckIfNeeded();
-	await ensureSetupEnvironment();
-
-	// project = claudemd + AI 資源合併，向下兼容
-	const hasProject = has("project") || has("claudemd");
-	const needsRepos = hasProject;
-
-	// ── AI 來源選擇（同步到 commons，供後續 pipeline 使用）──
-	// 優先用 session 保存的選擇（重新安裝時），再讓用戶選擇新的
-	if (hasProject || has("claude")) {
-		p.log.info(
-			[
-				"🔗 AI 來源 — 外部 Claude 代理、命令與規則庫",
-				"  各來源提供由社群或官方維護的 agents / commands / rules，",
-				"  安裝後自動融合到 ~/.claude/，與你本地的配置並存（本地優先）。",
-				"  直接 Enter 跳過，稍後可執行 pnpm run c:sync:select 個別補充。",
-			].join("\n"),
-		);
-		const { selectAiSources } = await import(
-			"../libs/external/ai-source-select.mjs"
-		);
-		const { BACK: B } = await import("../libs/cli/prompts.mjs");
-		const result = await selectAiSources();
-		if (result === B) {
-			p.outro("已取消");
-			return;
-		}
-		selectedAiSources = result;
-	}
-
-	// ── 外部服務設定 ──
-	const setupResults = [];
-
-	// Slack 通知設定（先暫存，安裝成功後才寫入 .env）
-	let pendingSlackConfig = null;
-	if (has("slack")) {
-		p.log.step(pc.bold("Slack 通知設定"));
-		const { setupSlackNotify } = await import(
-			"../libs/external/slack-setup.mjs"
-		);
-		const slackResult = await setupSlackNotify(prev);
-		if (slackResult) {
-			pendingSlackConfig = slackResult;
-			if (!prev) prev = {};
-			prev.slackChannel = slackResult.channelId;
-			prev.slackChannelName = slackResult.channelName || "";
-			prev.slackMode = slackResult.mode;
-			prev.slackUserId = slackResult.userId || "";
-			const slackDisplay =
-				slackResult.mode === "dm"
-					? "DM"
-					: `#${slackResult.channelName || slackResult.channelId} (${slackResult.channelId})`;
-			setupResults.push(`Slack ${pc.green("✔")} ${slackDisplay}`);
 		} else {
-			setupResults.push(`Slack ${pc.dim("跳過")}`);
+			p.log.info(`[DRY RUN] ${feature.label} — 跳過安裝`);
+		}
+
+		// complete
+		const guideLines = feature.complete(featureResults[feature.id]);
+		if (guideLines.length) p.log.info(guideLines.join("\n"));
+
+		// 單一 feature 耗時
+		const featureElapsed = ((Date.now() - featureStart) / 1000).toFixed(1);
+		p.log.success(`  ${step} 完成（${featureElapsed}s）`);
+	}
+
+	// ── 彙總結果 ──
+	console.log();
+	const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+	// 彙總所有 feature 的 installSelections
+	const aggregatedSelections = {
+		commands: [],
+		agents: [],
+		rules: [],
+		hooks: [],
+		modules: [],
+		plugins: [],
+		pluginsFailed: [],
+		skills: [],
+	};
+	for (const [_id, result] of Object.entries(featureResults)) {
+		if (!result) continue;
+		// 直接的 installSelections（from claude-base, project-install）
+		const sel = result.installSelections || result;
+		for (const key of Object.keys(aggregatedSelections)) {
+			if (Array.isArray(sel[key])) {
+				aggregatedSelections[key].push(...sel[key]);
+			}
 		}
 	}
 
-	// 外部服務設定摘要
-	if (!isEmpty(setupResults)) {
-		p.log.success(
-			`外部服務設定完成\n${setupResults.map((r) => `  ${r}`).join("\n\n")}`,
-		);
+	// 從 project-install 結果取 syncResult 和 pipelineResult
+	const projectResult = featureResults["project-install"];
+	const _syncResult = projectResult?.syncResult || null;
+	const pipelineResult = projectResult?.pipelineResult || null;
+
+	// 構建彙總 plan（供 session 保存與報告使用）
+	const reposResult = featureResults.repos;
+	const techResult = featureResults["tech-analysis"];
+	const aggregatedPlan = {
+		targets: selectedIds,
+		features: selectedIds,
+		mode: flagManual ? "manual" : "auto",
+		installMode: selectedIds.includes("project-install")
+			? "full"
+			: "standalone",
+		repos:
+			reposResult?.repos || prev?.repos?.map((r) => ({ fullName: r })) || [],
+		techStacks: techResult?.techStacks || prev?.techStacks || [],
+		aiRes: projectResult?.aiRes || [],
+		projects: reposResult?.projects || [],
+		profile: techResult?.profile || null,
+		aiCost: { total: 0 },
+		_pipelineResult: pipelineResult,
+	};
+
+	// 儲存 session + 顯示完成
+	const { saveSession, clearSessionProgress } = await import(
+		"../libs/core/session.mjs"
+	);
+	clearSessionProgress();
+
+	const roles = {};
+	const localPaths = {};
+	for (const r of aggregatedPlan.repos) {
+		if (r.fullName) {
+			roles[r.fullName] = r.role || "temp";
+			if (r.localPath) localPaths[r.fullName] = r.localPath;
+		}
 	}
 
-	// ── Phase loop（支持 BACK）──
-	let analyzeCache = null;
+	saveSession({
+		targets: selectedIds,
+		features: selectedIds,
+		mode: aggregatedPlan.mode,
+		installMode: aggregatedPlan.installMode,
+		org: [
+			...new Set(
+				aggregatedPlan.repos
+					.map((r) => r.fullName?.split("/")[0])
+					.filter(Boolean),
+			),
+		],
+		repos: aggregatedPlan.repos.map((r) => r.fullName).filter(Boolean),
+		roles,
+		localPaths,
+		techStacks: aggregatedPlan.techStacks,
+		projectFolders: projectFolders || [],
+		selectedAiSources: techResult?.selectedAiSources || selectedAiSources,
+		aiResSelections:
+			aggregatedPlan.aiRes?.length > 0
+				? { recommended: aggregatedPlan.aiRes }
+				: null,
+		install: aggregatedSelections,
+	});
 
-	while (true) {
-		// Step 1：選 repos（只有需要 repos 的功能才問）
-		let repos = [];
-		if (needsRepos) {
-			phaseHeader("📁 選擇倉庫", 1, 3);
-			repos = await interactiveRepoSelect(prev);
-			if (repos === BACK) {
-				p.outro("已取消");
-				return;
-			}
-		}
+	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);
 
-		// 角色分類（只有選了 repos 的功能才需要）
-		const roles = {};
-		if (needsRepos && !isEmpty(repos)) {
-			const { determineRole } = await import(
-				"../libs/config/config-classifier.mjs"
+	// 可選：生成 HTML 報告（僅在有 project 結果時）
+	if (pipelineResult) {
+		try {
+			const { generateReport, openInBrowser, saveReport } = await import(
+				"../libs/report.mjs"
 			);
-			for (const r of repos) {
-				roles[r.fullName] = prev?.roles?.[r.fullName] || determineRole(r);
-			}
-
-			let roleConfirmed = false;
-			while (!roleConfirmed) {
-				const roleCounts = countBy(Object.values(roles));
-				const mc = roleCounts.main || 0;
-				const tc = roleCounts.temp || 0;
-				const toolc = roleCounts.tool || 0;
-
-				// 顯示當前分配 — 按組織分組（⭐ 主力 → 🔄 臨時 → 🔧 工具）
-				const ROLE_ORDER = { main: 0, temp: 1, tool: 2 };
-				const byOrg = {};
-				for (const r of repos) {
-					const org = r.fullName.split("/")[0];
-					if (!byOrg[org]) byOrg[org] = [];
-					byOrg[org].push(r);
-				}
-				for (const org of Object.keys(byOrg)) {
-					byOrg[org].sort(
-						(a, b) =>
-							(ROLE_ORDER[roles[a.fullName]] ?? 9) -
-							(ROLE_ORDER[roles[b.fullName]] ?? 9),
-					);
-				}
-				const summaryLines = [];
-				for (const [org, orgRepos] of Object.entries(byOrg)) {
-					summaryLines.push(`  ${org}`);
-					for (const r of orgRepos) {
-						const icon =
-							roles[r.fullName] === "main"
-								? "⭐"
-								: roles[r.fullName] === "tool"
-									? "🔧"
-									: "🔄";
-						summaryLines.push(`    ${icon} ${r.fullName.split("/")[1]}`);
-					}
-				}
-				p.log.info(
-					[
-						`角色分配（${mc} ⭐ 主力 · ${tc} 🔄 臨時${toolc ? ` · ${toolc} 🔧 工具` : ""}）`,
-						"  角色決定每個 repo 會安裝哪種 CLAUDE.md：",
-						"  ⭐ 主力 — 完整 AI 分析 + 技術棧感知 CLAUDE.md（每天在用的主力 repo）",
-						"  🔄 臨時 — 精簡 CLAUDE.md，無 AI 分析（偶爾開啟的 repo）",
-						"  🔧 工具 — 最小配置，僅基礎 context（依賴庫、腳手架等工具 repo）",
-						"",
-						...summaryLines,
-					].join("\n"),
-				);
-
-				const action = handleCancel(
-					await p.select({
-						message: "角色分配",
-						options: [
-							{ value: "confirm", label: "✅ 確認", hint: "繼續安裝" },
-							{
-								value: "main",
-								label: "⭐ 調整主力",
-								hint: "完整 CLAUDE.md + AI 生成",
-							},
-							{ value: "temp", label: "🔄 調整臨時", hint: "精簡 CLAUDE.md" },
-							{ value: "tool", label: "🔧 調整工具", hint: "最小配置" },
-							{ value: "back", label: "← 上一步" },
-						],
-					}),
-				);
-
-				if (action === BACK || action === "back") {
-					roleConfirmed = null;
-					break;
-				}
-
-				if (action === "confirm") {
-					roleConfirmed = true;
-					break;
-				}
-
-				// 調整某個角色：選中 = 歸入該角色，未選 = 保持原角色
-				const targetRole = action;
-				const items = repos.map((r) => ({
-					value: r.fullName,
-					label: r.fullName.split("/")[1],
-					hint: r.commits > 0 ? `${r.commits} commits` : "",
-				}));
-				const currentInRole = repos
-					.filter((r) => roles[r.fullName] === targetRole)
-					.map((r) => r.fullName);
-				const icon =
-					targetRole === "main" ? "⭐" : targetRole === "tool" ? "🔧" : "🔄";
-				const label =
-					targetRole === "main"
-						? "主力"
-						: targetRole === "tool"
-							? "工具"
-							: "臨時";
-
-				const selected = await smartSelect({
-					title: `${icon} ${label} repos`,
-					items,
-					preselected: currentInRole,
-					autoSelectThreshold: 0,
-				});
-				if (selected === BACK) continue;
-
-				// 選中的歸入 targetRole，從該角色移除的降級
-				const selectedSet = new Set(selected);
-				// 降級映射：從 main 移除 → temp，從 temp 移除 → tool，從 tool 移除 → temp
-				const demoteMap = { main: "temp", temp: "tool", tool: "temp" };
-				for (const r of repos) {
-					if (selectedSet.has(r.fullName)) {
-						roles[r.fullName] = targetRole;
-					} else if (roles[r.fullName] === targetRole) {
-						// 用戶明確移除，降級而不是重新自動判定
-						roles[r.fullName] = demoteMap[targetRole];
-					}
-				}
-			}
-
-			if (roleConfirmed === null) continue; // BACK
-
-			// 寫入角色到 repos
-			for (const r of repos) {
-				r._roleOverride = roles[r.fullName];
-			}
-
-			// 自動分析（快取：repos + 角色沒變就不重跑）
-			const reposKey = repos
-				.map((r) => `${r.fullName}:${r._roleOverride}`)
-				.sort()
-				.join(",");
-			const needsAnalysis = has("claude") || has("project");
-			if (!analyzeCache || analyzeCache.key !== reposKey) {
-				if (needsAnalysis) {
-					phaseHeader("🔬 自動分析");
-					p.log.info(
-						"掃描技術棧、偵測本機路徑、生成個人化安裝計畫（約 10–30 秒）",
-					);
-					let analyzeSuccess = false;
-					while (!analyzeSuccess) {
-						try {
-							analyzeCache = {
-								key: reposKey,
-								plan: await phaseAnalyze({
-									repos,
-									sources,
-									selectedAiSources,
-									baseDir: REPO,
-									projectFolders,
-								}),
-							};
-							analyzeSuccess = true;
-						} catch (err) {
-							p.log.error(
-								`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:doctor 診斷環境`,
-							);
-							const action = handleCancel(
-								await p.select({
-									message: "如何繼續？",
-									options: [
-										{ value: "retry", label: "🔄 重試", hint: "重新執行分析" },
-										{
-											value: "skip",
-											label: "⏭️ 跳過",
-											hint: "跳過 AI 分析，使用基礎配置",
-										},
-										{ value: "back", label: "← 上一步", hint: "返回選擇倉庫" },
-									],
-								}),
-							);
-							if (action === "back" || action === BACK) break; // break inner, continue outer while
-							if (action === "skip") {
-								const { generateInstallPlan } = await import(
-									"../libs/config/auto-plan.mjs"
-								);
-								analyzeCache = {
-									key: reposKey,
-									plan: generateInstallPlan({
-										repos,
-										pipelineResult: null,
-										aiResResult: { recommended: [] },
-										localPaths: {},
-										roleOverrides: {},
-										profile: null,
-									}),
-								};
-								analyzeSuccess = true;
-							}
-							// 'retry' — loop again
-						}
-					}
-					if (!analyzeSuccess) continue; // BACK — restart outer while loop
-					// 應用用戶角色覆蓋
-					for (const r of analyzeCache.plan.repos) {
-						const src = repos.find((s) => s.fullName === r.fullName);
-						if (src?._roleOverride) r.role = src._roleOverride;
-					}
-					// 重算計數
-					const roleCounts2 = countBy(analyzeCache.plan.repos, "role");
-					analyzeCache.plan.mainCount = roleCounts2.main || 0;
-					analyzeCache.plan.tempCount = roleCounts2.temp || 0;
-					analyzeCache.plan.toolCount = roleCounts2.tool || 0;
-					// 更新 projects（只有找到 localPath 的才生成 CLAUDE.md）
-					const { getClaudeMdType } = await import(
-						"../libs/config/config-classifier.mjs"
-					);
-					analyzeCache.plan.projects = analyzeCache.plan.repos
-						.filter((r) => r.localPath)
-						.map((r) => ({
-							repo: r.fullName,
-							role: r.role,
-							localPath: r.localPath,
-							claudeMdType: getClaudeMdType(r.role),
-						}));
-				}
-			} else {
-				// 不需要 AI 分析（只選了 ZSH / Slack）→ 直接生成最小 plan
-				const { generateInstallPlan } = await import(
-					"../libs/config/auto-plan.mjs"
-				);
-				analyzeCache = {
-					key: reposKey || "no-analysis",
-					plan: generateInstallPlan({
-						repos: [],
-						pipelineResult: null,
-						aiResResult: { recommended: [] },
-						localPaths: {},
-						roleOverrides: {},
-						profile: null,
-					}),
-				};
-			}
-		} // end if (needsRepos)
-
-		// 不需要 repos，或 repos 為空（GitHub 無倉庫）時建最小 plan
-		if (!analyzeCache) {
-			const { generateInstallPlan } = await import(
-				"../libs/config/auto-plan.mjs"
-			);
-			analyzeCache = {
-				key: "no-repos",
-				plan: generateInstallPlan({
-					repos: [],
-					pipelineResult: null,
-					aiResResult: { recommended: [] },
-					localPaths: {},
-					roleOverrides: {},
-					profile: null,
-				}),
+			// 簡化版報告：用 aggregated data
+			const reportData = {
+				username: aggregatedPlan.repos[0]?.fullName?.split("/")[0] || "",
+				org: [
+					...new Set(
+						aggregatedPlan.repos
+							.map((r) => r.fullName?.split("/")[0])
+							.filter(Boolean),
+					),
+				].join(", "),
+				repos: aggregatedPlan.repos.map((r) => r.fullName).filter(Boolean),
+				installed: aggregatedSelections,
+				stacks: aggregatedPlan.techStacks,
+				mode: aggregatedPlan.mode,
+				timestamp: new Date().toISOString(),
 			};
-		}
-
-		// 根據功能選擇裁剪 plan（用 cloneDeep 避免破壞 cache 原始資料）
-		let planForReview = analyzeCache?.plan;
-		if (planForReview) {
-			planForReview = cloneDeep(planForReview);
-
-			// ── 功能隔離：未選擇的功能清零 ──
-			if (!has("claude")) {
-				// 未選 Claude → 清空全局配置
-				if (planForReview.global) {
-					planForReview.global.commands = [];
-					planForReview.global.agents = [];
-					planForReview.global.rules = [];
-					planForReview.global.hooks = [];
-					planForReview.global.permissions = null;
-					planForReview.global.model = null;
-				}
-				planForReview.targets = (planForReview.targets || []).filter(
-					(t) => t !== "claude-dev",
-				);
-			}
-			if (!hasProject) {
-				planForReview.aiRes = [];
-				planForReview.projects = [];
-			}
-			if (!has("slack")) {
-				planForReview.targets = (planForReview.targets || []).filter(
-					(t) => t !== "slack",
-				);
-			}
-			if (!has("zsh")) {
-				planForReview.zshModules = [];
-				planForReview.targets = (planForReview.targets || []).filter(
-					(t) => t !== "zsh",
-				);
-			}
-
-			planForReview.features = features;
-		}
-
-		// Step 2：確認計畫
-		phaseHeader("📋 確認安裝計畫", 2, 3);
-		const confirmedPlan = await phasePlan(planForReview);
-		if (confirmedPlan === BACK) continue; // 回到 Step 1
-
-		// --dry-run
-		if (flagDryRun) {
-			p.log.success("🔄 Dry Run 完成 — 未寫入任何檔案");
-			p.outro("Dry Run 結束");
-			return;
-		}
-
-		// --manual
-		if (flagManual) confirmedPlan.mode = "manual";
-
-		// 執行安裝管線前，先保存 Slack 配置到 session（若安裝失敗也不會遺失）
-		if (pendingSlackConfig && prev) {
-			await (await import("../libs/core/session.mjs")).patchSession({
-				slackChannel: pendingSlackConfig.channelId,
-				slackChannelName: pendingSlackConfig.channelName || "",
-				slackMode: pendingSlackConfig.mode,
-				slackUserId: pendingSlackConfig.userId || "",
-			});
-		}
-
-		// 執行安裝管線
-		await runInstallPipeline(confirmedPlan, {
-			repoDir: REPO,
-			previewDir: PREVIEW_DIR,
-			targets,
-			prev,
-			projectFolders,
-			selectedAiSources,
-		});
-
-		// 安裝成功 — 寫入暫存的 Slack 配置
-		if (pendingSlackConfig) {
-			const envPath = path.join(REPO, ".env");
-			let envContent = fs.existsSync(envPath)
-				? fs.readFileSync(envPath, "utf8")
-				: "";
-			envContent = envContent
-				.replace(/^SLACK_[A-Z_]+=.*/gm, "")
-				.replace(/^CLAUDE_SLACK_MIN_SESSION_SECS=.*/gm, "")
-				.replace(/\n{3,}/g, "\n\n")
-				.trim();
-			envContent += `\nSLACK_NOTIFY_CHANNEL=${pendingSlackConfig.channelId}\nSLACK_NOTIFY_MODE=${pendingSlackConfig.mode}`;
-			if (pendingSlackConfig.channelName)
-				envContent += `\nSLACK_NOTIFY_CHANNEL_NAME=${pendingSlackConfig.channelName}`;
-			if (pendingSlackConfig.userId)
-				envContent += `\nSLACK_NOTIFY_USER_ID=${pendingSlackConfig.userId}`;
-			envContent += `\nCLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`;
-			envContent += "\n";
-			fs.writeFileSync(envPath, envContent);
-
-			// 同步寫入 ~/.claude/.env（slack-dispatch.sh 從這裡讀取）
-			const claudeEnvPath = path.join(HOME, ".claude", ".env");
-			const slackEnvLines = [
-				`SLACK_NOTIFY_CHANNEL=${pendingSlackConfig.channelId}`,
-				`SLACK_NOTIFY_MODE=${pendingSlackConfig.mode}`,
-			];
-			if (pendingSlackConfig.channelName)
-				slackEnvLines.push(
-					`SLACK_NOTIFY_CHANNEL_NAME=${pendingSlackConfig.channelName}`,
-				);
-			if (pendingSlackConfig.userId)
-				slackEnvLines.push(`SLACK_NOTIFY_USER_ID=${pendingSlackConfig.userId}`);
-			slackEnvLines.push(
-				`CLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`,
+			const html = generateReport(reportData);
+			const reportPath = saveReport(html, path.join(REPO, "dist"));
+			const openIt = handleCancel(
+				await p.confirm({ message: "開啟安裝報告？", initialValue: false }),
 			);
-			fs.writeFileSync(claudeEnvPath, `${slackEnvLines.join("\n")}\n`);
+			if (openIt === true) await openInBrowser(reportPath);
+		} catch {
+			// 報告生成失敗不影響安裝結果
 		}
-
-		break;
 	}
 
 	p.outro("設定完成");

@@ -11,7 +11,6 @@
  *   僅 CLAUDE.md 重新生成時例外（需 AI）。
  */
 
-import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
@@ -29,15 +28,6 @@ function backupIfExists(src, dest) {
 	if (fs.existsSync(src)) {
 		fs.mkdirSync(path.dirname(dest), { recursive: true });
 		fs.cpSync(src, dest, { recursive: true });
-	}
-}
-
-function _run(cmd, cwd = REPO) {
-	try {
-		execSync(cmd, { stdio: "inherit", cwd });
-		return true;
-	} catch {
-		return false;
 	}
 }
 

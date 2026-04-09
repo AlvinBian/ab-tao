@@ -19,8 +19,9 @@ function loadTranslations() {
 	if (_translations) return _translations;
 	try {
 		const req = createRequire(import.meta.url);
-		const pkgPath = req.resolve("@ab-tao/commons/package.json");
-		const commonsRoot = path.dirname(pkgPath);
+		// 解析 @ab-tao/commons 主入口（scripts/index.mjs），再往上兩層取 package root
+		const commonsMain = req.resolve("@ab-tao/commons");
+		const commonsRoot = path.dirname(path.dirname(commonsMain));
 		const transPath = path.join(commonsRoot, "resources", "translations.json");
 		_translations = JSON.parse(fs.readFileSync(transPath, "utf8"));
 	} catch {
@@ -121,9 +122,29 @@ export function getDescription(name, type, claudeDir) {
 }
 
 /**
+ * 取得資源的推薦星級（1-5）
+ *
+ * @param {string} name - 配置項名稱
+ * @param {string|null} type - 類型（'commands' | 'agents' | 'rules' | 'skills'）
+ * @returns {number|null} 星級 1-5，無資料返回 null
+ */
+export function getRating(name, type) {
+	const trans = loadTranslations();
+	const ratingType =
+		type === "agents"
+			? "agents"
+			: type === "rules"
+				? "rules"
+				: type === "skills"
+					? "skills"
+					: "commands";
+	return trans.ratings?.[ratingType]?.[name] ?? null;
+}
+
+/**
  * 格式化帶描述的 bullet 項目
  *
- * 格式為：`{indent}· {name} — {desc}`（有描述時）
+ * 格式為：`{indent}· {name} ★★★☆☆ — {desc}`（有描述時）
  * 或：`{indent}· {name}`（無描述時）
  *
  * @param {string} name - 項目名稱
@@ -134,7 +155,9 @@ export function getDescription(name, type, claudeDir) {
  */
 export function descBullet(name, type, claudeDir, indent = "       ") {
 	const desc = getDescription(name, type, claudeDir);
-	return desc ? `${indent}· ${name} — ${desc}` : `${indent}· ${name}`;
+	const rating = getRating(name, type);
+	const stars = rating ? `${"★".repeat(rating)}${"☆".repeat(5 - rating)} ` : "";
+	return desc ? `${indent}· ${name} ${stars}— ${desc}` : `${indent}· ${name}`;
 }
 
 // Re-export for convenience

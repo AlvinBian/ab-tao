@@ -15,7 +15,7 @@ export const commands = {
 
 export const aliases = {
 	"sync:select": { cmd: "sync", args: "--select", desc: "互動式選擇同步" },
-	"sync:all": { cmd: "sync", args: "--all", desc: "同步全部 7 個來源" },
+	"sync:all": { cmd: "sync", args: "--all", desc: "同步全部 4 個來源" },
 };
 
 run(pkg, aliases);

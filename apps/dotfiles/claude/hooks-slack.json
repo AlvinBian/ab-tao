@@ -7,7 +7,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-start; exit 0",
+						"command": "$HOME/.claude/hooks/slack-dispatch.sh session-start",
 						"timeout": 3
 					}
 				]
@@ -19,8 +19,8 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "D=\"$HOME/.claude/hooks/slack-dispatch.sh\"; [ -x \"$D\" ] && \"$D\" session-stop; exit 0",
-						"timeout": 5
+						"command": "$HOME/.claude/hooks/slack-dispatch.sh session-stop",
+						"timeout": 3
 					}
 				]
 			}

@@ -7,7 +7,24 @@
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty } from "lodash-es";
-import { descBullet, getDescription } from "../config/descriptions.mjs";
+import pc from "picocolors";
+import {
+	descBullet,
+	getDescription,
+	getRating,
+} from "../config/descriptions.mjs";
+
+// ── 資源 Model 對照 ──
+const CMD_MODEL = {
+	check: "haiku",
+	test: "sonnet",
+	"db-migration": "sonnet",
+	slack: "haiku",
+};
+const AGENT_MODEL = {
+	architect: "opus",
+	debugger: "sonnet",
+};
 
 /** 從 SKILL.md 內容提取簡短描述（frontmatter description 或首行非標題文字） */
 function extractSkillDesc(content) {
@@ -135,14 +152,22 @@ export function formatGlobalConfig(globalConfig) {
 	const lines = [];
 	const g = globalConfig;
 
-	lines.push(`2. 全局配置 → ~/.claude/`);
-	lines.push(`   Commands（${g.commands.length}）`);
-	lines.push(...grid(g.commands));
-	lines.push(`   Agents（${g.agents.length}）`);
-	lines.push(...grid(g.agents));
+	lines.push(`2. 全局配置 → ~/.claude/ 推薦`);
+	lines.push(`   Commands（${g.commands.length}）推薦`);
+	const cmdItems = g.commands.map((c) => {
+		const m = CMD_MODEL[c];
+		return m ? `${c} ${pc.dim(m)}` : c;
+	});
+	lines.push(...grid(cmdItems));
+	lines.push(`   Agents（${g.agents.length}）推薦`);
+	const agentItems = g.agents.map((a) => {
+		const m = AGENT_MODEL[a];
+		return m ? `${a} ${pc.dim(m)}` : a;
+	});
+	lines.push(...grid(agentItems));
 	lines.push(`   Rules（${g.rules.length}）`);
 	lines.push(...grid(g.rules, 3, 24));
-	lines.push(`   Hooks（${g.hooks.length}）`);
+	lines.push(`   Hooks（${g.hooks.length}）推薦`);
 	const hookNames = g.hooks.map((h) => (h.match(/\((.+)\)/) || ["", h])[1]);
 	lines.push(...grid(hookNames, 4, 16));
 	lines.push(
@@ -162,13 +187,40 @@ export function formatGlobalConfig(globalConfig) {
 export function formatTechStacks(plan) {
 	const lines = [];
 
+	const CATEGORY_ORDER = [
+		"前端框架",
+		"測試框架",
+		"建構工具",
+		"CSS 與樣式",
+		"狀態管理",
+		"UI 元件庫",
+		"HTTP 與 API",
+		"國際化",
+		"表單驗證",
+		"第三方整合",
+		"安全與認證",
+		"後端框架",
+		"基礎設施",
+		"容器化",
+		"監控與追蹤",
+		"工具函式",
+		"CLI 工具",
+		"即時通訊",
+		"其他",
+	];
+
 	if (!isEmpty(plan.techStacks)) {
 		const categorized = plan._pipelineResult?.categorizedTechs;
 		if (categorized instanceof Map && categorized.size > 0) {
 			lines.push(
-				`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）`,
+				`4. 技術棧（${plan.techStacks.length} 個，${categorized.size} 類）推薦`,
 			);
-			for (const [cat, techMap] of categorized) {
+			const sorted = [...categorized.entries()].sort((a, b) => {
+				const ia = CATEGORY_ORDER.indexOf(a[0]);
+				const ib = CATEGORY_ORDER.indexOf(b[0]);
+				return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+			});
+			for (const [cat, techMap] of sorted) {
 				const techs = [...techMap.keys()];
 				lines.push(`   ${cat}（${techs.length}）：${techs.join("、")}`);
 			}
@@ -209,25 +261,209 @@ export function formatAiResResources(plan, claudeDir) {
 			aiResByType[type].push(clean);
 		}
 
-		lines.push(`5. 🌐 AI 資源（${plan.aiRes.length} 個）`);
+		// 按星級排序（高分在前）+ 加 [預選] 標記
+		const sortByRating = (items, type) =>
+			[...items].sort(
+				(a, b) => (getRating(b, type) || 0) - (getRating(a, type) || 0),
+			);
+		const preselectedBullet = (name, type) => {
+			const desc = getDescription(name, type, claudeDir);
+			const rating = getRating(name, type);
+			const stars = rating
+				? `${"★".repeat(rating)}${"☆".repeat(5 - rating)} `
+				: "";
+			return desc
+				? `       · ${pc.cyan("[預選]")} ${name} ${stars}— ${desc}`
+				: `       · ${pc.cyan("[預選]")} ${name}`;
+		};
+
+		lines.push(`5. 🌐 AI 外部資源（${plan.aiRes.length} 個）可選`);
 		if (aiResByType.commands.length) {
 			lines.push(`   5.1 Commands（${aiResByType.commands.length}）`);
 			lines.push(
-				...aiResByType.commands.map((n) =>
-					descBullet(n, "commands", claudeDir),
+				...sortByRating(aiResByType.commands, "commands").map((n) =>
+					preselectedBullet(n, "commands"),
 				),
 			);
 		}
 		if (aiResByType.agents.length) {
 			lines.push(`   5.2 Agents（${aiResByType.agents.length}）`);
 			lines.push(
-				...aiResByType.agents.map((n) => descBullet(n, "agents", claudeDir)),
+				...sortByRating(aiResByType.agents, "agents").map((n) =>
+					preselectedBullet(n, "agents"),
+				),
 			);
 		}
 		if (aiResByType.rules.length) {
 			lines.push(`   5.3 Rules（${aiResByType.rules.length}）`);
 			lines.push(
-				...aiResByType.rules.map((n) => descBullet(n, "rules", claudeDir)),
+				...sortByRating(aiResByType.rules, "rules").map((n) =>
+					preselectedBullet(n, "rules"),
+				),
+			);
+		}
+	}
+
+	return lines;
+}
+
+/**
+ * 統一 AI 資源視圖 — 合併外部源與 Commons 來源，按類型分組顯示
+ *
+ * @param {Object} plan - 計畫物件
+ * @param {string} claudeDir - ~/.claude 路徑
+ * @param {Object} selected - 已選擇的資源（{ commands: Set, agents: Set, rules: Set, skills: Set }）
+ * @param {number} minStars - 最低預選星級（預設 5）
+ * @returns {string[]} 格式化後的行陣列
+ */
+export function formatUnifiedAiResources(
+	plan,
+	claudeDir,
+	selected = null,
+	minStars = 5,
+) {
+	const lines = [];
+
+	// 來源標籤對照
+	const SOURCE_LABELS = {
+		ecc: "ECC",
+		anthropic: "Anthropic",
+		superpowers: "Superpowers",
+		"context-engineering": "CtxEng",
+	};
+
+	// ── 收集所有資源（外部 + Commons）──
+	const unified = { commands: [], agents: [], rules: [], skills: [] };
+	const itemsMap = {}; // 用於去重：{ "type:name" => item }
+
+	// 1. 外部資源（plan.aiRes）
+	const aiResTypeMap = plan._fetchedSources?.aiResTypeMap || {};
+	for (const name of plan.aiRes || []) {
+		const clean = name.replace(".md", "");
+		const type =
+			aiResTypeMap[clean] ||
+			(fs.existsSync(path.join(claudeDir, "agents", `${clean}.md`))
+				? "agents"
+				: null) ||
+			(fs.existsSync(path.join(claudeDir, "rules", `${clean}.md`))
+				? "rules"
+				: null) ||
+			"commands";
+
+		const rating = getRating(clean, type) || 0;
+		const desc = getDescription(clean, type, claudeDir);
+		const key = `${type}:${clean}`;
+
+		itemsMap[key] = {
+			name: clean,
+			source: "ecc",
+			type,
+			rating,
+			desc,
+			isPreselected: rating >= minStars,
+		};
+	}
+
+	// 2. Commons 資源
+	const commSources = plan._pipelineResult?.commonsResources?.sources || [];
+	for (const src of commSources) {
+		// Commands, Agents, Rules
+		for (const type of ["commands", "agents", "rules"]) {
+			for (const item of src[type] || []) {
+				const clean = item.name?.replace(".md", "") || item;
+				const rating = getRating(clean, type) || 0;
+				const desc = getDescription(clean, type, claudeDir);
+				const key = `${type}:${clean}`;
+
+				// 去重：保留評級更高的版本
+				if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+				itemsMap[key] = {
+					name: clean,
+					source: src.name,
+					type,
+					rating,
+					desc,
+					isPreselected: rating >= minStars,
+				};
+			}
+		}
+
+		// Skills
+		for (const sk of src.skills || []) {
+			const name = typeof sk === "string" ? sk : sk.name;
+			const content = typeof sk === "string" ? "" : sk.content || "";
+			const rating = getRating(name, "skills") || 0;
+			const transDesc = getDescription(name, "skills", null);
+			const desc = transDesc || extractSkillDesc(content);
+			const key = `skills:${name}`;
+
+			if (itemsMap[key] && itemsMap[key].rating >= rating) continue;
+
+			itemsMap[key] = {
+				name,
+				source: src.name,
+				type: "skills",
+				rating,
+				desc,
+				isPreselected: rating >= minStars,
+			};
+		}
+	}
+
+	// ── 按類型分組並排序 ──
+	for (const key of Object.keys(itemsMap)) {
+		const item = itemsMap[key];
+		if (!unified[item.type]) unified[item.type] = [];
+		unified[item.type].push(item);
+	}
+
+	// 每個類型按星級降序排序
+	for (const type of Object.keys(unified)) {
+		unified[type].sort((a, b) => b.rating - a.rating);
+	}
+
+	// ── 計算統計 ──
+	const countPreselected = Object.values(unified).reduce(
+		(sum, items) => sum + items.filter((i) => i.isPreselected).length,
+		0,
+	);
+	const countTotal = Object.values(unified).reduce(
+		(sum, items) => sum + items.length,
+		0,
+	);
+
+	lines.push(`🌐 AI 資源（${countPreselected} 個預選 / ${countTotal} 個可用）`);
+
+	// ── 按類型輸出 ──
+	const types = ["commands", "agents", "rules", "skills"];
+	for (const type of types) {
+		const items = unified[type];
+		if (items.length === 0) continue;
+
+		const typeLabel = {
+			commands: "Commands",
+			agents: "Agents",
+			rules: "Rules",
+			skills: "Skills",
+		}[type];
+
+		lines.push(`  ${typeLabel}（${items.length} 個）`);
+
+		for (const item of items) {
+			const sourceLabel = SOURCE_LABELS[item.source] || item.source;
+			const isSelected = selected
+				? selected[type]?.has(item.name)
+				: item.isPreselected;
+			const preselectedTag = isSelected ? pc.cyan("[預選]") : "      ";
+			const stars =
+				item.rating > 0
+					? `${"★".repeat(item.rating)}${"☆".repeat(5 - item.rating)}`
+					: "☆☆☆☆☆";
+			const desc = item.desc ? ` — ${item.desc}` : "";
+
+			lines.push(
+				`     · ${preselectedTag} ${sourceLabel.padEnd(10)} ${item.name} ${stars}${desc}`,
 			);
 		}
 	}
@@ -274,12 +510,18 @@ export function formatCommonsResources(plan) {
 			if (parts.length)
 				lines.push(`       ${icon} ${src.name} — ${parts.join(" · ")}`);
 
-			// 列出個別項目（優先使用繁中翻譯，fallback 到 SKILL.md 提取描述）
+			// 列出個別 skills（優先使用繁中翻譯，fallback 到 SKILL.md 提取描述）
 			for (const sk of src.skills || []) {
-				const transDesc = getDescription(sk.name, "skills", null);
-				const desc = transDesc || extractSkillDesc(sk.content);
+				const name = typeof sk === "string" ? sk : sk.name;
+				const content = typeof sk === "string" ? "" : sk.content || "";
+				const transDesc = getDescription(name, "skills", null);
+				const desc = transDesc || extractSkillDesc(content);
+				const rating = getRating(name, "skills");
+				const stars = rating
+					? `${"★".repeat(rating)}${"☆".repeat(5 - rating)} `
+					: "";
 				lines.push(
-					desc ? `         · ${sk.name} — ${desc}` : `         · ${sk.name}`,
+					desc ? `         · ${name} ${stars}— ${desc}` : `         · ${name}`,
 				);
 			}
 		}
@@ -299,7 +541,7 @@ export function formatZshModules(plan) {
 
 	if (!isEmpty(plan.zshModules)) {
 		lines.push(
-			`ZSH 模組 → ~/.zshrc.d/（${plan.zshModules.length} 可選 + 2 恆常 + sheldon 插件）`,
+			`ZSH 模組 → ~/.zshrc.d/（${plan.zshModules.length} 可選 + 2 恆常 + sheldon 插件）推薦`,
 		);
 		lines.push(...plan.zshModules.map((m) => descBullet(m, null, null)));
 	}

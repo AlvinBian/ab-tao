@@ -107,6 +107,13 @@ export default {
 			return { modules: selectableModules };
 		}
 
+		if (ctx.flags?.quick) {
+			// 從 session 重建（上次安裝的模組）
+			const prevModules = ctx.prev?.install?.modules;
+			if (prevModules?.length) return { modules: prevModules };
+			return { modules: selectableModules }; // fallback 全選
+		}
+
 		const selected = handleCancel(
 			await p.multiselect({
 				message: "選擇要安裝的 ZSH 模組",
@@ -240,7 +247,7 @@ export default {
 	complete(results) {
 		if (!results) return [];
 		return [
-			"── ZSH 模組（~/.zshrc.d/ + sheldon）──",
+			"🐚 ZSH 模組（~/.zshrc.d/ + sheldon）",
 			`  已安裝：${results.modules?.join("、") || "無"}`,
 			"  執行 exec zsh 立即套用",
 		];

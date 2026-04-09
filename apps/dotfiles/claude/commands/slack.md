@@ -24,7 +24,7 @@ matchWhen:
 |---------|------|------|
 | 寫訊息、生成草稿、公告、進度、告警 | **A — 草稿** | 場景檢測 → 組裝模組 → 格式檢查 → 發送 |
 | 檢查訊息、審查格式、格式對嗎 | **B — 審查** | 逐條檢查 → 糾正 → 輸出修正版 → 發送 |
-| 詢問格式、語法、怎麼寫 | **C — 指南** | 快速參考表 + 常用模板 + Checklist |
+| 詢問格式、語法、怎麼寫 | **C — 指南** | 常用模板 + Checklist |
 
 ---
 
@@ -102,7 +102,7 @@ matchWhen:
 
 ### Step A3 — 場景範例
 
-#### 結論先行（最常用）
+#### 結論先行
 
 ```
 *搜尋 API 延遲已從 2s 降到 200ms* :rocket:
@@ -111,36 +111,6 @@ matchWhen:
 
 改動：<https://github.com/org/repo/pull/456|PR #456>
 已部署到 staging，明天上 prod。
-```
-
-#### Q&A
-
-```
-*Q: deploy 後 cache 要手動清嗎？*
-
-不用。CI pipeline 最後一步會自動 purge CDN cache（約 30 秒）。
-
-如果需要立即生效：
-• Staging: `curl -X PURGE https://staging.example.com`
-• Prod: 找 SRE，不要自己清
-```
-
-#### 決策通知
-
-```
-*決定：會員 API 從 REST 遷移到 GraphQL* :memo:
-
-> 舊 REST endpoint 會保留 6 個月（deprecated），新功能只在 GraphQL 上做。
-
-*原因：*
-• 前端要的欄位組合太多，REST 要開 20+ endpoint
-• GraphQL 可以讓前端自己組合，後端不用改
-
-*影響：*
-• 前端：需要裝 `@apollo/client`，下週開始遷移
-• 後端：本週完成 schema 設計
-
-*需要：* 各組確認 timeline，週五前回覆 cc <!here>
 ```
 
 #### 進度更新
@@ -173,23 +143,6 @@ matchWhen:
 *下次更新：* 30 分鐘後或有進展時
 ```
 
-#### 請求協助
-
-```
-*Blocked: Nuxt 3 升級後 SSR hydration mismatch* :sos:
-
-*問題：* `useAsyncData` 在 server 和 client 回傳不同結果，導致 hydration 失敗。
-
-*已試：*
-• 加了 `<ClientOnly>` — 解決但 SEO 沒了
-• 設 `ssr: false` — 太暴力
-
-*需要：* 有碰過 Nuxt 3 hydration 問題的同事幫看一下
-`pages/product/[id].vue` 第 42 行
-
-cc <@U12345678> <@U87654321>
-```
-
 ### Step A4 — 格式檢查
 
 自動驗證：
@@ -210,23 +163,10 @@ cc <@U12345678> <@U87654321>
 > 2. 指定其他頻道
 > 3. 只複製，不發送
 
-#### 取得頻道 ID
+讀取 `~/.claude/.env` 的 `SLACK_NOTIFY_CHANNEL` 作為預設 `channel_id`。
+未設定則請用戶貼上頻道 ID 或 Channel Link（`https://xxx.slack.com/archives/C07XXXXXX`）。
 
-讀取 `~/.claude/.env`：
-
-1. `SLACK_NOTIFY_CHANNEL` — channel 模式（C 開頭）或 DM 模式（U 開頭）皆可直接使用
-2. 若 `SLACK_NOTIFY_MODE=off` 或變數不存在 → 請用戶貼上頻道 ID 或 Channel Link
-
-> Channel Link 格式：`https://xxx.slack.com/archives/C07XXXXXX`
-> 從中擷取 `C07XXXXXX` 作為 `channel_id`
-
-#### 發送
-
-使用 `mcp__claude_ai_Slack__slack_send_message`：
-- `channel_id`：上方取得的 ID
-- `text`：Step A2 組裝的訊息內容
-
-發送成功後回報：`✅ 已發送到 <頻道名或 ID>`
+使用 `mcp__claude_ai_Slack__slack_send_message` 發送，成功後回報：`✅ 已發送到 <頻道名或 ID>`
 
 ---
 
@@ -238,8 +178,6 @@ cc <@U12345678> <@U87654321>
 
 ### Step B2 — 逐條審查
 
-#### 格式檢查表
-
 | 項目 | 錯誤 | 正確 |
 |------|------|------|
 | 粗體 | `**文字**` | `*文字*` |
@@ -250,12 +188,7 @@ cc <@U12345678> <@U87654321>
 | 刪除線 | `~~文字~~` | `~文字~` |
 | 符號空白 | `* 文字 *` | `*文字*` |
 
-#### 結構檢查
-
-- [ ] 段落之間有空行
-- [ ] 重點資訊有加粗
-- [ ] 提及用 `<@USERID>` 非 `@名字`
-- [ ] 超過 400 字？建議改用 Canvas
+另確認：段落空行、重點加粗、提及用 `<@USERID>`、超過 400 字考慮 Canvas。
 
 ### Step B3 — 輸出結果
 
@@ -275,55 +208,11 @@ cc <@U12345678> <@U87654321>
 
 ### Step B4 — 後續
 
-詢問用戶：
-
-> 1. 發送修正版到設定頻道
-> 2. 指定其他頻道發送
-> 3. 只複製，不發送
-
-若選 1 或 2：讀取 `~/.claude/.env` 的 `SLACK_NOTIFY_CHANNEL` 作為預設 `channel_id`（未設定則請用戶提供）。
-
-使用 `mcp__claude_ai_Slack__slack_send_message` 發送修正後訊息，成功後回報：`✅ 已發送`
+詢問是否發送，流程同 Step A5。
 
 ---
 
 ## 模式 C — 格式指南
-
-### 支援語法
-
-| 效果 | 語法 | 注意 |
-|------|------|------|
-| 粗體 | `*文字*` | 非 `**文字**` |
-| 斜體 | `_文字_` | 底線包圍 |
-| 刪除線 | `~文字~` | 單個波浪號 |
-| 行內程式碼 | `` `文字` `` | 內部 mrkdwn 失效 |
-
-> ⚠️ 格式符號前後不可有空白：`* 文字 *` 不會生效
-
-### 連結
-
-| 用法 | 語法 |
-|------|------|
-| 帶顯示文字 | `<https://url\|顯示文字>` |
-| 只顯示 URL | `<https://url>` |
-
-### 提及
-
-| 目標 | 語法 |
-|------|------|
-| 特定用戶 | `<@USERID>` |
-| 頻道在線 | `<!here>` |
-| 頻道全員 | `<!channel>` |
-
-### 不支援語法
-
-| 不支援 | 應改用 |
-|--------|--------|
-| `---` 分隔線 | 空行或 `────────` |
-| `## 標題` | `*粗體*` 單獨一行 |
-| `**粗體**` | `*粗體*` |
-| `[文字](url)` | `<url\|文字>` |
-| 表格 | 對齊純文字或 Canvas |
 
 ### 常用模板
 
