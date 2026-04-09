@@ -59,7 +59,11 @@ export function buildClaudeTasks(
 		{
 			title: "🤖 Claude Code + 📁 專案配置",
 			enabled: () =>
-				has("claude") || has("slack") || has("claudemd") || has("ecc"),
+				has("claude") ||
+				has("slack") ||
+				has("claudemd") ||
+				has("ecc") ||
+				has("project"),
 			task: (_, branchTask) =>
 				branchTask.newListr(
 					[
@@ -273,7 +277,7 @@ export function buildClaudeTasks(
 						// ━━━ Group 2: 專案配置（repos + AI）━━━
 						{
 							title: "📁 專案配置（repos + AI）",
-							enabled: () => has("claudemd") || has("ecc"),
+							enabled: () => has("claudemd") || has("ecc") || has("project"),
 							task: (_, task) =>
 								task.newListr(
 									[
@@ -281,7 +285,7 @@ export function buildClaudeTasks(
 										{
 											title: `🌐 AI 資源（${plan.ecc?.length ?? 0}）+ Stacks（${plan.techStacks?.length ?? 0}）`,
 											enabled: () =>
-												has("ecc") &&
+												(has("ecc") || has("project")) &&
 												((plan.ecc?.length ?? 0) > 0 ||
 													(plan.techStacks?.length ?? 0) > 0),
 											task: (_, subtask) =>
