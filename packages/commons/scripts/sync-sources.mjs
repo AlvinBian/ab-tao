@@ -32,6 +32,7 @@ const SOURCES_CONFIG = {
 		url: "https://github.com/affaan-m/everything-claude-code.git",
 		icon: "🌐",
 		description: "Commands / Agents / Rules / Skills（社群最大集合）",
+		recommended: true,
 		validatePaths: ["rules", "skills"],
 		optional: true,
 	},
@@ -263,8 +264,9 @@ function listSources() {
 		const synced = ver?.sha
 			? `✔ ${ver.sha.slice(0, 8)} (${ver.date})`
 			: "✗ 尚未同步";
+		const rec = config.recommended ? " 🎯 推薦起點" : "";
 		console.log(
-			`  ${i + 1}. ${config.icon} ${name}${locked} — ${config.description}`,
+			`  ${i + 1}. ${config.icon} ${name}${locked}${rec} — ${config.description}`,
 		);
 		const stats = countResources(name);
 		if (stats) {
@@ -300,8 +302,9 @@ async function interactiveSelect() {
 		const config = SOURCES_CONFIG[name];
 		const ver = versions[name];
 		const tag = ver?.sha ? `✔ ${ver.date}` : "✗";
+		const rec = config.recommended ? " 🎯" : "";
 		console.log(
-			`  ${i + 1}. ${config.icon} ${name} — ${config.description} [${tag}]`,
+			`  ${i + 1}. ${config.icon} ${name}${rec} — ${config.description} [${tag}]`,
 		);
 	}
 

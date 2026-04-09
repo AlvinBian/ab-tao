@@ -19,7 +19,7 @@ const SOURCES = [
 	},
 	{
 		ns: "c",
-		label: "commons（AI 資源，7 個來源）",
+		label: "commons（AI 資源，4 個來源）",
 		path: "packages/commons/commands.mjs",
 		color: "\x1b[32m",
 	},

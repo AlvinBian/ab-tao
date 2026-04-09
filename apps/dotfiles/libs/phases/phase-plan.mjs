@@ -28,10 +28,6 @@ const RECOMMENDED_PLUGINS = [
 	{ name: "hookify", desc: "分析對話模式自動生成 hooks" },
 	{ name: "ralph-loop", desc: "持續迭代迴圈 — 自動重試直到完成" },
 	{ name: "session-report", desc: "Session 分析報告 — 回顧工作成果" },
-	{
-		name: "mempalace",
-		desc: "跨會話語義記憶 — 本地 ChromaDB 儲存完整對話歷史，語義搜尋",
-	},
 ];
 
 /** 偵測已安裝的 plugins */
@@ -157,6 +153,14 @@ export async function phasePlan(plan) {
 	// ── Plugin 選擇（所有模式共用，安裝前選好）──
 	const feats = new Set(finalPlan.features || []);
 	if (feats.has("claude")) {
+		p.log.info(
+			[
+				"📦 安裝層次說明",
+				"  Layer 1 ab-tao 核心   — commands / agents / rules（剛才已選）",
+				"  Layer 2 Anthropic 官方 — plugins from claude-plugins-official",
+				"  Layer 3 外部 AI 資源  — commons 4 個來源（ECC / Anthropic / Superpowers / Context）",
+			].join("\n"),
+		);
 		const { available, missing } = getMissingPlugins();
 		if (!available) {
 			p.log.warn(
@@ -165,13 +169,13 @@ export async function phasePlan(plan) {
 			);
 			finalPlan.plugins = [];
 		} else if (isEmpty(missing)) {
-			p.log.success("✔ 所有推薦 Plugins 已安裝");
+			p.log.success("✔ 所有推薦 Anthropic 官方 Plugins 已安裝");
 			finalPlan.plugins = [];
 		} else {
 			const selected = handleCancel(
 				await p.multiselect({
 					message:
-						"🔌 選擇要安裝的官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
+						"🔌 Anthropic 官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
 					options: missing.map((pl) => ({
 						value: pl.name,
 						label: `${pl.name} — ${pl.desc}`,
