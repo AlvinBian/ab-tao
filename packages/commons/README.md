@@ -22,14 +22,11 @@ resources/    — 同步下來的 AI 資源（按來源分目錄）
 
 ## AI 資源來源
 
-| 來源 | 說明 |
-|------|------|
-| **ecc** | Claude Code 社群資源（commands/agents/rules/skills） |
-| **anthropic** | Anthropic 官方 Skills |
-| **superpowers** | Claude Superpowers — 進階 agent 能力 |
-| **ui-ux-pro** | UI/UX Pro Max Skill — 設計與前端最佳實踐 |
-| **claude-plugins** | Anthropic 官方 Plugins |
-| **letta** | Letta AI Skills（Slack/Google/Obsidian 整合） |
+| 來源                    | 說明                                                 |
+| ----------------------- | ---------------------------------------------------- |
+| **ecc**                 | Claude Code 社群資源（commands/agents/rules/skills） |
+| **anthropic**           | Anthropic 官方 Skills                                |
+| **superpowers**         | Claude Superpowers — 進階 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 優化/壓縮/評估） |
 
 ## 指令

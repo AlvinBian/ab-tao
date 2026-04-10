@@ -8,7 +8,7 @@
 
 ```
 bin/          — CLI 入口（setup / scan / doctor / status / report / restore / hooks / uninstall）
-lib/          — 核心邏輯（分析、配置生成、部署、技術棧偵測）
+libs/         — 核心邏輯（分析、配置生成、部署、技術棧偵測）
 claude/       — Claude Code 資源（commands / agents / rules / hooks / skills）
 zsh/          — ZSH 環境（~/.zshrc.d/ + sheldon 插件管理，7 個模組）
 docs/         — 流程圖（Mermaid）、整合指南
@@ -36,15 +36,3 @@ pnpm run d:restore    # 還原備份
 pnpm run d:hooks      # Hook 管理
 pnpm run d:uninstall  # 移除 ab-tao
 ```
-
-## v2.0.0
-
-- **輕量化配置** — 4 個核心命令、2 個 agents、1 個規則、5 個 hooks
-- **ECC 可選集成** — 1 個可選 AI 來源（rules + skills），簡化外部依賴
-- **動態 CLAUDE.md** — 各 repo 執行 `claude /init` 生成自訂配置，無需 .claudeignore 與預索引
-- **Monorepo 整合** — dotfiles 成為 `apps/dotfiles`，依賴 `@ab-tao/commons` 與 `@ab-tao/share`
-- **Token 優化** — Claude Code context 從 ~45KB 降至 ~8KB（-82%）
-- **ZSH 啟動優化** — 4.3s → 0.74s（-83%），nvm/pyenv lazy load + zsh-defer 非同步載入
-- **零污染部署** — 所有全局配置部署到 `~/.claude/`，不觸碰專案目錄
-- **並行安裝** — Branch A（Claude）/ B（Plugin）/ C（ZSH）concurrent 執行
-- **三層推薦系統** — RTK + Claude-Mem + 官方 Plugins + LSP（依技術棧動態推薦）

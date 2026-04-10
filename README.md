@@ -197,8 +197,32 @@ setup 完成後會推薦安裝以下工具：
 | 工具             | 安裝指令                        | 說明                                                   |
 | ---------------- | ------------------------------- | ------------------------------------------------------ |
 | **RTK**          | `brew install rtk`              | Bash 輸出壓縮 -89%，安裝後自動生效                     |
-| **Claude-Mem**   | `npx claude-mem install`        | 跨會話記憶管理                                         |
 | **官方 Plugins** | 在 Claude Code 中執行 `/plugin` | code-review · commit-commands · feature-dev · simplify |
+| **CCometixLine** | 自動安裝（setup 時）            | Claude Code statusline — Git 狀態、Context 用量、費用  |
+
+### CCometixLine Statusline
+
+[CCometixLine](https://github.com/Haleclipse/CCometixLine) 是一個用 Rust 寫的高效能 Claude Code statusline 工具，在 `pnpm run d:setup` 選擇「🤖 Claude Code 配置」時自動安裝。
+
+功能：
+- Git 分支狀態（branch、dirty、ahead/behind）
+- Claude 模型顯示
+- Context window 用量百分比
+- 費用與 session 時長追蹤
+- 互動式 TUI 配置介面（`ccline --config`）
+- 多主題支援（cometix、minimal、gruvbox、nord）
+
+安裝後 `~/.claude/settings.json` 自動寫入：
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccline",
+    "padding": 0
+  }
+}
+```
 
 ## GitFlow
 
@@ -227,13 +251,13 @@ git checkout main && git checkout -b hotfix/xxx
 
 ## CI/CD
 
-| Workflow       | 觸發                  | 說明                                             |
-| -------------- | --------------------- | ------------------------------------------------ |
+| Workflow      | 觸發                  | 說明                                           |
+| ------------- | --------------------- | ---------------------------------------------- |
 | **CI**        | push → main           | lint + build + test + 資源同步驗證             |
 | **Git Flow**  | PR + push + tag       | 分支校驗 + PR 來源校驗 + commit 校驗 + Release |
 | **Release**   | push → main           | Version PR 自動建立 + changeset tag + Release  |
 | **Translate** | README.md 變更 → main | 自動翻譯 zh-CN + EN（需要 `GH_PAT` secret）    |
-| **Sync**      | 每週一 03:00 UTC      | 自動同步外部 AI 資源                            |
+| **Sync**      | 每週一 03:00 UTC      | 自動同步外部 AI 資源                           |
 
 ### 必要 Secrets 設定
 
