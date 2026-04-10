@@ -28,15 +28,11 @@ export async function setupSlackNotify(prev) {
 	const currentChannel =
 		env("SLACK_NOTIFY_CHANNEL", "") || prev?.slackChannel || "";
 	const currentMode = env("SLACK_NOTIFY_MODE", "") || prev?.slackMode || "";
-	const currentChannelName =
-		env("SLACK_NOTIFY_CHANNEL_NAME", "") || prev?.slackChannelName || "";
-
 	// prev !== null 才詢問是否保持不變（全部清除後 prev = null，強制重新設定）
 	if (prev && currentChannel && currentMode) {
-		const channelLabel = currentChannelName || currentChannel;
 		const displayLabel =
 			currentMode === "channel"
-				? `#${channelLabel} (${currentChannel})`
+				? `#${currentChannel}`
 				: currentMode === "dm"
 					? "DM 私發"
 					: "已關閉";
@@ -49,7 +45,6 @@ export async function setupSlackNotify(prev) {
 		if (keep) {
 			return {
 				channelId: currentChannel,
-				channelName: currentChannelName,
 				mode: currentMode,
 			};
 		}
@@ -165,5 +160,5 @@ export async function setupSlackNotify(prev) {
 	const userId = env("SLACK_NOTIFY_USER_ID", "");
 
 	p.log.success(`已設定 #${channelName} (${channelId})`);
-	return { channelId, channelName, userId, mode: "channel" };
+	return { channelId, userId, mode: "channel" };
 }

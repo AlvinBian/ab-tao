@@ -16,7 +16,6 @@
  *   GITHUB_TOKEN — GitHub token（需有 models 權限，使用 GH_PAT）
  */
 
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -128,12 +127,6 @@ function scanAllSources() {
 }
 
 // ── 差異偵測 ──────────────────────────────────────────────────
-
-/** 計算 name:desc 的 hash（用於變更偵測） */
-function itemHash(name, desc) {
-	return createHash("md5").update(`${name}:${desc}`).digest("hex").slice(0, 8);
-}
-
 /** 比對現有翻譯，找出未翻譯或描述變更的項目 */
 function findUntranslated(scanned, existing) {
 	const untranslated = { commands: [], agents: [], rules: [], skills: [] };
