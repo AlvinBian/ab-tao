@@ -1,6 +1,6 @@
 ---
-title: 安裝執行 — phaseExecute v3
-description: 統一備份 → 3 路並行（Claude/Plugin/ZSH）→ 預生成 → 驗證
+title: 安裝執行 — phaseExecute v4
+description: 統一備份 → 3 路並行（Claude/Plugin/ZSH）→ 驗證
 links:
   - config-protection: 配置保護策略
   - setup-main: 返回主流程
@@ -21,10 +21,10 @@ flowchart TD
 
         subgraph A ["Branch A: Claude + 專案"]
             direction TB
-            A1["[1] 全局配置<br/>settings.json smart merge<br/>hooks/slack-dispatch.sh"]
+            A0["[0] ccline 安裝<br/>npm install -g @cometix/ccline<br/>（已安裝則跳過）"]
+            A0 --> A1["[1] 全局配置<br/>settings.json smart merge<br/>hooks/slack-dispatch.sh"]
             A1 --> A2["[2] Claude 安裝<br/>commands · agents · rules · hooks<br/>manifest MD5 追蹤"]
             A2 --> A3["[3] ECC + Stacks（並行）<br/>AI 資源融合 + 技術棧生成"]
-            A3 --> A4["[4] CLAUDE.md<br/>八大模塊 · AI 生成<br/>→ {org}/{repo}/"]
         end
 
         subgraph B ["Branch B: Plugin"]
@@ -42,25 +42,16 @@ flowchart TD
 
     PAR --> E5
 
-    subgraph E5 ["[5] 預生成（一次迭代 repos）"]
-        direction LR
-        IG[".claudeignore<br/>按目錄偵測生成"]
-        IX["預索引<br/>api-routes · components<br/>schema · structure"]
-    end
-
-    E5 --> E6
-
-    subgraph E6 ["[6] 驗證"]
+    subgraph E5 ["[4] 驗證"]
         direction LR
         V1["commands ✓"]
         V2["agents ✓"]
         V3["rules ✓"]
-        V4["settings ✓"]
-        V5["hooks ✓"]
-        V6["CLAUDE.md ✓"]
+        V4["settings.json ✓"]
+        V5["hooks.json ✓"]
     end
 
-    E6 --> End([完成])
+    E5 --> End([完成])
 
     classDef backup fill:#8b5cf6,color:#fff
     classDef parallel fill:#1f6feb,color:#fff
@@ -68,6 +59,6 @@ flowchart TD
     classDef new fill:#d29922,color:#000
 
     class B1,B2 backup
-    class A1,A2,A3,A4,B3,B4,C1,C2 parallel
-    class V1,V2,V3,V4,V5,V6 verify
-    class IG,IX new
+    class A0,A1,A2,A3,B3,B4,C1,C2 parallel
+    class V1,V2,V3,V4,V5 verify
+    class A0 new
