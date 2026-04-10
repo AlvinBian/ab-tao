@@ -64,6 +64,18 @@ export async function deployGlobalConfig(opts) {
 
 	const installSelections = {};
 
+	// ── 階段 0：CCometixLine 安裝檢驗 ──
+	const { checkAndInstallCcline } = await import("../../external/ccline.mjs");
+	const { installed: cclineInstalled, alreadyInstalled } =
+		checkAndInstallCcline();
+	if (!alreadyInstalled && logger) {
+		logger(
+			cclineInstalled
+				? "✅ @cometix/ccline 安裝成功"
+				: "⚠️ @cometix/ccline 安裝失敗，跳過 statusLine 配置",
+		);
+	}
+
 	// ── 階段 1：合併 settings.json ──
 	const templatePath = path.join(repoDir, "claude", "settings.template.json");
 	if (fs.existsSync(templatePath)) {
@@ -75,7 +87,7 @@ export async function deployGlobalConfig(opts) {
 			template = null;
 		}
 		if (template) {
-			deploySettings(template, { model: model ?? undefined });
+			deploySettings(template, { model: model ?? undefined, cclineInstalled });
 		}
 	}
 
@@ -96,7 +108,7 @@ export async function deployGlobalConfig(opts) {
 		completed.add(key);
 	}
 
-	return installSelections;
+	return { ...installSelections, cclineInstalled };
 }
 
 /**

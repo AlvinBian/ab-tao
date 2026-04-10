@@ -29,6 +29,7 @@ const CLAUDE_DIR = path.join(HOME, ".claude");
  * @param {Object} [template.env] - 環境變數設定
  * @param {Object} [overrides] - 用戶顯式選擇的設定（優先寫入，不受「不覆蓋」保護）
  * @param {string} [overrides.model] - 用戶選擇的模型（如 'opusplan'、'sonnet'）
+ * @param {boolean} [overrides.cclineInstalled] - ccline 是否已成功安裝（決定是否寫入 statusLine）
  * @returns {{ path: string, permissionsAdded: number, isNew: boolean, modelSet: string|null }}
  *   path: settings.json 的絕對路徑
  *   permissionsAdded: 新增的 allow 規則數量
@@ -70,11 +71,12 @@ export function deploySettings(template, overrides = {}) {
 		merged.env = { ...template.env, ...(existing.env || {}) };
 	}
 
-	// statusLine — 不覆蓋已有配置
-	if (!existing.statusLine) {
+	// statusLine — ccline 安裝成功後 merge，不覆蓋已有配置
+	if (!existing.statusLine && overrides.cclineInstalled) {
 		merged.statusLine = {
 			type: "command",
-			command: "~/.claude/statusline.sh",
+			command: "ccline",
+			padding: 0,
 		};
 	}
 

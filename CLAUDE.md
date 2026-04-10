@@ -59,7 +59,7 @@ pnpm run c:validate        # 驗證資源結構
   Token 優化            — RTK（Bash 輸出 -89%，brew install rtk）· Claude-Mem（跨會話記憶）
   官方 Plugins          — code-review · commit-commands · feature-dev · security-guidance · hookify · ralph-loop · session-report · code-simplifier
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
-  監控與診斷            — statusline（自動部署）· doctor（環境診斷）
+  監控與診斷            — CCometixLine ccline（自動部署）· doctor（環境診斷）
 ```
 
 ## 開發規範

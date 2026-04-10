@@ -293,13 +293,6 @@ PYEOF
       echo -e "${DIM}  ✅ /slack-dispatch.sh${NC}"
     fi
   fi
-
-  # 部署 statusline
-  if [[ -f "$REPO_DIR/claude/statusline.sh" ]]; then
-    cp "$REPO_DIR/claude/statusline.sh" "$HOME/.claude/statusline.sh"
-    chmod +x "$HOME/.claude/statusline.sh"
-    echo -e "${DIM}  ✅ /statusline${NC}"
-  fi
 fi
 
 # ── 安裝 rules ────────────────────────────────────────────────────

@@ -71,6 +71,9 @@ export default {
 			"../config/auto-plan.mjs"
 		);
 
+		const { isCclineInstalled } = await import("../external/ccline.mjs");
+		const cclineInstalled = isCclineInstalled();
+
 		if (ctx.flags?.quick) {
 			// 從 session 重建（使用上次的 model）
 			return {
@@ -84,6 +87,7 @@ export default {
 						...SETTINGS_PRESETS,
 						model: ctx.prev?.install?.model || "opusplan",
 					},
+					cclineInstalled,
 				},
 				model: ctx.prev?.install?.model || "opusplan",
 			};
@@ -134,6 +138,7 @@ export default {
 				hooks: ALL_HOOKS,
 				permissions: PERMISSION_PRESETS,
 				settings: { ...SETTINGS_PRESETS, model },
+				cclineInstalled,
 			},
 			model,
 		};
@@ -243,11 +248,16 @@ export default {
 		if (results.rules?.length) parts.push(`${results.rules.length} rules`);
 		if (results.hooks?.length) parts.push(`${results.hooks.length} hooks`);
 
+		const cclineLabel = results.cclineInstalled
+			? "CCometixLine ✅"
+			: "CCometixLine ⚠️（安裝失敗，statusLine 未配置）";
+
 		return parts.length
 			? [
 					"🤖 Claude 配置",
 					`  已安裝：${parts.join(" · ")}`,
 					`  Model: ${results.model || "opusplan"}`,
+					`  StatusLine: ${cclineLabel}`,
 				]
 			: [];
 	},
@@ -267,6 +277,7 @@ export default {
 			rules: results?.rules || [],
 			hooks: results?.hooks || [],
 			model: results?.model || "opusplan",
+			cclineInstalled: results?.cclineInstalled ?? false,
 		};
 	},
 
