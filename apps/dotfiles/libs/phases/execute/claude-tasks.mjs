@@ -65,7 +65,7 @@ export async function deployGlobalConfig(opts) {
 	const installSelections = {};
 
 	// ── 階段 0：CCometixLine 安裝檢驗 ──
-	const { checkAndInstallCcline } = await import("../external/ccline.mjs");
+	const { checkAndInstallCcline } = await import("../../external/ccline.mjs");
 	const { installed: cclineInstalled, alreadyInstalled } =
 		checkAndInstallCcline();
 	if (!alreadyInstalled && logger) {
@@ -108,7 +108,7 @@ export async function deployGlobalConfig(opts) {
 		completed.add(key);
 	}
 
-	return installSelections;
+	return { ...installSelections, cclineInstalled };
 }
 
 /**

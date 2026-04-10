@@ -174,6 +174,11 @@ export function formatGlobalConfig(globalConfig) {
 		`   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
 	);
 	lines.push(`   Model: ${g.settings.model} · AutoMemory`);
+	const cclineStatus =
+		g.cclineInstalled === true
+			? pc.green("已安裝")
+			: pc.yellow("未安裝（將自動安裝 @cometix/ccline）");
+	lines.push(`   StatusLine: CCometixLine ${cclineStatus}`);
 
 	return lines;
 }
