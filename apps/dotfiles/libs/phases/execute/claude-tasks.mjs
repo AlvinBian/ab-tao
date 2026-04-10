@@ -113,7 +113,6 @@ export async function deployGlobalConfig(opts) {
  * @param {string} opts.repoDir - dotfiles 根目錄
  * @param {Object|null} opts.prev - Slack 配置值
  * @param {string} opts.prev.slackChannel - 頻道 ID
- * @param {string} [opts.prev.slackChannelName] - 頻道名稱
  * @param {string} [opts.prev.slackMode] - 通知模式（channel / dm）
  * @param {string} [opts.prev.slackUserId] - 使用者 ID
  * @param {string} [opts.prev.minSessionSecs] - 最小 session 秒數（預設 300）
@@ -168,7 +167,6 @@ export async function deploySlackHooks(opts) {
 	// ── 步驟 3：使用 prev 值同步 Slack 設定到 ~/.claude/.env 和 settings.json ──
 	const channel = prev?.slackChannel ?? "";
 	const mode = prev?.slackMode ?? "";
-	const channelName = prev?.slackChannelName ?? "";
 	const userId = prev?.slackUserId ?? "";
 	const minSession = prev?.minSessionSecs ?? "300";
 	if (channel) {
@@ -183,7 +181,6 @@ export async function deploySlackHooks(opts) {
 			.replace(/\n{3,}/g, "\n\n")
 			.trim();
 		content += `\nSLACK_NOTIFY_CHANNEL=${channel}\nSLACK_NOTIFY_MODE=${mode}\n`;
-		if (channelName) content += `SLACK_NOTIFY_CHANNEL_NAME=${channelName}\n`;
 		if (userId) content += `SLACK_NOTIFY_USER_ID=${userId}\n`;
 		content += `CLAUDE_SLACK_MIN_SESSION_SECS=${minSession}\n`;
 		fs.writeFileSync(claudeEnvPath, content);
@@ -199,9 +196,6 @@ export async function deploySlackHooks(opts) {
 			...settings.env,
 			SLACK_NOTIFY_CHANNEL: channel,
 			SLACK_NOTIFY_MODE: mode,
-			...(channelName && {
-				SLACK_NOTIFY_CHANNEL_NAME: channelName,
-			}),
 			...(userId && {
 				SLACK_NOTIFY_USER_ID: userId,
 			}),

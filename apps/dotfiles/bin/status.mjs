@@ -941,15 +941,21 @@ async function generateHtmlReport(data) {
 	// shell 命令字串必須定義在模板外，避免 ${...} 被 Biome 誤解析為模板表達式
 	const NODE_TOGGLE_CMDS = {
 		commands: {
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			off: 'for f in ~/.claude/commands/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			on: 'for f in ~/.claude/commands/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
 		},
 		agents: {
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			off: 'for f in ~/.claude/agents/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			on: 'for f in ~/.claude/agents/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
 		},
 		rules: {
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			off: 'for f in ~/.claude/rules/*.md; do [ -f "$f" ] && mv "$f" "${f%.md}.md.disabled"; done',
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: bash parameter expansion
 			on: 'for f in ~/.claude/rules/*.md.disabled; do mv "$f" "${f%.md.disabled}.md"; done',
 		},
 		hooks: {

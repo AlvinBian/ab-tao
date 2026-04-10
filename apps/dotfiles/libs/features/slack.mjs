@@ -58,7 +58,6 @@ export default {
 				return {
 					slack: {
 						channelId: ctx.prev.slackChannel,
-						channelName: ctx.prev.slackChannelName || "",
 						mode: ctx.prev.slackMode || "channel",
 						userId: ctx.prev.slackUserId || "",
 					},
@@ -94,7 +93,7 @@ export default {
 		const slack = plan.slack;
 		const modeLabel =
 			slack.mode === "channel"
-				? `Channel #${slack.channelName || slack.channelId}`
+				? `Channel #${slack.channelId}`
 				: slack.mode === "dm"
 					? "DM 私發"
 					: "已關閉";
@@ -124,8 +123,6 @@ export default {
 			.replace(/\n{3,}/g, "\n\n")
 			.trim();
 		repoEnvContent += `\nSLACK_NOTIFY_CHANNEL=${slack.channelId}\nSLACK_NOTIFY_MODE=${slack.mode}`;
-		if (slack.channelName)
-			repoEnvContent += `\nSLACK_NOTIFY_CHANNEL_NAME=${slack.channelName}`;
 		if (slack.userId)
 			repoEnvContent += `\nSLACK_NOTIFY_USER_ID=${slack.userId}`;
 		repoEnvContent += `\nCLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`;
@@ -140,8 +137,6 @@ export default {
 			`SLACK_NOTIFY_CHANNEL=${slack.channelId}`,
 			`SLACK_NOTIFY_MODE=${slack.mode}`,
 		];
-		if (slack.channelName)
-			slackEnvLines.push(`SLACK_NOTIFY_CHANNEL_NAME=${slack.channelName}`);
 		if (slack.userId)
 			slackEnvLines.push(`SLACK_NOTIFY_USER_ID=${slack.userId}`);
 		slackEnvLines.push(
@@ -155,7 +150,6 @@ export default {
 		);
 		const slackAsPrev = {
 			slackChannel: slack.channelId,
-			slackChannelName: slack.channelName || "",
 			slackMode: slack.mode,
 			slackUserId: slack.userId || "",
 		};
@@ -164,7 +158,6 @@ export default {
 		return {
 			mode: slack.mode,
 			channelId: slack.channelId,
-			channelName: slack.channelName || "",
 		};
 	},
 
@@ -203,7 +196,7 @@ export default {
 		if (!results) return [];
 		const modeLabel =
 			results.mode === "channel"
-				? `Channel #${results.channelName || results.channelId}`
+				? `Channel #${results.channelId}`
 				: results.mode === "dm"
 					? "DM 私發"
 					: "已關閉";
@@ -234,7 +227,6 @@ export default {
 	session(results) {
 		return {
 			slackChannel: results?.channelId || "",
-			slackChannelName: results?.channelName || "",
 			slackMode: results?.mode || "",
 			installedAt: new Date().toISOString(),
 		};
@@ -255,7 +247,6 @@ export default {
 			feature: "slack",
 			mode: results?.mode || "",
 			channelId: results?.channelId || "",
-			channelName: results?.channelName || "",
 		};
 	},
 };

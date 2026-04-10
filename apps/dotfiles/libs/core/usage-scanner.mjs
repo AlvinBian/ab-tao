@@ -400,7 +400,6 @@ export async function collectFullStatus() {
 	const slack = {
 		mode: envFn("SLACK_NOTIFY_MODE", "off"),
 		channel: envFn("SLACK_NOTIFY_CHANNEL", ""),
-		channelName: envFn("SLACK_NOTIFY_CHANNEL_NAME", ""),
 	};
 
 	// AI 設定
