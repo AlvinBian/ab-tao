@@ -12,6 +12,7 @@ import { isEmpty } from "lodash-es";
 import { getDescription } from "../config/descriptions.mjs";
 import { CATEGORY_ORDER } from "../config/npm-classify.mjs";
 import { HOME } from "../core/paths.mjs";
+import { classifyBatch } from "../taxonomy/classify.mjs";
 import {
 	badge,
 	esc,
@@ -23,7 +24,6 @@ import {
 	renderInstalled,
 	renderOverview,
 	renderPlugins,
-	renderStacks,
 	renderTokenChart,
 	section,
 } from "./formatters.mjs";
@@ -79,17 +79,38 @@ function renderTabTechStacks(data) {
 		}
 	}
 
+	// 是否有每個 Repo 的分析資料（決定是否啟用點擊篩選）
+	const hasPerRepoData = Object.keys(stackRepoCount).length > 0;
+
 	// 用 CATEGORY_ORDER 排序分類，未知分類排到最後
 	const orderIndex = Object.fromEntries(CATEGORY_ORDER.map((c, i) => [c, i]));
-	const sortedCategories = Object.entries(techStacks)
+
+	// 優先使用 pipeline 產出的 techStacks，否則用 taxonomy 分類器補分類
+	let sortedCategories = Object.entries(techStacks)
 		.filter(([, techs]) => techs?.length > 0)
 		.sort((a, b) => (orderIndex[a[0]] ?? 999) - (orderIndex[b[0]] ?? 999));
 
-	// 未歸類的技術
-	const categorized = new Set(sortedCategories.flatMap(([, t]) => t));
-	const uncategorized = stacks.filter((s) => !categorized.has(s));
+	let uncategorized = [];
+	if (sortedCategories.length === 0 && stacks.length > 0) {
+		// Fallback：用 taxonomy 確定性分類器對已知技術棧補分類
+		try {
+			const { classified, unclassified } = classifyBatch(stacks);
+			sortedCategories = [...classified.entries()]
+				.filter(([, techs]) => techs.length > 0)
+				.sort((a, b) => (orderIndex[a[0]] ?? 999) - (orderIndex[b[0]] ?? 999));
+			uncategorized = unclassified;
+		} catch {
+			// 分類器失敗時退化為未分類列表
+			uncategorized = stacks;
+		}
+	} else {
+		const categorized = new Set(sortedCategories.flatMap(([, t]) => t));
+		uncategorized = stacks.filter((s) => !categorized.has(s));
+	}
 
-	const totalTechCount = categorized.size + uncategorized.length;
+	const totalTechCount =
+		sortedCategories.reduce((s, [, t]) => s + t.length, 0) +
+		uncategorized.length;
 	const totalCatCount =
 		sortedCategories.length + (uncategorized.length > 0 ? 1 : 0);
 
@@ -101,10 +122,11 @@ function renderTabTechStacks(data) {
 		const count = stackRepoCount[t] || 0;
 		const desc = getDescription(t);
 		const tooltip = desc
-			? `${esc(desc)}（${count} repos）`
+			? `${esc(desc)}${count > 0 ? `（${count} repos）` : ""}`
 			: count > 0
 				? `${count} repos`
 				: "";
+		// 永遠啟用點擊導覽（有 per-repo 資料時可精確篩選，否則仍可跳轉專案 Tab 全覽）
 		return `<span class="badge badge-blue tech-link" title="${tooltip}" data-tech="${esc(t)}" style="cursor:pointer">${esc(t)}</span>`;
 	};
 
@@ -126,10 +148,14 @@ function renderTabTechStacks(data) {
 		categoryHtml = `<div>${stacks.map(renderBadge).join("")}</div>`;
 	}
 
+	const clickHint = hasPerRepoData
+		? "點擊技術棧可跳轉到專案頁籤篩選對應 Repo。"
+		: "點擊技術棧可跳轉到專案頁籤（本次未執行完整分析，無每 Repo 精確篩選；執行 d:setup 完整流程可獲取明細）。";
+
 	return `
 <div id="tab-stacks" class="tab-content">
   <div class="card" style="margin-bottom:16px">
-    <p class="section-desc" style="margin:0">技術棧統計（${totalTechCount} 個，${totalCatCount} 類）。單位為「Repo 數量」。點擊技術棧可跳轉到專案頁籤篩選對應 Repo。</p>
+    <p class="section-desc" style="margin:0">技術棧統計（${totalTechCount} 個，${totalCatCount} 類）。${clickHint}</p>
   </div>
   <div class="card">
     <h2 class="section-title">所有技術棧</h2>
@@ -192,7 +218,7 @@ function renderTabRepos(data) {
 
 			const localPath = roleInfo.localPath
 				? roleInfo.localPath.replace(HOME, "~")
-				: "未找到";
+				: "—";
 			const claudeMd = proj ? typeLabel[proj.claudeMdType] || "—" : "—";
 			const roleDesc =
 				role === "main"
@@ -214,12 +240,17 @@ function renderTabRepos(data) {
 		})
 		.join("");
 
+	const hasAnalysisData = Object.keys(perRepoReasoning).length > 0;
+	const reposDesc = hasAnalysisData
+		? "每個 Repo 卡片顯示角色、本機路徑、CLAUDE.md 狀態和 AI 分析的技術棧。使用搜尋框過濾，或從技術棧 Tab 點擊分類來篩選。"
+		: '本次安裝未執行完整分析，路徑與技術棧欄位需執行 <code style="background:#0d1117;padding:1px 5px;border-radius:3px">d:setup</code> 完整流程後才會填充。';
+
 	return `
 <div id="tab-repos" class="tab-content">
   <div class="card" style="margin-bottom:16px">
-    <p class="section-desc" style="margin:0">每個 Repo 卡片顯示角色、本機路徑、CLAUDE.md 狀態和 AI 分析的技術棧。使用搜尋框過濾，或從技術棧 Tab 的圖表點擊分類來篩選。</p>
+    <p class="section-desc" style="margin:0">${reposDesc}</p>
   </div>
-  <input type="text" id="search" class="search-box" placeholder="搜尋技術棧、Repo...">
+  <input type="text" id="search" class="search-box" placeholder="搜尋 Repo...">
   <div id="repos-filter-hint" class="filter-hint"></div>
   ${cards}
 </div>`;
@@ -247,7 +278,6 @@ function renderTabInstall(data) {
 			: ""
 	}
   ${renderAiRes(data.aiRes)}
-  ${renderStacks(data.stacks)}
 </div>`;
 }
 
@@ -255,23 +285,93 @@ function renderTabInstall(data) {
  * 渲染 Tab 審計頁籤
  */
 function renderTabAudit(data) {
-	const auditHtml = data.auditSummary
-		? section(
-				"審計日誌",
-				`<table>${Object.entries(data.auditSummary)
-					.map(
-						([k, v]) =>
-							`<tr><td style="color:#8b949e">${esc(k)}</td><td>${esc(String(v))}</td></tr>`,
-					)
-					.join("")}</table>`,
+	const installed = data.installed || {};
+
+	// 安裝摘要
+	const summaryRows = [
+		["模式", data.mode === "auto" ? "自動" : "手動"],
+		["時間戳", data.timestamp || "—"],
+		["Commands", installed.commands?.length || 0],
+		["Agents", installed.agents?.length || 0],
+		["Rules", installed.rules?.length || 0],
+		["ZSH 模組", installed.modules?.length || 0],
+		["Hooks", installed.hooks ? "已啟用" : "未啟用"],
+		["技術棧", data.stacks?.length || 0],
+		["Repos", data.repos?.length || 0],
+	];
+	const summaryHtml = section(
+		"安裝摘要",
+		`<table style="font-size:.88rem">${summaryRows
+			.map(
+				([k, v]) =>
+					`<tr><td style="color:#8b949e;width:120px">${esc(k)}</td><td style="font-weight:500">${esc(String(v))}</td></tr>`,
 			)
-		: "";
+			.join("")}</table>`,
+	);
+
+	// 分析管道日誌
+	const auditEntries = Array.isArray(data.auditSummary)
+		? data.auditSummary
+		: [];
+	let pipelineHtml;
+	if (auditEntries.length > 0) {
+		const rows = auditEntries
+			.map((entry) => {
+				const parts = entry.split(" | ");
+				const phase = parts[0] || "";
+				const rest = parts.slice(1).join(" | ");
+				return `<tr>
+          <td style="color:#58a6ff;white-space:nowrap;padding-right:12px">${esc(phase)}</td>
+          <td style="color:#8b949e;font-size:.82rem">${esc(rest)}</td>
+        </tr>`;
+			})
+			.join("");
+		pipelineHtml = section(
+			"分析管道日誌",
+			`<p class="section-desc">記錄每步技術棧分析的執行過程、AI 推理與 token 消耗。</p>
+      <table style="font-size:.85rem">${rows}</table>`,
+		);
+	} else {
+		pipelineHtml = `<div class="card">
+      <h2 class="section-title">分析管道日誌</h2>
+      <p class="section-desc">本次安裝未執行技術棧分析管道（Repo 掃描已跳過或未選擇 AI 分析）。<br>執行 <code style="background:#0d1117;padding:1px 6px;border-radius:3px">pnpm run d:setup</code> 並選擇完整分析可獲取詳細日誌。</p>
+    </div>`;
+	}
+
+	// 已安裝 Commands / Agents 清單
+	let installedDetailHtml = "";
+	if (
+		(installed.commands?.length || 0) +
+			(installed.agents?.length || 0) +
+			(installed.rules?.length || 0) >
+		0
+	) {
+		const groups = [
+			["Commands", installed.commands, "badge-blue", "/"],
+			["Agents", installed.agents, "badge-purple", "@"],
+			["Rules", installed.rules, "badge-blue", ""],
+		].filter(([, items]) => items?.length);
+
+		const groupsHtml = groups
+			.map(
+				([label, items, cls, prefix]) =>
+					`<div style="margin-bottom:12px">
+            <div class="group-label">${esc(label)}（${items.length}）</div>
+            <div>${items.map((v) => `<span class="badge ${cls}">${prefix}${esc(v)}</span>`).join("")}</div>
+          </div>`,
+			)
+			.join("");
+
+		installedDetailHtml = section("已安裝明細", groupsHtml);
+	}
 
 	const backupHtml = renderBackup(data.backupDir);
 
 	return `
 <div id="tab-audit" class="tab-content">
-  ${auditHtml}
+  ${summaryHtml}
+  ${pipelineHtml}
+  ${installedDetailHtml}
   ${backupHtml}
 </div>`;
 }
@@ -563,6 +663,40 @@ function renderTabScript() {
 // ── 主要匯出 ────────────────────────────────────────────────────
 
 /**
+ * 從本機 package.json 建立每個 Repo 的技術棧（perRepoReasoning 為空時的 fallback）
+ *
+ * @param {Object} repoRoles - { [fullName]: { role, localPath } }
+ * @returns {Object} - { [fullName]: { stacks: { [category]: string[] } } }
+ */
+function buildPerRepoStacksFromLocal(repoRoles) {
+	const result = {};
+	for (const [repo, info] of Object.entries(repoRoles || {})) {
+		if (!info.localPath) continue;
+		const pkgPath = path.join(info.localPath, "package.json");
+		if (!fs.existsSync(pkgPath)) continue;
+		try {
+			const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+			const allDeps = [
+				...Object.keys(pkg.dependencies || {}),
+				...Object.keys(pkg.devDependencies || {}),
+			];
+			if (!allDeps.length) continue;
+			const { classified } = classifyBatch(allDeps);
+			const stacks = {};
+			for (const [cat, techs] of classified.entries()) {
+				if (techs.length) stacks[cat] = techs;
+			}
+			if (Object.keys(stacks).length) {
+				result[repo] = { stacks, reasoning: null };
+			}
+		} catch {
+			// 讀取失敗跳過該 repo
+		}
+	}
+	return result;
+}
+
+/**
  * 產生完整 HTML 報告
  * @param {Object} data - 安裝資料
  * @returns {string} HTML
@@ -570,6 +704,14 @@ function renderTabScript() {
 export function generateReport(data) {
 	const ts =
 		data.timestamp ?? new Date().toISOString().replace("T", " ").slice(0, 19);
+
+	// 若沒有 per-repo AI 分析，用本機 package.json 補齊技術棧
+	if (isEmpty(data.perRepoReasoning) && !isEmpty(data.repoRoles)) {
+		const localStacks = buildPerRepoStacksFromLocal(data.repoRoles);
+		if (!isEmpty(localStacks)) {
+			data = { ...data, perRepoReasoning: localStacks };
+		}
+	}
 
 	const tabNav = `
 <nav class="tabs">
