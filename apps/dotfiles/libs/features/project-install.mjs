@@ -67,7 +67,7 @@ export default {
 			return null;
 		}
 
-		// 從 repos 依賴取得本機路徑映射
+		// 從 repos 依賴取得本機路徑映射與角色覆寫
 		const reposDep = ctx.deps?.repos;
 		const localPaths = {};
 		if (reposDep?.repos) {
@@ -75,6 +75,8 @@ export default {
 				if (r.localPath) localPaths[r.fullName] = r.localPath;
 			}
 		}
+		// 優先使用使用者確認的角色（repos feature 產出），避免因 commit 數為 0 全部誤判為「臨時」
+		const roleOverrides = reposDep?.roles || null;
 
 		if (ctx.flags?.quick) {
 			// 從 session 重建計畫，跳過互動
@@ -83,7 +85,7 @@ export default {
 				pipelineResult,
 				aiResResult,
 				localPaths,
-				roleOverrides: null,
+				roleOverrides,
 				profile: dep.profile || null,
 			});
 
@@ -104,7 +106,7 @@ export default {
 			pipelineResult,
 			aiResResult,
 			localPaths,
-			roleOverrides: null,
+			roleOverrides,
 			profile: dep.profile || null,
 		});
 
