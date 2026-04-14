@@ -177,8 +177,32 @@ setup 完成后会推荐安装以下工具：
 | 工具             | 安装命令                        | 说明                                                   |
 | ---------------- | ------------------------------- | ------------------------------------------------------ |
 | **RTK**          | `brew install rtk`              | Bash 输出压缩 -89%，安装后自动生效                     |
-| **Claude-Mem**   | `npx claude-mem install`        | 跨会话记忆管理                                         |
 | **官方 Plugins** | 在 Claude Code 中执行 `/plugin` | code-review · commit-commands · feature-dev · simplify |
+| **CCometixLine** | 自动安装（setup 时）            | Claude Code statusline — Git 状态、Context 用量、费用  |
+
+### CCometixLine Statusline
+
+[CCometixLine](https://github.com/Haleclipse/CCometixLine) 是一个用 Rust 编写的高性能 Claude Code statusline 工具，在 `pnpm run d:setup` 选择「🤖 Claude Code 配置」时自动安装。
+
+功能：
+- Git 分支状态（branch、dirty、ahead/behind）
+- Claude 模型显示
+- Context window 用量百分比
+- 费用与 session 时长追踪
+- 交互式 TUI 配置界面（`ccline --config`）
+- 多主题支持（cometix、minimal、gruvbox、nord）
+
+安装后 `~/.claude/settings.json` 自动写入：
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccline",
+    "padding": 0
+  }
+}
+```
 
 ## GitFlow
 

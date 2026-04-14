@@ -458,7 +458,7 @@ const order = [
 	"role-system",
 	"feature-map",
 	"slack-setup",
-	"ai-resource-pipeline",
+	"ecc-pipeline",
 	"session-lifecycle",
 ];
 

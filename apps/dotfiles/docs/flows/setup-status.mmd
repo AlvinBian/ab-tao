@@ -1,9 +1,8 @@
 ---
 title: 查看/調整配置
-description: 完整健康度展示 + 6 項快速調整（含即時狀態 hint）
+description: 完整健康度展示 + 5 項快速調整（含即時狀態 hint）
 links:
   - setup-main: 返回主流程
-  - gmail-setup: Gmail 設定流程
 ---
 flowchart TD
     Entry([從主流程進入]) --> Health["配置健康度<br/>85% 42/50"]
@@ -14,9 +13,7 @@ flowchart TD
 
     ZshInfo --> SlackInfo["Slack 通知<br/>模式：Channel #xxx"]
 
-    SlackInfo --> GmailInfo["Gmail 分級<br/>Script ID: 1wu1ps...<br/>設定時間: 2026-03-30"]
-
-    GmailInfo --> AiInfo["AI 設定<br/>模型：sonnet"]
+    SlackInfo --> AiInfo["AI 設定<br/>模型：sonnet"]
 
     AiInfo --> Select{"選擇調整項目"}
 
@@ -25,7 +22,6 @@ flowchart TD
     Select -->|"CLAUDE.md 4 個 repo 需 AI"| AClaudeMd
     Select -->|"ZSH 模組 ~/.zshrc.d/"| AZsh
     Select -->|"Slack 通知 channel"| ASlack
-    Select -->|"Gmail 分級 已設定"| AGmail
     Select -->|"返回"| Exit([已取消])
 
     subgraph AClaude ["adjustClaude"]
@@ -62,23 +58,16 @@ flowchart TD
         SK2 --> SK3["patchSession"]
     end
 
-    subgraph AGmail ["adjustGmail"]
-        G1["setupGmailFilters →"]
-    end
-
     AClaude --> Done([調整完成])
     ASettings --> Done
     AClaudeMd -.-> Done
     AZsh --> Done
     ASlack --> Done
-    AGmail --> Done
-
-    click G1 "#gmail-setup"
 
     classDef decision fill:#d29922,color:#000,stroke:#d29922
     classDef info fill:#1c2128,color:#8b949e,stroke:#30363d
     classDef success fill:#238636,color:#fff,stroke:#238636
 
     class Select,CM1 decision
-    class Health,Claude,ZshInfo,SlackInfo,GmailInfo,AiInfo info
+    class Health,Claude,ZshInfo,SlackInfo,AiInfo info
     class Done success

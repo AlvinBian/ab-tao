@@ -13,9 +13,6 @@ const EXPECTED_STRUCTURES = {
 	ecc: { required: ["commands", "agents", "rules"], format: "ecc" },
 	anthropic: { required: [], format: "agent-skills" },
 	superpowers: { required: [], format: "agent-skills" },
-	"ui-ux-pro": { required: [], format: "agent-skills" },
-	"claude-plugins": { required: [], format: "agent-skills" },
-	letta: { required: [], format: "agent-skills" },
 	"context-engineering": { required: [], format: "agent-skills" },
 };
 

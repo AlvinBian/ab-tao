@@ -48,14 +48,6 @@ export class ResourceLoader {
 			sources.push("superpowers", "anthropic");
 		}
 
-		if (
-			detectedTechStack.some((tech) =>
-				["testing", "jest", "vitest"].includes(tech.toLowerCase()),
-			)
-		) {
-			sources.push("letta");
-		}
-
 		return sources;
 	}
 

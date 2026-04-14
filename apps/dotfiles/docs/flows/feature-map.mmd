@@ -25,7 +25,7 @@ flowchart TD
     subgraph C2G ["📁 專案配置（需要 repos）"]
         C2["專案配置"]
         C2 --> CM1["CLAUDE.md<br/>動態生成 · claude /init"]
-        C2 --> CM4["ECC 資源融合<br/>1 個可選 AI 來源（rules+skills）"]
+        C2 --> CM4["AI 資源融合<br/>4 個可選來源（ecc · anthropic · superpowers · context-engineering）"]
         CM1 --> CMT["→ {org}/{repo}/"]
         CM4 --> CMT
     end
