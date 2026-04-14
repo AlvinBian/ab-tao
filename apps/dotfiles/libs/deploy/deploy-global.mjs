@@ -15,26 +15,20 @@ const CLAUDE_DIR = path.join(HOME, ".claude");
 /**
  * 部署 settings.json（merge 策略）
  *
- * 合併規則：
- *   - permissions.allow / deny：取聯集（去重），保留用戶已有的規則
- *   - model / effortLevel / env：只在未設定時寫入（不覆蓋用戶偏好）
- *   - autoMemoryEnabled：只在 undefined 時寫入
+ * 合併規則（優先順序由高到低）：
+ *   - permissions：完全不動，用戶自行在 Claude Code 中配置
+ *   - hooks：由 install-claude.sh 另行處理，deploySettings 不介入
+ *   - model：overrides.model > existing.model > template.model
+ *   - env：逐 key 合併，existing 優先（保留用戶已有值，只補 template 新 key）
+ *   - enabledPlugins：union merge（template 新增的 plugin 自動加入，不覆蓋用戶已有設定）
+ *   - statusLine：只在未設定且 ccline 已安裝時寫入
+ *   - 其餘 template 欄位：only-if-absent（existing 已有的 key 一律保留不覆蓋）
  *
  * @param {Object} template - 要合併的模板設定（來自 claude/settings.template.json）
- * @param {string[]} [template.permissions.allow] - 允許的 Bash/Read/Write 規則
- * @param {string[]} [template.permissions.deny] - 禁止的危險命令規則
- * @param {string} [template.model] - 預設 AI 模型（如 'sonnet'）
- * @param {string} [template.effortLevel] - 推理強度（如 'medium'）
- * @param {boolean} [template.autoMemoryEnabled] - 是否啟用自動記憶
- * @param {Object} [template.env] - 環境變數設定
  * @param {Object} [overrides] - 用戶顯式選擇的設定（優先寫入，不受「不覆蓋」保護）
  * @param {string} [overrides.model] - 用戶選擇的模型（如 'opusplan'、'sonnet'）
  * @param {boolean} [overrides.cclineInstalled] - ccline 是否已成功安裝（決定是否寫入 statusLine）
  * @returns {{ path: string, permissionsAdded: number, isNew: boolean, modelSet: string|null }}
- *   path: settings.json 的絕對路徑
- *   permissionsAdded: 新增的 allow 規則數量
- *   isNew: 是否為首次建立（原本不存在）
- *   modelSet: 實際寫入的 model（null = 未變更）
  */
 export function deploySettings(template, overrides = {}) {
 	const settingsPath = path.join(CLAUDE_DIR, "settings.json");
@@ -51,22 +45,25 @@ export function deploySettings(template, overrides = {}) {
 	const merged = { ...existing };
 
 	// permissions: 完全不動 — 用戶自行在 Claude Code 中配置
-	// ab-tao 不介入 permissions 管理，避免覆蓋用戶偏好
 	if (existing.permissions) {
 		merged.permissions = existing.permissions;
 	}
 
-	// model: 用戶顯式選擇時寫入，否則保留現有設定
+	// model: overrides > existing > template 預設
 	let modelSet = null;
 	if (overrides.model !== undefined && overrides.model !== null) {
 		merged.model = overrides.model;
 		modelSet = overrides.model;
+	} else if (existing.model === undefined && template.model !== undefined) {
+		merged.model = template.model;
+		modelSet = template.model;
 	}
 
+	// autoMemoryEnabled: 只在 undefined 時寫入
 	if (existing.autoMemoryEnabled === undefined)
 		merged.autoMemoryEnabled = template.autoMemoryEnabled;
 
-	// env: 逐 key 合併（保留用戶已有的值，只新增 template 中的新 key）
+	// env: 逐 key 合併（existing 優先，template 只補新 key）
 	if (template.env) {
 		merged.env = { ...template.env, ...(existing.env || {}) };
 	}
@@ -78,6 +75,31 @@ export function deploySettings(template, overrides = {}) {
 			command: "ccline",
 			padding: 0,
 		};
+	}
+
+	// enabledPlugins: union merge（template 新增的 plugin 自動加入，不刪除用戶已有設定）
+	if (template.enabledPlugins) {
+		merged.enabledPlugins = {
+			...template.enabledPlugins,
+			...(existing.enabledPlugins || {}),
+		};
+	}
+
+	// 通用 merge: 其餘 template 欄位，only-if-absent（不覆蓋 existing 已有的 key）
+	const specialKeys = new Set([
+		"permissions",
+		"env",
+		"statusLine",
+		"model",
+		"autoMemoryEnabled",
+		"hooks",
+		"enabledPlugins",
+	]);
+	for (const [key, value] of Object.entries(template)) {
+		if (specialKeys.has(key)) continue;
+		if (existing[key] === undefined) {
+			merged[key] = value;
+		}
 	}
 
 	const isNew = !fs.existsSync(settingsPath);
