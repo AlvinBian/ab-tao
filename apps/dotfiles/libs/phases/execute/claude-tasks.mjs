@@ -64,8 +64,10 @@ export async function deployGlobalConfig(opts) {
 
 	const installSelections = {};
 
-	// ── 階段 0：CCometixLine 安裝檢驗 ──
-	const { checkAndInstallCcline } = await import("../../external/ccline.mjs");
+	// ── 階段 0：CCometixLine 安裝檢驗 + my-ccline.sh 部署 ──
+	const { checkAndInstallCcline, deployCclineScript } = await import(
+		"../../external/ccline.mjs"
+	);
 	const { installed: cclineInstalled, alreadyInstalled } =
 		checkAndInstallCcline();
 	if (!alreadyInstalled && logger) {
@@ -74,6 +76,16 @@ export async function deployGlobalConfig(opts) {
 				? "✅ @cometix/ccline 安裝成功"
 				: "⚠️ @cometix/ccline 安裝失敗，跳過 statusLine 配置",
 		);
+	}
+	if (cclineInstalled) {
+		const { deployed } = deployCclineScript(repoDir);
+		if (logger) {
+			logger(
+				deployed
+					? "✅ my-ccline.sh 已部署 → ~/.claude/ccline/my-ccline.sh"
+					: "⚠️ my-ccline.sh 來源不存在，跳過部署",
+			);
+		}
 	}
 
 	// ── 階段 1：合併 settings.json ──

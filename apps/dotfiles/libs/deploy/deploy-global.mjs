@@ -11,6 +11,7 @@ import path from "node:path";
 import { HOME } from "../core/paths.mjs";
 
 const CLAUDE_DIR = path.join(HOME, ".claude");
+const CCLINE_STATUS_COMMAND = "~/.claude/ccline/my-ccline.sh";
 
 /**
  * 部署 settings.json（merge 策略）
@@ -69,10 +70,11 @@ export function deploySettings(template, overrides = {}) {
 	}
 
 	// statusLine — ccline 安裝成功後 merge，不覆蓋已有配置
+	// 使用 my-ccline.sh 包裝腳本（由 deployCclineScript 部署）
 	if (!existing.statusLine && overrides.cclineInstalled) {
 		merged.statusLine = {
 			type: "command",
-			command: "ccline",
+			command: CCLINE_STATUS_COMMAND,
 			padding: 0,
 		};
 	}

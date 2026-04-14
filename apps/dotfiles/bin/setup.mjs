@@ -154,7 +154,7 @@ async function main() {
 		// 從 session 的 features 清單重建，fallback 基礎功能
 		selectedIds = prev.features?.length
 			? prev.features
-			: ["claude-base", "slack", "zsh"];
+			: ["claude-base", "slack", "zsh", "project-install"];
 	}
 
 	// 重入
@@ -339,7 +339,7 @@ async function main() {
 			// 從 session 重建 features，等同 --quick fall-through
 			selectedIds = prev.features?.length
 				? prev.features
-				: ["claude-base", "slack", "zsh"];
+				: ["claude-base", "slack", "zsh", "project-install"];
 			flagQuick = true;
 		}
 	}
@@ -602,6 +602,17 @@ async function main() {
 				"../libs/report.mjs"
 			);
 			// 簡化版報告：用 aggregated data
+			const repoRoles = Object.fromEntries(
+				aggregatedPlan.repos
+					.filter((r) => r.fullName)
+					.map((r) => [
+						r.fullName,
+						{
+							role: r.role || roles[r.fullName] || "temp",
+							localPath: r.localPath || localPaths[r.fullName] || null,
+						},
+					]),
+			);
 			const reportData = {
 				username: aggregatedPlan.repos[0]?.fullName?.split("/")[0] || "",
 				org: [
@@ -612,6 +623,8 @@ async function main() {
 					),
 				].join(", "),
 				repos: aggregatedPlan.repos.map((r) => r.fullName).filter(Boolean),
+				repoRoles,
+				perRepoReasoning: pipelineResult?.perRepoReasoning || {},
 				installed: aggregatedSelections,
 				stacks: aggregatedPlan.techStacks,
 				mode: aggregatedPlan.mode,
