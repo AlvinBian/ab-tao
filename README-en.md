@@ -177,8 +177,32 @@ After setup completes, the following tools will be recommended:
 | Tool             | Install command                 | Description                                                    |
 | ---------------- | ------------------------------- | -------------------------------------------------------------- |
 | **RTK**          | `brew install rtk`              | Bash output compression -89%, auto-activates after install     |
-| **Claude-Mem**   | `npx claude-mem install`        | Cross-session memory management                                |
 | **Official Plugins** | Run `/plugin` in Claude Code | code-review · commit-commands · feature-dev · simplify     |
+| **CCometixLine** | Auto-installed (during setup)   | Claude Code statusline — Git status, Context usage, cost       |
+
+### CCometixLine Statusline
+
+[CCometixLine](https://github.com/Haleclipse/CCometixLine) is a high-performance Claude Code statusline tool written in Rust, automatically installed when selecting "🤖 Claude Code configuration" during `pnpm run d:setup`.
+
+Features:
+- Git branch status (branch, dirty, ahead/behind)
+- Claude model display
+- Context window usage percentage
+- Cost and session duration tracking
+- Interactive TUI configuration (`ccline --config`)
+- Multiple themes (cometix, minimal, gruvbox, nord)
+
+After installation, `~/.claude/settings.json` is automatically updated:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccline",
+    "padding": 0
+  }
+}
+```
 
 ## GitFlow
 

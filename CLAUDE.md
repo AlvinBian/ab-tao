@@ -4,7 +4,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ## 技術棧
 
-- **Node.js 18+ / pnpm 9+** — 運行環境
+- **Node.js 18+ / pnpm 10+** — 運行環境
 - **Turborepo** — 任務編排與快取
 - **Biome** — 格式化與 lint
 - **Changesets** — 版本管理
@@ -39,6 +39,7 @@ pnpm run d:uninstall       # 移除 ab-tao
 
 pnpm run c:sync            # 列出 AI 來源（預設不同步）
 pnpm run c:sync:select     # 互動式選擇同步
+pnpm run c:sync:all        # 同步全部 4 個來源
 pnpm run c:validate        # 驗證資源結構
 ```
 
