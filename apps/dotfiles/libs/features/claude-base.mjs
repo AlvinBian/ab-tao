@@ -249,7 +249,7 @@ export default {
 		if (results.hooks?.length) parts.push(`${results.hooks.length} hooks`);
 
 		const cclineLabel = results.cclineInstalled
-			? "CCometixLine ✅"
+			? "CCometixLine + my-ccline.sh ✅"
 			: "CCometixLine ⚠️（安裝失敗，statusLine 未配置）";
 
 		return parts.length

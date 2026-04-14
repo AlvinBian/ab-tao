@@ -176,8 +176,8 @@ export function formatGlobalConfig(globalConfig) {
 	lines.push(`   Model: ${g.settings.model} · AutoMemory`);
 	const cclineStatus =
 		g.cclineInstalled === true
-			? pc.green("已安裝")
-			: pc.yellow("未安裝（將自動安裝 @cometix/ccline）");
+			? pc.green("已安裝（部署 my-ccline.sh）")
+			: pc.yellow("未安裝（將自動安裝 @cometix/ccline + 部署 my-ccline.sh）");
 	lines.push(`   StatusLine: CCometixLine ${cclineStatus}`);
 
 	return lines;

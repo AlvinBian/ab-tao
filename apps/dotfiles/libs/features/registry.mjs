@@ -94,7 +94,7 @@ export async function selectFeatures() {
 				value: f.id,
 				label: `${f.label} ${pc.dim(f.hint)}`,
 			})),
-			initialValues: [],
+			initialValues: ["claude-base", "project-install"],
 			required: false,
 		}),
 	);
@@ -114,7 +114,12 @@ export async function selectFeatures() {
 	};
 	for (const id of selected) expand(id);
 
-	return [...allIds];
+	const defOrder = FEATURE_DEFS.map((f) => f.id);
+	return [...allIds].sort((a, b) => {
+		const ia = defOrder.indexOf(a);
+		const ib = defOrder.indexOf(b);
+		return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+	});
 }
 
 /**
