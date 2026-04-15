@@ -44,7 +44,7 @@ const MARKETPLACE_REPO = "anthropics/claude-plugins-official";
 export default {
 	id: "plugins",
 	label: "🔌 官方 Plugins",
-	hint: "code-review · commit-commands · feature-dev…",
+	hint: "code-review · commit-commands · feature-dev · code-simplifier · security-guidance · hookify · ralph-loop · session-report",
 	dependsOn: [],
 	conflicts: [],
 

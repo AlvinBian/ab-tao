@@ -194,9 +194,8 @@ export default {
 				if (/^\s+[✔▶⚠]/.test(line)) {
 					// 提取關鍵字作為 label
 					const match = line.match(/[✔▶⚠]\s+(.+)/);
-					const label = match?.[1]?.trim() || "...";
-					// 截短到 40 字
-					return label.length > 40 ? `${label.slice(0, 37)}...` : label;
+					const label = match?.[1]?.trim() || "";
+					return label || null;
 				}
 				return null;
 			},
