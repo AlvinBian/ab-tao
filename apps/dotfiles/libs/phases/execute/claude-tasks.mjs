@@ -188,27 +188,12 @@ export async function deploySlackHooks(opts) {
 		fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 	}
 
-	// ── 步驟 3：使用 prev 值同步 Slack 設定到 ~/.claude/.env 和 settings.json ──
+	// ── 步驟 3：使用 prev 值同步 Slack 設定到 settings.json env ──
 	const channel = prev?.slackChannel ?? "";
 	const mode = prev?.slackMode ?? "";
 	const userId = prev?.slackUserId ?? "";
 	const minSession = prev?.minSessionSecs ?? "300";
 	if (channel) {
-		// 寫 ~/.claude/.env（供 commands / hooks 讀取）
-		const claudeEnvPath = path.join(HOME, ".claude", ".env");
-		let content = fs.existsSync(claudeEnvPath)
-			? fs.readFileSync(claudeEnvPath, "utf8")
-			: "";
-		content = content
-			.replace(/^SLACK_[A-Z_]+=.*/gm, "") // 清除所有 SLACK_ 開頭變數
-			.replace(/^CLAUDE_SLACK_MIN_SESSION_SECS=.*/gm, "") // 清除 session 閾值（重寫）
-			.replace(/\n{3,}/g, "\n\n")
-			.trim();
-		content += `\nSLACK_NOTIFY_CHANNEL=${channel}\nSLACK_NOTIFY_MODE=${mode}\n`;
-		if (userId) content += `SLACK_NOTIFY_USER_ID=${userId}\n`;
-		content += `CLAUDE_SLACK_MIN_SESSION_SECS=${minSession}\n`;
-		fs.writeFileSync(claudeEnvPath, content);
-		// 寫 ~/.claude/settings.json env（讓 Claude session 直接取得變數）
 		const settingsPath = path.join(HOME, ".claude", "settings.json");
 		let settings = {};
 		try {
@@ -220,9 +205,8 @@ export async function deploySlackHooks(opts) {
 			...settings.env,
 			SLACK_NOTIFY_CHANNEL: channel,
 			SLACK_NOTIFY_MODE: mode,
-			...(userId && {
-				SLACK_NOTIFY_USER_ID: userId,
-			}),
+			CLAUDE_SLACK_MIN_SESSION_SECS: minSession,
+			...(userId && { SLACK_NOTIFY_USER_ID: userId }),
 		};
 		fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 	}

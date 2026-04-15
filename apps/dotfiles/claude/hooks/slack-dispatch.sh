@@ -3,15 +3,12 @@
 #
 # 用法：slack-dispatch.sh session-start | session-stop [--msg "訊息"]
 #
-# 設定（~/.claude/.env）：
-#   SLACK_NOTIFY_CHANNEL=C0XXXXXXXXX   # 必填：頻道 ID
-#   SLACK_NOTIFY_MODE=off              # 可選：設為 off 關閉通知
-#   CLAUDE_SLACK_MIN_SESSION_SECS=300  # 可選：最短通知門檻（預設 5 分鐘）
+# 設定（~/.claude/settings.json → env 欄位，由 Claude Code 自動注入進程環境）：
+#   SLACK_NOTIFY_CHANNEL=C0XXXXXXXXX            # 必填：頻道 ID
+#   SLACK_NOTIFY_MODE=off                        # 可選：設為 off 關閉通知
+#   CLAUDE_SLACK_MIN_SESSION_SECS=300            # 可選：最短通知門檻（預設 5 分鐘）
 
 set -uo pipefail
-
-# 從 ~/.claude/.env 載入設定
-[ -f "$HOME/.claude/.env" ] && . "$HOME/.claude/.env" 2>/dev/null
 
 [ "${SLACK_NOTIFY_MODE:-}" = "off" ] && exit 0
 

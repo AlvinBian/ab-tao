@@ -43,7 +43,6 @@ export default {
 		};
 
 		tryBackup(path.join(ctx.repoDir, ".env"), "repo-env");
-		tryBackup(path.join(HOME, ".claude", ".env"), "claude-env");
 
 		return { files: backed, dir: backupDir };
 	},
@@ -129,22 +128,7 @@ export default {
 		repoEnvContent += "\n";
 		fs.writeFileSync(repoEnvPath, repoEnvContent);
 
-		// 寫入 ~/.claude/.env（供 slack-dispatch.sh 和 commands/hooks 讀取）
-		const claudeEnvDir = path.join(HOME, ".claude");
-		fs.mkdirSync(claudeEnvDir, { recursive: true });
-		const claudeEnvPath = path.join(claudeEnvDir, ".env");
-		const slackEnvLines = [
-			`SLACK_NOTIFY_CHANNEL=${slack.channelId}`,
-			`SLACK_NOTIFY_MODE=${slack.mode}`,
-		];
-		if (slack.userId)
-			slackEnvLines.push(`SLACK_NOTIFY_USER_ID=${slack.userId}`);
-		slackEnvLines.push(
-			`CLAUDE_SLACK_MIN_SESSION_SECS=${env("CLAUDE_SLACK_MIN_SESSION_SECS", "300")}`,
-		);
-		fs.writeFileSync(claudeEnvPath, `${slackEnvLines.join("\n")}\n`);
-
-		// ── 第二部分：部署 Slack hooks ──
+		// ── 第二部分：部署 Slack hooks（Slack 環境變數統一寫入 settings.json env）──
 		const { deploySlackHooks } = await import(
 			"../phases/execute/claude-tasks.mjs"
 		);
@@ -152,6 +136,7 @@ export default {
 			slackChannel: slack.channelId,
 			slackMode: slack.mode,
 			slackUserId: slack.userId || "",
+			minSessionSecs: env("CLAUDE_SLACK_MIN_SESSION_SECS", "300"),
 		};
 		await deploySlackHooks({ repoDir: ctx.repoDir, prev: slackAsPrev });
 
@@ -180,11 +165,16 @@ export default {
 			missing.push(".env");
 		}
 
-		// 檢查 ~/.claude/.env 是否存在
+		// 檢查 settings.json env 是否含 SLACK_NOTIFY
 		total++;
-		const claudeEnvPath = path.join(HOME, ".claude", ".env");
-		if (fs.existsSync(claudeEnvPath)) passed++;
-		else missing.push("~/.claude/.env");
+		const settingsPath = path.join(HOME, ".claude", "settings.json");
+		try {
+			const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+			if (settings.env?.SLACK_NOTIFY_CHANNEL) passed++;
+			else missing.push("SLACK_NOTIFY in settings.json env");
+		} catch {
+			missing.push("settings.json");
+		}
 
 		return { passed, total, missing };
 	},
@@ -218,7 +208,6 @@ export default {
 		};
 
 		restore("repo-env", path.join(ctx.repoDir, ".env"));
-		restore("claude-env", path.join(HOME, ".claude", ".env"));
 	},
 
 	/**
