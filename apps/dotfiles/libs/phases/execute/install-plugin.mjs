@@ -3,7 +3,6 @@
  *
  * 包含：
  *   - ab-claude-dev.plugin 打包（僅選了 claude 時）
- *   - ab-slack-message.plugin 打包（僅選了 slack 時）
  */
 
 import { spawn } from "node:child_process";
@@ -23,7 +22,7 @@ export function buildPluginTasks(plan, { repoDir }) {
 	return [
 		{
 			title: "🔌 Plugin 打包 → dist/release/",
-			enabled: () => has("claude") || has("slack"),
+			enabled: () => has("claude"),
 			task: (_, subtask) =>
 				subtask.newListr(
 					[
@@ -36,25 +35,6 @@ export function buildPluginTasks(plan, { repoDir }) {
 									const child = spawn(
 										"bash",
 										["scripts/build-claude-dev-plugin.sh"],
-										{ cwd: repoDir },
-									);
-									child.on("close", (code) =>
-										code === 0
-											? resolve()
-											: reject(new Error(`執行失敗（代碼 ${code}）`)),
-									);
-									child.on("error", reject);
-								});
-							},
-						},
-						{
-							title: "ab-slack-message.plugin",
-							enabled: () => has("slack") && plan.targets.includes("slack"),
-							task: async () => {
-								await new Promise((resolve, reject) => {
-									const child = spawn(
-										"bash",
-										["scripts/build-slack-plugin.sh"],
 										{ cwd: repoDir },
 									);
 									child.on("close", (code) =>

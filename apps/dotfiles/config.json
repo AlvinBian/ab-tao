@@ -53,13 +53,6 @@
 						}
 					},
 					"skipIf": "claude-dev"
-				},
-				{
-					"type": "build-plugin",
-					"label": "打包 ab-slack-message.plugin",
-					"script": "bash scripts/build-slack-plugin.sh",
-					"phases": ["Skills", "Rules", "打包完成"],
-					"successMsg": "ab-slack-message.plugin 打包完成 → dist/ab-slack-message.plugin"
 				}
 			]
 		},

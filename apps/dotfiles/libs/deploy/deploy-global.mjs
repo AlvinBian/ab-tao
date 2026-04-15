@@ -48,13 +48,15 @@ export function deploySettings(template, overrides = {}) {
 	// permissions: 保留用戶已有配置，僅在無 deny 時補入安全 deny 清單
 	if (existing.permissions) {
 		merged.permissions = { ...existing.permissions };
-		// 補入 deny 清單（若用戶未自行設定）
 		if (
 			!existing.permissions.deny?.length &&
 			template.permissions?.deny?.length
 		) {
 			merged.permissions.deny = template.permissions.deny;
 		}
+	} else if (template.permissions?.deny?.length) {
+		// 新安裝：從 template 寫入 deny 清單（不設 allow，由用戶自行配置）
+		merged.permissions = { deny: template.permissions.deny };
 	}
 
 	// model: overrides > existing > template 預設
