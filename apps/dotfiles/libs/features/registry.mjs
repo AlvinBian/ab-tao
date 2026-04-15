@@ -27,17 +27,9 @@ const FEATURE_DEFS = [
 		visible: true,
 	},
 	{
-		id: "slack",
-		label: "💬 Slack 通知",
-		hint: "Channel / DM",
-		load: () => import("./slack.mjs"),
-		dependsOn: [],
-		visible: true,
-	},
-	{
 		id: "claude-base",
 		label: "🤖 Claude Code 配置",
-		hint: "commands · agents · rules · hooks · settings",
+		hint: "commands · agents · rules · hooks · settings · Slack",
 		load: () => import("./claude-base.mjs"),
 		dependsOn: [],
 		visible: true,

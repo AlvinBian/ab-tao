@@ -154,7 +154,7 @@ async function main() {
 		// 從 session 的 features 清單重建，fallback 基礎功能
 		selectedIds = prev.features?.length
 			? prev.features
-			: ["claude-base", "slack", "zsh", "project-install"];
+			: ["claude-base", "zsh", "project-install"];
 	}
 
 	// 重入
@@ -339,7 +339,7 @@ async function main() {
 			// 從 session 重建 features，等同 --quick fall-through
 			selectedIds = prev.features?.length
 				? prev.features
-				: ["claude-base", "slack", "zsh", "project-install"];
+				: ["claude-base", "zsh", "project-install"];
 			flagQuick = true;
 		}
 	}
@@ -359,12 +359,11 @@ async function main() {
 		}
 	}
 
-	// 風險提示（ZSH/Slack 修改系統配置）— quick 模式跳過
-	const riskySelected = selectedIds.filter((f) => ["zsh", "slack"].includes(f));
+	// 風險提示（ZSH 修改系統配置）— quick 模式跳過
+	const riskySelected = selectedIds.filter((f) => ["zsh"].includes(f));
 	if (!flagQuick && !isEmpty(riskySelected)) {
 		const hints = {
 			zsh: "在 ~/.zshrc 追加 loader + 部署 ~/.zshrc.d/",
-			slack: "設定 Slack 通知頻道",
 		};
 		p.log.info(
 			`✔️ 選擇了：${riskySelected.map((f) => `${f}（${hints[f]}）`).join("、")}`,
