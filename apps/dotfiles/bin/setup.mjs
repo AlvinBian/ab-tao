@@ -232,8 +232,8 @@ async function main() {
 				`${healthIcon}  [${bar}]  ${pc.bold(`${summary.pct}%`)}  (${summary.ok}/${summary.total})`,
 				"",
 				pc.bold("Claude 配置"),
-				`  Commands   ${cmdOk} 個${!isEmpty(claude.installedCommands) ? pc.dim(`  ${claude.installedCommands.slice(0, 6).join(", ")}${claude.installedCommands.length > 6 ? "…" : ""}`) : ""}`,
-				`  Agents     ${agentOk} 個${!isEmpty(claude.installedAgents) ? pc.dim(`  ${claude.installedAgents.slice(0, 6).join(", ")}${claude.installedAgents.length > 6 ? "…" : ""}`) : ""}`,
+				`  Commands   ${cmdOk} 個${!isEmpty(claude.installedCommands) ? pc.dim(`  ${claude.installedCommands.join(", ")}`) : ""}`,
+				`  Agents     ${agentOk} 個${!isEmpty(claude.installedAgents) ? pc.dim(`  ${claude.installedAgents.join(", ")}`) : ""}`,
 				`  Rules      ${ruleOk} 個${!isEmpty(claude.installedRules) ? pc.dim(`  ${claude.installedRules.join(", ")}`) : ""}`,
 				`  Hooks      ${hasHooks ? pc.green("已啟用") : pc.dim("未安裝")}`,
 				`  Settings   ${hasSettings ? pc.green("已配置") : pc.dim("未安裝")}`,
@@ -243,7 +243,7 @@ async function main() {
 			if (!isEmpty(claude.missing)) {
 				lines.push(
 					pc.red(
-						`  缺少 ${claude.missing.length} 個：${claude.missing.slice(0, 5).join(", ")}${claude.missing.length > 5 ? "…" : ""}`,
+						`  缺少 ${claude.missing.length} 個：${claude.missing.join(", ")}`,
 					),
 				);
 			}

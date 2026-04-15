@@ -37,7 +37,7 @@ const FEATURE_DEFS = [
 	{
 		id: "plugins",
 		label: "🔌 官方 Plugins",
-		hint: "code-review · commit-commands · feature-dev…",
+		hint: "code-review · commit-commands · feature-dev · code-simplifier · security-guidance · hookify · ralph-loop · session-report",
 		load: () => import("./plugins.mjs"),
 		dependsOn: [],
 		visible: true,
