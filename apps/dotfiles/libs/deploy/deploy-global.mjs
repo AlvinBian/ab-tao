@@ -45,9 +45,16 @@ export function deploySettings(template, overrides = {}) {
 
 	const merged = { ...existing };
 
-	// permissions: 完全不動 — 用戶自行在 Claude Code 中配置
+	// permissions: 保留用戶已有配置，僅在無 deny 時補入安全 deny 清單
 	if (existing.permissions) {
-		merged.permissions = existing.permissions;
+		merged.permissions = { ...existing.permissions };
+		// 補入 deny 清單（若用戶未自行設定）
+		if (
+			!existing.permissions.deny?.length &&
+			template.permissions?.deny?.length
+		) {
+			merged.permissions.deny = template.permissions.deny;
+		}
 	}
 
 	// model: overrides > existing > template 預設

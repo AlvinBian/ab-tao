@@ -24,6 +24,14 @@
 		"tdd@claude-plugins-official": true,
 		"quality-gate@claude-plugins-official": true
 	},
+	"permissions": {
+		"deny": [
+			"Bash(git push --force *)",
+			"Bash(git reset --hard *)",
+			"Bash(rm -rf /)",
+			"Bash(rm -rf ~)"
+		]
+	},
 	"env": {
 		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
 		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",

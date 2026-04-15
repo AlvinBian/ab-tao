@@ -4,13 +4,8 @@ description: >
   統一構建檢查：構建修復 (Build Fix) 與品質閘門 (Quality Gate)。
   Build Fix — Use when: "build 壞了", "編譯失敗", "build error", "build fix", "構建失敗".
   Quality Gate — Use when: "merge 前", "上線前", "quality check", "品質檢查", "pre-release".
-disable-model-invocation: true
-model: haiku
-effort: low
 metadata:
-  version: 1.0.0
-matchWhen:
-  always: true
+  version: 1.1.0
 ---
 
 # Check — 構建修復 + 品質閘門
