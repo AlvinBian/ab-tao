@@ -156,7 +156,7 @@ export async function setupSlackNotify(prev) {
 		channelId = extractedId;
 	}
 	// User ID 不在 setup 收集，用戶說「發給我」時 Claude 會從 $SLACK_NOTIFY_USER_ID 讀取
-	// 若未設定，Claude 會提示用戶去 ~/.claude/.env 加上 SLACK_NOTIFY_USER_ID=Uxxxxxxx
+	// 若未設定，Claude 會提示用戶去 settings.json env 加上 SLACK_NOTIFY_USER_ID
 	const userId = env("SLACK_NOTIFY_USER_ID", "");
 
 	p.log.success(`已設定 #${channelName} (${channelId})`);
