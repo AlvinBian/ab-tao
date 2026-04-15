@@ -119,7 +119,6 @@ export const LEGACY_PROJECT_RULES = [
 	"project-conventions",
 	"testing",
 	"performance",
-	"slack-mrkdwn",
 	// v2 刪除
 	"core-conventions",
 	"workflow",

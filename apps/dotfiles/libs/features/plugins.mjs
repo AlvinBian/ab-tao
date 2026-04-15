@@ -22,17 +22,20 @@ const RECOMMENDED_PLUGINS = [
 	{ name: "session-report", desc: "Session 分析報告 — 回顧工作成果" },
 ];
 
-/** 偵測已安裝的 plugins */
+/** 偵測已安裝的 plugins（快取結果避免重複呼叫 CLI） */
+let _installedCache;
 function getInstalledPlugins() {
+	if (_installedCache !== undefined) return _installedCache;
 	try {
 		const out = execFileSync("claude", ["plugin", "list", "--json"], {
 			stdio: ["pipe", "pipe", "pipe"],
 			timeout: 10000,
 		});
-		return new Set(JSON.parse(out.toString()).map((pl) => pl.name));
+		_installedCache = new Set(JSON.parse(out.toString()).map((pl) => pl.name));
 	} catch {
-		return null;
+		_installedCache = null;
 	}
+	return _installedCache;
 }
 
 /** 官方 Plugins marketplace 來源 */

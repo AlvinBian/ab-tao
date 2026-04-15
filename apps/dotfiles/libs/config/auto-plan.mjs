@@ -38,7 +38,7 @@ const PERMISSION_PRESETS = {
 
 const SETTINGS_PRESETS = {
 	model: "opusplan",
-	effortLevel: "medium",
+	effortLevel: "high",
 	autoMemoryEnabled: true,
 	env: {
 		CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: "80",

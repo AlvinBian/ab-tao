@@ -41,8 +41,7 @@ const AB_DESCRIPTIONS = {
 	// Agents（2 個）
 	architect: "架構設計 + 5 維度審查 + ADR",
 	debugger: "除錯 + build error 最小 diff",
-	// Skills（3 個）
-	"slack-mrkdwn": "Slack mrkdwn 格式背景知識",
+	// Skills（2 個）
 	runbook: "維運手冊模板",
 	incident: "事故處理全流程模板",
 	// Rules（1 個）
