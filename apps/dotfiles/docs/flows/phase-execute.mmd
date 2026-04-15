@@ -22,7 +22,7 @@ flowchart TD
         subgraph A ["Branch A: Claude + 專案"]
             direction TB
             A0["[0] ccline 安裝<br/>npm install -g @cometix/ccline<br/>（已安裝則跳過）"]
-            A0 --> A1["[1] 全局配置<br/>settings.json smart merge<br/>hooks/slack-dispatch.sh"]
+            A0 --> A1["[1] 全局配置<br/>settings.json smart merge<br/>Slack hooks（若已設定）"]
             A1 --> A2["[2] Claude 安裝<br/>commands · agents · rules · hooks<br/>manifest MD5 追蹤"]
             A2 --> A3["[3] ECC + Stacks（並行）<br/>AI 資源融合 + 技術棧生成"]
         end
@@ -30,7 +30,6 @@ flowchart TD
         subgraph B ["Branch B: Plugin"]
             direction TB
             B3["ab-claude-dev.plugin"]
-            B4["ab-slack-message.plugin"]
         end
 
         subgraph C ["Branch C: ZSH"]
@@ -59,6 +58,6 @@ flowchart TD
     classDef new fill:#d29922,color:#000
 
     class B1,B2 backup
-    class A0,A1,A2,A3,B3,B4,C1,C2 parallel
+    class A0,A1,A2,A3,B3,C1,C2 parallel
     class V1,V2,V3,V4,V5 verify
     class A0 new

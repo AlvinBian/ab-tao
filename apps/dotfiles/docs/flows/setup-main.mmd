@@ -37,12 +37,9 @@ flowchart TD
     %% ── 完整安裝 ──
     subgraph Fresh ["完整安裝流程"]
         F1["🔍 環境檢查<br/>brew · nvm · node · pnpm · gh · claude"]
-        F1 --> F2["功能選擇<br/>Claude · 專案 · ZSH · Slack"]
+        F1 --> F2["功能選擇<br/>Claude Code（含 Slack）· 專案 · ZSH · Plugins"]
         F2 --> F3["AI 來源選擇<br/>ECC + commons 同步"]
-        F3 --> F4{"has Slack?"}
-        F4 -->|Yes| F5["Slack 通知設定"]
-        F4 -->|No| Loop
-        F5 --> Loop
+        F3 --> Loop
     end
 
     subgraph Loop ["3 步安裝（支持 BACK）"]
@@ -69,6 +66,6 @@ flowchart TD
     classDef action fill:#1f6feb,color:#fff
     classDef success fill:#238636,color:#fff
 
-    class QuickCheck,PrevCheck,QSession,F4,RMenu decision
-    class F1,F2,F3,F5,L1,L2,L3,L4,L5 action
+    class QuickCheck,PrevCheck,QSession,RMenu decision
+    class F1,F2,F3,L1,L2,L3,L4,L5 action
     class C1,C2,C3,C4,C5 success
