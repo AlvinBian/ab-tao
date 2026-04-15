@@ -1,25 +1,27 @@
 ---
 title: 功能選擇結構
-description: 4 大功能、部署目標（Claude Code · 專案配置 · Slack · ZSH）
+description: 4 大功能、部署目標（Claude Code + Slack · 專案配置 · ZSH）
 links:
   - setup-main: 返回主流程
   - phase-execute: 安裝執行
 ---
 flowchart TD
-    MS(["功能選擇<br/>Space 切換 · Enter 確認"]) --> C1 & C2 & C3 & C4
+    MS(["功能選擇<br/>Space 切換 · Enter 確認"]) --> C1 & C2 & C3
 
-    subgraph C1G ["🤖 Claude Code 開發配置"]
+    subgraph C1G ["🤖 Claude Code 配置（含 Slack）"]
         C1["Claude Code"]
         C1 --> CC1["commands<br/>4 個 · check, slack, test, db-migration"]
         C1 --> CC2["agents<br/>2 個 · architect, debugger"]
         C1 --> CC3["rules<br/>1 個精簡 · api-and-data · paths 條件載入"]
         C1 --> CC4["skills<br/>2 個 · runbook · incident"]
         C1 --> CC5["hooks<br/>5 個 · prettier · eslint · file protection · dangerous command block · macOS notification"]
+        C1 --> CC6["Slack 通知（可略過）<br/>Channel / DM / 關閉"]
         CC1 --> T1["→ ~/.claude/commands/"]
         CC2 --> T2["→ ~/.claude/agents/"]
         CC3 --> T3["→ ~/.claude/rules/"]
         CC4 --> T4["→ ~/.claude/skills/"]
         CC5 --> T5["→ ~/.claude/hooks/"]
+        CC6 --> T6["→ settings.json env + hooks/slack-dispatch.sh"]
     end
 
     subgraph C2G ["📁 專案配置（需要 repos）"]
@@ -30,15 +32,9 @@ flowchart TD
         CM4 --> CMT
     end
 
-    subgraph C3G ["💬 Slack 通知"]
-        C3["Slack"]
-        C3 --> S1["Channel / DM / 關閉"]
-        S1 --> ST["→ .env + hooks/slack-dispatch.sh"]
-    end
-
-    subgraph C4G ["🐚 ZSH 環境模組"]
-        C4["ZSH"]
-        C4 --> Z1["7 個模組（sheldon 插件管理）<br/>env · history · keys · aliases · git · tools · plugins"]
+    subgraph C3G ["🐚 ZSH 環境模組"]
+        C3["ZSH"]
+        C3 --> Z1["7 個模組（sheldon 插件管理）<br/>env · history · keys · aliases · git · tools · plugins"]
         Z1 --> ZT["→ ~/.zshrc.d/ + loader 追加至 ~/.zshrc"]
     end
 
@@ -48,6 +44,6 @@ flowchart TD
     classDef target fill:#238636,color:#fff
     classDef optional fill:#d29922,color:#000
 
-    class C1,C2,C3,C4 feature
-    class T1,T2,T3,T4,T5,CMT,ST,ZT target
-    class CM4 optional
+    class C1,C2,C3 feature
+    class T1,T2,T3,T4,T5,T6,CMT,ZT target
+    class CM4,CC6 optional
