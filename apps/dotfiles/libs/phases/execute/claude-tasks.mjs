@@ -129,7 +129,7 @@ export async function deployGlobalConfig(opts) {
  * 包含三步驟：
  *   1. 複製 slack-dispatch.sh 到 ~/.claude/hooks/
  *   2. 合併 hooks-slack.json 到 settings.json
- *   3. 同步 Slack 設定到 ~/.claude/.env 與 settings.json
+ *   3. 同步 Slack 設定到 settings.json env
  *
  * prev 為 Slack 配置的唯一來源（由呼叫端提供），不再從 .env 檔案讀取。
  *

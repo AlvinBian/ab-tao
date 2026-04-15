@@ -15,7 +15,6 @@ export const CLAUDE_HOME = path.join(HOME, ".claude");
 // ── Claude 配置檔案 ────────────────────────────────────────────────
 
 export const CLAUDE_SETTINGS = path.join(CLAUDE_HOME, "settings.json");
-export const CLAUDE_ENV = path.join(CLAUDE_HOME, ".env");
 export const CLAUDE_HOOKS = path.join(CLAUDE_HOME, "hooks.json");
 
 // ── Claude 檔名（相對於 repo）  ─────────────────────────────────

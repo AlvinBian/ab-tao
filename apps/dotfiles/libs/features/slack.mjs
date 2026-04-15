@@ -26,7 +26,7 @@ export default {
 	},
 
 	/**
-	 * 2. 備份 — 備份 {repoDir}/.env 和 ~/.claude/.env（若存在）
+	 * 2. 備份 — 備份 {repoDir}/.env（若存在）
 	 */
 	async backup(ctx) {
 		const backupDir = ctx.backupDir;
@@ -147,7 +147,7 @@ export default {
 	},
 
 	/**
-	 * 7. 驗證 — 確認 .env 包含 SLACK_NOTIFY 且 ~/.claude/.env 存在
+	 * 7. 驗證 — 確認 .env 包含 SLACK_NOTIFY 且 settings.json env 含 SLACK_NOTIFY
 	 */
 	async verify(ctx) {
 		let passed = 0;

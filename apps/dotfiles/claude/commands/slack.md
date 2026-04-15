@@ -163,7 +163,7 @@ matchWhen:
 > 2. 指定其他頻道
 > 3. 只複製，不發送
 
-讀取 `~/.claude/.env` 的 `SLACK_NOTIFY_CHANNEL` 作為預設 `channel_id`。
+讀取 `settings.json` env 的 `SLACK_NOTIFY_CHANNEL` 作為預設 `channel_id`（由 Claude Code 自動注入環境變數）。
 未設定則請用戶貼上頻道 ID 或 Channel Link（`https://xxx.slack.com/archives/C07XXXXXX`）。
 
 使用 `mcp__claude_ai_Slack__slack_send_message` 發送，成功後回報：`✅ 已發送到 <頻道名或 ID>`
