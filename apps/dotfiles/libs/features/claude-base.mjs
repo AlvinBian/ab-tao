@@ -61,7 +61,7 @@ export default {
 	},
 
 	/**
-	 * 3. 互動配置 — 從靜態全局配置 + model 選擇
+	 * 3. 互動配置 — 從靜態全局配置 + model 選擇 + Slack 通知（可略過）
 	 */
 	async configure(ctx) {
 		const { ALL_COMMANDS, ALL_AGENTS, ALL_RULES } = await import(
@@ -75,7 +75,14 @@ export default {
 		const cclineInstalled = isCclineInstalled();
 
 		if (ctx.flags?.quick) {
-			// 從 session 重建（使用上次的 model）
+			// 從 session 重建（使用上次的 model + slack 設定）
+			const slack = ctx.prev?.slackChannel
+				? {
+						channelId: ctx.prev.slackChannel,
+						mode: ctx.prev.slackMode || "channel",
+						userId: ctx.prev.slackUserId || "",
+					}
+				: null;
 			return {
 				global: {
 					commands: ALL_COMMANDS,
@@ -90,6 +97,7 @@ export default {
 					cclineInstalled,
 				},
 				model: ctx.prev?.install?.model || "opusplan",
+				slack,
 			};
 		}
 
@@ -130,6 +138,20 @@ export default {
 			model = selected;
 		}
 
+		// Slack 通知設定（可略過）
+		let slack = null;
+		if (!ctx.flags?.all) {
+			const { setupSlackNotify } = await import("../external/slack-setup.mjs");
+			slack = await setupSlackNotify(ctx.prev);
+		} else if (ctx.prev?.slackChannel) {
+			// --all 模式：沿用上次設定
+			slack = {
+				channelId: ctx.prev.slackChannel,
+				mode: ctx.prev.slackMode || "channel",
+				userId: ctx.prev.slackUserId || "",
+			};
+		}
+
 		return {
 			global: {
 				commands: ALL_COMMANDS,
@@ -141,6 +163,7 @@ export default {
 				cclineInstalled,
 			},
 			model,
+			slack,
 		};
 	},
 
@@ -152,6 +175,7 @@ export default {
 		return {
 			global: config.global,
 			model: config.model,
+			slack: config.slack || null,
 			features: ["claude-base"],
 			targets: ["claude-dev"],
 		};
@@ -179,12 +203,12 @@ export default {
 	},
 
 	/**
-	 * 6. 安裝 — 委託 deployGlobalConfig 執行實際部署
+	 * 6. 安裝 — 委託 deployGlobalConfig 執行實際部署，再部署 Slack（若已設定）
 	 */
 	async install(ctx, plan) {
 		if (!plan) return null;
 
-		const { deployGlobalConfig } = await import(
+		const { deployGlobalConfig, deploySlackHooks } = await import(
 			"../phases/execute/claude-tasks.mjs"
 		);
 
@@ -196,6 +220,20 @@ export default {
 			isManual: ctx.flags?.manual || false,
 			targetKeys: plan.targets || [],
 		});
+
+		// Slack 通知部署（mode !== "off" 且有頻道/DM 設定）
+		if (plan.slack?.mode && plan.slack.mode !== "off") {
+			await deploySlackHooks({
+				repoDir: ctx.repoDir,
+				prev: {
+					slackChannel: plan.slack.channelId,
+					slackMode: plan.slack.mode,
+					slackUserId: plan.slack.userId || "",
+				},
+			});
+			installSelections.slackChannel = plan.slack.channelId;
+			installSelections.slackMode = plan.slack.mode;
+		}
 
 		return installSelections;
 	},
@@ -252,7 +290,7 @@ export default {
 			? "CCometixLine + my-ccline.sh ✅"
 			: "CCometixLine ⚠️（安裝失敗，statusLine 未配置）";
 
-		return parts.length
+		const lines = parts.length
 			? [
 					"🤖 Claude 配置",
 					`  已安裝：${parts.join(" · ")}`,
@@ -260,6 +298,14 @@ export default {
 					`  StatusLine: ${cclineLabel}`,
 				]
 			: [];
+
+		if (results.slackMode && results.slackMode !== "off") {
+			const slackLabel =
+				results.slackMode === "dm" ? "DM 私發" : `#${results.slackChannel}`;
+			lines.push(`  Slack: ${slackLabel} ✅`);
+		}
+
+		return lines;
 	},
 
 	/**
@@ -278,6 +324,8 @@ export default {
 			hooks: results?.hooks || [],
 			model: results?.model || "opusplan",
 			cclineInstalled: results?.cclineInstalled ?? false,
+			slackChannel: results?.slackChannel || "",
+			slackMode: results?.slackMode || "",
 		};
 	},
 
