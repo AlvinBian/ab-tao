@@ -222,7 +222,7 @@ export default {
 		});
 
 		// Slack 通知部署（mode !== "off" 且有頻道/DM 設定）
-		if (plan.slack && plan.slack.mode && plan.slack.mode !== "off") {
+		if (plan.slack?.mode && plan.slack.mode !== "off") {
 			await deploySlackHooks({
 				repoDir: ctx.repoDir,
 				prev: {
