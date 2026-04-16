@@ -172,8 +172,8 @@ export default {
 
 		// ── Step 3: 星級閾值選擇 ──
 		const thresholdOptions = [
-			{ value: 5, label: "★★★★★ 只選最高品質" },
-			{ value: 4, label: "★★★★☆ 四星以上（預設）", hint: "推薦" },
+			{ value: 5, label: "★★★★★ 只選最高品質", hint: "推薦" },
+			{ value: 4, label: "★★★★☆ 四星以上" },
 			{ value: 3, label: "★★★☆☆ 三星以上" },
 			{ value: 2, label: "★★☆☆☆ 二星以上" },
 			{ value: 1, label: "★☆☆☆☆ 一星以上" },
@@ -184,7 +184,7 @@ export default {
 			await p.select({
 				message: "◆ AI 資源預選門檻（按星級篩選）",
 				options: thresholdOptions,
-				initialValue: 4,
+				initialValue: 5,
 			}),
 		);
 
