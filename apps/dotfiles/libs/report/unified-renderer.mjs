@@ -760,8 +760,8 @@ function renderInlineScript() {
   window.onSkillToggle = function(cb) {
     var skillPath = cb.dataset.skillPath; // 相對路徑，如 "deep-research" 或 "ecc/deep-research"
     var nowOn   = cb.checked;
-    // 雙引號轉義：防止 $、反引號、、" 在 shell 中展開或中斷引號
-    var safePath = skillPath.replace(/\\/g, '\\\\').replace(/$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
+    // 雙引號轉義：防止 $、反引號、\\、" 在 shell 中展開或中斷引號
+    var safePath = skillPath.replace(/\\/g, '\\\\').replace(/\\$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
     var enabled  = '"$HOME/.claude/skills/' + safePath + '/SKILL.md"';
     var disabled = '"$HOME/.claude/skills/' + safePath + '/SKILL.md.disabled"';
     // 移除舊的同名指令
@@ -785,7 +785,7 @@ function renderInlineScript() {
     var nowOn  = cb.checked;
     var dir    = type === 'command' ? 'commands' : type === 'agent' ? 'agents' : 'rules';
     // 雙引號轉義：防止 shell 元字元注入
-    var safeName = name.replace(/\\/g, '\\\\').replace(/$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
+    var safeName = name.replace(/\\/g, '\\\\').replace(/\\$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
     var enabled  = '"$HOME/.claude/' + dir + '/' + safeName + '.md"';
     var disabled = '"$HOME/.claude/' + dir + '/' + safeName + '.md.disabled"';
     // 移除舊的同名指令
