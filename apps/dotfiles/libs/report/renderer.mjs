@@ -754,6 +754,12 @@ ${body}
 </html>`;
 }
 
+// ── 統一 Dashboard 渲染器（re-export） ─────────────────────────
+export {
+	generateUnifiedReport,
+	saveAndOpenReport,
+} from "./unified-renderer.mjs";
+
 /** 儲存報告到檔案 */
 export function saveReport(html, outputDir) {
 	const dir = path.resolve(outputDir);

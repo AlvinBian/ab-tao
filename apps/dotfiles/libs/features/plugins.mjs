@@ -149,7 +149,10 @@ export default {
 	async install(_ctx, plan) {
 		if (!plan?.plugins?.length) return null;
 
+		const s = p.spinner();
+
 		// 確保 marketplace 已加入
+		s.start("加入 marketplace...");
 		try {
 			const out = execFileSync(
 				"claude",
@@ -164,15 +167,17 @@ export default {
 					{ stdio: ["pipe", "pipe", "pipe"], timeout: 120000 },
 				);
 			}
+			s.message("安裝 plugins...");
 		} catch {
-			p.log.warn("marketplace 加入失敗，嘗試直接安裝");
+			s.message("marketplace 加入失敗，嘗試直接安裝");
 		}
 
 		const installed = [];
 		const failed = [];
-		for (const name of plan.plugins) {
+		for (let i = 0; i < plan.plugins.length; i++) {
+			const name = plan.plugins[i];
+			s.message(`[${i + 1}/${plan.plugins.length}] 安裝 ${name}...`);
 			try {
-				p.log.info(`安裝 ${name}...`);
 				execFileSync(
 					"claude",
 					["plugin", "install", `${name}@claude-plugins-official`],
@@ -183,6 +188,8 @@ export default {
 				failed.push(name);
 			}
 		}
+
+		s.stop(`已安裝 ${installed.length}/${plan.plugins.length} 個 plugins`);
 
 		return { plugins: installed, pluginsFailed: failed };
 	},

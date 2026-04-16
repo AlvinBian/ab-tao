@@ -16,6 +16,7 @@ export const commands = {
 	report: "打開上次 setup 部署報告",
 	restore: "還原備份",
 	hooks: "Hook 管理",
+	skills: "Skills 維護（列出、搜尋、更新）",
 	uninstall: "移除 ab-tao",
 };
 

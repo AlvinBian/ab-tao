@@ -256,10 +256,13 @@ export default {
 		}
 
 		// 偵測本機路徑
-		const { paths: localPaths } = await detectLocalRepos(
-			repos,
-			ctx.projectFolders || [],
+		const s = p.spinner();
+		s.start("掃描本地 repos...");
+		const detected = await detectLocalRepos(repos, ctx.projectFolders || []);
+		s.stop(
+			`偵測到 ${detected.paths ? Object.keys(detected.paths).length : 0} 個本地 repos`,
 		);
+		const localPaths = detected?.paths ?? {};
 
 		// 組裝完整 repos 陣列（含角色 + 本機路徑）
 		const reposWithMeta = repos.map((r) => ({

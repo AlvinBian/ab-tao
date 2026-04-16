@@ -590,9 +590,30 @@ async function main() {
 				? { recommended: aggregatedPlan.aiRes }
 				: null,
 		install: aggregatedSelections,
+		installCommonsSelections:
+			featureResults["project-install"]?.commonsSelections || {},
 	});
 
 	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);
+
+	// 儲存報告快取（供 d:report 的 collectUnifiedReportData 使用）
+	try {
+		const cacheDir = path.join(HOME, ".claude", ".cache");
+		fs.mkdirSync(cacheDir, { recursive: true });
+		const cacheData = {
+			timestamp: new Date().toISOString(),
+			repos: (aggregatedPlan.repos || [])
+				.map((r) => r.fullName || r)
+				.filter(Boolean),
+			techStacks: pipelineResult?.techStacks || aggregatedPlan.techStacks || {},
+		};
+		fs.writeFileSync(
+			path.join(cacheDir, "last-report-data.json"),
+			JSON.stringify(cacheData, null, 2),
+		);
+	} catch {
+		/* 快取寫入失敗不影響安裝結果 */
+	}
 
 	// 可選：生成 HTML 報告（僅在有 project 結果時）
 	if (pipelineResult) {
