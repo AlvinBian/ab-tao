@@ -31,7 +31,11 @@ function getInstalledPlugins() {
 			stdio: ["pipe", "pipe", "pipe"],
 			timeout: 10000,
 		});
-		_installedCache = new Set(JSON.parse(out.toString()).map((pl) => pl.name));
+		_installedCache = new Set(
+			JSON.parse(out.toString()).map(
+				(pl) => (pl.id ?? pl.name ?? "").split("@")[0],
+			),
+		);
 	} catch {
 		_installedCache = null;
 	}
