@@ -77,6 +77,8 @@ export default {
 		tryBackup(path.join(HOME, ".zshrc"), "zshrc");
 		tryBackup(path.join(HOME, ".zshrc.d"), "zshrc.d");
 		tryBackup(path.join(HOME, ".ripgreprc"), "ripgreprc");
+		tryBackup(path.join(HOME, ".gitconfig"), "gitconfig");
+		tryBackup(path.join(HOME, ".config", "starship.toml"), "starship.toml");
 
 		return { files: backed, dir: backupDir };
 	},
@@ -237,6 +239,16 @@ export default {
 			missing.push(".zshrc");
 		}
 
+		// 檢查 .gitconfig
+		total++;
+		if (fs.existsSync(path.join(HOME, ".gitconfig"))) passed++;
+		else missing.push(".gitconfig");
+
+		// 檢查 starship.toml
+		total++;
+		if (fs.existsSync(path.join(HOME, ".config", "starship.toml"))) passed++;
+		else missing.push("starship.toml");
+
 		return { passed, total, missing };
 	},
 
@@ -245,9 +257,15 @@ export default {
 	 */
 	complete(results) {
 		if (!results) return [];
+		const starshipExists = fs.existsSync(
+			path.join(HOME, ".config", "starship.toml"),
+		);
+		const gitconfigExists = fs.existsSync(path.join(HOME, ".gitconfig"));
 		return [
 			"🐚 ZSH 模組（~/.zshrc.d/ + sheldon）",
 			`  已安裝：${results.modules?.join("、") || "無"}`,
+			`  .gitconfig: ${gitconfigExists ? "✔（24 aliases + delta）" : "✗"}`,
+			`  Starship: ${starshipExists ? "✔（Go/Rust/PHP/Java/Docker）" : "✗（未安裝 starship）"}`,
 			"  執行 exec zsh 立即套用",
 		];
 	},
@@ -269,6 +287,8 @@ export default {
 		restore("zshrc", path.join(HOME, ".zshrc"));
 		restore("zshrc.d", path.join(HOME, ".zshrc.d"));
 		restore("ripgreprc", path.join(HOME, ".ripgreprc"));
+		restore("gitconfig", path.join(HOME, ".gitconfig"));
+		restore("starship.toml", path.join(HOME, ".config", "starship.toml"));
 	},
 
 	/**

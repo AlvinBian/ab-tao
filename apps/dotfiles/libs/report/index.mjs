@@ -14,7 +14,6 @@ export {
 	getStyles,
 	renderAiRes,
 	renderBackup,
-	renderClaudeIgnoreStats,
 	renderCleanup,
 	renderInstalled,
 	renderOverview,

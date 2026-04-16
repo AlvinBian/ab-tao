@@ -89,6 +89,12 @@ export default {
 				profile: dep.profile || null,
 			});
 
+			// 還原上次的 skills 選擇，避免 --quick 安裝所有 skills
+			const prevCommons = ctx.prev?.installCommonsSelections;
+			if (prevCommons && Object.keys(prevCommons).length > 0) {
+				plan.commonsSelections = prevCommons;
+			}
+
 			return {
 				plan,
 				pipelineResult,
@@ -166,7 +172,7 @@ export default {
 
 		// ── Step 3: 星級閾值選擇 ──
 		const thresholdOptions = [
-			{ value: 5, label: "★★★★★ 只選最高品質（預設）", hint: "推薦" },
+			{ value: 5, label: "★★★★★ 只選最高品質", hint: "推薦" },
 			{ value: 4, label: "★★★★☆ 四星以上" },
 			{ value: 3, label: "★★★☆☆ 三星以上" },
 			{ value: 2, label: "★★☆☆☆ 二星以上" },
@@ -470,9 +476,13 @@ export default {
 						".md",
 						"",
 					);
-					if (selected[type].has(name)) {
-						srcSelections[type].push(name);
+					if (!selected[type].has(name)) continue;
+					// Skills dedup：只寫入 itemsMap 中勝出的來源，避免同名 skill 多來源安裝
+					if (type === "skills") {
+						const winner = itemsMap[`skills:${name}`];
+						if (winner && winner.source !== src.name) continue;
 					}
+					srcSelections[type].push(name);
 				}
 			}
 
@@ -513,6 +523,9 @@ export default {
 			projects: plan.projects,
 			pipelineResult: plan._pipelineResult,
 			selectedAiSources: plan._fetchedSources?.selectedSources || [],
+			skillsSkipped: result.installSelections?.skillsSkipped || [],
+			skillsFailed: result.installSelections?.skillsFailed || [],
+			commonsSelections: plan.commonsSelections || {}, // 供 --quick 回放 skills 選擇
 		};
 	},
 
@@ -543,7 +556,30 @@ export default {
 			missing.push("agents/");
 		}
 
-		return { passed, total, missing };
+		// 統計已安裝的 skills 數量（二層結構：skills/{name}/SKILL.md）
+		const skillsDir = path.join(claudeDir, "skills");
+		let skillCount = 0;
+		if (fs.existsSync(skillsDir)) {
+			function countSkillLeafs(dir, depth) {
+				if (depth > 3) return;
+				const entries = fs.readdirSync(dir, { withFileTypes: true });
+				for (const e of entries) {
+					if (!e.isDirectory()) continue;
+					const sub = path.join(dir, e.name);
+					if (
+						fs.existsSync(path.join(sub, "SKILL.md")) ||
+						fs.existsSync(path.join(sub, "SKILL.md.disabled"))
+					) {
+						skillCount++;
+					} else {
+						countSkillLeafs(sub, depth + 1);
+					}
+				}
+			}
+			countSkillLeafs(skillsDir, 0);
+		}
+
+		return { passed, total, missing, skillCount };
 	},
 
 	/**
@@ -566,6 +602,16 @@ export default {
 			lines.push(`  已安裝：${counts.join(" · ")}`);
 		} else {
 			lines.push("  已安裝：無 AI 資源");
+		}
+
+		if ((results.installSelections?.skills?.length || 0) > 0) {
+			lines.push("  💡 Skills 在對話中輸入相關任務描述即可自動觸發");
+		}
+
+		if (results.skillsFailed?.length > 0) {
+			lines.push(
+				`  ⚠ ${results.skillsFailed.length} 個 skills 寫入失敗（可重新執行 d:setup 修復）`,
+			);
 		}
 
 		// 技術棧

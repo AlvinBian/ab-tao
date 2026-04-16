@@ -381,6 +381,51 @@ for f in "$DEST_DIR"/conf/*.zsh(N); do
 done
 success "${_compiled} 個模組已編譯"
 
+# ── .gitconfig 合併部署 ───────────────────────────────────────────
+step ".gitconfig 配置"
+GITCONFIG_SRC="$ZSH_DIR/gitconfig"
+GITCONFIG_DST="$HOME/.gitconfig"
+if [[ -f "$GITCONFIG_SRC" ]]; then
+  if [[ -f "$GITCONFIG_DST" ]]; then
+    local _user_section
+    _user_section=$(git config --global --get-regexp '^user\.' 2>/dev/null || true)
+    cp "$GITCONFIG_SRC" "$GITCONFIG_DST"
+    if [[ -n "$_user_section" ]]; then
+      while IFS= read -r _line; do
+        local _key="${_line%% *}"
+        local _val="${_line#* }"
+        # 只還原 user.* 欄位，防止異常 gitconfig 污染其他設定
+        [[ "$_key" =~ ^user\. ]] || continue
+        git config --global "$_key" "$_val"
+      done <<< "$_user_section"
+    fi
+    success ".gitconfig 已更新（保留 user 資訊）"
+  else
+    cp "$GITCONFIG_SRC" "$GITCONFIG_DST"
+    success ".gitconfig 已建立"
+  fi
+else
+  info "gitconfig 模板不存在，略過"
+fi
+
+# ── starship.toml 部署 ───────────────────────────────────────────
+if command -v starship &>/dev/null; then
+  step "Starship 配置"
+  STARSHIP_TOML="$HOME/.config/starship.toml"
+  STARSHIP_SRC="$ZSH_DIR/starship.toml"
+  if [[ -f "$STARSHIP_SRC" ]]; then
+    mkdir -p "$(dirname "$STARSHIP_TOML")"
+    if [[ -f "$STARSHIP_TOML" ]] && [[ ! -f "${STARSHIP_TOML}.pre-abtao" ]]; then
+      cp "$STARSHIP_TOML" "${STARSHIP_TOML}.pre-abtao"
+      info "現有 starship.toml 已備份為 .pre-abtao"
+    fi
+    cp "$STARSHIP_SRC" "$STARSHIP_TOML"
+    success "starship.toml 已部署"
+  else
+    info "starship.toml 模板不存在，略過"
+  fi
+fi
+
 # ── ~/.ripgreprc ──────────────────────────────────────────────────
 if [[ " ${SELECTED_MODULES[*]} " == *" tools "* ]]; then
   if [[ -f ~/.ripgreprc ]]; then
