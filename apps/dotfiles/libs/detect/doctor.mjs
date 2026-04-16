@@ -10,6 +10,7 @@ import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { HOME } from "../core/paths.mjs";
+import { getGtVersion, isGtInstalled } from "../external/graphite.mjs";
 import {
 	checkNvm,
 	nvmVersion,
@@ -99,20 +100,39 @@ export async function ensureEnvironment() {
 			failLabel: "未安裝",
 			actionLabel: "安裝 Claude CLI",
 		},
+		// optional — 缺失不阻塞安裝流程
+		{
+			name: "Graphite",
+			ok: isGtInstalled(),
+			ver: getGtVersion(),
+			failLabel: "未安裝（可選）",
+			actionLabel: null,
+			optional: true,
+		},
 	];
 
-	const missing = checks.filter((c) => !c.ok);
+	const missing = checks.filter((c) => !c.ok && !c.optional);
 
-	// 全部通過
+	// 全部通過（必要項目）
 	if (isEmpty(missing)) {
 		const cleanVer = (v) => v?.match(/[\d.]+/)?.[0] || "";
-		const info = checks
+		const required = checks
+			.filter((c) => !c.optional)
 			.map((c) =>
 				c.ver
 					? `${c.name} ${pc.dim(cleanVer(c.ver))}`
 					: `${c.name} ${pc.dim("✔")}`,
 			)
 			.join(" · ");
+		const optionals = checks
+			.filter((c) => c.optional)
+			.map((c) =>
+				c.ok
+					? `${c.name} ${pc.dim(cleanVer(c.ver) || "✔")}`
+					: pc.dim(`${c.name} △`),
+			)
+			.join(" · ");
+		const info = [required, optionals].filter(Boolean).join("  ·  ");
 		p.log.success(`✅ 環境檢查通過  ${info}`);
 
 		// Node 版本管理策略（遷移提示）
@@ -129,6 +149,9 @@ export async function ensureEnvironment() {
 			if (c.ok) {
 				icon = pc.green("✔");
 				info = pc.dim(c.ver?.slice(0, 25) || "OK");
+			} else if (c.optional) {
+				icon = pc.dim("△");
+				info = pc.dim(c.failLabel);
 			} else {
 				icon = pc.red("✘");
 				info = pc.red(c.failLabel);

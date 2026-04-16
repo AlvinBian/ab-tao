@@ -19,6 +19,7 @@ import { BACKUP_DIR } from "../core/backup.mjs";
 import { BACKUP_MAX_COUNT } from "../core/constants.mjs";
 import { HOME } from "../core/paths.mjs";
 import { clearSessionProgress, saveSession } from "../core/session.mjs";
+import { isGtInstalled } from "../external/graphite.mjs";
 import { generateReport, openInBrowser, saveReport } from "../report.mjs";
 
 /** 偵測 RTK 是否已安裝 */
@@ -41,6 +42,14 @@ const ENHANCERS = [
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
+	},
+	{
+		name: "Graphite",
+		desc: "堆疊 PR 管理工具（stacked diffs，GitHub flow 增強）",
+		install: "brew install withgraphite/tap/graphite",
+		failHint: `brew install withgraphite/tap/graphite\n  安裝後執行：gt auth  （瀏覽器 OAuth 登入）`,
+		doneHint: "已安裝，請執行 gt auth 完成 GitHub 授權",
+		detect: isGtInstalled,
 	},
 ];
 
