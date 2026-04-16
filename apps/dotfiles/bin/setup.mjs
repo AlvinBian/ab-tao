@@ -457,14 +457,18 @@ async function main() {
 		// configure
 		const config = await feature.configure(ctx);
 		if (!config) {
-			p.log.info(`  ${pc.dim("略過")}`);
+			const skipLines = feature.complete(null);
+			if (skipLines.length) p.log.info(skipLines.join("\n"));
+			else p.log.info(`  ${pc.dim("略過")}`);
 			continue;
 		}
 
 		// plan
 		const plan = await feature.plan(ctx, config);
 		if (!plan) {
-			p.log.info(`  ${pc.dim("略過")}`);
+			const skipLines = feature.complete(null);
+			if (skipLines.length) p.log.info(skipLines.join("\n"));
+			else p.log.info(`  ${pc.dim("略過")}`);
 			continue;
 		}
 
@@ -478,7 +482,10 @@ async function main() {
 			featureResults[feature.id] = result;
 
 			// verify
-			const verification = await feature.verify(ctx);
+			const verification = await feature.verify(
+				ctx,
+				featureResults[feature.id],
+			);
 			if (verification.missing?.length) {
 				p.log.warn(
 					`驗證：${verification.passed}/${verification.total}，缺少：${verification.missing.join("、")}`,
