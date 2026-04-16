@@ -26,6 +26,7 @@
 		"d:report": "node apps/dotfiles/commands.mjs",
 		"d:restore": "node apps/dotfiles/commands.mjs",
 		"d:hooks": "node apps/dotfiles/commands.mjs",
+		"d:skills": "node apps/dotfiles/commands.mjs",
 		"d:uninstall": "node apps/dotfiles/commands.mjs",
 		"c:sync": "node packages/commons/commands.mjs",
 		"c:sync:select": "node packages/commons/commands.mjs",

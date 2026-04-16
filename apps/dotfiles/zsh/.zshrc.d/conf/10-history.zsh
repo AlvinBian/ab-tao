@@ -13,6 +13,7 @@ setopt HIST_SAVE_NO_DUPS
 setopt HIST_REDUCE_BLANKS
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY
+setopt EXTENDED_HISTORY
 
 # ── 專案歷史自動切換（進入 git repo 時切換到專案專屬歷史檔）─────
 

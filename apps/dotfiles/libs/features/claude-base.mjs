@@ -43,7 +43,7 @@ export default {
 		const backed = [];
 
 		// 備份子目錄
-		for (const sub of ["commands", "agents", "rules"]) {
+		for (const sub of ["commands", "agents", "rules", "skills"]) {
 			const r = await backupIfExists(
 				path.join(CLAUDE_DIR, sub),
 				`claude/${sub}`,

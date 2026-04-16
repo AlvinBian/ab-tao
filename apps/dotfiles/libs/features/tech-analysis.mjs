@@ -153,9 +153,13 @@ export default {
 
 			// ── 開發者畫像 ──
 			if (pipelineResult) {
+				const profileSpinner = p.spinner();
 				try {
+					profileSpinner.start("生成開發者畫像...");
 					profile = await generateProfile(pipelineResult);
+					profileSpinner.stop("開發者畫像已生成");
 				} catch {
+					profileSpinner.stop("開發者畫像生成失敗");
 					profile = null;
 				}
 			}

@@ -86,7 +86,7 @@ export async function selectFeatures() {
 				value: f.id,
 				label: `${f.label} ${pc.dim(f.hint)}`,
 			})),
-			initialValues: ["claude-base", "project-install"],
+			initialValues: [],
 			required: false,
 		}),
 	);

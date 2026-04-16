@@ -1,27 +1,52 @@
 #!/usr/bin/env node
 
 /**
- * 打開上次 setup 部署後的 HTML 報告
- *
- * 報告由 phase-complete.mjs 生成，儲存於 dist/report.html
+ * d:report — 即時生成統一 HTML Dashboard 並開啟瀏覽器
  */
 
-import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import * as p from "@clack/prompts";
+import { getDirname } from "../libs/core/paths.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
-const reportPath = path.join(REPO, "dist", "report.html");
 
-if (!fs.existsSync(reportPath)) {
-	console.error("⚠️ 找不到上次報告，請先執行 pnpm run d:setup");
+async function main() {
+	p.intro(" d:report ");
+	const s = p.spinner();
+	s.start("收集配置狀態...");
+
+	const { collectUnifiedReportData } = await import(
+		"../libs/core/usage-scanner.mjs"
+	);
+	const { saveAndOpenReport } = await import(
+		"../libs/report/unified-renderer.mjs"
+	);
+
+	let data;
+	try {
+		data = await collectUnifiedReportData();
+		s.stop("資料收集完成");
+	} catch (err) {
+		s.stop("收集失敗");
+		p.log.error(err instanceof Error ? err.message : String(err));
+		process.exit(1);
+	}
+
+	const outputPath = path.join(REPO, "dist", "report.html");
+	try {
+		await saveAndOpenReport(data, outputPath);
+		p.log.success(`報告已開啟：${outputPath}`);
+	} catch (err) {
+		p.log.error(
+			`生成報告失敗：${err instanceof Error ? err.message : String(err)}`,
+		);
+		process.exit(1);
+	}
+	p.outro("完成");
+}
+
+main().catch((e) => {
+	console.error(e.message);
 	process.exit(1);
-}
-
-const { openInBrowser } = await import("../libs/report.mjs");
-try {
-	await openInBrowser(reportPath);
-} catch {
-	console.log(`請手動打開：${reportPath}`);
-}
+});

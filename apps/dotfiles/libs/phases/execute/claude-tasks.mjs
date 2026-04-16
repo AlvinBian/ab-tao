@@ -15,6 +15,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import { listrLogger } from "../../cli/logger.mjs";
 import { HOME } from "../../core/paths.mjs";
@@ -25,6 +26,57 @@ import {
 	writeSyncedFiles,
 } from "../../external/source-sync.mjs";
 import { runTarget } from "../../install/index.mjs";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Skills 結構遷移（三層 → 二層）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * 偵測並自動遷移舊版三層 skills 結構到新版二層結構
+ *
+ * 舊版（v1）：skills/{source}/{name}/SKILL.md
+ * 新版（v2）：skills/{name}/SKILL.md
+ *
+ * 判斷邏輯：若 skills/ 下的子目錄本身不含 SKILL.md 或 SKILL.md.disabled，
+ * 則視為來源目錄（source dir），將其子目錄上移一層。
+ *
+ * @param {string} skillsRoot - ~/.claude/skills 或 preview/claude/skills 的絕對路徑
+ * @returns {number} 已遷移的 skill 數量
+ */
+function migrateSkillsIfNeeded(skillsRoot) {
+	if (!fs.existsSync(skillsRoot)) return 0;
+	let migrated = 0;
+	const entries = fs.readdirSync(skillsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isDirectory()) continue;
+		const srcDir = path.join(skillsRoot, entry.name);
+		// 若此目錄直接含有 SKILL.md 或 SKILL.md.disabled，視為二層葉節點，略過
+		const hasSkillMd =
+			fs.existsSync(path.join(srcDir, "SKILL.md")) ||
+			fs.existsSync(path.join(srcDir, "SKILL.md.disabled"));
+		if (hasSkillMd) continue;
+
+		// 此目錄為來源目錄（三層結構）— 將子目錄上移一層
+		const children = fs.readdirSync(srcDir, { withFileTypes: true });
+		for (const child of children) {
+			if (!child.isDirectory()) continue;
+			const oldPath = path.join(srcDir, child.name);
+			const newPath = path.join(skillsRoot, child.name);
+			if (!fs.existsSync(newPath)) {
+				fs.renameSync(oldPath, newPath);
+				migrated++;
+			}
+		}
+		// 移除已清空的來源目錄
+		try {
+			const remaining = fs.readdirSync(srcDir);
+			if (remaining.length === 0) fs.rmdirSync(srcDir);
+		} catch {
+			// 略過無法移除的情況
+		}
+	}
+	return migrated;
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 獨立可呼叫函式（不依賴 Listr）
@@ -68,8 +120,13 @@ export async function deployGlobalConfig(opts) {
 	const { checkAndInstallCcline, deployCclineScript } = await import(
 		"../../external/ccline.mjs"
 	);
+	const cclineSpinner = p.spinner();
+	cclineSpinner.start("安裝 ccline...");
 	const { installed: cclineInstalled, alreadyInstalled } =
 		checkAndInstallCcline();
+	cclineSpinner.stop(
+		cclineInstalled ? "ccline 已安裝" : "ccline 安裝失敗，跳過 statusLine 配置",
+	);
 	if (!alreadyInstalled && logger) {
 		logger(
 			cclineInstalled
@@ -145,70 +202,86 @@ export async function deployGlobalConfig(opts) {
 export async function deploySlackHooks(opts) {
 	const { repoDir, prev } = opts;
 
-	// ── 步驟 1：複製 slack-dispatch.sh ──
-	const src = path.join(repoDir, "claude", "hooks", "slack-dispatch.sh");
-	const destDir = path.join(HOME, ".claude", "hooks");
-	const dest = path.join(destDir, "slack-dispatch.sh");
-	if (fs.existsSync(src)) {
-		fs.mkdirSync(destDir, { recursive: true });
-		fs.copyFileSync(src, dest);
-		fs.chmodSync(dest, 0o755);
-	}
+	const s = p.spinner();
+	s.start("部署 Slack 通知 hooks...");
 
-	// ── 步驟 2：合併 Slack hooks 到 settings.json ──
-	const slackHooksPath = path.join(repoDir, "claude", "hooks-slack.json");
-	if (fs.existsSync(slackHooksPath)) {
-		const settingsPath = path.join(HOME, ".claude", "settings.json");
-		let settings = {};
-		try {
-			settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-		} catch {
-			/* 略 */
+	try {
+		// ── 步驟 1：複製 slack-dispatch.sh ──
+		const src = path.join(repoDir, "claude", "hooks", "slack-dispatch.sh");
+		const destDir = path.join(HOME, ".claude", "hooks");
+		const dest = path.join(destDir, "slack-dispatch.sh");
+		if (fs.existsSync(src)) {
+			fs.mkdirSync(destDir, { recursive: true });
+			fs.copyFileSync(src, dest);
+			fs.chmodSync(dest, 0o755);
 		}
-		const slackHooks = JSON.parse(
-			fs.readFileSync(slackHooksPath, "utf8"),
-		).hooks;
-		if (!settings.hooks) settings.hooks = {};
-		for (const [event, newMatchers] of Object.entries(slackHooks)) {
-			if (!settings.hooks[event]) {
-				settings.hooks[event] = newMatchers;
-			} else {
-				const existingCmds = new Set(
-					settings.hooks[event].flatMap((m) =>
-						(m.hooks || []).map((h) => h.command || ""),
-					),
-				);
-				for (const m of newMatchers) {
-					const cmds = (m.hooks || []).map((h) => h.command || "");
-					if (cmds.some((c) => !existingCmds.has(c)))
-						settings.hooks[event].push(m);
-				}
+
+		// ── 步驟 2：合併 Slack hooks 到 settings.json ──
+		const slackHooksPath = path.join(repoDir, "claude", "hooks-slack.json");
+		if (fs.existsSync(slackHooksPath)) {
+			const settingsPath = path.join(HOME, ".claude", "settings.json");
+			let settings = {};
+			try {
+				settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+			} catch {
+				/* 略 */
 			}
+			let slackHooksData;
+			try {
+				slackHooksData = JSON.parse(fs.readFileSync(slackHooksPath, "utf8"));
+			} catch {
+				slackHooksData = null;
+			}
+			const slackHooks = slackHooksData?.hooks;
+			if (slackHooks) {
+				if (!settings.hooks) settings.hooks = {};
+				for (const [event, newMatchers] of Object.entries(slackHooks)) {
+					if (!settings.hooks[event]) {
+						settings.hooks[event] = newMatchers;
+					} else {
+						const existingCmds = new Set(
+							settings.hooks[event].flatMap((m) =>
+								(m.hooks || []).map((h) => h.command || ""),
+							),
+						);
+						for (const m of newMatchers) {
+							const cmds = (m.hooks || []).map((h) => h.command || "");
+							if (cmds.some((c) => !existingCmds.has(c)))
+								settings.hooks[event].push(m);
+						}
+					}
+				}
+				fs.writeFileSync(
+					settingsPath,
+					`${JSON.stringify(settings, null, 2)}\n`,
+				);
+			} // end if (slackHooks)
 		}
-		fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
-	}
 
-	// ── 步驟 3：使用 prev 值同步 Slack 設定到 settings.json env ──
-	const channel = prev?.slackChannel ?? "";
-	const mode = prev?.slackMode ?? "";
-	const userId = prev?.slackUserId ?? "";
-	const minSession = prev?.minSessionSecs ?? "300";
-	if (channel) {
-		const settingsPath = path.join(HOME, ".claude", "settings.json");
-		let settings = {};
-		try {
-			settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-		} catch {
-			/* 檔案不存在或格式錯誤則略過，使用空物件 */
+		// ── 步驟 3：使用 prev 值同步 Slack 設定到 settings.json env ──
+		const channel = prev?.slackChannel ?? "";
+		const mode = prev?.slackMode ?? "";
+		const userId = prev?.slackUserId ?? "";
+		const minSession = prev?.minSessionSecs ?? "300";
+		if (channel) {
+			const settingsPath = path.join(HOME, ".claude", "settings.json");
+			let settings = {};
+			try {
+				settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+			} catch {
+				/* 檔案不存在或格式錯誤則略過，使用空物件 */
+			}
+			settings.env = {
+				...settings.env,
+				SLACK_NOTIFY_CHANNEL: channel,
+				SLACK_NOTIFY_MODE: mode,
+				CLAUDE_SLACK_MIN_SESSION_SECS: minSession,
+				...(userId && { SLACK_NOTIFY_USER_ID: userId }),
+			};
+			fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 		}
-		settings.env = {
-			...settings.env,
-			SLACK_NOTIFY_CHANNEL: channel,
-			SLACK_NOTIFY_MODE: mode,
-			CLAUDE_SLACK_MIN_SESSION_SECS: minSession,
-			...(userId && { SLACK_NOTIFY_USER_ID: userId }),
-		};
-		fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+	} finally {
+		s.stop("Slack hooks 已部署");
 	}
 }
 
@@ -301,10 +374,39 @@ export async function installAiResources(opts) {
 			})
 			.filter((s) => !isEmpty(s.skills));
 		if (!isEmpty(skillSources)) {
-			await writeSkillFiles(skillSources, path.join(previewDir, "claude"));
-			if (!isManual) {
-				await writeSkillFiles(skillSources, path.join(HOME, ".claude"));
+			// 遷移偵測：在寫入前確認目錄結構為二層，自動修正舊版三層結構
+			const s = p.spinner();
+			s.start("檢查 skills 目錄結構...");
+			const previewSkillsRoot = path.join(previewDir, "claude", "skills");
+			const globalSkillsRoot = path.join(HOME, ".claude", "skills");
+			const previewMigrated = migrateSkillsIfNeeded(previewSkillsRoot);
+			const globalMigrated = isManual
+				? 0
+				: migrateSkillsIfNeeded(globalSkillsRoot);
+			const migrated = previewMigrated + globalMigrated;
+			if (migrated > 0) {
+				s.stop(`已遷移 ${migrated} 個 skills 到扁平結構`);
+			} else {
+				s.stop("skills 目錄結構正常");
 			}
+
+			const previewSkillResult = await writeSkillFiles(
+				skillSources,
+				path.join(previewDir, "claude"),
+			);
+			let skipped = previewSkillResult?.skipped || [];
+			let failed = previewSkillResult?.failed || [];
+			if (!isManual) {
+				const globalSkillResult = await writeSkillFiles(
+					skillSources,
+					path.join(HOME, ".claude"),
+				);
+				// 全局寫入的 skipped/failed 優先（代表實際部署結果）
+				skipped = globalSkillResult?.skipped || skipped;
+				failed = globalSkillResult?.failed || failed;
+			}
+			installSelections.skillsSkipped = skipped;
+			installSelections.skillsFailed = failed;
 		}
 
 		// 更新 installSelections 以反映實際安裝

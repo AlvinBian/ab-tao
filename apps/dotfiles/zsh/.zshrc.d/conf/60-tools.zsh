@@ -24,6 +24,12 @@ _command_exists rg && export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 # tldr（help 替代）
 _command_exists tldr && (( ! ${+aliases[help]} )) && alias help='tldr'
 
+# btop（不覆蓋系統 top，使用 bt 短命令）
+_command_exists btop && (( ! ${+aliases[bt]} )) && alias bt='btop'
+
+# Claude Code CLI
+_command_exists claude && (( ! ${+aliases[cc]} )) && alias cc='claude'
+
 # FZF 環境變數（key-bindings 由 90-plugins.zsh 延遲載入）
 if _command_exists fzf; then
   if _command_exists fd; then

@@ -15,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { createRequire } from "node:module";
 
 let _translations = null;
-function loadTranslations() {
+export function loadTranslations() {
 	if (_translations) return _translations;
 	try {
 		const req = createRequire(import.meta.url);
