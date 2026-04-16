@@ -209,7 +209,7 @@ export default {
 	/**
 	 * 7. 驗證
 	 */
-	async verify() {
+	async verify(_ctx, installResult) {
 		const confDir = path.join(HOME, ".zshrc.d", "conf");
 		let passed = 0;
 		let total = 0;
@@ -237,6 +237,20 @@ export default {
 		} catch {
 			total++;
 			missing.push(".zshrc");
+		}
+
+		// 檢查用戶選擇的模組（使用安裝結果精確核對）
+		const modules = installResult?.modules ?? [];
+		if (modules.length > 0 && fs.existsSync(confDir)) {
+			const confFiles = fs.readdirSync(confDir);
+			for (const mod of modules) {
+				total++;
+				const found = confFiles.some(
+					(f) => f.endsWith(`-${mod}.zsh`) || f === `${mod}.zsh`,
+				);
+				if (found) passed++;
+				else missing.push(`${mod}.zsh`);
+			}
 		}
 
 		// 檢查 .gitconfig

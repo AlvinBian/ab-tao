@@ -31,7 +31,11 @@ function getInstalledPlugins() {
 			stdio: ["pipe", "pipe", "pipe"],
 			timeout: 10000,
 		});
-		_installedCache = new Set(JSON.parse(out.toString()).map((pl) => pl.name));
+		_installedCache = new Set(
+			JSON.parse(out.toString()).map(
+				(pl) => (pl.id ?? pl.name ?? "").split("@")[0],
+			),
+		);
 	} catch {
 		_installedCache = null;
 	}
@@ -198,6 +202,7 @@ export default {
 	 * 7. 驗證（檢查推薦 plugins 安裝狀態）
 	 */
 	async verify() {
+		_installedCache = undefined; // 重置快取，取得安裝後最新狀態
 		const installed = getInstalledPlugins();
 		if (!installed) return { passed: 0, total: 0, missing: [] };
 
@@ -216,8 +221,20 @@ export default {
 	 * 8. 完成輸出
 	 */
 	complete(results) {
-		if (!results) return [];
 		const lines = ["🔌 官方 Plugins"];
+		const installed = getInstalledPlugins();
+		const installedRec = installed
+			? RECOMMENDED_PLUGINS.filter((pl) => installed.has(pl.name))
+			: [];
+
+		if (!results) {
+			// configure() 略過 — 顯示目前已安裝清單
+			if (installedRec.length)
+				lines.push(
+					`  ✔ 已安裝：${installedRec.map((pl) => pl.name).join("、")}`,
+				);
+			return lines;
+		}
 		if (results.plugins?.length)
 			lines.push(`  ✔ 已安裝：${results.plugins.join("、")}`);
 		if (results.pluginsFailed?.length)
