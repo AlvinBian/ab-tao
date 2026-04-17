@@ -6,7 +6,7 @@
  *
  * 資料形狀說明：
  *   - 來自 d:report（report.mjs）：包含 installed、stacks、repos、perRepoReasoning 等安裝資料
- *   - 來自 d:status（status.mjs）：包含 commands、agents、rules、skills、hooks、zsh、slack、ai 等即時掃描資料
+ *   - 來自 d:status（status.mjs）：包含 commands、agents、rules、skills、hooks、zsh、ai 等即時掃描資料
  *   - 兩者可同時存在；缺少的欄位以預設值填補
  */
 
@@ -508,7 +508,6 @@ function renderTabResources(data) {
  */
 function renderTabEnvironment(data) {
 	const zsh = data.zsh || {};
-	const slack = data.slack || {};
 	const ai = data.ai || {};
 	const permissions = data.permissions || {};
 	const plugins = data.installedPlugins;
@@ -526,12 +525,6 @@ function renderTabEnvironment(data) {
 					})
 					.join("")}</div>`
 			: '<span class="badge badge-grey">無模組資料</span>';
-
-	// Slack
-	const slackText =
-		slack.mode === "off" || !slack.mode
-			? "未啟用"
-			: `${escapeHtml(slack.mode)}${slack.channelName ? ` #${escapeHtml(slack.channelName)}` : ""}`;
 
 	// AI
 	const aiModel = escapeHtml(ai.model || data.model || "—");
@@ -578,10 +571,6 @@ function renderTabEnvironment(data) {
     <div class="section-title">ZSH 模組</div>
     <p class="section-desc">已安裝 ${zshInstalled.length} / ${zshAvailable.length} 個</p>
     ${modulesHtml}
-  </div>
-  <div class="card">
-    <div class="section-title">Slack 設定</div>
-    <p style="font-size:.88rem">模式：<strong>${slackText}</strong></p>
   </div>
   <div class="card">
     <div class="section-title">AI 模型</div>

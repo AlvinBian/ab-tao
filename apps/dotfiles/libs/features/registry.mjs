@@ -29,7 +29,7 @@ const FEATURE_DEFS = [
 	{
 		id: "claude-base",
 		label: "🤖 Claude Code 配置",
-		hint: "commands · agents · rules · hooks · settings · Slack",
+		hint: "commands · agents · rules · hooks · settings",
 		load: () => import("./claude-base.mjs"),
 		dependsOn: [],
 		visible: true,

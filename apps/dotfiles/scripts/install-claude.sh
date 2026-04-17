@@ -34,7 +34,6 @@ SELECTED_COMMANDS=""
 SELECTED_AGENTS=""
 SELECTED_RULES=""
 INSTALL_HOOKS=false
-INSTALL_SLACK=false
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
@@ -43,7 +42,6 @@ while [[ $# -gt 0 ]]; do
     --agents)   SELECTED_AGENTS="$2";   shift 2 ;;
     --rules)    SELECTED_RULES="$2";    shift 2 ;;
     --hooks)    INSTALL_HOOKS=true;     shift ;;
-    --slack)    INSTALL_SLACK=true;     shift ;;
     --force)    FORCE=true;             shift ;;
     *)          shift ;;
   esac
@@ -206,94 +204,67 @@ fi
 if [[ "$INSTALL_HOOKS" == true ]]; then
   echo -e "${BLUE}🪝 Hooks${NC}"
   HOOKS_FILE="$REPO_DIR/claude/hooks.json"
+  HOOKS_SRC_DIR="$REPO_DIR/claude/hooks"
+  HOOKS_DEST_DIR="$HOME/.claude/hooks"
+
   if [[ ! -f "$HOOKS_FILE" ]]; then
     echo -e "${YELLOW}  ⚠ claude/hooks.json 不存在，略過${NC}"
   else
     HOOKS_HASH=$(_file_hash "$HOOKS_FILE")
+    mkdir -p "$HOOKS_DEST_DIR"
 
-    # 本地 settings.json 被修改過（且不是 --force）→ 只 merge，不覆蓋
-    python3 - "$SETTINGS_FILE" "$HOOKS_FILE" << 'PYEOF'
-import json, sys, os, shutil
+    # Merge 進 ~/.claude/hooks.json（id-based 去重，保留 ECC 等外掛 hooks）
+    # Claude Code 原生讀取 hooks.json，不會被 settings.json 覆寫
+    DEST_HOOKS="$CLAUDE_DIR/hooks.json"
+    if ! command -v jq &>/dev/null; then
+      echo -e "${YELLOW}  ⚠ 缺少 jq，略過 hooks merge${NC}"
+    elif [[ ! -f "$DEST_HOOKS" ]]; then
+      # 目標不存在 → 直接複製
+      cp "$HOOKS_FILE" "$DEST_HOOKS"
+      echo -e "${GREEN}  ✅ hooks.json 已建立${NC}"
+    else
+      # 以 id 為 key：先移除 id 前綴為 ab-tao: 的舊 entries，再插入新版本
+      jq -s '
+        (.[0].hooks // {}) as $existing |
+        (.[1].hooks // {}) as $new |
+        (reduce ($new | to_entries[]) as $ev (
+          $existing;
+          .[$ev.key] = (
+            ((.[$ev.key] // []) | map(select((.id // "") | test("^ab-tao:") | not)))
+            + $ev.value
+          )
+        )) as $merged |
+        (.[0] | del(.hooks)) + {hooks: $merged}
+      ' "$DEST_HOOKS" "$HOOKS_FILE" > "${DEST_HOOKS}.tmp" \
+        && mv "${DEST_HOOKS}.tmp" "$DEST_HOOKS"
+      HOOKS_COUNT=$(jq '.hooks | length' "$HOOKS_FILE" 2>/dev/null || echo "?")
+      echo -e "${GREEN}  ✅ hooks.json 已合併（ab-tao: ${HOOKS_COUNT} 個事件，既有 hooks 保留）${NC}"
+    fi
 
-settings_path = sys.argv[1]
-hooks_path    = sys.argv[2]
+    # 部署所有 .sh hook 腳本（manifest 保護，本地修改不覆蓋）
+    for sh_file in "$HOOKS_SRC_DIR"/*.sh; do
+      [[ -f "$sh_file" ]] || continue
+      name=$(basename "$sh_file")
+      _install_file "$sh_file" "$HOOKS_DEST_DIR/$name" "hooks/$name" "  $name"
+      chmod +x "$HOOKS_DEST_DIR/$name" 2>/dev/null || true
+    done
 
-new_hooks = json.load(open(hooks_path))["hooks"]
-existing  = {}
-
-if os.path.exists(settings_path):
-  with open(settings_path) as f:
-    try: existing = json.load(f)
-    except: pass
-  shutil.copy(settings_path, settings_path + ".bak")
-
-if "hooks" not in existing:
-  existing["hooks"] = {}
-
-for event, hooks in new_hooks.items():
-  if event not in existing["hooks"]:
-    existing["hooks"][event] = hooks
-  else:
-    matchers = {h.get("matcher", "") for h in existing["hooks"][event]}
-    for h in hooks:
-      if h.get("matcher", "") not in matchers:
-        existing["hooks"][event].append(h)
-
-with open(settings_path, "w") as f:
-  json.dump(existing, f, indent=2, ensure_ascii=False)
-
-print("  \033[0;32m✅ hooks 合併完成\033[0m")
-PYEOF
     _manifest_set "hooks" "$HOOKS_HASH"
   fi
-
-  # Slack hooks（僅在 --slack 時合併）
-  if [[ "$INSTALL_SLACK" == true ]]; then
-    SLACK_HOOKS_FILE="$REPO_DIR/claude/hooks-slack.json"
-    if [[ -f "$SLACK_HOOKS_FILE" ]]; then
-      python3 - "$SETTINGS_FILE" "$SLACK_HOOKS_FILE" << 'PYEOF'
-import json, sys, os
-
-settings_path = sys.argv[1]
-hooks_path    = sys.argv[2]
-
-new_hooks = json.load(open(hooks_path))["hooks"]
-existing  = {}
-
-if os.path.exists(settings_path):
-  with open(settings_path) as f:
-    try: existing = json.load(f)
-    except: pass
-
-if "hooks" not in existing:
-  existing["hooks"] = {}
-
-for event, hooks in new_hooks.items():
-  if event not in existing["hooks"]:
-    existing["hooks"][event] = hooks
-  else:
-    matchers = {h.get("matcher", "") for h in existing["hooks"][event]}
-    for h in hooks:
-      if h.get("matcher", "") not in matchers:
-        existing["hooks"][event].append(h)
-
-with open(settings_path, "w") as f:
-  json.dump(existing, f, indent=2, ensure_ascii=False)
-
-print("  \033[0;32m✅ Slack hooks 合併完成\033[0m")
-PYEOF
-    fi
-
-    # 部署 slack-dispatch.sh
-    DISPATCH_SRC="$REPO_DIR/claude/hooks/slack-dispatch.sh"
-    if [[ -f "$DISPATCH_SRC" ]]; then
-      mkdir -p "$HOME/.claude/hooks"
-      cp "$DISPATCH_SRC" "$HOME/.claude/hooks/slack-dispatch.sh"
-      chmod +x "$HOME/.claude/hooks/slack-dispatch.sh"
-      echo -e "${DIM}  ✅ /slack-dispatch.sh${NC}"
-    fi
-  fi
 fi
+
+# ── 安裝 config 根檔案（CLAUDE.md、RTK.md 等）──────────────────
+_CONFIG_FILES=("CLAUDE.md" "RTK.md")
+_config_header_shown=false
+for _cfg in "${_CONFIG_FILES[@]}"; do
+  _cfg_src="$REPO_DIR/claude/$_cfg"
+  [[ -f "$_cfg_src" ]] || continue
+  if [[ "$_config_header_shown" == false ]]; then
+    echo -e "${BLUE}📋 Config 根檔案${NC}"
+    _config_header_shown=true
+  fi
+  _install_file "$_cfg_src" "$CLAUDE_DIR/$_cfg" "$_cfg" "$_cfg"
+done
 
 # ── 安裝 rules ────────────────────────────────────────────────────
 if [[ -n "$SELECTED_RULES" ]]; then

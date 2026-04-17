@@ -1,0 +1,99 @@
+add_newline = true
+command_timeout = 2000
+scan_timeout = 50
+
+format = """
+$directory[on](white) $git_branch$git_state$nodejs$python$golang$rust$php$java$docker_context$cmd_duration
+$git_status\
+$character"""
+
+[status]
+disabled = true
+
+[package]
+disabled = true
+
+[directory]
+truncation_length = 4
+truncate_to_repo = true
+style = "bold blue"
+format = "[$path]($style) "
+
+[git_branch]
+symbol = " "
+truncation_length = 999
+style = "bold purple"
+format = "[$symbol$branch]($style) "
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bold yellow"
+rebase = "🔀 REBASING"
+merge = "🔀 MERGING"
+revert = "🔄 REVERTING"
+cherry_pick = "🍒 CHERRY-PICKING"
+bisect = "🔍 BISECTING"
+am = "📧 APPLYING-MAILBOX"
+am_or_rebase = "🔀 REBASE/APPLY"
+
+[git_status]
+format = "$all_status$ahead_behind"
+conflicted = "[⚠️  ${count} conflicted](bold red)\n"
+modified   = "[📝 ${count} modified](bold yellow)\n"
+untracked  = "[❓ ${count} new](bold cyan)\n"
+staged     = "[✅ ${count} staged](bold green)\n"
+deleted    = "[🗑️  ${count} deleted](bold magenta)\n"
+renamed    = "[📋 ${count} renamed](bold blue)\n"
+stashed    = "[📦 ${count} stashed](bold white)\n"
+ahead      = "[⬆️  ${count} to push](bold green)\n"
+behind     = "[⬇️  ${count} to pull](bold yellow)\n"
+diverged   = "[⬆️  ${ahead_count} ⬇️  ${behind_count} diverged](bold yellow)\n"
+
+[nodejs]
+symbol = " "
+format = "via [node $version]($style) "
+style  = "bold green"
+
+[python]
+symbol = " "
+format = "via [py $version]($style) "
+style  = "bold purple"
+
+[golang]
+symbol = " "
+format = "via [go $version]($style) "
+style = "bold cyan"
+
+[rust]
+symbol = " "
+format = "via [rs $version]($style) "
+style = "bold red"
+
+[php]
+symbol = " "
+format = "via [php $version]($style) "
+style = "bold blue"
+
+[java]
+symbol = " "
+format = "via [java $version]($style) "
+style = "bold yellow"
+
+[docker_context]
+symbol = "🐳 "
+format = "via [$symbol$context]($style) "
+style = "bold blue"
+only_with_files = true
+detect_files = ["docker-compose.yml", "docker-compose.yaml", "Dockerfile"]
+
+[cmd_duration]
+min_time = 2_000
+format   = "took [$duration]($style) "
+style    = "bold white"
+show_notifications = true
+min_time_to_notify = 30_000
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol   = "[❯](bold red)"
+vimcmd_symbol  = "[❮](bold purple)"
