@@ -178,6 +178,27 @@ async function main() {
 	}
 
 	p.log.success(`已移除 ${removed} 個檔案`);
+
+	// 可選：清除 iCloud 同步
+	try {
+		const { getSyncStatus, clearSync } = await import(
+			"../libs/external/ab-async.mjs"
+		);
+		const sync = getSyncStatus();
+		if (sync.available && sync.lastPush) {
+			const clearICloud = await p.confirm({
+				message: "同時清除 iCloud 同步的偏好備份？",
+				initialValue: false,
+			});
+			if (!p.isCancel(clearICloud) && clearICloud) {
+				clearSync();
+				p.log.success("iCloud 同步資料已清除");
+			}
+		}
+	} catch {
+		/* iCloud 模組不可用時跳過 */
+	}
+
 	p.outro("卸載完成");
 }
 

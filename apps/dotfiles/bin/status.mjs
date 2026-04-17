@@ -21,6 +21,7 @@ import {
 	humanizeProjectPath,
 	scanUsageStats,
 } from "../libs/core/usage-scanner.mjs";
+import { getSyncStatus } from "../libs/external/ab-async.mjs";
 import { getRtkStatus } from "../libs/external/rtk.mjs";
 
 const __dirname = getDirname(import.meta);
@@ -290,6 +291,29 @@ function showOverview(data) {
 	console.log(
 		`  💾 備份       ${pc.cyan(data.backups.length)} 份  ${pc.dim(`磁碟 ${formatBytes(data.diskUsage.cache + data.diskUsage.dist)}`)}`,
 	);
+
+	// iCloud 同步狀態
+	try {
+		const sync = getSyncStatus();
+		if (sync.available) {
+			const inSync = sync.diffs.every((d) => d.status === "in-sync");
+			const hasDiff = sync.diffs.some((d) => d.status === "diverged");
+			const syncLabel = !sync.lastPush
+				? pc.yellow("未同步")
+				: hasDiff
+					? pc.yellow("有差異")
+					: inSync
+						? pc.green("已同步")
+						: pc.cyan("部分同步");
+			const lastTime = sync.lastPush
+				? pc.dim(` · ${new Date(sync.lastPush).toLocaleDateString("zh-TW")}`)
+				: "";
+			console.log(`  ☁️ iCloud     ${syncLabel}${lastTime}`);
+		}
+	} catch {
+		/* iCloud 模組載入失敗不影響整體顯示 */
+	}
+
 	console.log();
 }
 

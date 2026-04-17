@@ -336,6 +336,20 @@ export function deployHookPrefs(prefs) {
 }
 
 /**
+ * 若選用 catppuccin preset，返回 Nerd Font 安裝提示字串；否則返回 null
+ * @param {Object} prefs
+ * @returns {string|null}
+ */
+export function getNerdFontHint(prefs) {
+	if (prefs.starshipPreset !== "catppuccin") return null;
+	return [
+		"  Catppuccin preset 需要 Nerd Font，請執行：",
+		"    brew install --cask font-meslo-lg-nerd-font",
+		"  安裝後在終端機字體設定中選 MesloLGS NF",
+	].join("\n");
+}
+
+/**
  * 更新 .env 檔案中的 cache TTL 鍵值
  * @param {Object} prefs - 偏好物件
  * @param {string} envPath - .env 檔案絕對路徑
