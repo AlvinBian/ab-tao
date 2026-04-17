@@ -97,9 +97,21 @@ async function main() {
 		keybindings: fs.existsSync(path.join(CLAUDE_DIR, "keybindings.json"))
 			? 1
 			: 0,
-		dispatch: fs.existsSync(path.join(CLAUDE_DIR, "hooks", "slack-dispatch.sh"))
-			? 1
-			: 0,
+		hookScripts: (() => {
+			const hooksDir = path.join(CLAUDE_DIR, "hooks");
+			if (!fs.existsSync(hooksDir)) return 0;
+			return fs
+				.readdirSync(hooksDir)
+				.filter((f) =>
+					[
+						"hook-handler.sh",
+						"protect-files.sh",
+						"block-dangerous.sh",
+						"validate-memory-path.sh",
+						"inject-project-prompt.sh",
+					].includes(f),
+				).length;
+		})(),
 	};
 	const total =
 		stats.commands +
@@ -109,7 +121,7 @@ async function main() {
 		stats.hooks +
 		stats.settings +
 		stats.keybindings +
-		stats.dispatch;
+		stats.hookScripts;
 
 	if (total === 0) {
 		p.log.info("沒有找到 ab-tao 管理的配置");
@@ -119,7 +131,7 @@ async function main() {
 
 	p.log.info(`將移除：
 	  ${stats.commands} commands · ${stats.agents} agents · ${stats.rules} rules · ${stats.skills} skills
-	  ${stats.hooks ? "hooks.json · " : ""}${stats.settings ? "settings.json · " : ""}${stats.keybindings ? "keybindings.json · " : ""}${stats.dispatch ? "slack-dispatch.sh" : ""}
+	  ${stats.hooks ? "hooks.json · " : ""}${stats.settings ? "settings.json · " : ""}${stats.keybindings ? "keybindings.json · " : ""}${stats.hookScripts ? `${stats.hookScripts} hook scripts` : ""}
 
 用戶自訂的 commands/agents/rules/skills 不會被刪除。
 完全恢復到 setup 前：pnpm run restore → 選擇「完全還原」`);
@@ -151,10 +163,18 @@ async function main() {
 		}
 	}
 
-	const dispatchPath = path.join(CLAUDE_DIR, "hooks", "slack-dispatch.sh");
-	if (fs.existsSync(dispatchPath)) {
-		fs.unlinkSync(dispatchPath);
-		removed++;
+	for (const sh of [
+		"hook-handler.sh",
+		"protect-files.sh",
+		"block-dangerous.sh",
+		"validate-memory-path.sh",
+		"inject-project-prompt.sh",
+	]) {
+		const shPath = path.join(CLAUDE_DIR, "hooks", sh);
+		if (fs.existsSync(shPath)) {
+			fs.unlinkSync(shPath);
+			removed++;
+		}
 	}
 
 	p.log.success(`已移除 ${removed} 個檔案`);

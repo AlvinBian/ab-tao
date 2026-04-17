@@ -2,13 +2,12 @@
  * Branch A: Claude Code 開發配置 + 專案配置
  *
  * 包含：
- *   [1] 全局配置（settings + hooks dispatch）
+ *   [1] 全局配置（settings + hooks + RTK）
  *   [2] Claude 安裝（commands + agents + rules）
  *   [3] 專案配置（AI 資源 + Stacks）
  *
- * 提供 3 個可獨立呼叫的函式：
+ * 提供 2 個可獨立呼叫的函式：
  *   - deployGlobalConfig  — 部署 settings + commands/agents/rules/hooks
- *   - deploySlackHooks    — 部署 Slack hooks（.env + hooks.json 合併）
  *   - installAiResources  — 安裝外部 AI 資源 + Commons 資源
  */
 
@@ -112,6 +111,7 @@ export async function deployGlobalConfig(opts) {
 		techStacks = [],
 		prev = null,
 		logger = null,
+		preferences = null,
 	} = opts;
 
 	const installSelections = {};
@@ -143,6 +143,20 @@ export async function deployGlobalConfig(opts) {
 					: "⚠️ my-ccline.sh 來源不存在，跳過部署",
 			);
 		}
+	}
+
+	// ── 階段 0b：RTK ──
+	try {
+		const { checkAndInstallRtk, initRtk } = await import(
+			"../../external/rtk.mjs"
+		);
+		const rtkSpin = p.spinner();
+		rtkSpin.start("檢查 RTK...");
+		const { installed, alreadyInstalled } = checkAndInstallRtk();
+		if (installed && !alreadyInstalled) initRtk();
+		rtkSpin.stop(installed ? "RTK 已就緒" : "RTK 略過（可選）");
+	} catch {
+		/* 不阻塞安裝 */
 	}
 
 	// ── 階段 1：合併 settings.json ──
@@ -177,112 +191,24 @@ export async function deployGlobalConfig(opts) {
 		completed.add(key);
 	}
 
-	return { ...installSelections, cclineInstalled };
-}
-
-/**
- * 部署 Slack hooks — .env + hooks.json 合併
- *
- * 包含三步驟：
- *   1. 複製 slack-dispatch.sh 到 ~/.claude/hooks/
- *   2. 合併 hooks-slack.json 到 settings.json
- *   3. 同步 Slack 設定到 settings.json env
- *
- * prev 為 Slack 配置的唯一來源（由呼叫端提供），不再從 .env 檔案讀取。
- *
- * @param {Object} opts
- * @param {string} opts.repoDir - dotfiles 根目錄
- * @param {Object|null} opts.prev - Slack 配置值
- * @param {string} opts.prev.slackChannel - 頻道 ID
- * @param {string} [opts.prev.slackMode] - 通知模式（channel / dm）
- * @param {string} [opts.prev.slackUserId] - 使用者 ID
- * @param {string} [opts.prev.minSessionSecs] - 最小 session 秒數（預設 300）
- * @returns {Promise<void>}
- */
-export async function deploySlackHooks(opts) {
-	const { repoDir, prev } = opts;
-
-	const s = p.spinner();
-	s.start("部署 Slack 通知 hooks...");
-
-	try {
-		// ── 步驟 1：複製 slack-dispatch.sh ──
-		const src = path.join(repoDir, "claude", "hooks", "slack-dispatch.sh");
-		const destDir = path.join(HOME, ".claude", "hooks");
-		const dest = path.join(destDir, "slack-dispatch.sh");
-		if (fs.existsSync(src)) {
-			fs.mkdirSync(destDir, { recursive: true });
-			fs.copyFileSync(src, dest);
-			fs.chmodSync(dest, 0o755);
-		}
-
-		// ── 步驟 2：合併 Slack hooks 到 settings.json ──
-		const slackHooksPath = path.join(repoDir, "claude", "hooks-slack.json");
-		if (fs.existsSync(slackHooksPath)) {
-			const settingsPath = path.join(HOME, ".claude", "settings.json");
-			let settings = {};
-			try {
-				settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-			} catch {
-				/* 略 */
+	// ── 階段 3：部署 hook 偏好 + cache TTL ──
+	if (preferences) {
+		try {
+			const { deployHookPrefs, deployCacheTtlToEnv } = await import(
+				"../../core/preferences.mjs"
+			);
+			deployHookPrefs(preferences);
+			if (logger) logger("✅ hook 偏好已部署 → ~/.claude/hooks/.prefs");
+			const envPath = path.join(repoDir, ".env");
+			if (deployCacheTtlToEnv(preferences, envPath) && logger) {
+				logger("✅ cache TTL 已更新 → .env");
 			}
-			let slackHooksData;
-			try {
-				slackHooksData = JSON.parse(fs.readFileSync(slackHooksPath, "utf8"));
-			} catch {
-				slackHooksData = null;
-			}
-			const slackHooks = slackHooksData?.hooks;
-			if (slackHooks) {
-				if (!settings.hooks) settings.hooks = {};
-				for (const [event, newMatchers] of Object.entries(slackHooks)) {
-					if (!settings.hooks[event]) {
-						settings.hooks[event] = newMatchers;
-					} else {
-						const existingCmds = new Set(
-							settings.hooks[event].flatMap((m) =>
-								(m.hooks || []).map((h) => h.command || ""),
-							),
-						);
-						for (const m of newMatchers) {
-							const cmds = (m.hooks || []).map((h) => h.command || "");
-							if (cmds.some((c) => !existingCmds.has(c)))
-								settings.hooks[event].push(m);
-						}
-					}
-				}
-				fs.writeFileSync(
-					settingsPath,
-					`${JSON.stringify(settings, null, 2)}\n`,
-				);
-			} // end if (slackHooks)
+		} catch {
+			/* 不阻塞安裝 */
 		}
-
-		// ── 步驟 3：使用 prev 值同步 Slack 設定到 settings.json env ──
-		const channel = prev?.slackChannel ?? "";
-		const mode = prev?.slackMode ?? "";
-		const userId = prev?.slackUserId ?? "";
-		const minSession = prev?.minSessionSecs ?? "300";
-		if (channel) {
-			const settingsPath = path.join(HOME, ".claude", "settings.json");
-			let settings = {};
-			try {
-				settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-			} catch {
-				/* 檔案不存在或格式錯誤則略過，使用空物件 */
-			}
-			settings.env = {
-				...settings.env,
-				SLACK_NOTIFY_CHANNEL: channel,
-				SLACK_NOTIFY_MODE: mode,
-				CLAUDE_SLACK_MIN_SESSION_SECS: minSession,
-				...(userId && { SLACK_NOTIFY_USER_ID: userId }),
-			};
-			fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
-		}
-	} finally {
-		s.stop("Slack hooks 已部署");
 	}
+
+	return { ...installSelections, cclineInstalled };
 }
 
 /**
@@ -463,7 +389,7 @@ export async function installAiResources(opts) {
 /**
  * 構建 Claude 安裝任務陣列
  *
- * 內部委託給 deployGlobalConfig / deploySlackHooks / installAiResources，
+ * 內部委託給 deployGlobalConfig / installAiResources，
  * 保留原有 Listr 任務結構以維持 phaseExecute 相容性。
  *
  * @param {Object} plan - generateInstallPlan 產出
@@ -491,10 +417,11 @@ export function buildClaudeTasks(
 		isManual,
 		installSelections,
 		shared,
+		preferences = null,
 	},
 ) {
 	// 預先提取 plan 屬性，避免子任務回呼透過閉包直接存取 plan 物件
-	const features = new Set(plan.features || ["claude", "slack", "zsh"]);
+	const features = new Set(plan.features || ["claude", "zsh"]);
 	const has = (f) => features.has(f);
 	const planModel = plan.model ?? null;
 	const planTargets = plan.targets || [];
@@ -507,61 +434,34 @@ export function buildClaudeTasks(
 		// Branch A: Claude Code 開發配置 + 專案配置（順序執行，共用 ~/.claude/）
 		{
 			title: "🤖 Claude Code + 📁 專案配置",
-			enabled: () =>
-				has("claude") || has("slack") || has("claudemd") || has("project"),
+			enabled: () => has("claude") || has("claudemd") || has("project"),
 			task: (_, branchTask) =>
 				branchTask.newListr(
 					[
 						// ━━━ Group 1: Claude Code 開發配置 ━━━
 						{
 							title: "🤖 Claude Code 開發配置",
-							enabled: () => has("claude") || has("slack"),
+							enabled: () => has("claude"),
 							task: (_, task) =>
 								task.newListr(
 									[
-										// [1] 全局配置（settings + hooks dispatch）
+										// [1] 全局配置（settings + hooks）
 										{
 											title: "⚙️ 全局配置 → ~/.claude/",
-											task: (_, subtask) =>
-												subtask.newListr([
-													{
-														title: "⚙️ settings.json — 合併權限、模型與自動記憶",
-														task: async (_, sub) => {
-															// 實際部署由 deployGlobalConfig 統一處理（避免重複呼叫 deploySettings）
-															const templatePath = path.join(
-																repoDir,
-																"claude",
-																"settings.template.json",
-															);
-															if (fs.existsSync(templatePath)) {
-																sub.output =
-																	"將由 Claude 安裝步驟統一部署 settings";
-															} else {
-																sub.skip("settings.template.json 不存在");
-															}
-														},
-													},
-													{
-														title: "hooks/slack-dispatch.sh — Slack 通知分發器",
-														enabled: () => has("slack"),
-														task: async (_, sub) => {
-															// 委託給 deploySlackHooks
-															await deploySlackHooks({ repoDir, prev });
-															// 回報狀態（判斷來源檔案是否存在）
-															const src = path.join(
-																repoDir,
-																"claude",
-																"hooks",
-																"slack-dispatch.sh",
-															);
-															if (fs.existsSync(src)) {
-																sub.output = "已安裝 → ~/.claude/hooks/";
-															} else {
-																sub.skip("來源檔案不存在");
-															}
-														},
-													},
-												]),
+											task: async (_, subtask) => {
+												// 實際部署由 deployGlobalConfig 統一處理（避免重複呼叫 deploySettings）
+												const templatePath = path.join(
+													repoDir,
+													"claude",
+													"settings.template.json",
+												);
+												if (fs.existsSync(templatePath)) {
+													subtask.output =
+														"將由 Claude 安裝步驟統一部署 settings";
+												} else {
+													subtask.skip("settings.template.json 不存在");
+												}
+											},
 										},
 
 										// [2] Claude 安裝（commands + agents + rules + hooks → ~/.claude/）
@@ -582,6 +482,7 @@ export function buildClaudeTasks(
 													techStacks: planTechStacks,
 													prev,
 													logger: taskLogger,
+													preferences,
 												});
 												Object.assign(installSelections, result);
 												const parts = [];

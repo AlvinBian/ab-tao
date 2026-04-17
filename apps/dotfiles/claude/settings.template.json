@@ -25,6 +25,7 @@
 		"quality-gate@claude-plugins-official": true
 	},
 	"permissions": {
+		"defaultMode": "bypassPermissions",
 		"deny": [
 			"Bash(git push --force *)",
 			"Bash(git reset --hard *)",

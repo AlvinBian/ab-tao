@@ -1,23 +1,43 @@
 {
 	"description": "ab-tao hooks：檔案保護、危險命令攔截、macOS 通知",
 	"hooks": {
+		"SessionStart": [
+			{
+				"id": "ab-tao:session:inject-project-prompt",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/inject-project-prompt.sh",
+						"timeout": 3
+					}
+				]
+			}
+		],
 		"PreToolUse": [
 			{
+				"id": "ab-tao:pre:protect-files",
 				"matcher": "Edit|Write",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty' 2>/dev/null); [ -z \"$FILE\" ] && exit 0; for p in '.env' '.env.local' '.env.production' 'package-lock.json' 'pnpm-lock.yaml' 'yarn.lock' 'composer.lock' 'Podfile.lock'; do [[ \"$FILE\" == *\"$p\"* ]] && { echo \"Blocked: $FILE is protected\" >&2; exit 2; }; done; exit 0",
+						"command": "$HOME/.claude/hooks/protect-files.sh",
+						"timeout": 5
+					},
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/validate-memory-path.sh",
 						"timeout": 5
 					}
 				]
 			},
 			{
+				"id": "ab-tao:pre:block-dangerous",
 				"matcher": "Bash",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "CMD=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.command // empty' 2>/dev/null); [ -z \"$CMD\" ] && exit 0; for p in 'rm\\s+-[a-z]*r[a-z]*f[a-z]*\\s+/' 'rm\\s+-[a-z]*f[a-z]*r[a-z]*\\s+/' 'rm\\s+-rf\\s+~' 'sudo\\s+rm\\s+-[a-z]*r' 'git\\s+push\\s+(-f|--force)' 'git\\s+reset\\s+--hard' 'DROP\\s+TABLE' 'DROP\\s+DATABASE' 'curl.*\\|.*bash' 'curl.*\\|.*sh' 'wget.*\\|.*bash' 'wget.*\\|.*sh' 'eval.*base64'; do echo \"$CMD\" | grep -qiE \"$p\" && { echo \"Blocked: dangerous command detected\" >&2; exit 2; }; done; exit 0",
+						"command": "$HOME/.claude/hooks/block-dangerous.sh",
 						"timeout": 5
 					}
 				]
@@ -25,11 +45,12 @@
 		],
 		"Notification": [
 			{
+				"id": "ab-tao:notification:hook-handler",
 				"matcher": "",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/notify.sh",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
 						"timeout": 5
 					}
 				]
@@ -37,11 +58,90 @@
 		],
 		"PreCompact": [
 			{
+				"id": "ab-tao:pre-compact:hook-handler",
 				"matcher": "auto",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "osascript -e 'display notification \"Context 即將自動壓縮，長對話記憶可能縮短\" with title \"ab-tao\"' 2>/dev/null; exit 0",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"PermissionDenied": [
+			{
+				"id": "ab-tao:permission-denied:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"id": "ab-tao:stop:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 10
+					}
+				]
+			}
+		],
+		"SessionEnd": [
+			{
+				"id": "ab-tao:session-end:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 10
+					}
+				]
+			}
+		],
+		"TaskCompleted": [
+			{
+				"id": "ab-tao:task-completed:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"id": "ab-tao:subagent-stop:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"PostToolUseFailure": [
+			{
+				"id": "ab-tao:post-tool-use-failure:hook-handler",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/hook-handler.sh",
 						"timeout": 5
 					}
 				]

@@ -95,6 +95,7 @@ export async function groupedMultiselectWithAll({
  * @param {Array<{value: string, label: string, hint?: string}>} opts.options - 實際選項
  * @param {boolean} [opts.required=false] - 是否必選（true 時隱藏跳過選項）
  * @param {string[]} [opts.initialValues=[]] - 預先勾選的 value 列表
+ * @param {number} [opts.maxItems] - 最多同時顯示幾行（預設自動依終端高度計算）
  * @returns {Promise<string[]|symbol>} 選中的 value 列表，取消時返回 BACK
  */
 export async function multiselectWithAll({
@@ -102,6 +103,7 @@ export async function multiselectWithAll({
 	options,
 	required = false,
 	initialValues = [],
+	maxItems,
 }) {
 	const ALL_VALUE = "__all__";
 	const SKIP_VALUE = "__skip__";
@@ -123,12 +125,18 @@ export async function multiselectWithAll({
 			: []),
 	];
 
+	// 限制同時顯示的行數：防止大列表初始渲染超出 terminal viewport 導致畫面滾動
+	// @clack/prompts@0.9.1 支援 maxItems，預設 Infinity → 改為 rows-8（至少 8）
+	const effectiveMaxItems =
+		maxItems ?? Math.max(8, (process.stdout.rows ?? 24) - 8);
+
 	const result = await handleCancel(
 		await p.multiselect({
 			message: `${message}  Space 選擇 · Enter 確認 · ESC 上一步`,
 			options: [...extraOpts, ...safeOptions],
 			required,
 			initialValues: !isEmpty(initialValues) ? initialValues : undefined,
+			maxItems: effectiveMaxItems,
 		}),
 	);
 	if (result === BACK) return BACK;

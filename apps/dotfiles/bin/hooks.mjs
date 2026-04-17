@@ -48,10 +48,15 @@ async function main() {
 					"SessionStart:": "Session 開始記錄",
 					"SessionStart:compact": "Context 壓縮提示",
 					"Notification:": "Claude 需要注意通知",
-					"SubagentStop:": "子代理失敗偵測",
+					"SubagentStop:": "子代理完成",
 					"UserPromptSubmit:": "空提示檢查",
 					"PostCompact:": "壓縮後恢復",
-					"Stop:": "任務完成檢查",
+					"Stop:": "Claude 回應結束",
+					"PermissionDenied:": "權限請求被拒絕",
+					"SessionEnd:": "Session 結束",
+					"TaskCompleted:": "任務完成",
+					"PostToolUseFailure:": "工具執行失敗",
+					"PreCompact:auto": "Context 自動壓縮",
 				};
 				const desc =
 					hookDesc[key] ||

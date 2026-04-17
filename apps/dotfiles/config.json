@@ -36,26 +36,6 @@
 				}
 			]
 		},
-		"slack": {
-			"label": "Slack 格式工具",
-			"hint": "slack commands / rules → ~/.claude/ + plugin",
-			"flag": "--slack",
-			"steps": [
-				{
-					"type": "install-claude",
-					"label": "安裝 Slack commands · rule → ~/.claude/",
-					"script": "bash scripts/install-claude.sh",
-					"selectable": {
-						"commands": {
-							"dir": "claude/commands",
-							"ext": ".md",
-							"filter": ["slack"]
-						}
-					},
-					"skipIf": "claude-dev"
-				}
-			]
-		},
 		"zsh": {
 			"label": "ZSH 環境模組",
 			"hint": "conf → ~/.zshrc.d/ + sheldon 插件管理",

@@ -1,21 +1,24 @@
 # ── 別名與編輯器偵測 ──────────────────────────────────────────────
 
-# 編輯器自動偵測（guard：用戶已設定 EDITOR 則跳過）
-if [[ -z "$EDITOR" ]]; then
-  for _e in \
-    "/Applications/Kiro.app/Contents/Resources/app/bin/code" \
-    "/Applications/Cursor.app/Contents/Resources/app/bin/cursor" \
-    "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"; do
-    if [[ -x "$_e" ]]; then
-      export EDITOR="$_e" VISUAL="$_e"; alias code="$_e"; break
-    fi
+# CLI 編輯器（git commit / 終端工具）— 由 AB_CLI_EDITOR 偏好控制
+[[ -z "$EDITOR" ]] && export EDITOR="${AB_CLI_EDITOR:-vim}" VISUAL="${AB_CLI_EDITOR:-vim}"
+
+# GUI 編輯器偵測（open -e / code alias）— 依 AB_GUI_EDITOR_ORDER 優先順序
+if [[ -z "$GUI_EDITOR" ]]; then
+  local -a _gui_order=("${AB_GUI_EDITOR_ORDER[@]}")
+  (( ${#_gui_order[@]} )) || _gui_order=(
+    "/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
+    "/Applications/Kiro.app/Contents/Resources/app/bin/code"
+    "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+  )
+  for _e in "${_gui_order[@]}"; do
+    [[ -x "$_e" ]] && { export GUI_EDITOR="$_e"; alias code="$_e"; break; }
   done
-  unset _e
-  [[ -z "$EDITOR" ]] && export EDITOR="vim" VISUAL="vim"
+  unset _e _gui_order
 fi
 
 open() {
-  if [[ "$1" == "-e" ]]; then shift; "$EDITOR" "$@"
+  if [[ "$1" == "-e" ]]; then shift; "${GUI_EDITOR:-${EDITOR:-vim}}" "$@"
   else command open "$@"; fi
 }
 
@@ -26,11 +29,10 @@ _command_exists gh && {
   alias ghprv='gh pr view --web'
 }
 
-# uv（Python 套件管理）
-_command_exists uv && {
-  alias pip='uv pip'
-  alias venv='uv venv'
-}
+# uv（Python 套件管理）— AB_UV_OVERRIDE_PIP=false 可關閉覆蓋
+if [[ "${AB_UV_OVERRIDE_PIP:-true}" == "true" ]]; then
+  _command_exists uv && { alias pip='uv pip'; alias venv='uv venv'; }
+fi
 
 # 通用（guard：用戶已設定則跳過）
 (( ${+aliases[reload]} ))  || alias reload='source ~/.zshrc && echo "✔ reloaded"'

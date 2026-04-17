@@ -203,6 +203,38 @@ export default {
 			},
 		});
 
+		// ── 部署個人偏好 ──
+		const prefs = ctx.preferences;
+		if (prefs) {
+			try {
+				const { deployZshPrefs } = await import("../core/preferences.mjs");
+				deployZshPrefs(prefs);
+				CLACK_LOGGER.info("偏好已部署 → ~/.zshrc.d/.prefs.zsh");
+			} catch {
+				/* 不阻塞安裝 */
+			}
+		}
+
+		// ── Starship preset 選擇 ──
+		const preset = prefs?.starshipPreset ?? "default";
+		if (preset !== "default") {
+			try {
+				const presetSrc = path.join(
+					ctx.repoDir,
+					"zsh",
+					`starship-${preset}.toml`,
+				);
+				const dest = path.join(HOME, ".config", "starship.toml");
+				if (fs.existsSync(presetSrc)) {
+					fs.mkdirSync(path.dirname(dest), { recursive: true });
+					fs.copyFileSync(presetSrc, dest);
+					CLACK_LOGGER.info(`Starship preset → ${preset}`);
+				}
+			} catch {
+				/* 不阻塞安裝 */
+			}
+		}
+
 		return { modules: moduleNames };
 	},
 

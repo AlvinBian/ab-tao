@@ -375,11 +375,6 @@ export async function collectFullStatus() {
 			else if (envVars.get(key) === "") envHealth.empty.push(key);
 		}
 		for (const key of envVars.keys()) {
-			if (
-				!templateVars.has(key) &&
-				(key.startsWith("SLACK_") || key.startsWith("CLAUDE_SLACK_"))
-			)
-				continue; // runtime 寫入的
 			if (!templateVars.has(key)) envHealth.extra.push(key);
 		}
 	} catch {
@@ -395,14 +390,8 @@ export async function collectFullStatus() {
 		.filter((f) => f.endsWith(".zsh"))
 		.map((f) => f.replace(".zsh", ""));
 
-	// Slack 配置
-	const { env: envFn } = await import("./env.mjs");
-	const slack = {
-		mode: envFn("SLACK_NOTIFY_MODE", "off"),
-		channel: envFn("SLACK_NOTIFY_CHANNEL", ""),
-	};
-
 	// AI 設定
+	const { env: envFn } = await import("./env.mjs");
 	const ai = {
 		model: envFn("AI_MODEL", "haiku"),
 		effort: envFn("AI_EFFORT", "low"),
@@ -435,7 +424,6 @@ export async function collectFullStatus() {
 		rules: rulesDetail,
 		hooks: hooksDetail,
 		zsh: { installed: zshInstalled, available: zshAvailable },
-		slack,
 		ai,
 		permissions: {
 			allow: permissions.allow,

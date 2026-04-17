@@ -7,6 +7,9 @@ typeset -U path
 _command_exists() { command -v "$1" &>/dev/null; }
 _safe_source()    { [[ -s "$1" ]] && source "$1"; }
 
+# 個人偏好（ab-tao setup 生成）
+[[ -f "$HOME/.zshrc.d/.prefs.zsh" ]] && source "$HOME/.zshrc.d/.prefs.zsh"
+
 # Homebrew（硬編碼路徑，省 ~200ms 的 brew --prefix 調用）
 if [[ -d "/opt/homebrew" ]]; then
   export BREW_PREFIX="/opt/homebrew"
@@ -24,18 +27,16 @@ export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"
 export PNPM_HOME="$HOME/Library/pnpm"
 [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
 
-# Node 版本管理 — 自動偵測 fnm / nvm / n，啟用 cd 自動切換
-# 優先級：fnm > nvm > n（互斥，只載入第一個匹配的）
-if _command_exists fnm; then
-  # fnm — 官方推薦寫法，無 guard（冪等 ~1ms，避免 IDE 繼承 stale 環境）
+# Node 版本管理 — 依 AB_NODE_MANAGER_ORDER 優先順序載入
+# 預設：fnm > nvm > n（互斥，只載入第一個匹配的）
+_setup_fnm() {
+  _command_exists fnm || return 1
   eval "$(fnm env --use-on-cd --version-file-strategy=recursive --shell zsh)"
-  # fnm — 自動安裝缺少的版本（--use-on-cd 只切換不安裝，這裡補足）
   _auto_fnm_install() {
     { [[ -f ".node-version" ]] || [[ -f ".nvmrc" ]]; } || return
     local _want
     _want=$(cat .node-version 2>/dev/null || cat .nvmrc 2>/dev/null)
     [[ -z "$_want" ]] && return
-    # 已安裝則跳過（避免每次 cd 都呼叫 fnm list）
     fnm list 2>/dev/null | grep -qF "$_want" && return
     echo "fnm: 安裝 Node $_want ..."
     fnm install "$_want" && fnm use "$_want"
@@ -43,12 +44,11 @@ if _command_exists fnm; then
   autoload -U add-zsh-hook
   add-zsh-hook chpwd _auto_fnm_install
   _auto_fnm_install
-elif [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
-  # nvm — 用戶選擇保留，確保 nvm.sh 已載入 + cd 自動切換（讀取 .nvmrc）
-  # 用戶 .zshrc 中的 source nvm.sh 可能已被註解，這裡補載入
-  if ! _command_exists nvm; then
-    source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
-  fi
+  return 0
+}
+_setup_nvm() {
+  [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]] || return 1
+  _command_exists nvm || source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
   _auto_nvm_use() {
     [[ -f ".nvmrc" ]] || return
     local _want=$(<.nvmrc)
@@ -58,8 +58,10 @@ elif [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
   autoload -U add-zsh-hook
   add-zsh-hook chpwd _auto_nvm_use
   _auto_nvm_use
-elif _command_exists n; then
-  # n — cd 自動切換（讀取 .node-version / .nvmrc）
+  return 0
+}
+_setup_n() {
+  _command_exists n || return 1
   _auto_n_use() {
     { [[ -f ".node-version" ]] || [[ -f ".nvmrc" ]]; } || return
     n auto &>/dev/null || true
@@ -67,7 +69,21 @@ elif _command_exists n; then
   autoload -U add-zsh-hook
   add-zsh-hook chpwd _auto_n_use
   _auto_n_use
-fi
+  return 0
+}
+
+# 依偏好順序嘗試載入，第一個成功即停止
+local -a _node_order=("${AB_NODE_MANAGER_ORDER[@]}")
+(( ${#_node_order[@]} )) || _node_order=("fnm" "nvm" "n")
+for _mgr in "${_node_order[@]}"; do
+  case "$_mgr" in
+    fnm) _setup_fnm && break ;;
+    nvm) _setup_nvm && break ;;
+    n)   _setup_n   && break ;;
+  esac
+done
+unset _mgr _node_order
+unfunction _setup_fnm _setup_nvm _setup_n 2>/dev/null || true
 
 # pyenv lazy load（guard：用戶已初始化則跳過）
 if [[ -d "$HOME/.pyenv" && -z "$PYENV_SHELL" ]]; then

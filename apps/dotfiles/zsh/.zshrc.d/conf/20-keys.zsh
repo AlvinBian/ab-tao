@@ -1,6 +1,10 @@
 # ── 按鍵綁定 ──────────────────────────────────────────────────────
 
-bindkey -e
+# emacs 模式 → -e；vi 模式 → -v（由 AB_KEYBINDING 偏好控制）
+case "${AB_KEYBINDING:-emacs}" in
+  vi) bindkey -v ;;
+  *)  bindkey -e ;;
+esac
 
 bindkey '\e[1;3D' backward-word    # Option+Left
 bindkey '\e[1;3C' forward-word     # Option+Right

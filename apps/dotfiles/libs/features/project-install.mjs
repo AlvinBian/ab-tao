@@ -530,30 +530,85 @@ export default {
 	},
 
 	/**
-	 * 7. 驗證 — 檢查是否有 AI 資源被寫入 ~/.claude/
+	 * 7. 驗證 — 核對實際安裝的 AI 資源是否存在於 ~/.claude/
+	 *   有 installSelections → 逐項核對（精確模式）
+	 *   無 installSelections → 目錄非空檢查（fallback 模式）
 	 */
-	async verify() {
+	async verify(_ctx, installResult) {
 		const claudeDir = path.join(HOME, ".claude");
 		let passed = 0;
 		let total = 0;
 		const missing = [];
 
-		// 檢查 commands 目錄
-		const cmdsDir = path.join(claudeDir, "commands");
-		total++;
-		if (fs.existsSync(cmdsDir) && fs.readdirSync(cmdsDir).length > 0) {
-			passed++;
-		} else {
-			missing.push("commands/");
-		}
+		const sel = installResult?.installSelections;
+		const hasSelections =
+			sel &&
+			typeof sel === "object" &&
+			(sel.commands?.length ?? 0) +
+				(sel.agents?.length ?? 0) +
+				(sel.rules?.length ?? 0) +
+				(sel.skills?.length ?? 0) >
+				0;
 
-		// 檢查 agents 目錄
-		const agentsDir = path.join(claudeDir, "agents");
-		total++;
-		if (fs.existsSync(agentsDir) && fs.readdirSync(agentsDir).length > 0) {
-			passed++;
+		if (hasSelections) {
+			// ── 精確模式：逐項核對 ──
+			// commands → ~/.claude/commands/{name}.md
+			for (const name of sel.commands || []) {
+				total++;
+				if (fs.existsSync(path.join(claudeDir, "commands", `${name}.md`))) {
+					passed++;
+				} else {
+					missing.push(`commands/${name}.md`);
+				}
+			}
+			// agents → ~/.claude/agents/{name}.md
+			for (const name of sel.agents || []) {
+				total++;
+				if (fs.existsSync(path.join(claudeDir, "agents", `${name}.md`))) {
+					passed++;
+				} else {
+					missing.push(`agents/${name}.md`);
+				}
+			}
+			// rules → ~/.claude/rules/{name}.md（flat 結構）
+			for (const name of sel.rules || []) {
+				total++;
+				if (fs.existsSync(path.join(claudeDir, "rules", `${name}.md`))) {
+					passed++;
+				} else {
+					missing.push(`rules/${name}.md`);
+				}
+			}
+			// skills → ~/.claude/skills/{name}/SKILL.md（含 .disabled）
+			for (const name of sel.skills || []) {
+				total++;
+				const skillBase = path.join(claudeDir, "skills", name);
+				if (
+					fs.existsSync(path.join(skillBase, "SKILL.md")) ||
+					fs.existsSync(path.join(skillBase, "SKILL.md.disabled"))
+				) {
+					passed++;
+				} else {
+					missing.push(`skills/${name}/SKILL.md`);
+				}
+			}
 		} else {
-			missing.push("agents/");
+			// ── Fallback 模式：目錄非空檢查 ──
+			const cmdsDir = path.join(claudeDir, "commands");
+			total++;
+			if (fs.existsSync(cmdsDir) && fs.readdirSync(cmdsDir).length > 0) {
+				passed++;
+			} else {
+				missing.push("commands/");
+			}
+
+			const agentsDir = path.join(claudeDir, "agents");
+			total++;
+			if (fs.existsSync(agentsDir) && fs.readdirSync(agentsDir).length > 0) {
+				passed++;
+			} else {
+				missing.push("agents/");
+			}
 		}
 
 		// 統計已安裝的 skills 數量（二層結構：skills/{name}/SKILL.md）
