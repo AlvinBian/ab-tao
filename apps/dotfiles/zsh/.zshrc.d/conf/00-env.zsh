@@ -23,6 +23,10 @@ fi
 export SHELDON_CONFIG_DIR="$HOME/.zshrc.d/sheldon"
 export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"
 
+# you-should-use：提醒顯示在命令輸出之前 + 顯示級別
+export YSU_MESSAGE_POSITION="before"
+export YSU_MODE="ALL"
+
 # pnpm PATH（guard：已在 PATH 就跳過）
 export PNPM_HOME="$HOME/Library/pnpm"
 [[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
