@@ -32,7 +32,13 @@ ${G} lg${N}     →   lazygit    終端 Git UI
 ${G} code${N}   →   GUI 編輯器 偏好偵測順序
 ${G} fa${N}     →   fzf alias  模糊搜索所有 alias
 $D──────────────────────────────────────────────────$N
-${D}提示：使用原始命令名時 you-should-use 插件會自動提醒${N}
+${C} 發現工具${N}
+$D──────────────────────────────────────────────────$N
+${G} Ctrl+G${N} →   navi       互動式 cheatsheet 搜索面板
+${G} cheat${N}  →   此表       格式化顯示全部替代對照
+${G} fa${N}     →   fzf alias  模糊搜索所有 alias
+${D}（打原始命令時 you-should-use 插件自動提醒）${N}
+$D──────────────────────────────────────────────────$N
 ${D}設定：pnpm run d:setup → 偏好設定（bat 主題 / 編輯器 / preset）${N}
 
 EOF
