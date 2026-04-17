@@ -672,6 +672,11 @@ async function main() {
 		}
 	}
 
+	// 偵測 catppuccin preset → 提示安裝 Nerd Font
+	const { getNerdFontHint } = await import("../libs/core/preferences.mjs");
+	const fontHint = getNerdFontHint(preferences);
+	if (fontHint) p.log.warn(fontHint);
+
 	p.outro("設定完成");
 }
 
