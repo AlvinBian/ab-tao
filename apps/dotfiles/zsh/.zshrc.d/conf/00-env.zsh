@@ -19,6 +19,10 @@ else
   export BREW_PREFIX="/usr/local"
 fi
 
+# Homebrew 補全（必須在 sheldon 和 compinit 之前加入 fpath）
+[[ -d "$BREW_PREFIX/share/zsh/site-functions" ]] && \
+  fpath=("$BREW_PREFIX/share/zsh/site-functions" $fpath)
+
 # sheldon 配置與數據統一放在 ~/.zshrc.d/sheldon/
 export SHELDON_CONFIG_DIR="$HOME/.zshrc.d/sheldon"
 export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"

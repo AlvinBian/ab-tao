@@ -19,7 +19,9 @@
 #     10-history.zsh  ← 可選（歷史記錄）
 #     20-keys.zsh     ← 可選（按鍵綁定）
 #     30-aliases.zsh  ← 可選（別名與編輯器偵測）
+#     05-options.zsh  ← 可選（Shell 行為選項）
 #     40-git.zsh      ← 可選（git 增強）
+#     50-functions.zsh ← 可選（工具速查 + SSH 金鑰產生）
 #     60-tools.zsh    ← 可選（CLI 工具 + FZF）
 #     90-plugins.zsh  ← 恆常（sheldon + compinit + starship）
 #   sheldon/
@@ -45,21 +47,25 @@ warn()    { echo -e "  ${YELLOW}⚠ $1${RESET}"; }
 
 # ── 恆常部署與可選模組定義 ────────────────────────────────────────
 ALWAYS_DEPLOY=(00-env 90-plugins)
-MODULE_ORDER=(history keys aliases git tools)
+MODULE_ORDER=(options history keys aliases git functions tools)
 typeset -A MODULE_PREFIX MODULE_DESC
 MODULE_PREFIX=(
-  history  10
-  keys     20
-  aliases  30
-  git      40
-  tools    60
+  options   05
+  history   10
+  keys      20
+  aliases   30
+  git       40
+  functions 50
+  tools     60
 )
 MODULE_DESC=(
-  history  "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
-  keys     "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
-  aliases  "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"
-  git      "Git 增強（16 個 alias + delta diff + lazygit）"
-  tools    "CLI 工具（bat / eza / zoxide / fd / rg / tldr + FZF）"
+  options   "Shell 行為選項（AUTO_CD · NO_BEEP · EXTENDED_GLOB · AUTO_PUSHD）"
+  history   "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
+  keys      "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
+  aliases   "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"
+  git       "Git 增強（lazygit alias · 主要 alias 在 gitconfig）"
+  functions "工具速查（cheat）+ 模糊搜索 alias（fa）+ SSH 金鑰產生 + 解壓縮"
+  tools     "CLI 工具（bat / eza / zoxide / fd / rg / tldr + FZF）"
 )
 
 # ── 解析參數 ──────────────────────────────────────────────────────
@@ -380,6 +386,20 @@ for f in "$DEST_DIR"/conf/*.zsh(N); do
   zcompile "$f" 2>/dev/null && _compiled=$((_compiled + 1))
 done
 success "${_compiled} 個模組已編譯"
+
+# ── 99-local.zsh 本機覆寫範本 ────────────────────────────────────
+local _local_dest="$DEST_DIR/conf/99-local.zsh"
+if [[ ! -f "$_local_dest" ]]; then
+  cat > "$_local_dest" << 'LOCALEOF'
+# ── 本機專屬設定（ab-tao 不覆蓋此檔案）─────────────────────────
+# 在這裡加入機器專屬的環境變數、alias、function 等
+# 此檔案不受 ab-tao 管控，重新執行 setup 也不會被覆蓋
+# 例如：
+#   export MY_API_KEY="..."
+#   alias work='cd ~/work'
+LOCALEOF
+  success "99-local.zsh 範本已建立（本機專屬設定）"
+fi
 
 # ── .gitconfig 合併部署 ───────────────────────────────────────────
 step ".gitconfig 配置"

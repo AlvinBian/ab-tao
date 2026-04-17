@@ -26,19 +26,18 @@ import { getDirname, HOME } from "./paths.mjs";
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "../..");
 const CLAUDE_DIR = path.join(HOME, ".claude");
-const ZSH_MODULES_DIR = path.join(HOME, ".zsh", "modules");
+const ZSH_MODULES_DIR = path.join(HOME, ".zshrc.d", "conf");
 
 const ALL_ZSH_MODULES = [
-	"aliases",
-	"completion",
-	"fzf",
-	"git",
-	"history",
-	"keybindings",
-	"nvm",
-	"plugins",
-	"pnpm",
-	"tools",
+	"00-env",
+	"05-options",
+	"10-history",
+	"20-keys",
+	"30-aliases",
+	"40-git",
+	"50-functions",
+	"60-tools",
+	"90-plugins",
 ];
 
 /**
