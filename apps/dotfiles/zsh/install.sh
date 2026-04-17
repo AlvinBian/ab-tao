@@ -19,6 +19,7 @@
 #     10-history.zsh  ← 可選（歷史記錄）
 #     20-keys.zsh     ← 可選（按鍵綁定）
 #     30-aliases.zsh  ← 可選（別名與編輯器偵測）
+#     05-options.zsh  ← 可選（Shell 行為選項）
 #     40-git.zsh      ← 可選（git 增強）
 #     50-functions.zsh ← 可選（工具速查 + SSH 金鑰產生）
 #     60-tools.zsh    ← 可選（CLI 工具 + FZF）
@@ -46,9 +47,10 @@ warn()    { echo -e "  ${YELLOW}⚠ $1${RESET}"; }
 
 # ── 恆常部署與可選模組定義 ────────────────────────────────────────
 ALWAYS_DEPLOY=(00-env 90-plugins)
-MODULE_ORDER=(history keys aliases git functions tools)
+MODULE_ORDER=(options history keys aliases git functions tools)
 typeset -A MODULE_PREFIX MODULE_DESC
 MODULE_PREFIX=(
+  options   05
   history   10
   keys      20
   aliases   30
@@ -57,6 +59,7 @@ MODULE_PREFIX=(
   tools     60
 )
 MODULE_DESC=(
+  options   "Shell 行為選項（AUTO_CD · NO_BEEP · EXTENDED_GLOB · AUTO_PUSHD）"
   history   "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
   keys      "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
   aliases   "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"

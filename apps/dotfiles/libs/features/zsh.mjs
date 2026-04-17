@@ -13,6 +13,7 @@ import { BACK, handleCancel } from "../cli/prompts.mjs";
 import { HOME } from "../core/paths.mjs";
 
 const MODULE_DESCRIPTIONS = {
+	options: "Shell 行為選項（AUTO_CD · NO_BEEP · EXTENDED_GLOB · AUTO_PUSHD）",
 	history: "歷史記錄（50K + 去重 + 專案歷史自動切換）",
 	keys: "按鍵綁定（Option+←/→ 跳單詞 · ↑↓ 前綴搜尋）",
 	aliases: "編輯器偵測 + gh / uv + 通用命令縮寫",

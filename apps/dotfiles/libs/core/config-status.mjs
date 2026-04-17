@@ -30,6 +30,7 @@ const ZSH_MODULES_DIR = path.join(HOME, ".zshrc.d", "conf");
 
 const ALL_ZSH_MODULES = [
 	"00-env",
+	"05-options",
 	"10-history",
 	"20-keys",
 	"30-aliases",
