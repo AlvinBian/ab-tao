@@ -12,7 +12,7 @@ import { BACK, handleCancel } from "../cli/prompts.mjs";
 import { HOME } from "./paths.mjs";
 
 // ── GUI 編輯器路徑映射 ──────────────────────────────────────────
-const GUI_EDITOR_PATHS = {
+export const GUI_EDITOR_PATHS = {
 	cursor: "/Applications/Cursor.app/Contents/Resources/app/bin/cursor",
 	kiro: "/Applications/Kiro.app/Contents/Resources/app/bin/code",
 	vscode:
@@ -58,6 +58,7 @@ export const PREF_DEFAULTS = {
 	},
 	protectedFiles: [".env*", "*.lock", "pnpm-lock.yaml", "package-lock.json"],
 	dangerousPatterns: DEFAULT_DANGEROUS_PATTERNS,
+	sync99Local: false,
 	doctorExtraTools: [],
 	cacheTtl: {
 		sourceSync: 3600000,
@@ -262,6 +263,14 @@ export async function collectPreferences(prevPrefs) {
 		? DEFAULT_DANGEROUS_PATTERNS
 		: current.dangerousPatterns;
 
+	const sync99Local = handleCancel(
+		await p.confirm({
+			message: "同步 99-local.zsh 至 iCloud？（本機專屬設定，預設不同步）",
+			initialValue: current.sync99Local ?? false,
+		}),
+	);
+	if (sync99Local === BACK) return null;
+
 	return {
 		...current,
 		guiEditorOrder,
@@ -274,6 +283,7 @@ export async function collectPreferences(prevPrefs) {
 		notifyFlushSecs,
 		protectedFiles,
 		dangerousPatterns,
+		sync99Local,
 	};
 }
 
@@ -371,6 +381,120 @@ export function getNerdFontHint(prefs) {
 		"    brew install --cask font-meslo-lg-nerd-font",
 		"  安裝後在終端機字體設定中選 MesloLGS NF",
 	].join("\n");
+}
+
+/**
+ * 從已部署的偏好檔案反向解析為 JS 偏好物件
+ * 用於 d:setup --from-icloud：iCloud pull 後直接讀取，跳過互動精靈
+ * 每個欄位獨立解析，失敗時使用 PREF_DEFAULTS 補齊，不會拋出例外
+ * @returns {Object} 解析後的偏好物件
+ */
+export function readPrefsFromDisk() {
+	const prefs = structuredClone(PREF_DEFAULTS);
+
+	// ── 解析 ~/.zshrc.d/.prefs.zsh ──
+	const zshPrefsPath = path.join(HOME, ".zshrc.d", ".prefs.zsh");
+	if (fs.existsSync(zshPrefsPath)) {
+		try {
+			const content = fs.readFileSync(zshPrefsPath, "utf8");
+
+			// AB_CLI_EDITOR="vim"
+			const cli = content.match(/^AB_CLI_EDITOR="([^"]+)"/m);
+			if (cli) prefs.cliEditor = cli[1];
+
+			// AB_KEYBINDING="emacs"
+			const kb = content.match(/^AB_KEYBINDING="([^"]+)"/m);
+			if (kb) prefs.keybinding = kb[1];
+
+			// AB_UV_OVERRIDE_PIP=true|false
+			const uv = content.match(/^AB_UV_OVERRIDE_PIP=(\w+)/m);
+			if (uv) prefs.uvOverridePip = uv[1] === "true";
+
+			// AB_STARSHIP_PRESET="default"
+			const sp = content.match(/^AB_STARSHIP_PRESET="([^"]+)"/m);
+			if (sp) prefs.starshipPreset = sp[1];
+
+			// AB_BAT_THEME="TwoDark"
+			const bt = content.match(/^AB_BAT_THEME="([^"]+)"/m);
+			if (bt) prefs.batTheme = bt[1];
+
+			// AB_GUI_EDITOR_ORDER=( "/path/..." ... )
+			// 抓所有 /Applications/ 開頭的路徑，反查 editor key
+			const guiPaths = [...content.matchAll(/"(\/Applications\/[^"]+)"/g)].map(
+				(m) => m[1],
+			);
+			if (guiPaths.length > 0) {
+				const pathToKey = Object.fromEntries(
+					Object.entries(GUI_EDITOR_PATHS).map(([k, v]) => [v, k]),
+				);
+				const guiEditorOrder = guiPaths
+					.map((p) => pathToKey[p])
+					.filter(Boolean);
+				if (guiEditorOrder.length > 0) prefs.guiEditorOrder = guiEditorOrder;
+			}
+
+			// AB_NODE_MANAGER_ORDER=("fnm" "nvm" "n")
+			const nm = content.match(/^AB_NODE_MANAGER_ORDER=\(([^)]+)\)/m);
+			if (nm) {
+				const order = nm[1].replace(/"/g, "").split(/\s+/).filter(Boolean);
+				if (order.length > 0) prefs.nodeManagerOrder = order;
+			}
+		} catch {
+			// 解析失敗，使用預設值，不影響流程
+		}
+	}
+
+	// ── 解析 ~/.claude/hooks/.prefs ──
+	const hookPrefsPath = path.join(HOME, ".claude", "hooks", ".prefs");
+	if (fs.existsSync(hookPrefsPath)) {
+		try {
+			const content = fs.readFileSync(hookPrefsPath, "utf8");
+
+			// AB_NOTIFY_FLUSH_SECS=60
+			const flush = content.match(/^AB_NOTIFY_FLUSH_SECS=(\d+)/m);
+			if (flush) prefs.notifyFlushSecs = Number(flush[1]);
+
+			// AB_NOTIFY_LEVEL_Stop="immediate"
+			for (const m of content.matchAll(/^AB_NOTIFY_LEVEL_(\w+)="([^"]+)"/gm)) {
+				const eventKey = m[1]; // e.g. "Stop", "SessionEnd"
+				if (eventKey in prefs.notifyLevels) {
+					prefs.notifyLevels[eventKey] = m[2];
+				}
+			}
+		} catch {
+			// 解析失敗，使用預設值
+		}
+	}
+
+	// ── 解析 ~/.claude/hooks/.protected-files ──
+	const protectedPath = path.join(HOME, ".claude", "hooks", ".protected-files");
+	if (fs.existsSync(protectedPath)) {
+		try {
+			const lines = fs
+				.readFileSync(protectedPath, "utf8")
+				.split("\n")
+				.filter((l) => l.trim() && !l.startsWith("#"));
+			if (lines.length > 0) prefs.protectedFiles = lines;
+		} catch {
+			// 解析失敗，使用預設值
+		}
+	}
+
+	// ── 解析 ~/.claude/hooks/.dangerous-patterns ──
+	const dangerPath = path.join(HOME, ".claude", "hooks", ".dangerous-patterns");
+	if (fs.existsSync(dangerPath)) {
+		try {
+			const lines = fs
+				.readFileSync(dangerPath, "utf8")
+				.split("\n")
+				.filter((l) => l.trim() && !l.startsWith("#"));
+			if (lines.length > 0) prefs.dangerousPatterns = lines;
+		} catch {
+			// 解析失敗，使用預設值
+		}
+	}
+
+	return prefs;
 }
 
 /**

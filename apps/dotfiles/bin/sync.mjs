@@ -24,24 +24,34 @@ const subCmd = process.argv[2]; // push | pull | status | undefined
 async function main() {
 	p.intro(pc.bold("ab-tao ☁️  iCloud 偏好同步"));
 
+	// 讀取 session 中的 sync99Local 偏好
+	let sync99Local = false;
+	try {
+		const { loadSession } = await import("../libs/core/session.mjs");
+		const session = loadSession();
+		sync99Local = session?.preferences?.sync99Local ?? false;
+	} catch {
+		// session 不存在則使用預設值
+	}
+
 	if (subCmd === "status") {
-		showStatus();
+		showStatus({ sync99Local });
 		p.outro("");
 		return;
 	}
 
 	if (subCmd === "push") {
-		await doPush();
+		await doPush({ sync99Local });
 		return;
 	}
 
 	if (subCmd === "pull") {
-		await doPull({ force: process.argv.includes("--force") });
+		await doPull({ force: process.argv.includes("--force"), sync99Local });
 		return;
 	}
 
 	// 互動式選擇
-	showStatus();
+	showStatus({ sync99Local });
 
 	const action = await p.select({
 		message: "選擇操作",
@@ -65,14 +75,14 @@ async function main() {
 		return;
 	}
 
-	if (action === "push") await doPush();
-	if (action === "pull") await doPull({});
+	if (action === "push") await doPush({ sync99Local });
+	if (action === "pull") await doPull({ sync99Local });
 }
 
 // ── 操作 ──────────────────────────────────────────────────────────
 
-async function doPush() {
-	const status = getSyncStatus();
+async function doPush({ sync99Local = false } = {}) {
+	const status = getSyncStatus({ sync99Local });
 	if (!status.available) {
 		p.log.error(
 			"iCloud Drive 不可用（請確認已登入 Apple ID 並啟用 iCloud Drive）",
@@ -84,7 +94,7 @@ async function doPush() {
 	spinner.start("推送偏好至 iCloud…");
 	let result;
 	try {
-		result = pushPrefs();
+		result = pushPrefs({ sync99Local });
 	} catch (err) {
 		spinner.stop(pc.red("推送失敗"));
 		p.log.error(err.message);
@@ -104,8 +114,8 @@ async function doPush() {
 	);
 }
 
-async function doPull({ force }) {
-	const status = getSyncStatus();
+async function doPull({ force = false, sync99Local = false } = {}) {
+	const status = getSyncStatus({ sync99Local });
 	if (!status.available) {
 		p.log.error(
 			"iCloud Drive 不可用（請確認已登入 Apple ID 並啟用 iCloud Drive）",
@@ -131,7 +141,7 @@ async function doPull({ force }) {
 	spinner.start("從 iCloud 拉取偏好…");
 	let result;
 	try {
-		result = pullPrefs({ force: force ?? false });
+		result = pullPrefs({ force, sync99Local });
 	} catch (err) {
 		spinner.stop(pc.red("拉取失敗"));
 		p.log.error(err.message);
@@ -152,8 +162,8 @@ async function doPull({ force }) {
 
 // ── 狀態顯示 ──────────────────────────────────────────────────────
 
-function showStatus() {
-	const status = getSyncStatus();
+function showStatus({ sync99Local = false } = {}) {
+	const status = getSyncStatus({ sync99Local });
 
 	const syncIcon = !status.available
 		? pc.dim("☁️  不可用")
