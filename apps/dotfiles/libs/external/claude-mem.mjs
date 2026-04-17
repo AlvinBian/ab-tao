@@ -72,6 +72,7 @@ export function installClaudeMem() {
 	const result = spawnSync("npx", ["claude-mem", "install"], {
 		stdio: "inherit",
 		shell: false,
+		timeout: 120000,
 	});
 	return result.status === 0;
 }

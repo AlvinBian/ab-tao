@@ -172,7 +172,7 @@ async function main() {
 					{
 						value: "status",
 						label: "📊 查看/調整配置",
-						hint: "Claude / ZSH / Slack 健康狀態",
+						hint: "Claude / ZSH 健康狀態",
 					},
 					{ value: "report", label: "📋 查看上次報告" },
 				],
@@ -198,16 +198,11 @@ async function main() {
 			const { getConfigStatus } = await import(
 				"../libs/core/config-status.mjs"
 			);
-			const {
-				adjustClaude,
-				adjustGlobalSettings,
-				adjustSlack,
-				adjustClaudeMd,
-				adjustZsh,
-			} = await import("../libs/phases/phase-adjust.mjs");
+			const { adjustClaude, adjustGlobalSettings, adjustClaudeMd, adjustZsh } =
+				await import("../libs/phases/phase-adjust.mjs");
 
 			const status = getConfigStatus();
-			const { summary, claude, claudeMd, zsh, slack, env: envStatus } = status;
+			const { summary, claude, claudeMd, zsh, env: envStatus } = status;
 			const claudeDir = path.join(HOME, ".claude");
 
 			// ── 健康度 bar ──
@@ -262,18 +257,6 @@ async function main() {
 				lines.push(pc.red(`  缺少：${zsh.missing.join(", ")}`));
 			}
 
-			// ── Slack ──
-			lines.push("", pc.bold("Slack 通知"));
-			if (slack.mode && slack.mode !== "off") {
-				const label =
-					slack.mode === "dm"
-						? "DM（私訊自己）"
-						: `頻道 ${slack.channel || ""}`;
-				lines.push(`  模式  ${pc.cyan(label)}`);
-			} else {
-				lines.push(`  ${pc.dim("未設定")}`);
-			}
-
 			// ── AI ──
 			if (envStatus.aiModel) {
 				lines.push("", pc.bold("AI 設定"));
@@ -307,9 +290,9 @@ async function main() {
 							hint: `${zsh.installed.length}/${zsh.expected.length} 已安裝`,
 						},
 						{
-							value: "slack",
-							label: "💬 重新設定 Slack 通知",
-							hint: slack.mode ? `${slack.mode}` : "未設定",
+							value: "prefs",
+							label: "🎛️ 調整個人偏好",
+							hint: "editor / 通知 / 安全攔截 / 快取",
 						},
 						{ value: "back", label: "← 返回" },
 					],
@@ -323,8 +306,19 @@ async function main() {
 				claude: () => adjustClaude({ flagAll }),
 				settings: () => adjustGlobalSettings(),
 				claudemd: () => adjustClaudeMd(),
+				prefs: async () => {
+					const { collectPreferences, deployZshPrefs, deployHookPrefs } =
+						await import("../libs/core/preferences.mjs");
+					const { patchSession } = await import("../libs/core/session.mjs");
+					const newPrefs = await collectPreferences(prev?.preferences);
+					if (newPrefs) {
+						deployZshPrefs(newPrefs);
+						deployHookPrefs(newPrefs);
+						patchSession({ preferences: newPrefs });
+						p.log.success("偏好已更新並部署");
+					}
+				},
 				zsh: () => adjustZsh({ flagAll }),
-				slack: () => adjustSlack(),
 			};
 			if (adjustMap[adjustAction]) await adjustMap[adjustAction]();
 			p.outro("調整完成");
@@ -396,6 +390,14 @@ async function main() {
 		await ensureSetupEnvironment();
 	}
 
+	// ── 個人偏好 ──
+	const { collectPreferences, PREF_DEFAULTS } = await import(
+		"../libs/core/preferences.mjs"
+	);
+	const preferences = flagQuick
+		? { ...PREF_DEFAULTS, ...(prev?.preferences ?? {}) }
+		: await collectPreferences(prev?.preferences);
+
 	// ── 統一 Feature Lifecycle 迴圈 ──
 	if (fs.existsSync(PREVIEW_DIR)) fs.rmSync(PREVIEW_DIR, { recursive: true });
 
@@ -410,6 +412,7 @@ async function main() {
 		targets,
 		prev,
 		sources,
+		preferences,
 		projectFolders,
 		flags: {
 			all: flagAll,
@@ -599,6 +602,7 @@ async function main() {
 		install: aggregatedSelections,
 		installCommonsSelections:
 			featureResults["project-install"]?.commonsSelections || {},
+		preferences,
 	});
 
 	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);

@@ -7,7 +7,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty' 2>/dev/null); [ -z \"$FILE\" ] && exit 0; for p in '.env' '.env.local' '.env.production' 'package-lock.json' 'pnpm-lock.yaml' 'yarn.lock' 'composer.lock' 'Podfile.lock'; do [[ \"$FILE\" == *\"$p\"* ]] && { echo \"Blocked: $FILE is protected\" >&2; exit 2; }; done; exit 0",
+						"command": "$HOME/.claude/hooks/pretooluse-protect-files.sh",
 						"timeout": 5
 					}
 				]
@@ -17,7 +17,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "CMD=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.command // empty' 2>/dev/null); [ -z \"$CMD\" ] && exit 0; for p in 'rm\\s+-[a-z]*r[a-z]*f[a-z]*\\s+/' 'rm\\s+-[a-z]*f[a-z]*r[a-z]*\\s+/' 'rm\\s+-rf\\s+~' 'sudo\\s+rm\\s+-[a-z]*r' 'git\\s+push\\s+(-f|--force)' 'git\\s+reset\\s+--hard' 'DROP\\s+TABLE' 'DROP\\s+DATABASE' 'curl.*\\|.*bash' 'curl.*\\|.*sh' 'wget.*\\|.*bash' 'wget.*\\|.*sh' 'eval.*base64'; do echo \"$CMD\" | grep -qiE \"$p\" && { echo \"Blocked: dangerous command detected\" >&2; exit 2; }; done; exit 0",
+						"command": "$HOME/.claude/hooks/pretooluse-block-dangerous.sh",
 						"timeout": 5
 					}
 				]
@@ -41,7 +41,79 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "osascript -e 'display notification \"Context 即將自動壓縮，長對話記憶可能縮短\" with title \"ab-tao\"' 2>/dev/null; exit 0",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"PermissionDenied": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"Stop": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 10
+					}
+				]
+			}
+		],
+		"SessionEnd": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 10
+					}
+				]
+			}
+		],
+		"TaskCompleted": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"PostToolUseFailure": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/notify.sh",
 						"timeout": 5
 					}
 				]

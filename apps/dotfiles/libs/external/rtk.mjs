@@ -52,6 +52,7 @@ export function installRtk() {
 		const result = spawnSync("brew", ["install", "rtk"], {
 			stdio: "inherit",
 			shell: false,
+			timeout: 120000,
 		});
 		if (result.status === 0) return true;
 	}
@@ -62,7 +63,7 @@ export function installRtk() {
 			"-c",
 			'export PATH="$HOME/.local/bin:$PATH" && curl -fsSL https://rtk.sh | bash',
 		],
-		{ stdio: "inherit", shell: false },
+		{ stdio: "inherit", shell: false, timeout: 120000 },
 	);
 	return curlResult.status === 0;
 }
@@ -76,6 +77,7 @@ export function initRtk() {
 	const result = spawnSync(RTK_BIN, ["init", "-g", "--auto-patch"], {
 		stdio: "inherit",
 		shell: false,
+		timeout: 120000,
 	});
 	return result.status === 0;
 }

@@ -9,7 +9,7 @@
  *   5. 清除 session 進度並儲存最終 session
  */
 
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync, execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
@@ -19,7 +19,6 @@ import { BACKUP_DIR } from "../core/backup.mjs";
 import { BACKUP_MAX_COUNT } from "../core/constants.mjs";
 import { HOME } from "../core/paths.mjs";
 import { clearSessionProgress, saveSession } from "../core/session.mjs";
-import { isGtInstalled } from "../external/graphite.mjs";
 import { generateReport, openInBrowser, saveReport } from "../report.mjs";
 
 /** 偵測 RTK 是否已安裝 */
@@ -44,12 +43,13 @@ const ENHANCERS = [
 		detect: detectRtk,
 	},
 	{
-		name: "Graphite",
-		desc: "堆疊 PR 管理工具（stacked diffs，GitHub flow 增強）",
-		install: "brew install withgraphite/tap/graphite",
-		failHint: `brew install withgraphite/tap/graphite\n  安裝後執行：gt auth  （瀏覽器 OAuth 登入）`,
-		doneHint: "已安裝，請執行 gt auth 完成 GitHub 授權",
-		detect: isGtInstalled,
+		name: "claude-mem",
+		desc: "持久記憶管理 — 跨 session 保留上下文與知識",
+		install: "npx claude-mem install",
+		failHint: `npx claude-mem install\n參考：https://github.com/anthropics/claude-mem`,
+		doneHint: "已就緒，Claude Code 將自動管理跨 session 記憶",
+		detect: () =>
+			spawnSync("which", ["claude-mem"], { stdio: "ignore" }).status === 0,
 	},
 ];
 
@@ -265,20 +265,12 @@ export async function phaseComplete(
 		);
 	}
 
-	if (has("slack")) {
-		guideLines.push(
-			"── Slack ──",
-			"  💬 Slack 通知 → .env SLACK_NOTIFY_MODE（channel / dm / off）",
-			"",
-		);
-	}
-
 	guideLines.push(
 		"── Model 自動路由（opusplan 模式）──",
 		"  預設 opusplan：/plan 用 Opus 思考，執行自動切回 Sonnet",
 		"  @architect → Opus（架構決策）",
 		"  @debugger · /test · /db-migration → Sonnet（日常開發）",
-		"  /check · /slack → Haiku（模板/腳本）",
+		"  /check → Haiku（模板/腳本）",
 		"",
 		"── 維護 ──",
 		"  pnpm run status   — 配置管理中心",
@@ -457,8 +449,8 @@ export async function phaseComplete(
 	// Session
 	clearSessionProgress();
 	saveSession({
-		targets: plan.targets || ["claude-dev", "slack", "zsh"],
-		features: plan.features || ["claude", "slack", "zsh"],
+		targets: plan.targets || ["claude-dev", "zsh"],
+		features: plan.features || ["claude", "zsh"],
 		mode: plan.mode,
 		installMode: plan.installMode,
 		org: [

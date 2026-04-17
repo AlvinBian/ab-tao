@@ -46,7 +46,7 @@ export async function phaseExecute(
 	{ repoDir, previewDir, targets, prev, pipelineResult, fetchedSources },
 ) {
 	const isManual = plan.mode === "manual";
-	const features = new Set(plan.features || ["claude", "slack", "zsh"]);
+	const features = new Set(plan.features || ["claude", "zsh"]);
 	const has = (f) => features.has(f);
 	const startTime = Date.now();
 
@@ -88,8 +88,8 @@ export async function phaseExecute(
 					const feats = new Set(plan.features || []);
 					const has = (f) => feats.has(f);
 					const backupTasks = [
-						// Claude 配置（僅選了 claude 或 slack 時備份）
-						...(has("claude") || has("slack")
+						// Claude 配置（僅選了 claude 時備份）
+						...(has("claude")
 							? [
 									...["commands", "agents", "rules"].map((sub) =>
 										backupIfExists(path.join(cd, sub), `claude/${sub}`),
@@ -221,8 +221,8 @@ export async function phaseExecute(
 										);
 								}
 
-								// 驗證 settings.json（有 Claude 或 Slack 才檢查）
-								if (has("claude") || has("slack")) {
+								// 驗證 settings.json 和 hooks.json（有 Claude 才檢查）
+								if (has("claude")) {
 									if (fs.existsSync(path.join(HOME, ".claude/settings.json"))) {
 										total++;
 										passed++;
@@ -230,9 +230,6 @@ export async function phaseExecute(
 										total++;
 										missing.push("settings.json");
 									}
-								}
-								// 驗證 hooks.json（有 Slack 才檢查）
-								if (has("slack")) {
 									if (fs.existsSync(path.join(HOME, ".claude/hooks.json"))) {
 										total++;
 										passed++;

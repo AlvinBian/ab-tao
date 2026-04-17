@@ -9,8 +9,7 @@
  *   {
  *     claude:   { expected, installed, missing, extra }
  *     zsh:      { expected, installed, missing }
- *     slack:    { mode, channel }
- *     env:      { aiModel }
+ *  *     env:      { aiModel }
  *     summary:  { ok, total, pct }
  *   }
  */
@@ -121,12 +120,7 @@ export function getConfigStatus() {
 	const installedZsh = scanZshFiles(ZSH_MODULES_DIR);
 	const zshMissing = ALL_ZSH_MODULES.filter((m) => !installedZsh.includes(m));
 
-	// ── Slack 配置 ──
 	const env = loadEnvValues();
-	const slack = {
-		mode: env.SLACK_NOTIFY_MODE || null,
-		channel: env.SLACK_NOTIFY_CHANNEL || null,
-	};
 
 	// ── CLAUDE.md 數量 ──
 	let claudeMdCount = 0;
@@ -168,7 +162,6 @@ export function getConfigStatus() {
 			installed: installedZsh,
 			missing: zshMissing,
 		},
-		slack,
 		env: {
 			aiModel: env.AI_REPO_MODEL || null,
 		},

@@ -6,7 +6,9 @@
 QUEUE_FILE="$HOME/.claude/hooks/.notify-queue"
 QUEUE_TIME="$HOME/.claude/hooks/.notify-queue.time"
 TITLE="Claude Code"
-FLUSH_SECS=60
+PREFS_FILE="$HOME/.claude/hooks/.prefs"
+[ -f "$PREFS_FILE" ] && . "$PREFS_FILE"
+FLUSH_SECS="${AB_NOTIFY_FLUSH_SECS:-60}"
 
 # ── 即時 macOS 通知 ──────────────────────────────────────────────
 _notify() {
@@ -51,6 +53,8 @@ if [ "${1:-}" = "blocked" ]; then
 fi
 
 # ── 模式 2：stdin JSON（hook 呼叫）───────────────────────────────
+command -v jq &>/dev/null || exit 0
+
 INPUT=$(cat)
 [ -z "$INPUT" ] && exit 0
 
@@ -58,6 +62,9 @@ EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // empty' 2>/dev/null)
 NOTIF_TYPE=$(printf '%s' "$INPUT" | jq -r '.notification_type // empty' 2>/dev/null)
 MSG=$(printf '%s' "$INPUT" | jq -r '.message // empty' 2>/dev/null | head -c 100)
 EXIT_CODE=$(printf '%s' "$INPUT" | jq -r '.exit_code // empty' 2>/dev/null)
+TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
+TASK_SUBJ=$(printf '%s' "$INPUT" | jq -r '.task_subject // empty' 2>/dev/null)
+ERROR_MSG=$(printf '%s' "$INPUT" | jq -r '.error // empty' 2>/dev/null | head -c 100)
 
 case "$EVENT" in
 	# 🔴 立即通知
@@ -70,18 +77,30 @@ case "$EVENT" in
 	PermissionDenied)
 		_notify "${MSG:-操作被拒絕}" "⛔ 已拒絕"
 		;;
+	PreCompact)
+		_notify "Context 壓縮中" "⚠️ 壓縮"
+		;;
 	# 🟡 匯總通知
 	Stop)
+		_flush_queue
 		if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" != "0" ]; then
 			_notify "${MSG:-執行失敗}" "❌ 錯誤"
 		else
 			_enqueue "${MSG:-已完成}"
 		fi
 		;;
-	SubagentStop) _enqueue "${MSG:-子代理完成}" ;;
-	PreCompact) _enqueue "Context 壓縮中" ;;
-	PostToolUse)
-		[ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" != "0" ] && _enqueue "${MSG:-工具失敗}"
+	SessionEnd)
+		_flush_queue
+		_enqueue "${MSG:-Session 結束}"
+		;;
+	TaskCompleted)
+		_enqueue "${TASK_SUBJ:-任務完成}"
+		;;
+	SubagentStop)
+		_enqueue "${MSG:-子代理完成}"
+		;;
+	PostToolUseFailure)
+		_enqueue "${TOOL_NAME:-工具} 失敗${ERROR_MSG:+：$ERROR_MSG}"
 		;;
 	# 🔵 靜默（不處理）
 	*) ;;

@@ -21,7 +21,8 @@ import {
 	humanizeProjectPath,
 	scanUsageStats,
 } from "../libs/core/usage-scanner.mjs";
-import { getGtStatus } from "../libs/external/graphite.mjs";
+import { getClaudeMemStatus } from "../libs/external/claude-mem.mjs";
+import { getRtkStatus } from "../libs/external/rtk.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
@@ -238,7 +239,7 @@ async function terminalMode(data) {
 }
 
 function showOverview(data) {
-	const { overview, commands, agents, rules, hooks, zsh, slack, ai } = data;
+	const { overview, commands, agents, rules, hooks, zsh, ai } = data;
 	const skills = data.skills ?? scanSkillsDir();
 	const bar =
 		"█".repeat(Math.round(overview.healthPct / 5)) +
@@ -271,19 +272,29 @@ function showOverview(data) {
 	console.log(
 		`  🐚 ZSH        ${pc.green(zsh.installed.length)}/${zsh.available.length} 模組`,
 	);
+	const rtkStatus = getRtkStatus();
 	console.log(
-		`  💬 Slack      ${slack.mode === "off" ? pc.dim("未啟用") : pc.cyan(slack.mode + (slack.channelName ? ` #${slack.channelName}` : ""))}`,
-	);
-	const gtStatus = getGtStatus();
-	console.log(
-		`  🌿 Graphite   ${
-			gtStatus.installed
-				? pc.cyan(`v${gtStatus.version || "?"}`) +
-					(gtStatus.authed ? "" : pc.dim(" 未授權"))
+		`  🗜️ RTK         ${
+			rtkStatus.installed
+				? pc.cyan(`v${rtkStatus.version || "?"}`) +
+					(rtkStatus.hookConfigured ? "" : pc.dim(" hook 未配置"))
 				: pc.dim("未安裝")
 		}`,
 	);
-	console.log(`  🧠 AI         ${pc.cyan(ai.model)} / ${ai.effort}`);
+	const memStatus = getClaudeMemStatus();
+	console.log(
+		`  🧠 claude-mem  ${
+			memStatus.installed
+				? pc.cyan(`v${memStatus.version || "?"}`) +
+					(
+						memStatus.workerRunning
+							? pc.green(" worker ✔")
+							: pc.dim(" worker 未啟動")
+					)
+				: pc.dim("未安裝")
+		}`,
+	);
+	console.log(`  🤖 AI         ${pc.cyan(ai.model)} / ${ai.effort}`);
 	console.log(`  📝 CLAUDE.md  ${pc.cyan(data.claudeMd.length)} 個項目`);
 	const pluginStr =
 		data.installedPlugins === null
@@ -310,7 +321,6 @@ async function showDetail(data) {
 				value: "zsh",
 				label: `🐚 ZSH (${data.zsh.installed.length}/${data.zsh.available.length})`,
 			},
-			{ value: "slack", label: `💬 Slack (${data.slack.mode})` },
 			{ value: "ai", label: `🧠 AI (${data.ai.model})` },
 			{
 				value: "permissions",
@@ -475,17 +485,6 @@ async function showDetail(data) {
 				for (const pl of data.plugins)
 					console.log(`    ${pl.name}  ${pc.dim(pl.mtime.slice(0, 10))}`);
 			}
-			break;
-		case "slack":
-			console.log();
-			p.log.step(pc.bold("💬 Slack 配置"));
-			console.log(
-				`  模式：${data.slack.mode === "off" ? pc.dim("未啟用") : pc.cyan(data.slack.mode)}`,
-			);
-			if (data.slack.channel)
-				console.log(
-					`  頻道：${pc.cyan(data.slack.channel)}${data.slack.channelName ? ` (#${data.slack.channelName})` : ""}`,
-				);
 			break;
 		case "ai":
 			console.log();

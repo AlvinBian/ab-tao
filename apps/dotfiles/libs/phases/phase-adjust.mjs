@@ -120,20 +120,7 @@ export async function adjustGlobalSettings() {
 }
 
 /**
- * 調整 3：重新設定 Slack 通知
- */
-export async function adjustSlack() {
-	const { setupSlackNotify } = await import("../external/slack-setup.mjs");
-	const session = loadSession();
-	const result = await setupSlackNotify(session?.slack);
-	if (result)
-		await patchSession({
-			slack: { slackChannel: result.channelId, slackMode: result.mode },
-		});
-}
-
-/**
- * 調整 4：引導用戶使用官方 /init 指令生成 CLAUDE.md
+ * 調整 3：引導用戶使用官方 /init 指令生成 CLAUDE.md
  */
 export async function adjustClaudeMd() {
 	p.log.info(

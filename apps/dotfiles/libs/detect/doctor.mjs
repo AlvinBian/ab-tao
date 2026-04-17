@@ -10,7 +10,6 @@ import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { HOME } from "../core/paths.mjs";
-import { getGtVersion, isGtInstalled } from "../external/graphite.mjs";
 import {
 	checkNvm,
 	nvmVersion,
@@ -30,6 +29,24 @@ import { findClaudeCli, has, run, ver } from "./shell-utils.mjs";
  * @returns {Promise<boolean>} 環境就緒返回 true，安裝失敗返回 false
  */
 export async function ensureEnvironment() {
+	// optional tool detectors
+	let isRtkInstalled = () => false,
+		getRtkVersion = () => null;
+	let isClaudeMemInstalled = () => false,
+		getClaudeMemVersion = () => null;
+	try {
+		({ isRtkInstalled, getRtkVersion } = await import("../external/rtk.mjs"));
+	} catch {
+		/* 略 */
+	}
+	try {
+		({ isClaudeMemInstalled, getClaudeMemVersion } = await import(
+			"../external/claude-mem.mjs"
+		));
+	} catch {
+		/* 略 */
+	}
+
 	const fnmOk = has("fnm");
 	const nvmOk = checkNvm();
 	const nOk = has("n");
@@ -102,10 +119,18 @@ export async function ensureEnvironment() {
 		},
 		// optional — 缺失不阻塞安裝流程
 		{
-			name: "Graphite",
-			ok: isGtInstalled(),
-			ver: getGtVersion(),
-			failLabel: "未安裝（可選）",
+			name: "RTK",
+			ok: isRtkInstalled(),
+			ver: getRtkVersion(),
+			failLabel: "未安裝（可選 — token 壓縮）",
+			actionLabel: null,
+			optional: true,
+		},
+		{
+			name: "claude-mem",
+			ok: isClaudeMemInstalled(),
+			ver: getClaudeMemVersion(),
+			failLabel: "未安裝（可選 — 持久記憶）",
 			actionLabel: null,
 			optional: true,
 		},
