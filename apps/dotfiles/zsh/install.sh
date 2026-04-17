@@ -387,6 +387,20 @@ for f in "$DEST_DIR"/conf/*.zsh(N); do
 done
 success "${_compiled} 個模組已編譯"
 
+# ── 99-local.zsh 本機覆寫範本 ────────────────────────────────────
+local _local_dest="$DEST_DIR/conf/99-local.zsh"
+if [[ ! -f "$_local_dest" ]]; then
+  cat > "$_local_dest" << 'LOCALEOF'
+# ── 本機專屬設定（ab-tao 不覆蓋此檔案）─────────────────────────
+# 在這裡加入機器專屬的環境變數、alias、function 等
+# 此檔案不受 ab-tao 管控，重新執行 setup 也不會被覆蓋
+# 例如：
+#   export MY_API_KEY="..."
+#   alias work='cd ~/work'
+LOCALEOF
+  success "99-local.zsh 範本已建立（本機專屬設定）"
+fi
+
 # ── .gitconfig 合併部署 ───────────────────────────────────────────
 step ".gitconfig 配置"
 GITCONFIG_SRC="$ZSH_DIR/gitconfig"
