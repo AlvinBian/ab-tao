@@ -18,6 +18,11 @@ apply = ["defer"]
 github = "zdharma-continuum/fast-syntax-highlighting"
 apply = ["defer"]
 
+# 被動提醒：使用原始命令時提示已設定的 alias
+[plugins.you-should-use]
+github = "MichaelAquilina/zsh-you-should-use"
+apply = ["defer"]
+
 # fzf-tab 由 sheldon 下載，但在 90-plugins.zsh 中 compinit 之後手動載入
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
