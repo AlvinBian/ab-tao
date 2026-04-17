@@ -52,7 +52,14 @@ if _command_exists tldr; then
 fi
 
 # navi（互動式 cheatsheet — Ctrl+G 呼出搜索面板）
-_command_exists navi && eval "$(navi widget zsh)"
+# 可 defer：Ctrl+G 不需要在首次 prompt 前就緒
+if _command_exists navi; then
+  if (( ${+functions[zsh-defer]} )); then
+    zsh-defer eval "$(navi widget zsh)"
+  else
+    eval "$(navi widget zsh)"
+  fi
+fi
 
 # Claude Code CLI 短命令
 _command_exists claude && (( ! ${+aliases[cc]} )) && alias cc='claude'

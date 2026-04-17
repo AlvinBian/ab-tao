@@ -382,8 +382,8 @@ export async function collectFullStatus() {
 	}
 
 	// ZSH 模組
-	const zshModulesDir = path.join(REPO_ROOT, "zsh", "modules");
-	const zshInstalled = safeReadDir(path.join(HOME, ".zsh", "modules"))
+	const zshModulesDir = path.join(REPO_ROOT, "zsh", ".zshrc.d", "conf");
+	const zshInstalled = safeReadDir(path.join(HOME, ".zshrc.d", "conf"))
 		.filter((f) => f.endsWith(".zsh"))
 		.map((f) => f.replace(".zsh", ""));
 	const zshAvailable = safeReadDir(zshModulesDir)
