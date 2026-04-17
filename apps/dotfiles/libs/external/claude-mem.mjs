@@ -69,7 +69,7 @@ export function isWorkerRunning() {
  * @returns {boolean}
  */
 export function installClaudeMem() {
-	const result = spawnSync("npx", ["claude-mem", "install"], {
+	const result = spawnSync("npx", ["--yes", "claude-mem", "install"], {
 		stdio: "inherit",
 		shell: false,
 		timeout: 120000,

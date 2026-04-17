@@ -161,13 +161,19 @@ export async function deployGlobalConfig(opts) {
 
 	// ── 階段 0c：claude-mem ──
 	try {
-		const { checkAndInstallClaudeMem } = await import(
+		const { isClaudeMemInstalled, checkAndInstallClaudeMem } = await import(
 			"../../external/claude-mem.mjs"
 		);
-		const memSpin = p.spinner();
-		memSpin.start("檢查 claude-mem...");
-		const { installed } = checkAndInstallClaudeMem();
-		memSpin.stop(installed ? "claude-mem 已就緒" : "claude-mem 略過（可選）");
+		if (isClaudeMemInstalled()) {
+			p.log.info("claude-mem 已就緒");
+		} else {
+			// spinner 不能包住 npx 互動（npx 需要讀取 stdin 確認安裝）
+			p.log.step("安裝 claude-mem...");
+			const { installed } = checkAndInstallClaudeMem();
+			p.log[installed ? "success" : "warn"](
+				installed ? "claude-mem 已就緒" : "claude-mem 略過（可選）",
+			);
+		}
 	} catch {
 		/* 不阻塞安裝 */
 	}
