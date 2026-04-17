@@ -69,12 +69,21 @@ export function isWorkerRunning() {
  * @returns {boolean}
  */
 export function installClaudeMem() {
-	const result = spawnSync("npx", ["--yes", "claude-mem", "install"], {
+	// 第一步：pnpm add -g 安裝（非互動，無確認提示）
+	const addResult = spawnSync("pnpm", ["add", "-g", "claude-mem"], {
 		stdio: "inherit",
 		shell: false,
 		timeout: 120000,
 	});
-	return result.status === 0;
+	if (addResult.status !== 0) return false;
+
+	// 第二步：claude-mem install 完成 Claude Code plugin 配置
+	const installResult = spawnSync("claude-mem", ["install"], {
+		stdio: "inherit",
+		shell: false,
+		timeout: 60000,
+	});
+	return installResult.status === 0;
 }
 
 /**
