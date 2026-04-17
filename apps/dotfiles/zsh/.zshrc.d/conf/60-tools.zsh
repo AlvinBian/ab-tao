@@ -51,6 +51,9 @@ if _command_exists tldr; then
   (( ${+aliases[man]} ))  || alias man='tldr'
 fi
 
+# navi（互動式 cheatsheet — Ctrl+G 呼出搜索面板）
+_command_exists navi && eval "$(navi widget zsh)"
+
 # Claude Code CLI 短命令
 _command_exists claude && (( ! ${+aliases[cc]} )) && alias cc='claude'
 
