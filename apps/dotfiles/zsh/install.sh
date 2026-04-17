@@ -20,6 +20,7 @@
 #     20-keys.zsh     ← 可選（按鍵綁定）
 #     30-aliases.zsh  ← 可選（別名與編輯器偵測）
 #     40-git.zsh      ← 可選（git 增強）
+#     50-functions.zsh ← 可選（工具速查 + SSH 金鑰產生）
 #     60-tools.zsh    ← 可選（CLI 工具 + FZF）
 #     90-plugins.zsh  ← 恆常（sheldon + compinit + starship）
 #   sheldon/
@@ -45,21 +46,23 @@ warn()    { echo -e "  ${YELLOW}⚠ $1${RESET}"; }
 
 # ── 恆常部署與可選模組定義 ────────────────────────────────────────
 ALWAYS_DEPLOY=(00-env 90-plugins)
-MODULE_ORDER=(history keys aliases git tools)
+MODULE_ORDER=(history keys aliases git functions tools)
 typeset -A MODULE_PREFIX MODULE_DESC
 MODULE_PREFIX=(
-  history  10
-  keys     20
-  aliases  30
-  git      40
-  tools    60
+  history   10
+  keys      20
+  aliases   30
+  git       40
+  functions 50
+  tools     60
 )
 MODULE_DESC=(
-  history  "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
-  keys     "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
-  aliases  "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"
-  git      "Git 增強（16 個 alias + delta diff + lazygit）"
-  tools    "CLI 工具（bat / eza / zoxide / fd / rg / tldr + FZF）"
+  history   "歷史記錄（50k 筆 + dedup + 專案歷史自動切換）"
+  keys      "按鍵綁定（Option+←/→ 跳單詞、↑↓ 前綴搜尋歷史）"
+  aliases   "別名（編輯器偵測 Kiro/Cursor/VSCode + gh / uv + 通用）"
+  git       "Git 增強（lazygit alias · 主要 alias 在 gitconfig）"
+  functions "工具速查（cheat）+ 模糊搜索 alias（fa）+ SSH 金鑰產生 + 解壓縮"
+  tools     "CLI 工具（bat / eza / zoxide / fd / rg / tldr + FZF）"
 )
 
 # ── 解析參數 ──────────────────────────────────────────────────────

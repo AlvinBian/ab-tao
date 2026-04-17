@@ -888,8 +888,8 @@ async function manageConfig(data) {
 	}
 
 	if (category === "zsh") {
-		const zshSrc = path.join(REPO, "zsh", "modules");
-		const zshDest = path.join(HOME, ".zsh", "modules");
+		const zshSrc = path.join(REPO, "zsh", ".zshrc.d", "conf");
+		const zshDest = path.join(HOME, ".zshrc.d", "conf");
 		const selected = await p.multiselect({
 			message: "切換 ZSH 模組安裝狀態",
 			options: data.zsh.available.map((m) => ({
