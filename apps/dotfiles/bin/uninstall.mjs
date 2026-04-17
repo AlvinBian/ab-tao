@@ -104,9 +104,11 @@ async function main() {
 				.readdirSync(hooksDir)
 				.filter((f) =>
 					[
-						"notify.sh",
-						"pretooluse-protect-files.sh",
-						"pretooluse-block-dangerous.sh",
+						"hook-handler.sh",
+						"protect-files.sh",
+						"block-dangerous.sh",
+						"validate-memory-path.sh",
+						"inject-project-prompt.sh",
 					].includes(f),
 				).length;
 		})(),
@@ -162,9 +164,11 @@ async function main() {
 	}
 
 	for (const sh of [
-		"notify.sh",
-		"pretooluse-protect-files.sh",
-		"pretooluse-block-dangerous.sh",
+		"hook-handler.sh",
+		"protect-files.sh",
+		"block-dangerous.sh",
+		"validate-memory-path.sh",
+		"inject-project-prompt.sh",
 	]) {
 		const shPath = path.join(CLAUDE_DIR, "hooks", sh);
 		if (fs.existsSync(shPath)) {

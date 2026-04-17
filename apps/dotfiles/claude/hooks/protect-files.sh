@@ -1,5 +1,5 @@
 #!/bin/bash
-# pretooluse-protect-files.sh — 保護敏感檔案寫入攔截
+# protect-files.sh — 保護敏感檔案寫入攔截
 # 攔截對 .env* / *.lock / pnpm-lock.yaml / package-lock.json 的修改
 
 command -v jq &>/dev/null || exit 0
@@ -9,7 +9,7 @@ FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev
 [ -z "$FILE_PATH" ] && exit 0
 
 BASENAME=$(basename "$FILE_PATH")
-NOTIFY="$HOME/.claude/hooks/notify.sh"
+NOTIFY="$HOME/.claude/hooks/hook-handler.sh"
 PROTECTED_FILE="$HOME/.claude/hooks/.protected-files"
 
 is_protected() {

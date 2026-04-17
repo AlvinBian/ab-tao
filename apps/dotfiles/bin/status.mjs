@@ -21,7 +21,6 @@ import {
 	humanizeProjectPath,
 	scanUsageStats,
 } from "../libs/core/usage-scanner.mjs";
-import { getClaudeMemStatus } from "../libs/external/claude-mem.mjs";
 import { getRtkStatus } from "../libs/external/rtk.mjs";
 
 const __dirname = getDirname(import.meta);
@@ -278,19 +277,6 @@ function showOverview(data) {
 			rtkStatus.installed
 				? pc.cyan(`v${rtkStatus.version || "?"}`) +
 					(rtkStatus.hookConfigured ? "" : pc.dim(" hook 未配置"))
-				: pc.dim("未安裝")
-		}`,
-	);
-	const memStatus = getClaudeMemStatus();
-	console.log(
-		`  🧠 claude-mem  ${
-			memStatus.installed
-				? pc.cyan(`v${memStatus.version || "?"}`) +
-					(
-						memStatus.workerRunning
-							? pc.green(" worker ✔")
-							: pc.dim(" worker 未啟動")
-					)
 				: pc.dim("未安裝")
 		}`,
 	);

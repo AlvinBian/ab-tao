@@ -213,21 +213,58 @@ if [[ "$INSTALL_HOOKS" == true ]]; then
     HOOKS_HASH=$(_file_hash "$HOOKS_FILE")
     mkdir -p "$HOOKS_DEST_DIR"
 
-    # 全量覆蓋 hooks.json
-    cp "$HOOKS_FILE" "$CLAUDE_DIR/hooks.json"
-    echo -e "${GREEN}  ✅ hooks.json 已更新${NC}"
+    # Merge 進 ~/.claude/hooks.json（id-based 去重，保留 ECC 等外掛 hooks）
+    # Claude Code 原生讀取 hooks.json，不會被 settings.json 覆寫
+    DEST_HOOKS="$CLAUDE_DIR/hooks.json"
+    if ! command -v jq &>/dev/null; then
+      echo -e "${YELLOW}  ⚠ 缺少 jq，略過 hooks merge${NC}"
+    elif [[ ! -f "$DEST_HOOKS" ]]; then
+      # 目標不存在 → 直接複製
+      cp "$HOOKS_FILE" "$DEST_HOOKS"
+      echo -e "${GREEN}  ✅ hooks.json 已建立${NC}"
+    else
+      # 以 id 為 key：先移除 id 前綴為 ab-tao: 的舊 entries，再插入新版本
+      jq -s '
+        (.[0].hooks // {}) as $existing |
+        (.[1].hooks // {}) as $new |
+        (reduce ($new | to_entries[]) as $ev (
+          $existing;
+          .[$ev.key] = (
+            ((.[$ev.key] // []) | map(select((.id // "") | test("^ab-tao:") | not)))
+            + $ev.value
+          )
+        )) as $merged |
+        (.[0] | del(.hooks)) + {hooks: $merged}
+      ' "$DEST_HOOKS" "$HOOKS_FILE" > "${DEST_HOOKS}.tmp" \
+        && mv "${DEST_HOOKS}.tmp" "$DEST_HOOKS"
+      HOOKS_COUNT=$(jq '.hooks | length' "$HOOKS_FILE" 2>/dev/null || echo "?")
+      echo -e "${GREEN}  ✅ hooks.json 已合併（ab-tao: ${HOOKS_COUNT} 個事件，既有 hooks 保留）${NC}"
+    fi
 
-    # 部署所有 .sh hook 腳本
+    # 部署所有 .sh hook 腳本（manifest 保護，本地修改不覆蓋）
     for sh_file in "$HOOKS_SRC_DIR"/*.sh; do
       [[ -f "$sh_file" ]] || continue
-      cp "$sh_file" "$HOOKS_DEST_DIR/$(basename "$sh_file")"
-      chmod +x "$HOOKS_DEST_DIR/$(basename "$sh_file")"
-      echo -e "${DIM}    ✅ $(basename "$sh_file")${NC}"
+      name=$(basename "$sh_file")
+      _install_file "$sh_file" "$HOOKS_DEST_DIR/$name" "hooks/$name" "  $name"
+      chmod +x "$HOOKS_DEST_DIR/$name" 2>/dev/null || true
     done
 
     _manifest_set "hooks" "$HOOKS_HASH"
   fi
 fi
+
+# ── 安裝 config 根檔案（CLAUDE.md、RTK.md 等）──────────────────
+_CONFIG_FILES=("CLAUDE.md" "RTK.md")
+_config_header_shown=false
+for _cfg in "${_CONFIG_FILES[@]}"; do
+  _cfg_src="$REPO_DIR/claude/$_cfg"
+  [[ -f "$_cfg_src" ]] || continue
+  if [[ "$_config_header_shown" == false ]]; then
+    echo -e "${BLUE}📋 Config 根檔案${NC}"
+    _config_header_shown=true
+  fi
+  _install_file "$_cfg_src" "$CLAUDE_DIR/$_cfg" "$_cfg" "$_cfg"
+done
 
 # ── 安裝 rules ────────────────────────────────────────────────────
 if [[ -n "$SELECTED_RULES" ]]; then

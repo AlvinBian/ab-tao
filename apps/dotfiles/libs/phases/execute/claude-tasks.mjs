@@ -2,7 +2,7 @@
  * Branch A: Claude Code 開發配置 + 專案配置
  *
  * 包含：
- *   [1] 全局配置（settings + hooks + RTK + claude-mem）
+ *   [1] 全局配置（settings + hooks + RTK）
  *   [2] Claude 安裝（commands + agents + rules）
  *   [3] 專案配置（AI 資源 + Stacks）
  *
@@ -155,25 +155,6 @@ export async function deployGlobalConfig(opts) {
 		const { installed, alreadyInstalled } = checkAndInstallRtk();
 		if (installed && !alreadyInstalled) initRtk();
 		rtkSpin.stop(installed ? "RTK 已就緒" : "RTK 略過（可選）");
-	} catch {
-		/* 不阻塞安裝 */
-	}
-
-	// ── 階段 0c：claude-mem ──
-	try {
-		const { isClaudeMemInstalled, checkAndInstallClaudeMem } = await import(
-			"../../external/claude-mem.mjs"
-		);
-		if (isClaudeMemInstalled()) {
-			p.log.info("claude-mem 已就緒");
-		} else {
-			// spinner 不能包住 npx 互動（npx 需要讀取 stdin 確認安裝）
-			p.log.step("安裝 claude-mem...");
-			const { installed } = checkAndInstallClaudeMem();
-			p.log[installed ? "success" : "warn"](
-				installed ? "claude-mem 已就緒" : "claude-mem 略過（可選）",
-			);
-		}
 	} catch {
 		/* 不阻塞安裝 */
 	}

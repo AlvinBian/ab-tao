@@ -32,17 +32,8 @@ export async function ensureEnvironment() {
 	// optional tool detectors
 	let isRtkInstalled = () => false,
 		getRtkVersion = () => null;
-	let isClaudeMemInstalled = () => false,
-		getClaudeMemVersion = () => null;
 	try {
 		({ isRtkInstalled, getRtkVersion } = await import("../external/rtk.mjs"));
-	} catch {
-		/* 略 */
-	}
-	try {
-		({ isClaudeMemInstalled, getClaudeMemVersion } = await import(
-			"../external/claude-mem.mjs"
-		));
 	} catch {
 		/* 略 */
 	}
@@ -123,14 +114,6 @@ export async function ensureEnvironment() {
 			ok: isRtkInstalled(),
 			ver: getRtkVersion(),
 			failLabel: "未安裝（可選 — token 壓縮）",
-			actionLabel: null,
-			optional: true,
-		},
-		{
-			name: "claude-mem",
-			ok: isClaudeMemInstalled(),
-			ver: getClaudeMemVersion(),
-			failLabel: "未安裝（可選 — 持久記憶）",
 			actionLabel: null,
 			optional: true,
 		},

@@ -9,7 +9,7 @@
  *   5. 清除 session 進度並儲存最終 session
  */
 
-import { execFileSync, execSync, spawnSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
@@ -41,15 +41,6 @@ const ENHANCERS = [
 		failHint: `brew install rtk  （再執行 rtk init -g）\n參考：https://github.com/rtk-ai/rtk`,
 		doneHint: "已就緒，下次執行 git log 等指令輸出將自動壓縮",
 		detect: detectRtk,
-	},
-	{
-		name: "claude-mem",
-		desc: "持久記憶管理 — 跨 session 保留上下文與知識",
-		install: "npx claude-mem install",
-		failHint: `npx claude-mem install\n參考：https://github.com/anthropics/claude-mem`,
-		doneHint: "已就緒，Claude Code 將自動管理跨 session 記憶",
-		detect: () =>
-			spawnSync("which", ["claude-mem"], { stdio: "ignore" }).status === 0,
 	},
 ];
 
