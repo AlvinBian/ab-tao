@@ -188,6 +188,10 @@ export async function collectPreferences(prevPrefs) {
 					label: "minimal — 精簡（目錄 + git branch + 字元）",
 				},
 				{ value: "full", label: "full — 詳細（含所有語言圖示）" },
+				{
+					value: "catppuccin",
+					label: "catppuccin — Mocha 分段式 powerline（需 Nerd Font）",
+				},
 			],
 			initialValue: current.starshipPreset,
 		}),
