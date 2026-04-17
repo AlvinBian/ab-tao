@@ -1,33 +1,57 @@
 # ── 現代 CLI 工具 + FZF 環境變數 ──────────────────────────────────
 
-# bat（cat / less 替代）
+# bat（cat / less 替代）— 語法高亮 + 行號 + git 標記
 if _command_exists bat; then
-  (( ${+aliases[cat]} ))  || alias cat='bat --style=plain'
+  (( ${+aliases[cat]} ))  || alias cat='bat'
   (( ${+aliases[less]} )) || alias less='bat --pager="less -RF"'
-  export BAT_THEME="TwoDark"
+  export BAT_THEME="${AB_BAT_THEME:-TwoDark}"
 fi
 
-# eza（ls 替代）
+# eza（ls 替代）— 彩色圖示 + git 狀態
 if _command_exists eza; then
-  (( ${+aliases[ls]} )) || alias ls='eza --icons --group-directories-first'
-  (( ${+aliases[ll]} )) || alias ll='eza -alF --icons --group-directories-first --git'
-  (( ${+aliases[la]} )) || alias la='eza -a --icons --group-directories-first'
-  (( ${+aliases[lt]} )) || alias lt='eza --tree --icons --level=2'
+  (( ${+aliases[ls]} ))   || alias ls='eza --icons=auto --color=auto --group-directories-first'
+  (( ${+aliases[ll]} ))   || alias ll='eza -l --icons --git --group-directories-first'
+  (( ${+aliases[la]} ))   || alias la='eza -la --icons --git --group-directories-first'
+  (( ${+aliases[lt]} ))   || alias lt='eza --tree --icons --level=2'
+  (( ${+aliases[tree]} )) || alias tree='eza -T --icons --git'
 fi
 
-# zoxide（互動 shell 才啟用，不覆蓋 cd — 用 z 命令代替）
-_command_exists zoxide && [[ $- == *i* ]] && eval "$(zoxide init zsh)"
+# zoxide（智能 cd — 記住常用目錄）
+if _command_exists zoxide && [[ $- == *i* ]]; then
+  eval "$(zoxide init zsh)"
+  (( ${+aliases[cd]} )) || alias cd='z'
+fi
 
-# ripgrep
-_command_exists rg && export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+# fd（find 替代）
+_command_exists fd && (( ! ${+aliases[find]} )) && alias find='fd'
 
-# tldr（help 替代）
-_command_exists tldr && (( ! ${+aliases[help]} )) && alias help='tldr'
+# ripgrep（grep 替代）— 極速搜索
+if _command_exists rg; then
+  export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+  (( ${+aliases[grep]} )) || alias grep='rg'
+fi
 
-# btop（不覆蓋系統 top，使用 bt 短命令）
+# dust（du 替代）— 視覺化磁碟使用量
+_command_exists dust && (( ! ${+aliases[du]} )) && alias du='dust'
+
+# procs（ps 替代）— 彩色進程列表
+_command_exists procs && (( ! ${+aliases[ps]} )) && alias ps='procs'
+
+# bottom（top 替代）— 現代化系統監控
+_command_exists btm  && (( ! ${+aliases[top]} )) && alias top='btm'
+# btop（保留短命令 bt 用於重度監控）
 _command_exists btop && (( ! ${+aliases[bt]} )) && alias bt='btop'
 
-# Claude Code CLI
+# curlie（curl 替代）— 彩色高亮輸出
+_command_exists curlie && (( ! ${+aliases[curl]} )) && alias curl='curlie'
+
+# tldr（man 替代）— 實用範例速查
+if _command_exists tldr; then
+  (( ${+aliases[help]} )) || alias help='tldr'
+  (( ${+aliases[man]} ))  || alias man='tldr'
+fi
+
+# Claude Code CLI 短命令
 _command_exists claude && (( ! ${+aliases[cc]} )) && alias cc='claude'
 
 # FZF 環境變數（key-bindings 由 90-plugins.zsh 延遲載入）
