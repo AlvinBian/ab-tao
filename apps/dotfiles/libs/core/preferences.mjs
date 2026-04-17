@@ -44,6 +44,7 @@ export const PREF_DEFAULTS = {
 	keybinding: "emacs",
 	uvOverridePip: true,
 	starshipPreset: "default",
+	batTheme: "TwoDark",
 	notifyFlushSecs: 60,
 	notifyLevels: {
 		Notification: "immediate",
@@ -198,6 +199,25 @@ export async function collectPreferences(prevPrefs) {
 	);
 	if (starshipPreset === BACK) return null;
 
+	const batTheme = handleCancel(
+		await p.select({
+			message: "bat 語法高亮主題（cat 替代工具）",
+			options: [
+				{
+					value: "TwoDark",
+					label: "TwoDark — 深色雙色調（預設）",
+					hint: "推薦",
+				},
+				{ value: "Dracula", label: "Dracula — 深紫科幻風" },
+				{ value: "Nord", label: "Nord — 冷藍極簡風" },
+				{ value: "Monokai Extended", label: "Monokai Extended — 經典暖色" },
+				{ value: "GitHub", label: "GitHub — 淺色（日間模式）" },
+			],
+			initialValue: current.batTheme ?? "TwoDark",
+		}),
+	);
+	if (batTheme === BACK) return null;
+
 	// ── 🔔 通知 ───────────────────────────────────────────────────
 	p.log.step("🔔 通知設定");
 
@@ -250,6 +270,7 @@ export async function collectPreferences(prevPrefs) {
 		keybinding,
 		uvOverridePip,
 		starshipPreset,
+		batTheme,
 		notifyFlushSecs,
 		protectedFiles,
 		dangerousPatterns,
@@ -295,6 +316,9 @@ export function deployZshPrefs(prefs) {
 		"",
 		"# Starship preset",
 		`AB_STARSHIP_PRESET="${prefs.starshipPreset}"`,
+		"",
+		"# bat 語法高亮主題",
+		`AB_BAT_THEME="${prefs.batTheme ?? "TwoDark"}"`,
 	];
 
 	fs.writeFileSync(dest, `${lines.join("\n")}\n`);
