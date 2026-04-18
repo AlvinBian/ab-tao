@@ -1,6 +1,8 @@
 ---
 name: incident
-description: 事故處理全流程：定級 → 止血 → 溝通 → 復盤報告。
+version: 1.0.0
+category: meta
+description: 事故處理全流程：P0/P1/P2 定級 → 緊急止血 → 對外溝通模板 → 復盤報告框架。適用於生產環境突發事故。
 disable-model-invocation: true
 model: sonnet
 effort: high

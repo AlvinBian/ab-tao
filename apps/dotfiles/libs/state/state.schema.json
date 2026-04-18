@@ -1,0 +1,67 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "ab-tao:state",
+	"title": "ab-tao State",
+	"description": "~/.claude/.ab-tao/state.json — ab-tao 運行時狀態（managed/choices/sync 三合一）",
+	"type": "object",
+	"version": "1.0.0",
+	"required": ["version", "managed", "choices", "sync"],
+	"additionalProperties": false,
+	"properties": {
+		"$schema": { "type": "string" },
+		"version": {
+			"type": "string",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$",
+			"description": "semver；minor: 加欄位（自動升）；major: breaking（需 migrate-state）"
+		},
+		"installedAt": { "type": ["string", "null"], "format": "date-time" },
+		"abTaoVersion": { "type": ["string", "null"] },
+		"managed": {
+			"type": "object",
+			"description": "ab-tao 管理的檔案清單（key = relative path from ~/.claude/）",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["sha256", "source", "installedAt"],
+				"additionalProperties": false,
+				"properties": {
+					"sha256": { "type": "string" },
+					"source": {
+						"type": "string",
+						"description": "ab-tao:apps/dotfiles/claude/... 或 community:..."
+					},
+					"installedAt": { "type": "string", "format": "date-time" },
+					"userOverride": { "type": "boolean", "default": false }
+				}
+			}
+		},
+		"choices": {
+			"type": "object",
+			"description": "使用者對各檔案的配置決策（key = relative path from ~/.claude/）",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["decision", "lockedAt"],
+				"additionalProperties": false,
+				"properties": {
+					"decision": {
+						"type": "string",
+						"enum": ["use-ab-tao", "keep-local", "merge", "skip"]
+					},
+					"lockedAt": { "type": "string", "format": "date-time" }
+				}
+			}
+		},
+		"sync": {
+			"type": "object",
+			"required": ["tool", "included", "excluded"],
+			"additionalProperties": false,
+			"properties": {
+				"tool": {
+					"type": "string",
+					"enum": ["ab-tao", "chezmoi", "yadm", "git"]
+				},
+				"included": { "type": "array", "items": { "type": "string" } },
+				"excluded": { "type": "array", "items": { "type": "string" } }
+			}
+		}
+	}
+}

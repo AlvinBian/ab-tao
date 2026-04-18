@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * dotfiles 指令定義與執行
+ * dotfiles 指令定義與執行（v1.0.0）
  */
 
 import { run } from "@ab-tao/share/libs";
@@ -9,15 +9,12 @@ import { run } from "@ab-tao/share/libs";
 export const pkg = "@ab-tao/dotfiles";
 
 export const commands = {
-	setup: "完整環境部署精靈",
-	scan: "技術棧掃描 + 技能庫生成",
-	doctor: "環境診斷",
-	status: "配置狀態儀表板",
-	report: "打開上次 setup 部署報告",
-	restore: "還原備份",
-	hooks: "Hook 管理",
-	skills: "Skills 維護（列出、搜尋、更新）",
+	setup:
+		"完整環境部署精靈（--scan / --doctor / --restore / --dry-run / --reset-choices）",
+	status: "配置狀態儀表板（--html 輸出 HTML）",
+	hooks: "Hook 管理（開關、狀態）",
 	uninstall: "移除 ab-tao",
+	"prefs-sync": "iCloud 偏好檔同步",
 };
 
 export const aliases = {};

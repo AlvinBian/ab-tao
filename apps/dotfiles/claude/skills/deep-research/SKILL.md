@@ -1,6 +1,8 @@
 ---
 name: deep-research
-description: Multi-source deep research using firecrawl and exa MCPs. Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations.
+version: 1.0.0
+category: workflow
+description: Multi-source deep research via web search MCPs. Synthesizes findings and delivers cited reports. Use when thorough research with evidence is needed.
 origin: ECC
 ---
 

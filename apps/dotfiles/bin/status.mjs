@@ -23,6 +23,7 @@ import {
 } from "../libs/core/usage-scanner.mjs";
 import { getSyncStatus } from "../libs/external/ab-async.mjs";
 import { getRtkStatus } from "../libs/external/rtk.mjs";
+import { listProfiles, loadActiveProfile } from "../libs/install/profiles.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
@@ -251,7 +252,11 @@ function showOverview(data) {
 				? pc.yellow("⚠")
 				: pc.red("✘");
 
+	const activeProfile = loadActiveProfile();
 	console.log();
+	console.log(
+		`  📋 Profile    ${pc.cyan(activeProfile)}  ${pc.dim(`（可用：${listProfiles().join(" / ")}）`)}`,
+	);
 	console.log(`  ${icon}  [${bar}]  ${pc.bold(`${overview.healthPct}%`)}`);
 	console.log();
 	console.log(

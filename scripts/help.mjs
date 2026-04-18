@@ -53,8 +53,6 @@ for (const { ns, label, path: modPath, color } of SOURCES) {
 }
 
 console.log(`
-  指定同步: pnpm run c:sync -- --pick ecc,superpowers
-
 \x1b[35m── 版本與發布 ──────────────────────────────────────${RESET}
   pnpm run changeset        建立變更記錄
   pnpm run version          更新版本號

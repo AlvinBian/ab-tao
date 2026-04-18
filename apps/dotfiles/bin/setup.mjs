@@ -98,6 +98,7 @@ async function main() {
 	const flagAll = args.includes("--all");
 	const flagManual = args.includes("--manual");
 	let flagQuick = args.includes("--quick");
+	const flagFromIcloud = args.includes("--from-icloud");
 	const flagDryRun = args.includes("--dry-run");
 	let prev = loadSession();
 	let projectFolders = loadProjectFolders(config, prev);
@@ -140,8 +141,57 @@ async function main() {
 	// 用於 --quick / reinstall 的 selectedIds，後續共用 Feature Registry lifecycle
 	let selectedIds;
 
+	// --from-icloud：從 iCloud 拉取偏好並快速重建 ZSH 環境
+	if (flagFromIcloud) {
+		const { hasRemotePrefs, pullPrefs } = await import(
+			"../libs/external/ab-async.mjs"
+		);
+		const { readPrefsFromDisk } = await import("../libs/core/preferences.mjs");
+
+		if (!hasRemotePrefs()) {
+			p.log.error(
+				"iCloud 上沒有可用的偏好檔案，請先在主機執行：pnpm run d:sync push",
+			);
+			process.exit(1);
+		}
+
+		const spinner = p.spinner();
+		spinner.start("從 iCloud 拉取偏好...");
+		try {
+			await pullPrefs({ force: true });
+			spinner.stop("偏好已拉取");
+		} catch (e) {
+			spinner.stop(pc.red("拉取失敗"));
+			p.log.error(e.message);
+			process.exit(1);
+		}
+
+		const icloudPrefs = readPrefsFromDisk();
+		const modulesFile = path.join(HOME, ".zshrc.d", ".selected-modules");
+		const icloudModules = fs.existsSync(modulesFile)
+			? fs.readFileSync(modulesFile, "utf8").split("\n").filter(Boolean)
+			: null;
+
+		// 合併至 prev，讓 --quick 路徑的 configure() 能讀到模組選擇
+		prev = {
+			...prev,
+			preferences: icloudPrefs,
+			install: {
+				...(prev?.install ?? {}),
+				modules: icloudModules,
+			},
+			features: ["zsh"],
+		};
+		selectedIds = ["zsh"];
+		flagQuick = true;
+
+		p.log.success(
+			`🍏 iCloud 偏好已載入${icloudModules ? `（模組：${icloudModules.join(", ")}）` : ""}`,
+		);
+	}
+
 	// --quick：從 session 重建 features，走 Feature Registry lifecycle
-	if (flagQuick) {
+	if (flagQuick && !flagFromIcloud) {
 		if (!prev) {
 			p.log.error("❌ 無歷史記錄，無法 --quick。請先執行 pnpm run d:setup");
 			process.exit(1);

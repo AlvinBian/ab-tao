@@ -1,0 +1,18 @@
+name: personal
+description: 個人開發環境（全功能開放）
+
+# 插件啟用覆蓋（空 = 使用 plugins.yml 預設）
+plugins_enabled: []
+plugins_disabled: []
+
+# MCP 伺服器覆蓋（空 = 使用 settings.json 預設）
+mcp_overrides: {}
+
+# 記憶範圍
+memory_scope:
+  - ~/.claude/memory/preferences/
+  - ~/.claude/memory/patterns/
+
+# 備註
+notes: |
+  預設個人環境：所有工具開放、全部 MCP 啟用、允許 bypassPermissions。

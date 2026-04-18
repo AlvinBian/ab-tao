@@ -470,6 +470,9 @@ local _version
 _version=$(cd "$REPO_DIR" && node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
 echo "$_version" > "$DEST_DIR/.version"
 
+# ── 記錄模組選擇（供 iCloud 同步重建）────────────────────────────
+printf '%s\n' "${SELECTED_MODULES[@]}" > "$DEST_DIR/.selected-modules"
+
 # ══════════════════════════════════════════════════════════════════
 # ── 完成 ────────────────────────────────────────────────────────
 # ══════════════════════════════════════════════════════════════════

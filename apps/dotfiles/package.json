@@ -10,33 +10,23 @@
 		"pnpm": ">=9"
 	},
 	"dependencies": {
-		"@ab-tao/share": "workspace:*",
 		"@ab-tao/commons": "workspace:*",
+		"@ab-tao/share": "workspace:*",
 		"@clack/prompts": "^0.9.1",
 		"listr2": "^10.2.1",
 		"lodash-es": "^4.17.23",
 		"picocolors": "^1.1.1",
-		"semver": "^7.7.4"
+		"semver": "^7.7.4",
+		"yaml": "^2.8.3"
 	},
 	"scripts": {
 		"build": "echo 'dotfiles build completed'",
-		"setup": "node bin/setup.mjs",
-		"scan": "node bin/scan.mjs",
-		"status": "node bin/status.mjs",
-		"report": "node bin/report.mjs",
-		"flow": "node bin/flow.mjs",
-		"restore": "node bin/restore.mjs",
-		"uninstall": "node bin/uninstall.mjs",
-		"hooks": "node bin/hooks.mjs",
-		"skills": "node bin/skills.mjs",
-		"doctor": "node bin/doctor.mjs",
-		"sync": "node bin/sync.mjs",
-		"sync:push": "node bin/sync.mjs push",
-		"sync:pull": "node bin/sync.mjs pull",
-		"sync:status": "node bin/sync.mjs status",
-		"workspace": "bash scripts/generate-workspace.sh",
-		"taxonomy:build": "node libs/taxonomy/build.mjs",
 		"lint": "biome check .",
-		"test": "node --test __tests__/*.test.mjs"
+		"test": "node --test __tests__/*.test.mjs",
+		"setup": "node bin/setup.mjs",
+		"status": "node bin/status.mjs",
+		"hooks": "node bin/hooks.mjs",
+		"uninstall": "node bin/uninstall.mjs",
+		"prefs-sync": "node bin/prefs-sync.mjs"
 	}
 }

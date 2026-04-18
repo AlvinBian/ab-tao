@@ -26,9 +26,34 @@ export function isCclineInstalled() {
 
 /**
  * 使用 pnpm 全局安裝 @cometix/ccline
+ *
+ * 先 remove 再 add，強制 pnpm 重建所有 symlink。
+ * 覆蓋安裝（Already up to date）會跳過 symlink 重建，
+ * 導致 optional dependency（ccline-darwin-arm64）連結斷裂。
+ *
  * @returns {boolean} 安裝是否成功
  */
 export function installCcline() {
+	// 先移除舊安裝，捕獲 stderr 以識別真實錯誤（與「未安裝」區分）
+	if (isCclineInstalled()) {
+		const removeResult = spawnSync(
+			"pnpm",
+			["remove", "--global", CCLINE_PACKAGE],
+			{
+				stdio: "pipe",
+				shell: false,
+			},
+		);
+		if (removeResult.status !== 0) {
+			const stderr = removeResult.stderr?.toString() ?? "";
+			const isNotInstalled = /not found|not installed|does not exist/i.test(
+				stderr,
+			);
+			if (!isNotInstalled) {
+				process.stderr.write(`[ccline] remove 失敗：${stderr.trim()}\n`);
+			}
+		}
+	}
 	const result = spawnSync("pnpm", ["add", "--global", CCLINE_PACKAGE], {
 		stdio: "inherit",
 		shell: false,

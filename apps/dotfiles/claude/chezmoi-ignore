@@ -1,0 +1,25 @@
+# .chezmoiignore — 放置於 ~/.local/share/chezmoi/dot_claude/ 同層
+# chezmoi 不 sync 的 ~/.claude/ 路徑
+
+# ab-tao 運行時狀態（每機器獨立）
+.ab-tao/
+
+# 專案記憶與 session（本機隔離）
+projects/
+sessions/
+history.jsonl
+statsig/
+todos/
+image-cache/
+
+# Plugin 本機快取
+plugins/cache/
+plugins/data/
+
+# 本機個人化（不跨機 sync）
+settings.local.json
+memory/archive/
+_archive/
+
+# 備份（本機暫存，30 天後清理）
+*.bak.*

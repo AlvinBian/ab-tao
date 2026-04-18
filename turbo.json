@@ -47,6 +47,15 @@
 			"dependsOn": ["^build"],
 			"cache": false
 		},
+		"format": {
+			"dependsOn": [],
+			"outputs": [],
+			"inputs": ["**/*.mjs", "**/*.js", "**/*.ts", "biome.json"],
+			"cache": false
+		},
+		"clean": {
+			"cache": false
+		},
 		"dev": {
 			"cache": false,
 			"persistent": true

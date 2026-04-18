@@ -1,6 +1,6 @@
 {
 	"model": "opusplan",
-	"effortLevel": "high",
+	"effortLevel": "xhigh",
 	"autoMemoryEnabled": true,
 	"skipDangerousModePermissionPrompt": true,
 	"autoUpdatesChannel": "latest",
@@ -20,9 +20,7 @@
 		"security-guidance@claude-plugins-official": true,
 		"hookify@claude-plugins-official": true,
 		"ralph-loop@claude-plugins-official": true,
-		"session-report@claude-plugins-official": true,
-		"tdd@claude-plugins-official": true,
-		"quality-gate@claude-plugins-official": true
+		"session-report@claude-plugins-official": true
 	},
 	"permissions": {
 		"defaultMode": "bypassPermissions",

@@ -1,5 +1,7 @@
 ---
 name: writing-plans
+version: 1.0.0
+category: workflow
 description: Use when you have a spec or requirements for a multi-step task, before touching code
 ---
 

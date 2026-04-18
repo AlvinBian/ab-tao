@@ -15,11 +15,12 @@
 	},
 	"scripts": {
 		"build": "echo 'commons build completed'",
-		"sync": "node scripts/sync-sources.mjs",
-		"validate": "node scripts/validate-structure.mjs",
-		"translate": "node scripts/generate-translations.mjs",
 		"lint": "biome check .",
-		"test": "node --test __tests__/*.test.mjs"
+		"test": "node --test __tests__/*.test.mjs",
+		"ai-sync": "node scripts/sync-sources.mjs",
+		"skills": "node scripts/skills.mjs",
+		"validate": "node scripts/validate-structure.mjs",
+		"translate": "node scripts/generate-translations.mjs"
 	},
 	"dependencies": {
 		"@ab-tao/share": "workspace:*"

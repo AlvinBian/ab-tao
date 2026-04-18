@@ -1,0 +1,97 @@
+# ~/.claude/ 結構全圖 (v1.0.0)
+
+```
+~/.claude/
+│
+├── CLAUDE.md                    # ≤80 行，純 @import 索引
+│
+├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）
+│   ├── README.md
+│   ├── 00-identity.md           首錨定
+│   ├── 01-language.md
+│   ├── 02-response-format.md
+│   ├── 03-code-standards.md     技術傾向 + 版本管理 + 程式碼規範
+│   ├── 04-verification.md
+│   ├── 05-security.md           含 bypassPermissions 警示
+│   ├── 06-quality-targets.md
+│   ├── 07-context-hygiene.md    降噪四層策略
+│   ├── 08-memory-system.md      Memory 生命週期 + 三溫層
+│   ├── 09-task-system.md        Tasks/Plans/Memory 邊界
+│   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
+│   ├── 11-audit-system.md
+│   ├── 12-exceptions.md
+│   └── 13-agent-routing.md      尾錨定（資源速查 + 調度規則）
+│
+├── rules/                       # 條件載入（paths: frontmatter）
+│   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
+│   ├── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
+│   ├── typescript.md            paths: *.ts *.tsx
+│   ├── testing.md               paths: *.test.* *.spec.* __tests__/
+│   └── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│
+├── docs/                        # 參考文件（可 @import，非規則）
+│   ├── rtk.md                   RTK 工具 + token 預算影響
+│   ├── audit-checklists.md      三模式 checklist 完整版
+│   └── config-map.md            本文件
+│
+├── agents/                      # 3 focused agents
+│   ├── architect.md             架構設計 + 5 維審查
+│   ├── debugger.md              根因定位 + 最小 diff
+│   └── planner.md               複雜計畫專家
+│
+├── commands/                    # 8 unique commands
+│   ├── aside.md
+│   ├── check.md
+│   ├── db-migration.md
+│   ├── plan.md
+│   ├── review-pr.md
+│   ├── santa-loop.md
+│   ├── slack.md
+│   └── test.md
+│
+├── skills/                      # ~20 skills（按需載入）
+│
+├── hooks/                       # 7 hooks（事件驅動，零 context cost）
+│
+├── memory/                      # 全域記憶（所有 session 共享）
+│   ├── MEMORY.md                hot 索引（≤15 項）
+│   ├── preferences/             長期個人偏好
+│   ├── patterns/                可重用 pattern
+│   └── archive/                 cold layer
+│
+├── projects/                    # 按專案隔離（ab-tao 絕不覆蓋）
+│   └── {encoded}/
+│       ├── memory/MEMORY.md
+│       └── plans/index.md
+│
+├── tasks/                       # 原生 Claude Code tasks（Jan 2025+）
+├── plans/                       # 原生 plansDirectory（Feb 2026+）
+│
+├── settings.json                # 清理 phantom，統一模式
+├── settings.local.json          # 機器獨立（不 sync，gitignored）
+│
+└── .ab-tao/                     # ab-tao 運行時資料夾
+    ├── state.json               # unified manifest（managed + choices + sync）
+    ├── state.schema.json        # JSON Schema
+    ├── state.lock               # 寫入互斥鎖
+    └── metrics.jsonl            # Observability（Phase 17）
+```
+
+## 路徑管理
+
+所有路徑由 `apps/dotfiles/libs/core/paths.mjs` 的 `P.*` 命名空間統一管理。
+禁止在其他 ab-tao 程式碼中硬編碼 `path.join(HOME, ".claude", ...)` 字面量。
+
+## 來源對照
+
+| ~/.claude/ 目錄 | ab-tao source | 管理方式 |
+|---|---|---|
+| claude-md/ | apps/dotfiles/claude/claude-md/ | ab-tao d:setup |
+| rules/ | apps/dotfiles/claude/rules/ | ab-tao d:setup |
+| docs/ | apps/dotfiles/claude/docs/ | ab-tao d:setup |
+| agents/ | apps/dotfiles/claude/agents/ | ab-tao d:setup |
+| commands/ | apps/dotfiles/claude/commands/ | ab-tao d:setup |
+| skills/ | apps/dotfiles/claude/skills/ | ab-tao d:setup / c:skills |
+| hooks/ | apps/dotfiles/claude/hooks/ | ab-tao d:setup |
+| memory/ | — | 使用者自管 |
+| projects/ | — | 使用者自管 |
