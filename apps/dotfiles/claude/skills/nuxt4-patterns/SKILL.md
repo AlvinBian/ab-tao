@@ -1,5 +1,7 @@
 ---
 name: nuxt4-patterns
+version: 1.0.0
+category: tech
 description: Nuxt 4 app patterns for hydration safety, performance, route rules, lazy loading, and SSR-safe data fetching with useFetch and useAsyncData.
 origin: ECC
 ---

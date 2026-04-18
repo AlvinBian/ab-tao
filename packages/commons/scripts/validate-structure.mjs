@@ -106,7 +106,21 @@ async function validateAll() {
 	console.log("所有驗證通過");
 }
 
-validateAll().catch((err) => {
-	console.error(err.message);
-	process.exit(1);
-});
+// --skills flag: delegate to skill-lint.mjs
+if (process.argv.includes("--skills")) {
+	const { execFileSync } = await import("node:child_process");
+	const lintScript = path.resolve(__dirname, "./skill-lint.mjs");
+	const args = process.argv.slice(3).filter((a) => a !== "--skills");
+	try {
+		execFileSync(process.execPath, [lintScript, "--score", ...args], {
+			stdio: "inherit",
+		});
+	} catch {
+		process.exit(1);
+	}
+} else {
+	validateAll().catch((err) => {
+		console.error(err.message);
+		process.exit(1);
+	});
+}

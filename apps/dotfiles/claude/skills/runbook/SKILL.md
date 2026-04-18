@@ -1,6 +1,8 @@
 ---
 name: runbook
-description: 維運手冊生成：部署步驟、回滾程序、監控指標、常見問題處理。
+version: 1.0.0
+category: meta
+description: 生成結構化維運手冊（Runbook），包含部署步驟、回滾程序、監控指標閾值、常見問題排查路徑與升級流程。
 disable-model-invocation: true
 model: haiku
 effort: low

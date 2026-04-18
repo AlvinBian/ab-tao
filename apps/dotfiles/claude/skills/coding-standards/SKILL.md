@@ -1,5 +1,7 @@
 ---
 name: coding-standards
+version: 1.0.0
+category: tech
 description: Baseline cross-project coding conventions for naming, readability, immutability, and code-quality review. Use detailed frontend or backend skills for framework-specific patterns.
 origin: ECC
 ---

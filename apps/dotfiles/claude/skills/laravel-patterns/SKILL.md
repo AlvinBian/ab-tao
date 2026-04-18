@@ -1,5 +1,7 @@
 ---
 name: laravel-patterns
+version: 1.0.0
+category: tech
 description: Laravel architecture patterns, routing/controllers, Eloquent ORM, service layers, queues, events, caching, and API resources for production apps.
 origin: ECC
 ---

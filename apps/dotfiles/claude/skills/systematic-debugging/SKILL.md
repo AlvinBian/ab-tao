@@ -1,5 +1,7 @@
 ---
 name: systematic-debugging
+version: 1.0.0
+category: workflow
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
 ---
 

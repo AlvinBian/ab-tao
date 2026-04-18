@@ -1,5 +1,7 @@
 ---
 name: dispatching-parallel-agents
+version: 1.0.0
+category: workflow
 description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
 ---
 
