@@ -44,6 +44,9 @@ importers:
       semver:
         specifier: ^7.7.4
         version: 7.7.4
+      yaml:
+        specifier: ^2.8.3
+        version: 2.8.3
 
   packages/commons:
     dependencies:
@@ -680,6 +683,11 @@ packages:
     resolution: {integrity: sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww==}
     engines: {node: '>=18'}
 
+  yaml@2.8.3:
+    resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
 snapshots:
 
   '@babel/runtime@7.29.2': {}
@@ -1315,3 +1323,5 @@ snapshots:
       ansi-styles: 6.2.3
       string-width: 7.2.0
       strip-ansi: 7.2.0
+
+  yaml@2.8.3: {}

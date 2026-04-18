@@ -1,0 +1,72 @@
+# Claude Plugins 宣告式清單 v1.0.0
+# 由 d:setup 讀取，自動安裝缺失 plugin。
+# 版本範圍遵循 semver；無 version 時取 latest。
+# profile_overrides 中的設定在切換 profile 時自動套用（Phase 11 啟用）。
+
+version: 1.0.0
+
+marketplaces:
+  - id: claude-plugins-official
+    source:
+      type: github
+      repo: anthropics/claude-plugins-official
+
+plugins:
+  # ── 不可取代（核心工作流）────────────────────────────────────
+  commit-commands:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "/commit, /commit-push-pr 等 Git 提交指令"
+
+  hookify:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "從對話產生 hooks"
+
+  ralph-loop:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "對抗式雙審查收斂（ralph + agent 互相挑戰）"
+
+  session-report:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "HTML 會話報告"
+
+  security-guidance:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "安全審查 checklist"
+
+  # ── 取代本地 command / agent ───────────────────────────────────
+  code-review:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "代碼審查（取代本地 command + agent）"
+
+  feature-dev:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "Feature 實作流程（取代本地 command）"
+
+  code-simplifier:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "代碼簡化輔助"
+
+  # ── 可選（按需啟用）──────────────────────────────────────────
+  # typescript-lsp:
+  #   enabled: false
+  #   marketplace: claude-plugins-official
+  #   description: "TypeScript LSP 型別即時回饋"
+  #
+  # github:
+  #   enabled: false
+  #   description: "官方 GitHub MCP server"
+
+# Phase 11：profile_overrides（切換 profile 時自動套用）
+# profile_overrides:
+#   work:
+#     disable: [feature-dev, code-simplifier]
+#   oss:
+#     enable: []

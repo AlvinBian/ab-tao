@@ -10,13 +10,14 @@
 		"pnpm": ">=9"
 	},
 	"dependencies": {
-		"@ab-tao/share": "workspace:*",
 		"@ab-tao/commons": "workspace:*",
+		"@ab-tao/share": "workspace:*",
 		"@clack/prompts": "^0.9.1",
 		"listr2": "^10.2.1",
 		"lodash-es": "^4.17.23",
 		"picocolors": "^1.1.1",
-		"semver": "^7.7.4"
+		"semver": "^7.7.4",
+		"yaml": "^2.8.3"
 	},
 	"scripts": {
 		"build": "echo 'dotfiles build completed'",
