@@ -64,4 +64,14 @@ if [ -f "$STATE_FILE" ]; then
 		printf '[冷啟動] ⚠️  %d 個 managed 檔案有 drift，執行 d:status 檢視詳情\n' "$drift_count" >&2
 fi
 
+# ── Part 4: Telemetry（Phase 17）──────────────────────────────────
+METRICS_FILE="$AB_TAO_DIR/metrics.jsonl"
+SESSION_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+PROFILE="personal"
+if [ -f "$AB_TAO_DIR/profiles/active.json" ] && command -v jq &>/dev/null; then
+	PROFILE=$(jq -r '.profile // "personal"' "$AB_TAO_DIR/profiles/active.json" 2>/dev/null)
+fi
+printf '{"event":"session_start","ts":"%s","cwd":"%s","profile":"%s"}\n' \
+	"$SESSION_TS" "$CWD" "$PROFILE" >> "$METRICS_FILE" 2>/dev/null
+
 exit 0

@@ -44,3 +44,24 @@ pnpm run c:sync -- --pick ecc,superpowers
 ## 安全驗證
 
 所有同步檔案通過多層驗證：危險模式攔截（eval/Function/sudo/rm-rf 等）、隱藏字元掃描、512KB 大小限制、SHA256 校驗和追蹤、原子替換（失敗自動回滾）。`.md` 文件採警告模式，可執行邏輯採錯誤模式。
+
+---
+
+## Phase 15 架構決策（v1.0.0）
+
+**決策：保持單一 commons（Option A）**
+
+評估依據（v1.0.2 拆分門檻）：
+- Skills 數量：22（門檻 ≥30）→ 未達
+- skill-lint 規則數：7（門檻 >20）→ 未達
+
+**結論**：不拆分。子模組職責以目錄 + 命名前綴區分：
+
+| 模組群 | 腳本 | 職責 |
+|---|---|---|
+| 外部資源同步 | `sync-sources.mjs` / `sync-manager.mjs` | AI 來源同步 |
+| 品質治理 | `validate-structure.mjs` / `skill-lint.mjs` | schema + lint |
+| Skills 管理 | `skills.mjs` | c:skills 子命令 |
+| 工具集 | `security-validator.mjs` / `version-tracker.mjs` / `tech-detection.mjs` | 共用工具 |
+
+**重新評估時機**：skills ≥30 或 skill-lint 規則 >20，再考慮拆出 `packages/skills-kit`。

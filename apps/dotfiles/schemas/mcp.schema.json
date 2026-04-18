@@ -1,0 +1,34 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "mcp.schema.json",
+	"title": "ab-tao MCP Config",
+	"description": "apps/dotfiles/claude/mcp.yml — declarative MCP server config",
+	"type": "object",
+	"required": ["version", "servers"],
+	"properties": {
+		"version": { "type": "string" },
+		"servers": {
+			"type": "object",
+			"description": "MCP server declarations keyed by server name",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["command", "args"],
+				"additionalProperties": false,
+				"properties": {
+					"command": { "type": "string" },
+					"args": { "type": "array", "items": { "type": "string" } },
+					"env_ref": {
+						"type": "string",
+						"description": "Environment variable name for secret (never store token directly)"
+					},
+					"enabled_in_profiles": {
+						"type": "array",
+						"items": { "type": "string" },
+						"description": "Empty array = enabled in all profiles"
+					},
+					"description": { "type": "string" }
+				}
+			}
+		}
+	}
+}
