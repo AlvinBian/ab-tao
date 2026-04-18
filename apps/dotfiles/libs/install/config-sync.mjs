@@ -86,6 +86,11 @@ export async function syncConfig({
 	} else if (isQuiet) {
 		// CI 模式：全部 drift 自動使用 ab-tao template（等同批次 A）
 		_applyBatchStrategy(plan, "A");
+	} else {
+		// auto 模式：overwriteInteractive（有 drift 需使用者決策）一律跳過，保護本地改動
+		for (const item of plan) {
+			if (item.action === "overwriteInteractive") item._skip = true;
+		}
 	}
 
 	await executePlan(plan, home, template, policy);
