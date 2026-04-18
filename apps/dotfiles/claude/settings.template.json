@@ -1,6 +1,6 @@
 {
 	"model": "opusplan",
-	"effortLevel": "high",
+	"effortLevel": "xhigh",
 	"autoMemoryEnabled": true,
 	"skipDangerousModePermissionPrompt": true,
 	"autoUpdatesChannel": "latest",

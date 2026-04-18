@@ -65,38 +65,32 @@ fi
 
 mkdir -p "$COMMANDS_DIR" "$AGENTS_DIR"
 
-# ── Manifest 工具 ─────────────────────────────────────────────────
+# ── Manifest 工具（jq 版，fail-closed）───────────────────────────
 _file_hash() {
-  md5 -q "$1" 2>/dev/null || md5sum "$1" 2>/dev/null | awk '{print $1}' || echo ""
+  local h
+  h=$(md5 -q "$1" 2>/dev/null) || h=$(md5sum "$1" 2>/dev/null | awk '{print $1}')
+  if [[ -z "$h" ]]; then
+    printf 'hash unavailable\n' >&2
+    return 1
+  fi
+  printf '%s' "$h"
 }
 
 _manifest_get() {
-  python3 -c "
-import json, os, sys
-try:
-  d = json.load(open(sys.argv[1]))
-  print(d.get('files', {}).get(sys.argv[2], ''))
-except:
-  print('')
-" "$MANIFEST_FILE" "$1" </dev/null 2>/dev/null
+  command -v jq &>/dev/null || { echo ""; return; }
+  [[ -f "$MANIFEST_FILE" ]] || { echo ""; return; }
+  jq -r --arg k "$1" '.files[$k] // ""' "$MANIFEST_FILE" 2>/dev/null || echo ""
 }
 
 _manifest_set() {
   local key="$1" hash="$2"
-  python3 -c "
-import json, os, sys
-manifest = sys.argv[1]
-key = sys.argv[2]
-hashval = sys.argv[3]
-data = {}
-if os.path.exists(manifest):
-    try: data = json.load(open(manifest))
-    except: pass
-if 'files' not in data: data['files'] = {}
-data['files'][key] = hashval
-with open(manifest, 'w') as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-" "$MANIFEST_FILE" "$key" "$hash" </dev/null >/dev/null 2>&1
+  command -v jq &>/dev/null || return
+  local data='{}'
+  [[ -f "$MANIFEST_FILE" ]] && data=$(cat "$MANIFEST_FILE" 2>/dev/null || echo '{}')
+  local tmp="${MANIFEST_FILE}.tmp.$$"
+  printf '%s' "$data" | jq --arg k "$key" --arg v "$hash" '.files[$k] = $v' > "$tmp" \
+    && mv "$tmp" "$MANIFEST_FILE" \
+    || rm -f "$tmp"
 }
 
 # ── 智慧安裝（manifest 追蹤 + 優先順序）─────────────────────────
@@ -150,7 +144,8 @@ _install_file() {
   fi
 
   # 5. 安全更新（無本地修改 or --force）
-  cp "$dest" "${dest}.bak" 2>/dev/null || true
+  local bak="${dest}.bak.$(date +%s)"
+  [[ ! -f "${bak}" ]] && cp "$dest" "$bak" 2>/dev/null || true
   cp "$src" "$dest"
   _manifest_set "$key" "$src_hash"
   [[ "$FORCE" == true ]] \

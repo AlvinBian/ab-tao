@@ -155,8 +155,56 @@ async function main() {
 		removed++;
 	}
 
-	for (const file of ["hooks.json", "settings.json", "keybindings.json"]) {
+	// hooks.json：只移除 ab-tao: 條目，保留其他外掛（如 ECC）的 hooks
+	const hooksJsonPath = path.join(CLAUDE_DIR, "hooks.json");
+	if (fs.existsSync(hooksJsonPath)) {
+		try {
+			const hooksData = JSON.parse(fs.readFileSync(hooksJsonPath, "utf8"));
+			let changed = false;
+			if (hooksData.hooks && typeof hooksData.hooks === "object") {
+				for (const [event, entries] of Object.entries(hooksData.hooks)) {
+					if (!Array.isArray(entries)) continue;
+					const filtered = entries.filter(
+						(e) => typeof e.id !== "string" || !e.id.startsWith("ab-tao:"),
+					);
+					if (filtered.length !== entries.length) {
+						hooksData.hooks[event] = filtered;
+						changed = true;
+					}
+				}
+			}
+			if (changed) {
+				const tmp = `${hooksJsonPath}.tmp.${process.pid}`;
+				fs.writeFileSync(
+					tmp,
+					JSON.stringify(hooksData, null, 2) + "\n",
+					"utf8",
+				);
+				fs.renameSync(tmp, hooksJsonPath);
+				removed++;
+			}
+		} catch {
+			/* hooks.json 無法解析，跳過 */
+		}
+	}
+
+	for (const file of ["settings.json", "keybindings.json"]) {
 		const fp = path.join(CLAUDE_DIR, file);
+		if (fs.existsSync(fp)) {
+			fs.unlinkSync(fp);
+			removed++;
+		}
+	}
+
+	// hook 輔助設定檔
+	for (const f of [
+		".prefs",
+		".protected-files",
+		".dangerous-patterns",
+		".notify-queue",
+		".notify-queue.time",
+	]) {
+		const fp = path.join(CLAUDE_DIR, "hooks", f);
 		if (fs.existsSync(fp)) {
 			fs.unlinkSync(fp);
 			removed++;
@@ -169,6 +217,7 @@ async function main() {
 		"block-dangerous.sh",
 		"validate-memory-path.sh",
 		"inject-project-prompt.sh",
+		"relocate-plan.sh",
 	]) {
 		const shPath = path.join(CLAUDE_DIR, "hooks", sh);
 		if (fs.existsSync(shPath)) {

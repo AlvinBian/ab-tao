@@ -583,6 +583,47 @@ function isUserCustomized(filePath) {
 	);
 }
 
+/**
+ * 將外部來源的 hooks.json 以 id-based merge 方式合入目標檔案
+ *
+ * 保留 id 以 "ab-tao:" 開頭的條目（由 install-claude.sh 管理），
+ * 以外部來源內容取代其餘條目。使用原子 rename 避免半寫入。
+ */
+function mergeHooksJson(destPath, incomingContent) {
+	let incoming;
+	try {
+		incoming = JSON.parse(incomingContent);
+	} catch {
+		return;
+	}
+
+	let existing = {};
+	if (fs.existsSync(destPath)) {
+		try {
+			existing = JSON.parse(fs.readFileSync(destPath, "utf8"));
+		} catch {
+			/* 無法解析則從頭建立 */
+		}
+	}
+
+	const existingHooks = existing.hooks ?? {};
+	const incomingHooks = incoming.hooks ?? {};
+	const merged = { ...existingHooks };
+
+	for (const [event, entries] of Object.entries(incomingHooks)) {
+		// 保留本次外部來源不擁有的 ab-tao: 條目，其餘以外部來源取代
+		const preserved = (merged[event] ?? []).filter(
+			(e) => typeof e.id === "string" && e.id.startsWith("ab-tao:"),
+		);
+		merged[event] = [...entries, ...preserved];
+	}
+
+	const result = { ...existing, hooks: merged };
+	const tmpPath = `${destPath}.tmp.${process.pid}`;
+	fs.writeFileSync(tmpPath, JSON.stringify(result, null, 2) + "\n", "utf8");
+	fs.renameSync(tmpPath, destPath);
+}
+
 export async function writeSyncedFiles(downloaded, targetDir) {
 	for (const sub of ["commands", "agents", "rules"]) {
 		fs.mkdirSync(path.join(targetDir, sub), { recursive: true });
@@ -634,7 +675,7 @@ export async function writeSyncedFiles(downloaded, targetDir) {
 				written.push(dest);
 			}
 			if (src.hooks)
-				fs.writeFileSync(path.join(targetDir, "hooks.json"), src.hooks, "utf8");
+				mergeHooksJson(path.join(targetDir, "hooks.json"), src.hooks);
 		}
 	} catch (err) {
 		// Rollback: 移除本次已寫入的檔案（僅移除 ab-tao 生成的，用戶自訂的已被跳過）

@@ -18,6 +18,7 @@ export const commands = {
 	hooks: "Hook 管理",
 	skills: "Skills 維護（列出、搜尋、更新）",
 	uninstall: "移除 ab-tao",
+	"migrate-plans": "將 ~/.claude/plans/ 遷移至 per-project 目錄",
 };
 
 export const aliases = {};

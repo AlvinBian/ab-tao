@@ -25,7 +25,7 @@ jobs:
             echo "✅ 合併來源符合規範：$SOURCE → main"
           else
             echo "::error::main 分支只允許從 develop 或 release/* 合併，不允許：$SOURCE"
-            echo "  正確流程：feature/* → develop → release/* → main"
+            echo "  正確流程：feat/* → develop → release/* → main"
             exit 1
           fi
 
@@ -43,11 +43,11 @@ jobs:
             echo "✅ 保護分支，跳過命名校驗：$BRANCH"
             exit 0
           fi
-          VALID_PATTERN="^(feature|fix|hotfix|release|refactor|docs|chore|ci|test)/.+"
+          VALID_PATTERN="^(feat|feature|fix|hotfix|release|refactor|docs|chore|ci|test)/.+"
           if [[ ! "$BRANCH" =~ $VALID_PATTERN ]]; then
             echo "::error::分支名不符合規範：$BRANCH"
             echo "  格式：{type}/{description}"
-            echo "  允許的 type：feature, fix, hotfix, release, refactor, docs, chore, ci, test"
+            echo "  允許的 type：feat, fix, hotfix, release, refactor, docs, chore, ci, test"
             exit 1
           fi
           echo "✅ 分支名符合規範：$BRANCH"

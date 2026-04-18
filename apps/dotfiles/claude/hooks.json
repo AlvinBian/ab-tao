@@ -93,6 +93,17 @@
 						"timeout": 10
 					}
 				]
+			},
+			{
+				"id": "ab-tao:stop:relocate-plan",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/relocate-plan.sh",
+						"timeout": 5
+					}
+				]
 			}
 		],
 		"SessionEnd": [
@@ -104,6 +115,17 @@
 						"type": "command",
 						"command": "$HOME/.claude/hooks/hook-handler.sh",
 						"timeout": 10
+					}
+				]
+			},
+			{
+				"id": "ab-tao:session-end:relocate-plan",
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude/hooks/relocate-plan.sh",
+						"timeout": 5
 					}
 				]
 			}
