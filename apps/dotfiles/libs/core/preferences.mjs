@@ -344,6 +344,13 @@ export function deployHookPrefs(prefs) {
 	const hooksDir = path.join(HOME, ".claude", "hooks");
 	fs.mkdirSync(hooksDir, { recursive: true });
 
+	// 原子寫入：先寫 .tmp，再 rename，避免 hook 腳本讀到半空檔案
+	const atomicWrite = (dest, content) => {
+		const tmp = `${dest}.tmp.${process.pid}`;
+		fs.writeFileSync(tmp, content, "utf8");
+		fs.renameSync(tmp, dest);
+	};
+
 	// .prefs（bash source 格式）
 	const prefsLines = [
 		"# ab-tao hook 偏好（自動生成）",
@@ -352,16 +359,16 @@ export function deployHookPrefs(prefs) {
 			([k, v]) => `AB_NOTIFY_LEVEL_${k}="${v}"`,
 		),
 	];
-	fs.writeFileSync(path.join(hooksDir, ".prefs"), `${prefsLines.join("\n")}\n`);
+	atomicWrite(path.join(hooksDir, ".prefs"), `${prefsLines.join("\n")}\n`);
 
 	// .protected-files（一行一個 pattern）
-	fs.writeFileSync(
+	atomicWrite(
 		path.join(hooksDir, ".protected-files"),
 		`${prefs.protectedFiles.join("\n")}\n`,
 	);
 
 	// .dangerous-patterns（一行一個 ERE 正則）
-	fs.writeFileSync(
+	atomicWrite(
 		path.join(hooksDir, ".dangerous-patterns"),
 		`${prefs.dangerousPatterns.join("\n")}\n`,
 	);
@@ -457,8 +464,12 @@ export function readPrefsFromDisk() {
 			// AB_NOTIFY_LEVEL_Stop="immediate"
 			for (const m of content.matchAll(/^AB_NOTIFY_LEVEL_(\w+)="([^"]+)"/gm)) {
 				const eventKey = m[1]; // e.g. "Stop", "SessionEnd"
-				if (eventKey in prefs.notifyLevels) {
-					prefs.notifyLevels[eventKey] = m[2];
+				const val = m[2];
+				if (
+					eventKey in prefs.notifyLevels &&
+					/^(immediate|batch|silent)$/.test(val)
+				) {
+					prefs.notifyLevels[eventKey] = val;
 				}
 			}
 		} catch {

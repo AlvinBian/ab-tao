@@ -158,7 +158,7 @@ async function main() {
 		const spinner = p.spinner();
 		spinner.start("從 iCloud 拉取偏好...");
 		try {
-			pullPrefs({ force: true });
+			await pullPrefs({ force: true });
 			spinner.stop("偏好已拉取");
 		} catch (e) {
 			spinner.stop(pc.red("拉取失敗"));

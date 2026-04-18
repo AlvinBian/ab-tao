@@ -10,11 +10,20 @@ TITLE="Claude Code"
 PREFS_FILE="$HOME/.claude/hooks/.prefs"
 FLUSH_SECS=60
 
-# ── 安全讀取偏好（不 source，只解析已知數值型變數）──────────────
+# ── 安全讀取偏好（不 source，只解析已知變數）──────────────────
 if [ -f "$PREFS_FILE" ]; then
 	_v=$(grep -m1 '^AB_NOTIFY_FLUSH_SECS=[0-9]\+$' "$PREFS_FILE" 2>/dev/null | cut -d= -f2)
 	[ -n "$_v" ] && FLUSH_SECS="$_v"
 fi
+
+# 查詢事件的通知等級：immediate / batch / silent（預設返回空字串，由 case 決定）
+_event_level() {
+	local event="$1"
+	[ -f "$PREFS_FILE" ] || return 0
+	local val
+	val=$(grep -m1 "^AB_NOTIFY_LEVEL_${event}=\"[a-z]\+\"$" "$PREFS_FILE" 2>/dev/null | sed 's/.*="\(.*\)"/\1/')
+	case "$val" in immediate|batch|silent) printf '%s' "$val" ;; esac
+}
 
 # ── 原子鎖（基於 mkdir，macOS/Linux 可移植）────────────────────
 _acquire_lock() {
@@ -51,11 +60,14 @@ _notify() {
 # ── 匯總佇列 ─────────────────────────────────────────────────────
 _flush_queue() {
 	[ -f "$QUEUE_FILE" ] && [ -s "$QUEUE_FILE" ] || { rm -f "$QUEUE_FILE" "$QUEUE_TIME"; return; }
-	local n items
-	n=$(wc -l <"$QUEUE_FILE" | tr -d '[:space:]')
-	items=$(tr '\n' '·' <"$QUEUE_FILE" | sed 's/·$//' | cut -c1-120)
-	rm -f "$QUEUE_FILE" "$QUEUE_TIME"
-	_notify "Claude Code（${n} 項活動）：${items}"
+	local flushing n items
+	flushing="${QUEUE_FILE}.flushing.$$"
+	mv "$QUEUE_FILE" "$flushing" 2>/dev/null || return
+	rm -f "$QUEUE_TIME"
+	n=$(wc -l <"$flushing" | tr -d '[:space:]')
+	items=$(tr '\n' '·' <"$flushing" | sed 's/·$//')
+	rm -f "$flushing"
+	_notify "$(printf '%s' "$items" | cut -c1-120)" "${n} 項活動"
 }
 
 # 持鎖版 flush（供 Stop/SessionEnd 直接呼叫）
@@ -72,17 +84,20 @@ _enqueue() {
 
 	mkdir -p "$(dirname "$QUEUE_FILE")"
 	[ -f "$QUEUE_TIME" ] || date +%s >"$QUEUE_TIME"
-	printf '%s\n' "$1" >>"$QUEUE_FILE"
-
-	local first_t now
-	first_t=$(cat "$QUEUE_TIME" 2>/dev/null || date +%s)
-	now=$(date +%s)
-	# 只有持鎖時才執行 flush（避免與其他 process 重複 flush）
-	if [ "$has_lock" -eq 0 ] && [ $(( now - first_t )) -ge "$FLUSH_SECS" ]; then
-		_flush_queue
+	# append 必須在持鎖後才執行，避免與 _flush_queue 的 rename 競態
+	if [ "$has_lock" -eq 0 ]; then
+		printf '%s\n' "$1" >>"$QUEUE_FILE"
+		local first_t now
+		first_t=$(cat "$QUEUE_TIME" 2>/dev/null || date +%s)
+		now=$(date +%s)
+		if [ $(( now - first_t )) -ge "$FLUSH_SECS" ]; then
+			_flush_queue
+		fi
+		_release_lock
+	else
+		# 未取鎖：回退策略，接受輕微競態但不丟失事件
+		printf '%s\n' "$1" >>"$QUEUE_FILE"
 	fi
-
-	[ "$has_lock" -eq 0 ] && _release_lock
 }
 
 # ── 模式 1：blocked 自訂呼叫 ─────────────────────────────────────
@@ -99,47 +114,82 @@ INPUT=$(cat)
 
 EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // empty' 2>/dev/null)
 NOTIF_TYPE=$(printf '%s' "$INPUT" | jq -r '.notification_type // empty' 2>/dev/null)
-MSG=$(printf '%s' "$INPUT" | jq -r '.message // empty' 2>/dev/null | head -c 100)
+MSG=$(printf '%s' "$INPUT" | jq -r '.message // empty' 2>/dev/null | cut -c1-80)
 EXIT_CODE=$(printf '%s' "$INPUT" | jq -r '.exit_code // empty' 2>/dev/null)
 TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
 TASK_SUBJ=$(printf '%s' "$INPUT" | jq -r '.task_subject // empty' 2>/dev/null)
-ERROR_MSG=$(printf '%s' "$INPUT" | jq -r '.error // empty' 2>/dev/null | head -c 100)
+ERROR_MSG=$(printf '%s' "$INPUT" | jq -r '.error // empty' 2>/dev/null | cut -c1-60)
+TRANSCRIPT=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+
+# 從 transcript_path 取 repo 名稱（格式：.../projects/-Users-alvin-...-{repo}/...）
+if [ -n "$TRANSCRIPT" ]; then
+	_dir=$(dirname "$TRANSCRIPT" | xargs basename 2>/dev/null)
+	_repo=$(printf '%s' "$_dir" | sed 's/.*-\([^-][^-]*\)$/\1/' 2>/dev/null)
+	[ -n "$_repo" ] && [ "$_repo" != "$_dir" ] && TITLE="Claude Code [$_repo]"
+fi
 
 case "$EVENT" in
 	# 🔴 立即通知
 	Notification)
+		_level=$(_event_level "Notification")
+		[ "$_level" = "silent" ] && exit 0
 		case "$NOTIF_TYPE" in
-			idle_prompt)         _notify "${MSG:-等待指令}" "⏳ 待輸入" ;;
-			permission_required) _notify "${MSG:-需要授權}" "🔐 請確認" ;;
+			idle_prompt)         _notify "${MSG:-等待您的指令}" "⏳ 待輸入" ;;
+			permission_required) _notify "${MSG:-需要您確認操作}" "🔐 請確認" ;;
 		esac
 		;;
 	PermissionDenied)
-		_notify "${MSG:-操作被拒絕}" "⛔ 已拒絕"
+		_level=$(_event_level "PermissionDenied")
+		[ "$_level" = "silent" ] && exit 0
+		[ "$_level" = "batch" ] && _enqueue "⛔ ${MSG:-操作被拒絕}" || _notify "${MSG:-操作被拒絕}" "⛔ 已拒絕"
 		;;
 	PreCompact)
-		_notify "Context 壓縮中" "⚠️ 壓縮"
+		_level=$(_event_level "PreCompact")
+		[ "$_level" = "silent" ] && exit 0
+		[ "$_level" = "batch" ] && _enqueue "⚠️ Context 壓縮中" || _notify "Context 即將壓縮，重要資訊已存入記憶" "⚠️ 壓縮中"
 		;;
-	# 🟡 先 flush 舊佇列，再處理當前事件
+	# 🟡 匯總通知（含語意標籤）
 	Stop)
 		_flush_locked
+		_level=$(_event_level "Stop")
+		[ "$_level" = "silent" ] && exit 0
 		if [ -n "$EXIT_CODE" ] && [ "$EXIT_CODE" -ne 0 ] 2>/dev/null; then
-			_notify "${MSG:-執行失敗}" "❌ 錯誤"
+			_msg="❌ 執行失敗${MSG:+：$MSG}"
 		else
-			_enqueue "${MSG:-已完成}"
+			_msg="✅ ${MSG:-已完成}"
 		fi
+		[ "$_level" = "immediate" ] && _notify "$_msg" "Stop" || _enqueue "$_msg"
 		;;
 	SessionEnd)
 		_flush_locked
-		_enqueue "${MSG:-Session 結束}"
+		_level=$(_event_level "SessionEnd")
+		[ "$_level" = "silent" ] && exit 0
+		_msg="🔚 Session 結束${MSG:+：$MSG}"
+		[ "$_level" = "immediate" ] && _notify "$_msg" "SessionEnd" || _enqueue "$_msg"
 		;;
 	TaskCompleted)
-		_enqueue "${TASK_SUBJ:-任務完成}"
+		_level=$(_event_level "TaskCompleted")
+		[ "$_level" = "silent" ] && exit 0
+		if [ -n "$TASK_SUBJ" ]; then
+			_msg="📋 $TASK_SUBJ"
+		elif [ -n "$MSG" ]; then
+			_msg="📋 $MSG"
+		else
+			_msg="📋 任務完成"
+		fi
+		[ "$_level" = "immediate" ] && _notify "$_msg" "TaskCompleted" || _enqueue "$_msg"
 		;;
 	SubagentStop)
-		_enqueue "${MSG:-子代理完成}"
+		_level=$(_event_level "SubagentStop")
+		[ "$_level" = "silent" ] && exit 0
+		_msg="🤖 子代理：${MSG:-完成}"
+		[ "$_level" = "immediate" ] && _notify "$_msg" "SubagentStop" || _enqueue "$_msg"
 		;;
 	PostToolUseFailure)
-		_enqueue "${TOOL_NAME:-工具} 失敗${ERROR_MSG:+：$ERROR_MSG}"
+		_level=$(_event_level "PostToolUseFailure")
+		[ "$_level" = "silent" ] && exit 0
+		_msg="⚠️ ${TOOL_NAME:-工具}失敗${ERROR_MSG:+：$ERROR_MSG}"
+		[ "$_level" = "immediate" ] && _notify "$_msg" "PostToolUseFailure" || _enqueue "$_msg"
 		;;
 	# 🔵 靜默（不處理）
 	*) ;;

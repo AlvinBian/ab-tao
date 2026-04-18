@@ -274,7 +274,7 @@ export function pushPrefs(opts = {}) {
  * @param {{ force?: boolean, sync99Local?: boolean }} opts - force=true 跳過衝突確認
  * @returns {{ pulled: string[], skipped: string[], errors: string[] }}
  */
-export function pullPrefs({ force = false, sync99Local = false } = {}) {
+export async function pullPrefs({ force = false, sync99Local = false } = {}) {
 	if (!isICloudAvailable()) {
 		throw new Error("iCloud Drive 不可用（未登入或系統不支援）");
 	}
@@ -298,16 +298,43 @@ export function pullPrefs({ force = false, sync99Local = false } = {}) {
 			continue;
 		}
 		try {
-			// 本地存在且有差異時，若非 force 則備份
+			// symlink 防護：拒絕複製 symlink（防 iCloud 被劫後植入符號連結）
+			const remoteStat = fs.lstatSync(remotePath);
+			if (remoteStat.isSymbolicLink()) {
+				errors.push(`${label}：遠端為 symlink，拒絕複製`);
+				continue;
+			}
+
+			// 安全驗證（eval/sudo/rm-rf 等危險 pattern）
+			const remoteContent = fs.readFileSync(remotePath, "utf8");
+			let validateFn;
+			try {
+				({ validateFileContent: validateFn } = await import(
+					"@ab-tao/commons/security"
+				));
+			} catch {
+				/* commons 不可用時跳過 */
+			}
+			if (validateFn) {
+				const { errors: secErrors } = validateFn(remote, remoteContent, {
+					strict: true,
+				});
+				if (secErrors.length > 0) {
+					errors.push(`${label}：安全驗證失敗 — ${secErrors[0].message}`);
+					continue;
+				}
+			}
+
+			// 本地存在且有差異時，若非 force 則備份（timestamp 避免覆蓋）
 			if (fs.existsSync(local) && !force) {
 				const localContent = fs.readFileSync(local, "utf8");
-				const remoteContent = fs.readFileSync(remotePath, "utf8");
 				if (localContent !== remoteContent) {
-					fs.copyFileSync(local, `${local}.bak`);
+					const bak = `${local}.bak.${Date.now()}`;
+					if (!fs.existsSync(bak)) fs.copyFileSync(local, bak);
 				}
 			}
 			fs.mkdirSync(path.dirname(local), { recursive: true });
-			fs.copyFileSync(remotePath, local);
+			fs.writeFileSync(local, remoteContent, "utf8");
 			meta.files[remote] = {
 				pushedAt: meta.files[remote]?.pushedAt ?? null,
 				pulledAt: now,

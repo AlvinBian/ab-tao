@@ -141,7 +141,7 @@ async function doPull({ force = false, sync99Local = false } = {}) {
 	spinner.start("從 iCloud 拉取偏好…");
 	let result;
 	try {
-		result = pullPrefs({ force, sync99Local });
+		result = await pullPrefs({ force, sync99Local });
 	} catch (err) {
 		spinner.stop(pc.red("拉取失敗"));
 		p.log.error(err.message);
