@@ -132,10 +132,8 @@
   "rules": {
     "agents": "Agent 協作規範 — 多 Agent 編排與通訊規則",
     "code-review": "程式碼審查規範 — 審查流程、標準與嚴重度分級",
-    "coding-style": "程式碼風格 — 命名慣例、格式、結構規範",
     "design-quality": "設計品質 — UI/UX 設計規範與品質標準",
     "development-workflow": "開發工作流 — 分支策略、PR、CI/CD 流程",
-    "git-workflow": "Git 工作流 — commit 格式、分支命名、合併策略",
     "hooks": "Hooks 規範 — Claude Code hooks 使用指南",
     "patterns": "設計模式 — 常用設計模式與最佳實踐",
     "performance": "效能優化 — 效能分析、瓶頸定位、優化策略",
@@ -483,9 +481,7 @@
     },
     "rules": {
       "security": 5,
-      "coding-style": 5,
       "testing": 5,
-      "git-workflow": 5,
       "agents": 4,
       "patterns": 4,
       "hooks": 4,

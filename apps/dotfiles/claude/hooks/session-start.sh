@@ -36,11 +36,24 @@ PROJECT_DIR="$CLAUDE_DIR/projects/$ENCODED"
 MEMORY_INDEX="$PROJECT_DIR/memory/MEMORY.md"
 PLANS_INDEX="$PROJECT_DIR/plans/index.md"
 
+# 分層記憶 briefing
+GLOBAL_MEMORY="$CLAUDE_DIR/memory/MEMORY.md"
+PROJ_TASKS="$PROJECT_DIR/tasks"
+
+printf '\n'
+# 全局記憶（永遠提示路徑，讓 Claude 知道去哪讀）
+printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY" >&2
+# 專案記憶（有檔案才提示）
 if [ -f "$MEMORY_INDEX" ]; then
-	printf '\n[冷啟動] 📚 專案記憶索引：%s\n' "$MEMORY_INDEX" >&2
+	printf '[冷啟動] 📚 專案記憶：%s\n' "$MEMORY_INDEX" >&2
 fi
+# 專案計畫（有檔案才提示）
 if [ -f "$PLANS_INDEX" ]; then
-	printf '[冷啟動] 📋 計畫索引：%s\n' "$PLANS_INDEX" >&2
+	printf '[冷啟動] 📋 專案計畫：%s\n' "$PLANS_INDEX" >&2
+fi
+# 專案任務目錄（有目錄才提示）
+if [ -d "$PROJ_TASKS" ]; then
+	printf '[冷啟動] 🧭 專案任務：%s\n' "$PROJ_TASKS" >&2
 fi
 
 # ── Part 3: config drift 偵測 ──────────────────────────────────────

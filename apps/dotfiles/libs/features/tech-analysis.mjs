@@ -198,7 +198,7 @@ export default {
 				return await attemptAnalysis();
 			} catch (err) {
 				p.log.error(
-					`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:doctor 診斷環境`,
+					`❌ 分析失敗（${err.message}）\n   提示：檢查網路連線（GitHub API）或執行 pnpm run d:setup --doctor 診斷環境`,
 				);
 				const action = handleCancel(
 					await p.select({

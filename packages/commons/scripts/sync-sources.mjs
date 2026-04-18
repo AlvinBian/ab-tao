@@ -282,10 +282,10 @@ function listSources() {
 	}
 
 	console.log(`\n📋 用法:`);
-	console.log(`  pnpm run c:sync:all                  同步全部`);
-	console.log(`  pnpm run c:sync:select               互動式選擇`);
-	console.log(`  pnpm run c:sync -- --pick ecc,anthropic  同步指定來源`);
-	console.log(`  pnpm run c:sync -- --source <name>   同步單一來源`);
+	console.log(`  pnpm run c:ai-sync --all                 同步全部`);
+	console.log(`  pnpm run c:ai-sync --select              互動式選擇`);
+	console.log(`  pnpm run c:ai-sync -- --pick ecc,anthropic  同步指定來源`);
+	console.log(`  pnpm run c:ai-sync -- --source <name>    同步單一來源`);
 	console.log(`  加上 --force 強制同步 --dry-run 模擬`);
 }
 

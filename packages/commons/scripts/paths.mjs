@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMONS_ROOT = path.resolve(__dirname, "..");
 
-/** AI 資源根目錄（由 pnpm run c:sync 同步） */
+/** AI 資源根目錄（由 pnpm run c:ai-sync 同步） */
 export const RESOURCES_DIR = path.join(
 	COMMONS_ROOT,
 	"resources",

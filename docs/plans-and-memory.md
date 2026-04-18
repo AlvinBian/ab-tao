@@ -39,20 +39,6 @@ SessionEnd/Stop
            + 寫入 ~/.claude/.plans-relocated 冪等標記
 ```
 
-### 一次性 Migration
-
-已有舊 plan 在 `~/.claude/plans/` 時，用互動式指令手動歸位：
-
-```bash
-pnpm run d:migrate-plans
-# 或直接
-node apps/dotfiles/bin/migrate-plans.mjs
-# Dry-run（只預覽，不移動）
-node apps/dotfiles/bin/migrate-plans.mjs --dry-run
-```
-
-每個檔案會詢問歸屬哪個專案，選項包含已知 `~/.claude/projects/` 子目錄、`archive`（封存）、`skip`（跳過）。
-
 ---
 
 ## Memory
@@ -81,7 +67,6 @@ Memory 使用**主題資料夾**組織，`MEMORY.md` 只存索引（每條一行
 
 | 指令 | 說明 |
 |------|------|
-| `pnpm run d:migrate-plans` | 互動式遷移 `~/.claude/plans/` 至 per-project |
 | `pnpm run d:setup` | 重新部署（含 hook 腳本） |
 | `pnpm run d:hooks` | Hook 管理（查看、切換） |
 | `pnpm run d:uninstall` | 移除 ab-tao（含 relocate-plan.sh） |

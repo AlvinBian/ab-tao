@@ -121,6 +121,25 @@ $slug"
 	done
 fi
 
+# ── Part 2b: Tasks 歸位（含當前專案標記的任務複製到 per-project tasks 目錄）──
+GLOBAL_TASKS="$HOME/.claude/tasks"
+
+if [ -n "$CWD" ] && [ -d "$GLOBAL_TASKS" ]; then
+	ENCODED=$(printf '%s' "$CWD" | sed 's|/|-|g')
+	PROJ_TASKS_DIR="$HOME/.claude/projects/$ENCODED/tasks"
+
+	for task_file in "$GLOBAL_TASKS"/*.md; do
+		[ -f "$task_file" ] || continue
+		if grep -q "$CWD" "$task_file" 2>/dev/null; then
+			mkdir -p "$PROJ_TASKS_DIR"
+			if cp "$task_file" "$PROJ_TASKS_DIR/" 2>/dev/null; then
+				printf '[session-end] 任務已歸位：%s → %s\n' \
+					"$(basename "$task_file")" "$PROJ_TASKS_DIR" >&2
+			fi
+		fi
+	done
+fi
+
 # ── Part 3: Memory decay scan（90 天未存取提示歸檔）────────────────
 THRESHOLD_SECS=$(( 90 * 86400 ))
 NOW=$(date +%s)

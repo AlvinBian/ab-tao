@@ -30,16 +30,16 @@ pnpm run format            # 格式化
 
 pnpm run d:setup           # 互動式環境部署
 pnpm run d:scan            # 技術棧掃描
-pnpm run d:doctor          # 環境診斷
+pnpm run d:setup --doctor  # 環境診斷
 pnpm run d:status          # 配置儀表板
 pnpm run d:report          # 瀏覽器 HTML Dashboard
 pnpm run d:restore         # 還原備份
 pnpm run d:hooks           # Hook 管理
 pnpm run d:uninstall       # 移除 ab-tao
 
-pnpm run c:sync            # 列出 AI 來源（預設不同步）
-pnpm run c:sync:select     # 互動式選擇同步
-pnpm run c:sync:all        # 同步全部 4 個來源
+pnpm run c:ai-sync         # 列出 AI 來源（預設不同步）
+pnpm run c:ai-sync --select  # 互動式選擇同步
+pnpm run c:ai-sync --all   # 同步全部 4 個來源
 pnpm run c:validate        # 驗證資源結構
 ```
 

@@ -27,12 +27,12 @@ docs/         — 流程圖（Mermaid）、整合指南
 ## 指令
 
 ```bash
-pnpm run d:setup      # 互動式環境部署
-pnpm run d:scan       # 技術棧掃描 + 技能庫生成
-pnpm run d:doctor     # 環境診斷
-pnpm run d:status     # 配置狀態儀表板
-pnpm run d:report     # 瀏覽器 HTML Dashboard
-pnpm run d:restore    # 還原備份
-pnpm run d:hooks      # Hook 管理
-pnpm run d:uninstall  # 移除 ab-tao
+pnpm run d:setup           # 互動式環境部署
+pnpm run d:scan            # 技術棧掃描 + 技能庫生成
+pnpm run d:setup --doctor  # 環境診斷
+pnpm run d:status          # 配置狀態儀表板
+pnpm run d:report          # 瀏覽器 HTML Dashboard
+pnpm run d:restore         # 還原備份
+pnpm run d:hooks           # Hook 管理
+pnpm run d:uninstall       # 移除 ab-tao
 ```

@@ -19,7 +19,7 @@ Typical use cases:
 
 ```
 New machine / new job / setting up for a friend → pnpm run d:setup → full dev environment in 10 minutes
-Keep AI resources up to date                   → pnpm run c:sync:all → stay current on all tools
+Keep AI resources up to date                   → pnpm run c:ai-sync --all → stay current on all tools
 Look up Claude Code shortcuts                   → open https://alvinbian.github.io/ab-tao/
 ```
 
@@ -121,7 +121,7 @@ pnpm run help              # view all commands
 | ---------------------- | ------------------------------------------------ |
 | `pnpm run d:setup`     | Interactive environment deployment + third-party tool recommendations |
 | `pnpm run d:scan`      | Tech-stack scan + skill library generation       |
-| `pnpm run d:doctor`    | Environment diagnostics                          |
+| `pnpm run d:setup --doctor` | Environment diagnostics                     |
 | `pnpm run d:status`    | Config status dashboard                          |
 | `pnpm run d:report`    | Browser HTML Dashboard                           |
 | `pnpm run d:restore`   | Restore backup                                   |
@@ -130,14 +130,14 @@ pnpm run help              # view all commands
 
 ### c: commons (AI resource sync)
 
-| Command                  | Description                                         |
-| ------------------------ | --------------------------------------------------- |
-| `pnpm run c:sync`        | List 4 AI sources and their status (no sync by default) |
-| `pnpm run c:sync:select` | Interactively select sources to sync                |
-| `pnpm run c:sync:all`    | Sync all 4 sources                                  |
-| `pnpm run c:validate`    | Validate resource structure + security check        |
+| Command                       | Description                                         |
+| ----------------------------- | --------------------------------------------------- |
+| `pnpm run c:ai-sync`          | List 4 AI sources and their status (no sync by default) |
+| `pnpm run c:ai-sync --select` | Interactively select sources to sync                |
+| `pnpm run c:ai-sync --all`    | Sync all 4 sources                                  |
+| `pnpm run c:validate`         | Validate resource structure + security check        |
 
-Sync specific sources: `pnpm run c:sync -- --pick ecc,superpowers`
+Sync specific sources: `pnpm run c:ai-sync -- --pick ecc,superpowers`
 
 ### Versioning and release
 

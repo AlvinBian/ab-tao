@@ -32,13 +32,13 @@ resources/    — 同步下來的 AI 資源（按來源分目錄）
 ## 指令
 
 ```bash
-pnpm run c:sync           # 列出來源與版本狀態
-pnpm run c:sync:select    # 互動式選擇同步
-pnpm run c:sync:all       # 同步全部來源
-pnpm run c:validate       # 驗證資源結構 + 安全檢查
+pnpm run c:ai-sync           # 列出來源與版本狀態
+pnpm run c:ai-sync --select  # 互動式選擇同步
+pnpm run c:ai-sync --all     # 同步全部來源
+pnpm run c:validate          # 驗證資源結構 + 安全檢查
 
 # 指定同步
-pnpm run c:sync -- --pick ecc,superpowers
+pnpm run c:ai-sync -- --pick ecc,superpowers
 ```
 
 ## 安全驗證

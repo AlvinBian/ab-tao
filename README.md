@@ -19,7 +19,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ```
 新機器 / 換工作 / 幫朋友設定 → pnpm run d:setup → 10 分鐘搞定全套開發環境
-定期更新 AI 資源             → pnpm run c:sync:all → 保持所有工具最新
+定期更新 AI 資源             → pnpm run c:ai-sync --all → 保持所有工具最新
 查 Claude Code 快捷鍵        → 開啟 https://alvinbian.github.io/ab-tao/
 ```
 
@@ -121,7 +121,7 @@ pnpm run help              # 查看所有指令
 | ---------------------- | ------------------------------- |
 | `pnpm run d:setup`     | 互動式環境部署 + 第三方工具推薦 |
 | `pnpm run d:scan`      | 技術棧掃描 + 技能庫生成         |
-| `pnpm run d:doctor`    | 環境診斷                        |
+| `pnpm run d:setup --doctor` | 環境診斷                   |
 | `pnpm run d:status`    | 配置狀態儀表板                  |
 | `pnpm run d:report`    | 瀏覽器 HTML Dashboard           |
 | `pnpm run d:restore`   | 還原備份                        |
@@ -130,14 +130,14 @@ pnpm run help              # 查看所有指令
 
 ### c: commons（AI 資源同步）
 
-| 指令                     | 說明                                  |
-| ------------------------ | ------------------------------------- |
-| `pnpm run c:sync`        | 列出 4 個 AI 來源與狀態（預設不同步） |
-| `pnpm run c:sync:select` | 互動式選擇同步                        |
-| `pnpm run c:sync:all`    | 同步全部 4 個來源                     |
-| `pnpm run c:validate`    | 驗證資源結構 + 安全檢查               |
+| 指令                          | 說明                                  |
+| ----------------------------- | ------------------------------------- |
+| `pnpm run c:ai-sync`          | 列出 4 個 AI 來源與狀態（預設不同步） |
+| `pnpm run c:ai-sync --select` | 互動式選擇同步                        |
+| `pnpm run c:ai-sync --all`    | 同步全部 4 個來源                     |
+| `pnpm run c:validate`         | 驗證資源結構 + 安全檢查               |
 
-指定同步：`pnpm run c:sync -- --pick ecc,superpowers`
+指定同步：`pnpm run c:ai-sync -- --pick ecc,superpowers`
 
 ### 版本與發布
 

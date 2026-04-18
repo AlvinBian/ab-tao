@@ -32,4 +32,4 @@ packages/commons/resources/ai/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db.claude/worktrees/

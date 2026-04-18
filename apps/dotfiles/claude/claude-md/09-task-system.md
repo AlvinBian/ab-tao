@@ -10,6 +10,15 @@
 
 **口訣**：下次對話還有用？→ Memory ｜ 當前步驟？→ Tasks ｜ 需與用戶對齊方案？→ Plan
 
+## 分層位置
+
+| 層級 | Memory | Plans | Tasks |
+|---|---|---|---|
+| **全局** | `~/.claude/memory/{preferences,patterns}/` | `~/.claude/plans/` | `~/.claude/tasks/` |
+| **專案** | `~/.claude/projects/{encoded}/memory/{topic}/` | `~/.claude/projects/{encoded}/plans/{slug}.md` | `~/.claude/projects/{encoded}/tasks/` |
+
+**口訣**：身份偏好 → 全局；票號任務 → 專案
+
 ## Plans 存放
 
 路徑：`~/.claude/projects/{encoded-project-path}/plans/{slug}.md`

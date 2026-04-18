@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * pnpm run d:sync — iCloud 偏好同步
+ * pnpm run d:prefs-sync — iCloud 偏好同步
  *
  * 子命令：
  *   （無參數）   互動式選擇 push / pull
