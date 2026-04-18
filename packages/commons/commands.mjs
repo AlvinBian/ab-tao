@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * commons 指令定義與執行
+ * commons 指令定義與執行（v1.0.0）
  */
 
 import { run } from "@ab-tao/share/libs";
@@ -9,13 +9,13 @@ import { run } from "@ab-tao/share/libs";
 export const pkg = "@ab-tao/commons";
 
 export const commands = {
-	sync: "列出 AI 來源與狀態",
-	validate: "驗證資源結構 + 安全檢查",
+	"ai-sync": "外部 AI 來源同步（--select / --all / --source <name> / --force）",
+	skills:
+		"Claude Skills 管理（--list / --install / --update / --diff / --remove / --find）",
+	validate: "驗證 resources/ai/sources/ 結構 + 安全檢查",
+	translate: "多語系翻譯生成",
 };
 
-export const aliases = {
-	"sync:select": { cmd: "sync", args: "--select", desc: "互動式選擇同步" },
-	"sync:all": { cmd: "sync", args: "--all", desc: "同步全部 4 個來源" },
-};
+export const aliases = {};
 
 run(pkg, aliases);
