@@ -63,7 +63,7 @@ export async function adjustClaude({ flagAll = false, manual = false } = {}) {
 	const session = loadSession();
 	const previewDir = path.join(REPO, "dist", "preview");
 	const step = {
-		script: "node:config-sync",
+		script: "node bin/install-preview.mjs",
 		selectable: {
 			commands: {
 				dir: "claude/commands",

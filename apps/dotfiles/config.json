@@ -8,7 +8,7 @@
 				{
 					"type": "install-claude",
 					"label": "安裝 commands · agents · rules → ~/.claude/",
-					"script": "node:config-sync",
+					"script": "node bin/install-preview.mjs",
 					"selectable": {
 						"commands": {
 							"dir": "claude/commands",
