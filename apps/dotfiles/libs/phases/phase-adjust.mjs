@@ -63,7 +63,7 @@ export async function adjustClaude({ flagAll = false, manual = false } = {}) {
 	const session = loadSession();
 	const previewDir = path.join(REPO, "dist", "preview");
 	const step = {
-		script: "bash scripts/install-claude.sh",
+		script: "node:config-sync",
 		selectable: {
 			commands: {
 				dir: "claude/commands",
@@ -102,17 +102,31 @@ export async function adjustGlobalSettings() {
 	const s = p.spinner();
 	s.start("⚙️ 套用全局設定...");
 	try {
-		const { deploySettings } = await import("../deploy/deploy-global.mjs");
-		const templatePath = path.join(REPO, "claude", "settings.template.json");
-		if (!fs.existsSync(templatePath)) {
-			s.stop("settings.template.json 不存在");
+		const { syncConfig } = await import("../install/config-sync.mjs");
+		const {
+			SETTINGS_PRESERVE_PATHS,
+			ADDITIVE_DIRS,
+			FORBIDDEN_DIRS,
+			SETTINGS_ARRAY_MERGE,
+		} = await import("../config/preserve-policy.mjs");
+		const templateDir = path.join(REPO, "claude");
+		if (!fs.existsSync(templateDir)) {
+			s.stop("claude/ 模板目錄不存在");
 			return;
 		}
-		const settingsTemplate = JSON.parse(fs.readFileSync(templatePath, "utf8"));
-		const settingsResult = deploySettings(settingsTemplate);
-		s.stop(
-			`全局設定已套用  ${pc.dim(`settings +${settingsResult.permissionsAdded} 規則`)}`,
-		);
+		await syncConfig({
+			home: CLAUDE_DIR,
+			template: templateDir,
+			policy: {
+				preservePaths: SETTINGS_PRESERVE_PATHS,
+				additiveDirs: ADDITIVE_DIRS,
+				forbiddenDirs: FORBIDDEN_DIRS,
+				arrayMerge: SETTINGS_ARRAY_MERGE,
+			},
+			mode: "auto",
+			dryRun: false,
+		});
+		s.stop("全局設定已套用");
 		await patchSession({ adjustedAt: new Date().toISOString() });
 	} catch (err) {
 		s.stop(`全局設定套用失敗：${err.message?.slice(0, 60)}`);

@@ -12,6 +12,28 @@
 	"includeCoAuthoredBy": false,
 	"feedbackSurveyRate": 0,
 	"includeGitInstructions": false,
+	"statusLine": {
+		"type": "command",
+		"command": "~/.claude/ccline/my-ccline.sh",
+		"enabled": true
+	},
+	"mcpServers": {},
+	"extraKnownMarketplaces": [],
+	"env": {
+		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
+		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+		"USE_BUILTIN_RIPGREP": "1",
+		"BASH_DEFAULT_TIMEOUT_MS": "60000",
+		"CLAUDE_BASH_NO_LOGIN": "1",
+		"CLAUDE_CODE_AUTO_SAVE": "1",
+		"CLAUDE_CODE_FAST_MODE": "1",
+		"ENABLE_TOOL_SEARCH": "true",
+		"CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+		"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+		"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
+		"DISABLE_EXTRA_USAGE_COMMAND": "1",
+		"CLAUDE_CODE_NO_FLICKER": "1"
+	},
 	"enabledPlugins": {
 		"code-review@claude-plugins-official": true,
 		"commit-commands@claude-plugins-official": true,
@@ -30,20 +52,5 @@
 			"Bash(rm -rf /)",
 			"Bash(rm -rf ~)"
 		]
-	},
-	"env": {
-		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
-		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
-		"USE_BUILTIN_RIPGREP": "1",
-		"BASH_DEFAULT_TIMEOUT_MS": "60000",
-		"CLAUDE_BASH_NO_LOGIN": "1",
-		"CLAUDE_CODE_AUTO_SAVE": "1",
-		"CLAUDE_CODE_FAST_MODE": "1",
-		"ENABLE_TOOL_SEARCH": "true",
-		"CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
-		"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-		"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
-		"DISABLE_EXTRA_USAGE_COMMAND": "1",
-		"CLAUDE_CODE_NO_FLICKER": "1"
 	}
 }

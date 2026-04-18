@@ -46,6 +46,19 @@
 				}
 			}
 		},
+		"preserve": {
+			"type": "object",
+			"description": "Per-file preserve overrides (key=filename, value=dot-paths to preserve)",
+			"additionalProperties": {
+				"type": "array",
+				"items": { "type": "string" }
+			}
+		},
+		"forbidden": {
+			"type": "array",
+			"description": "Additional directories to forbid (appended to policy defaults)",
+			"items": { "type": "string" }
+		},
 		"sync": {
 			"type": "object",
 			"description": "Cross-machine sync configuration",

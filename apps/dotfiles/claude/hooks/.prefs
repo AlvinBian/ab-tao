@@ -1,0 +1,10 @@
+# ab-tao hook 偏好（自動生成）
+AB_NOTIFY_FLUSH_SECS=60
+AB_NOTIFY_LEVEL_Notification="immediate"
+AB_NOTIFY_LEVEL_PermissionDenied="immediate"
+AB_NOTIFY_LEVEL_PreCompact="immediate"
+AB_NOTIFY_LEVEL_Stop="immediate"
+AB_NOTIFY_LEVEL_SessionEnd="batch"
+AB_NOTIFY_LEVEL_TaskCompleted="batch"
+AB_NOTIFY_LEVEL_SubagentStop="batch"
+AB_NOTIFY_LEVEL_PostToolUseFailure="batch"

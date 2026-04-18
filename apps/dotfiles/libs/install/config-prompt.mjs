@@ -1,5 +1,7 @@
 /**
- * config-prompt.mjs — 互動式配置選擇流程
+ * config-prompt.mjs — 互動式配置選擇 helper
+ *
+ * 職責：供 config-sync.mjs 的 confirmPlan() 呼叫的輔助模組。
  *
  * 三方 diff 狀態 → 決定提示策略：
  *   same        → skip（無 prompt）
@@ -16,16 +18,18 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { P } from "../core/paths.mjs";
 import {
 	stateGetChoice,
 	stateGetManaged,
+	stateRead,
 	stateSetChoice,
+	stateSetManaged,
 } from "../state/state.mjs";
 import { backup } from "./backup.mjs";
-import { deepMergeUnlessPresent, parseJsonSafe } from "./deep-merge.mjs";
-import { markInstalled, shouldSkip } from "./manifest-validator.mjs";
+import { mergeConfig } from "./config-merge.mjs";
 import { runCmd } from "./run-cmd.mjs";
-import { DiffType, threeWayDiff } from "./three-way-diff.mjs";
+import { DiffType, sha256OfFile, threeWayDiff } from "./three-way-diff.mjs";
 
 // ── 常數 ─────────────────────────────────────────────────────────
 
@@ -60,12 +64,44 @@ export function getCIDefault(relPath) {
 	return ChoiceAction.KEEP_LOCAL;
 }
 
+// ── Managed 檔案工具（原 manifest-validator.mjs 功能）───────────
+
+/**
+ * 記錄已安裝檔案到 state.json managed
+ * @param {string} relPath 相對 ~/.claude/ 的路徑
+ * @param {string} source  ab-tao source 路徑描述
+ */
+export function markInstalled(relPath, source) {
+	const absPath = path.join(P.home, relPath);
+	const sha = sha256OfFile(absPath);
+	if (!sha) return;
+	stateSetManaged(relPath, {
+		sha256: sha,
+		source,
+		installedAt: new Date().toISOString(),
+		userOverride: false,
+	});
+}
+
+/**
+ * 是否應 skip（使用者已選 keep-local）
+ * @param {string} relPath
+ * @returns {boolean}
+ */
+export function shouldSkip(relPath) {
+	const state = stateRead();
+	const choice = state.choices[relPath];
+	if (choice?.decision === "keep-local") return true;
+	const entry = state.managed[relPath];
+	return entry?.userOverride === true;
+}
+
 // ── 評估 ─────────────────────────────────────────────────────────
 
 /**
  * 評估單一檔案的 diff 狀態
  *
- * @param {string} relPath   相對 ~/.claude/ 的路徑（用於查 state）
+ * @param {string} relPath    相對 ~/.claude/ 的路徑（用於查 state）
  * @param {string} sourcePath ab-tao template 絕對路徑
  * @param {string} targetPath ~/.claude/ 目前絕對路徑
  * @returns {{ status: string, diff: object|null, autoAction: string|null, autoReason?: string }}
@@ -116,8 +152,8 @@ export function evaluateFile(relPath, sourcePath, targetPath) {
 /**
  * 執行選擇動作
  *
- * @param {string} action   ChoiceAction.*
- * @param {string} relPath  相對 ~/.claude/ 路徑
+ * @param {string} action    ChoiceAction.*
+ * @param {string} relPath   相對 ~/.claude/ 路徑
  * @param {string} sourcePath ab-tao template 路徑
  * @param {string} targetPath ~/.claude/ 目前路徑
  * @returns {{ applied: boolean, backupPath?: string }}
@@ -149,8 +185,18 @@ export function applyFileChoice(action, relPath, sourcePath, targetPath) {
 				? fs.readFileSync(targetPath, "utf8")
 				: "{}";
 
-			const srcJson = parseJsonSafe(srcContent);
-			const tgtJson = parseJsonSafe(tgtContent);
+			let srcJson = null;
+			let tgtJson = null;
+			try {
+				srcJson = JSON.parse(srcContent);
+			} catch {
+				/* 非 JSON */
+			}
+			try {
+				tgtJson = JSON.parse(tgtContent);
+			} catch {
+				/* 非 JSON */
+			}
 
 			if (!srcJson || !tgtJson) {
 				// 非 JSON 檔案無法合併，回退至 keep-local
@@ -160,7 +206,8 @@ export function applyFileChoice(action, relPath, sourcePath, targetPath) {
 				return { applied: false, fallback: "keep-local" };
 			}
 
-			const merged = deepMergeUnlessPresent(srcJson, tgtJson);
+			// 使用 config-merge.mjs 的 mergeConfig
+			const merged = mergeConfig(srcJson, tgtJson, {});
 			const backupPath = runCmd(`backup ${relPath}`, () => backup(targetPath));
 			runCmd(`write merged ${relPath}`, () => {
 				fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -195,7 +242,7 @@ export function showDiff(sourcePath, targetPath) {
 		const lines = result.stdout.split("\n").slice(0, 50);
 		console.log(lines.join("\n"));
 		if (result.stdout.split("\n").length > 50) {
-			console.log(`... （省略後續行）`);
+			console.log("... （省略後續行）");
 		}
 	} else {
 		console.log(

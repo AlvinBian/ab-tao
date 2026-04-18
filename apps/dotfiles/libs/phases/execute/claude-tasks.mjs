@@ -17,13 +17,19 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import { listrLogger } from "../../cli/logger.mjs";
+import {
+	ADDITIVE_DIRS,
+	FORBIDDEN_DIRS,
+	SETTINGS_ARRAY_MERGE,
+	SETTINGS_PRESERVE_PATHS,
+} from "../../config/preserve-policy.mjs";
 import { HOME } from "../../core/paths.mjs";
-import { deploySettings } from "../../deploy/deploy-global.mjs";
 import {
 	buildSyncResult,
 	writeSkillFiles,
 	writeSyncedFiles,
 } from "../../external/source-sync.mjs";
+import { syncConfig } from "../../install/config-sync.mjs";
 import { runTarget } from "../../install/index.mjs";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -159,18 +165,26 @@ export async function deployGlobalConfig(opts) {
 		/* 不阻塞安裝 */
 	}
 
-	// ── 階段 1：合併 settings.json ──
-	const templatePath = path.join(repoDir, "claude", "settings.template.json");
-	if (fs.existsSync(templatePath)) {
-		let template;
+	// ── 階段 1：透過 syncConfig 同步 Claude 配置目錄 ──
+	const templateDir = path.join(repoDir, "claude");
+	const claudeHome = path.join(HOME, ".claude");
+	if (fs.existsSync(templateDir)) {
 		try {
-			template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
-		} catch {
-			// settings.template.json 格式錯誤，跳過設定部署
-			template = null;
-		}
-		if (template) {
-			deploySettings(template, { model: model ?? undefined, cclineInstalled });
+			await syncConfig({
+				home: claudeHome,
+				template: templateDir,
+				policy: {
+					preservePaths: SETTINGS_PRESERVE_PATHS,
+					additiveDirs: ADDITIVE_DIRS,
+					forbiddenDirs: FORBIDDEN_DIRS,
+					arrayMerge: SETTINGS_ARRAY_MERGE,
+				},
+				mode: "auto",
+				dryRun: false,
+			});
+		} catch (syncErr) {
+			// 同步失敗不阻塞整體安裝
+			if (logger) logger(`⚠️ config-sync 失敗：${syncErr.message}`);
 		}
 	}
 

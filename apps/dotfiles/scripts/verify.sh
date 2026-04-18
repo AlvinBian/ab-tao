@@ -61,7 +61,8 @@ const modules = [
   './libs/config/auto-plan.mjs',
   './libs/config/config-classifier.mjs',
   './libs/detect/repo-detect.mjs',
-  './libs/deploy/deploy-global.mjs',
+  './libs/install/config-sync.mjs',
+  './libs/config/preserve-policy.mjs',
   './libs/config/upgrade.mjs',
 ]
 Promise.all(modules.map(m => import(m).then(() => '✓ ' + m).catch(e => '✗ ' + m + ': ' + e.message)))

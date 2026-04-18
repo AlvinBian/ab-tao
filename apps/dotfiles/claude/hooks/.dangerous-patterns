@@ -1,0 +1,19 @@
+rm -rf /
+rm -rf ~
+rm -rf \$HOME
+sudo rm -rf
+sudo rm -f /
+curl.*\|.*sh
+curl.*\|.*bash
+wget.*\|.*sh
+wget.*\|.*bash
+eval.*curl
+eval.*wget
+eval.*\$\(
+chmod 777
+chmod -R 777
+mkfs\.
+dd if=.*of=/dev/
+> /dev/sda
+> /dev/nvme
+:(){ :|:& };:

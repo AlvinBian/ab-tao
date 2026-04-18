@@ -8,7 +8,7 @@
 				{
 					"type": "install-claude",
 					"label": "安裝 commands · agents · rules → ~/.claude/",
-					"script": "bash scripts/install-claude.sh",
+					"script": "node:config-sync",
 					"selectable": {
 						"commands": {
 							"dir": "claude/commands",

@@ -114,24 +114,18 @@ step "④ 針對性部署"
 
 DEPLOYED=0
 
-# Claude commands
-if [[ -n "$COMMANDS_CHANGED" ]]; then
-  info "更新 commands：$COMMANDS_CHANGED"
-  bash "$REPO_DIR/scripts/install-claude.sh" --commands "$COMMANDS_CHANGED"
-  DEPLOYED=$((DEPLOYED + 1))
-fi
-
-# Claude agents
-if [[ -n "$AGENTS_CHANGED" ]]; then
-  info "更新 agents：$AGENTS_CHANGED"
-  bash "$REPO_DIR/scripts/install-claude.sh" --agents "$AGENTS_CHANGED"
-  DEPLOYED=$((DEPLOYED + 1))
-fi
-
-# Hooks
-if [[ "$HOOKS_CHANGED" -gt 0 ]]; then
-  info "更新 hooks.json"
-  bash "$REPO_DIR/scripts/install-claude.sh" --hooks
+# Claude commands / agents / hooks — 透過 config-sync（Node.js orchestrator）
+if [[ -n "$COMMANDS_CHANGED" || -n "$AGENTS_CHANGED" || "$HOOKS_CHANGED" -gt 0 ]]; then
+  info "透過 config-sync 同步 Claude 配置..."
+  node --input-type=module <<'ESEOF'
+import { syncConfig } from './libs/install/config-sync.mjs';
+import { SETTINGS_PRESERVE_PATHS, ADDITIVE_DIRS, FORBIDDEN_DIRS, SETTINGS_ARRAY_MERGE } from './libs/config/preserve-policy.mjs';
+import path from 'node:path';
+import os from 'node:os';
+const home = path.join(os.homedir(), '.claude');
+const template = path.join(process.cwd(), 'claude');
+await syncConfig({ home, template, policy: { preservePaths: SETTINGS_PRESERVE_PATHS, additiveDirs: ADDITIVE_DIRS, forbiddenDirs: FORBIDDEN_DIRS, arrayMerge: SETTINGS_ARRAY_MERGE }, mode: 'auto' });
+ESEOF
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
@@ -152,12 +146,7 @@ if [[ -n "$ZSH_MODULES" ]]; then
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
-# Claude rules
-if [[ -n "$RULES_CHANGED" ]]; then
-  info "更新 rules：$RULES_CHANGED"
-  bash "$REPO_DIR/scripts/install-claude.sh" --rules "$RULES_CHANGED"
-  DEPLOYED=$((DEPLOYED + 1))
-fi
+# Claude rules — 透過 config-sync 統一處理（已含在上方的 Claude 配置同步中）
 
 # sheldon 配置
 if [[ "$SHELDON_CHANGED" -gt 0 ]]; then

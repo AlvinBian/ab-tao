@@ -391,7 +391,7 @@ export async function fetchAllSources(
 				sha,
 				isLocal = false;
 
-			// 優先讀 commons 已同步的資源（pnpm run c:sync 同步）
+			// 優先讀 commons 已同步的資源（pnpm run c:ai-sync 同步）
 			const { RESOURCES_DIR } = await import("@ab-tao/commons/paths");
 			const commonsDir = path.join(RESOURCES_DIR, source.name);
 			if (fs.existsSync(commonsDir)) {
@@ -586,7 +586,7 @@ function isUserCustomized(filePath) {
 /**
  * 將外部來源的 hooks.json 以 id-based merge 方式合入目標檔案
  *
- * 保留 id 以 "ab-tao:" 開頭的條目（由 install-claude.sh 管理），
+ * 保留 id 以 "ab-tao:" 開頭的條目（由 config-sync.mjs 管理），
  * 以外部來源內容取代其餘條目。使用原子 rename 避免半寫入。
  */
 function mergeHooksJson(destPath, incomingContent) {
