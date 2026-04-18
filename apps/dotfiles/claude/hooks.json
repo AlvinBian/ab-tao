@@ -1,56 +1,40 @@
 {
-	"description": "ab-tao hooks：檔案保護、危險命令攔截、macOS 通知",
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
 	"hooks": {
 		"SessionStart": [
 			{
-				"id": "ab-tao:session:inject-project-prompt",
-				"matcher": "",
+				"id": "ab-tao:session:start",
+				"description": "專案提醒注入 + 冷啟動 briefing + config drift 偵測",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/inject-project-prompt.sh",
-						"timeout": 3
+						"command": "$HOME/.claude/hooks/session-start.sh",
+						"timeout": 8
 					}
 				]
 			}
 		],
 		"PreToolUse": [
 			{
-				"id": "ab-tao:pre:protect-files",
-				"matcher": "Edit|Write",
+				"id": "ab-tao:pre:bash",
+				"description": "危險命令攔截（sudo rm / rm -rf / fork bomb / curl|bash 等）",
+				"matcher": "Bash",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/protect-files.sh",
-						"timeout": 5
-					},
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/validate-memory-path.sh",
+						"command": "$HOME/.claude/hooks/pre-tool-bash.sh",
 						"timeout": 5
 					}
 				]
 			},
 			{
-				"id": "ab-tao:pre:block-dangerous",
-				"matcher": "Bash",
+				"id": "ab-tao:pre:edit",
+				"description": "檔案保護 + Memory 路徑自動校驗 + MEMORY.md 配額警告",
+				"matcher": "Edit|Write|MultiEdit",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/block-dangerous.sh",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"Notification": [
-			{
-				"id": "ab-tao:notification:hook-handler",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"command": "$HOME/.claude/hooks/pre-tool-edit.sh",
 						"timeout": 5
 					}
 				]
@@ -58,25 +42,25 @@
 		],
 		"PreCompact": [
 			{
-				"id": "ab-tao:pre-compact:hook-handler",
-				"matcher": "auto",
+				"id": "ab-tao:pre-compact",
+				"description": "定向壓縮指令注入（保留核心需求 / 犧牲調試輸出）",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"command": "$HOME/.claude/hooks/pre-compact.sh",
 						"timeout": 5
 					}
 				]
 			}
 		],
-		"PermissionDenied": [
+		"PostToolUse": [
 			{
-				"id": "ab-tao:permission-denied:hook-handler",
-				"matcher": "",
+				"id": "ab-tao:post-tool",
+				"description": "Memory 索引觸發（Phase 13 預留接口）",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"command": "$HOME/.claude/hooks/post-tool.sh",
 						"timeout": 5
 					}
 				]
@@ -84,87 +68,26 @@
 		],
 		"Stop": [
 			{
-				"id": "ab-tao:stop:hook-handler",
-				"matcher": "",
+				"id": "ab-tao:stop",
+				"description": "macOS 匯總通知 + 會話評估",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"command": "$HOME/.claude/hooks/stop.sh",
 						"timeout": 10
-					}
-				]
-			},
-			{
-				"id": "ab-tao:stop:relocate-plan",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/relocate-plan.sh",
-						"timeout": 5
 					}
 				]
 			}
 		],
 		"SessionEnd": [
 			{
-				"id": "ab-tao:session-end:hook-handler",
-				"matcher": "",
+				"id": "ab-tao:session:end",
+				"description": "Plan 歸位 + Memory decay scan + flush 通知 + 舊備份清理",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
+						"command": "$HOME/.claude/hooks/session-end.sh",
 						"timeout": 10
-					}
-				]
-			},
-			{
-				"id": "ab-tao:session-end:relocate-plan",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/relocate-plan.sh",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"TaskCompleted": [
-			{
-				"id": "ab-tao:task-completed:hook-handler",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"SubagentStop": [
-			{
-				"id": "ab-tao:subagent-stop:hook-handler",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
-						"timeout": 5
-					}
-				]
-			}
-		],
-		"PostToolUseFailure": [
-			{
-				"id": "ab-tao:post-tool-use-failure:hook-handler",
-				"matcher": "",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "$HOME/.claude/hooks/hook-handler.sh",
-						"timeout": 5
 					}
 				]
 			}
