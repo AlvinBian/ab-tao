@@ -20,7 +20,8 @@
 │   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
-│   └── 13-agent-routing.md      尾錨定（資源速查 + 調度規則）
+│   ├── 13-agent-routing.md      尾錨定（資源速查 + 調度規則）
+│   └── 14-dag-parallel-execution.md  DAG 並行執行規則（尾錨定前）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/

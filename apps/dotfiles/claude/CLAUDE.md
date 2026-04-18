@@ -31,6 +31,7 @@
 ## 尾錨定：Agent 調度（最高權重）
 
 @claude-md/13-agent-routing.md
+@claude-md/14-dag-parallel-execution.md
 
 ## 參考資源（按需載入）
 
