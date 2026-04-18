@@ -9,6 +9,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
+
+// 並發 clack 操作會加多個 stdin listener，提高上限避免 MaxListenersExceeded
+process.stdin.setMaxListeners(50);
+
 import { isEmpty } from "lodash-es";
 import pc from "picocolors";
 import { BACK, handleCancel } from "../libs/cli/prompts.mjs";

@@ -96,41 +96,90 @@ export async function adjustClaude({ flagAll = false, manual = false } = {}) {
 }
 
 /**
- * 調整 2：重新套用全局設定（settings.json）
+ * 調整 2：合併 settings.template.json + hooks.json → settings.json
+ *
+ * 策略：
+ *   - template 為基底，PRESERVE_PATHS 強制保留本地值
+ *   - hooks.json 的 hooks 合併進 settings.json（以 id 去重）
+ *   - 互動確認後寫入，可跳過
  */
 export async function adjustGlobalSettings() {
-	const s = p.spinner();
-	s.start("⚙️ 套用全局設定...");
-	try {
-		const { syncConfig } = await import("../install/config-sync.mjs");
-		const {
-			SETTINGS_PRESERVE_PATHS,
-			ADDITIVE_DIRS,
-			FORBIDDEN_DIRS,
-			SETTINGS_ARRAY_MERGE,
-		} = await import("../config/preserve-policy.mjs");
-		const templateDir = path.join(REPO, "claude");
-		if (!fs.existsSync(templateDir)) {
-			s.stop("claude/ 模板目錄不存在");
-			return;
-		}
-		await syncConfig({
-			home: CLAUDE_DIR,
-			template: templateDir,
-			policy: {
-				preservePaths: SETTINGS_PRESERVE_PATHS,
-				additiveDirs: ADDITIVE_DIRS,
-				forbiddenDirs: FORBIDDEN_DIRS,
-				arrayMerge: SETTINGS_ARRAY_MERGE,
-			},
-			mode: "auto",
-			dryRun: false,
-		});
-		s.stop("全局設定已套用");
-		await patchSession({ adjustedAt: new Date().toISOString() });
-	} catch (err) {
-		s.stop(`全局設定套用失敗：${err.message?.slice(0, 60)}`);
+	const { mergeConfig } = await import("../install/config-merge.mjs");
+	const { SETTINGS_PRESERVE_PATHS, SETTINGS_ARRAY_MERGE } = await import(
+		"../config/preserve-policy.mjs"
+	);
+
+	const templatePath = path.join(REPO, "claude", "settings.template.json");
+	const localPath = path.join(CLAUDE_DIR, "settings.json");
+	const hooksPath = path.join(CLAUDE_DIR, "hooks.json");
+
+	if (!fs.existsSync(templatePath)) {
+		p.log.warn("settings.template.json 不存在，跳過");
+		return;
 	}
+
+	const template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
+	const local = fs.existsSync(localPath)
+		? JSON.parse(fs.readFileSync(localPath, "utf8"))
+		: {};
+
+	// 合併（PRESERVE_PATHS 強制保留本地值）
+	const merged = mergeConfig(template, local, {
+		preservePaths: SETTINGS_PRESERVE_PATHS,
+		arrayMerge: SETTINGS_ARRAY_MERGE,
+	});
+
+	// 將 hooks.json 的 hooks 合併進 settings（以 id 去重）
+	if (fs.existsSync(hooksPath)) {
+		try {
+			const hooksData = JSON.parse(fs.readFileSync(hooksPath, "utf8"));
+			if (hooksData.hooks) {
+				merged.hooks = merged.hooks ?? {};
+				for (const [event, handlers] of Object.entries(hooksData.hooks)) {
+					const existing = merged.hooks[event] ?? [];
+					const existingIds = new Set(existing.map((h) => h.id));
+					merged.hooks[event] = [
+						...existing,
+						...handlers.filter((h) => !existingIds.has(h.id)),
+					];
+				}
+			}
+		} catch {}
+	}
+
+	// 找出有差異的頂層 key
+	const changedKeys = Object.keys(merged).filter(
+		(k) => JSON.stringify(merged[k]) !== JSON.stringify(local[k]),
+	);
+
+	if (changedKeys.length === 0) {
+		p.log.success("settings.json 無需更新（已是最新）");
+		return;
+	}
+
+	p.log.info(
+		`以下欄位將新增或更新：${changedKeys.map((k) => pc.cyan(k)).join("、")}`,
+	);
+
+	const confirm = await p.confirm({
+		message: "套用到 ~/.claude/settings.json？",
+	});
+	if (!confirm || p.isCancel(confirm)) {
+		p.log.warn("已取消，settings.json 未修改");
+		return;
+	}
+
+	// 備份現有 settings.json
+	if (fs.existsSync(localPath)) {
+		const ts = TIMESTAMP();
+		const backupDir = path.join(REPO, "dist", "backup", ts);
+		fs.mkdirSync(backupDir, { recursive: true });
+		fs.copyFileSync(localPath, path.join(backupDir, "settings.json"));
+	}
+
+	fs.writeFileSync(localPath, JSON.stringify(merged, null, "\t"), "utf8");
+	p.log.success("✅ settings.json 已更新（hooks.json 已合併）");
+	await patchSession({ adjustedAt: new Date().toISOString() });
 }
 
 /**

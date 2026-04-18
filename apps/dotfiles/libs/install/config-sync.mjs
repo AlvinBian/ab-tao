@@ -183,6 +183,10 @@ async function _walkTemplate(
 
 		if (!entry.isFile()) continue;
 
+		// 由 adjustGlobalSettings() 特化處理的檔案，此處跳過
+		const SETTINGS_MANAGED = new Set(["settings.template.json", "hooks.json"]);
+		if (SETTINGS_MANAGED.has(entry.name) && relPath === entry.name) continue;
+
 		const destExists = fs.existsSync(destPath);
 
 		// 目標不存在 → create
