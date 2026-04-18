@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as p from "@clack/prompts";
 
 const HOME = os.homedir();
@@ -18,14 +19,14 @@ const PROJECTS_DIR = path.join(HOME, ".claude", "projects");
 const RELOCATED_MARKER = path.join(HOME, ".claude", ".plans-relocated");
 
 /** 從 encoded 目錄名解碼為可讀路徑（最後兩段） */
-function decodedLabel(encoded) {
+export function decodedLabel(encoded) {
 	const parts = encoded.replace(/^-/, "").split("-");
 	if (parts.length <= 2) return encoded.replace(/^-/, "").replace(/-/g, "/");
 	return `.../${parts.slice(-3).join("/")}`;
 }
 
 /** 讀取已遷移記錄 */
-function readRelocated() {
+export function readRelocated() {
 	if (!fs.existsSync(RELOCATED_MARKER)) return new Set();
 	try {
 		return new Set(
@@ -37,7 +38,7 @@ function readRelocated() {
 }
 
 /** 追加已遷移記錄 */
-function markRelocated(slug) {
+export function markRelocated(slug) {
 	fs.appendFileSync(RELOCATED_MARKER, `${slug}\n`, "utf8");
 }
 
@@ -63,16 +64,18 @@ function planPreview(filePath) {
 	}
 }
 
-/** 更新目標 plans/index.md — 在最後加入一行連結 */
-function updateIndex(plansDir, slug, title) {
+/** 更新目標 plans/index.md — 在最後加入一行連結
+ *  @param {string} relSlug  相對於 plansDir 的路徑，slug 已含 .md（如 "foo.md" 或 "archive/foo.md"）
+ */
+export function updateIndex(plansDir, relSlug, title) {
 	const indexPath = path.join(plansDir, "index.md");
-	const entry = `- [${title || slug}](./${slug}.md)`;
+	const entry = `- [${title || relSlug}](./${relSlug})`;
 	if (!fs.existsSync(indexPath)) {
 		fs.writeFileSync(indexPath, `# Plans\n\n${entry}\n`, "utf8");
 		return;
 	}
 	const content = fs.readFileSync(indexPath, "utf8");
-	if (content.includes(`./${slug}.md`)) return;
+	if (content.includes(`./${relSlug}`)) return;
 	fs.writeFileSync(indexPath, `${content.trimEnd()}\n${entry}\n`, "utf8");
 }
 
@@ -172,7 +175,8 @@ async function main() {
 				dest === "__archive__" ? projects[0].encoded : dest,
 				"plans",
 			);
-			updateIndex(projectPlansDir, slug, title);
+			const indexSlug = dest === "__archive__" ? `archive/${slug}` : slug;
+			updateIndex(projectPlansDir, indexSlug, title);
 			fs.unlinkSync(file.fullPath);
 			markRelocated(slug);
 		}
@@ -201,7 +205,9 @@ async function main() {
 	p.outro("完成");
 }
 
-main().catch((e) => {
-	console.error(e.message);
-	process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	main().catch((e) => {
+		console.error(e.message);
+		process.exit(1);
+	});
+}
