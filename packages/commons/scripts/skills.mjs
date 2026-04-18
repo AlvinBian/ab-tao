@@ -17,6 +17,8 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -112,6 +114,96 @@ function printLiveReloadHint(isNewInstall = false) {
 		console.log("⚠️  新增頂層資料夾 → 需重啟 Claude Code session 才生效");
 	} else {
 		console.log("ℹ️  Claude Code 支援 skill 熱載入，無需重啟");
+	}
+}
+
+// ── --from 輔助函式 ──────────────────────────────────────────────────────────
+
+/**
+ * 淺層 clone GitHub repo 至臨時目錄，返回 tmpDir 路徑
+ * @param {string} repo  格式：owner/name
+ * @returns {Promise<string>}
+ */
+async function cloneShallow(repo) {
+	const tmpDir = await mkdtemp(path.join(tmpdir(), `ab-tao-skills-from-`));
+	const url = `https://github.com/${repo}.git`;
+	try {
+		execFileSync("git", ["clone", "--depth", "1", url, tmpDir], {
+			stdio: "pipe",
+			timeout: 60000,
+		});
+	} catch (err) {
+		await rm(tmpDir, { recursive: true, force: true });
+		throw new Error(`無法 clone ${repo}：${err.message}`);
+	}
+	// 移除 .git 避免後續操作誤判
+	fs.rmSync(path.join(tmpDir, ".git"), { recursive: true, force: true });
+	return tmpDir;
+}
+
+/**
+ * 掃描 skills 目錄下所有子資料夾（含 SKILL.md 者）並回傳 metadata 陣列
+ * @param {string} dir  指向 skills/ 的絕對路徑
+ * @returns {{ name: string, dir: string, description: string }[]}
+ */
+function scanSkillsDir(dir) {
+	if (!fs.existsSync(dir)) return [];
+	const results = [];
+	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+		if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+		const skillDir = path.join(dir, entry.name);
+		const skillFile = path.join(skillDir, "SKILL.md");
+		if (!fs.existsSync(skillFile)) continue;
+		const meta = readSkillMeta(skillDir);
+		results.push({
+			name: entry.name,
+			dir: skillDir,
+			description: meta.description,
+		});
+	}
+	return results.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * 將 skills 安裝至 ~/.claude/skills/，記錄來源標記
+ * @param {{ name: string, dir: string }[]} skills
+ * @param {{ source: string }} opts
+ */
+function installSkillsFrom(skills, opts) {
+	const skillsDirExisted = fs.existsSync(P.skills);
+	if (!skillsDirExisted) {
+		fs.mkdirSync(P.skills, { recursive: true });
+	}
+
+	const installed = [];
+	const skipped = [];
+
+	for (const { name, dir: src } of skills) {
+		const dst = path.join(P.skills, name);
+		if (fs.existsSync(dst)) {
+			skipped.push(name);
+			continue;
+		}
+		fs.cpSync(src, dst, { recursive: true });
+		// 寫入來源標記
+		const metaFile = path.join(dst, ".source");
+		fs.writeFileSync(metaFile, opts.source, "utf8");
+		installed.push(name);
+	}
+
+	if (installed.length > 0) {
+		console.log(
+			`\n✅ 已安裝 ${installed.length} 個 skills（來源：${opts.source}）至 ${P.skills}`,
+		);
+		for (const n of installed) console.log(`   + ${n}`);
+		printLiveReloadHint(!skillsDirExisted);
+		generateAgentsMd();
+	}
+	if (skipped.length > 0) {
+		console.log(
+			`\nℹ️  已跳過 ${skipped.length} 個（已安裝）：${skipped.join(", ")}`,
+		);
+		console.log("   使用 --update 更新已安裝的 skills");
 	}
 }
 
@@ -377,10 +469,59 @@ switch (flag) {
 	case "--find":
 		cmdFind(rest[0]);
 		break;
-	case "--from":
-		console.log("ℹ️  --from <repo>（GitHub 來源安裝）規劃於後續版本。");
-		console.log("   目前請使用 --install 從 ab-tao source 安裝。");
+	case "--from": {
+		// --from <repo> [--find <keyword>]
+		const repo = rest[0];
+		if (!repo) {
+			console.error("❌ --from 需要指定 repo（格式：owner/name）");
+			process.exit(1);
+		}
+		const findIdx = rest.indexOf("--find");
+		const keyword = findIdx !== -1 ? rest[findIdx + 1] : null;
+
+		console.log(`\n正在從 github:${repo} 取得 skills…`);
+		let tmpDir;
+		try {
+			tmpDir = await cloneShallow(repo);
+		} catch (err) {
+			console.error(`❌ ${err.message}`);
+			process.exit(1);
+		}
+
+		const skillsPath = path.join(tmpDir, "skills");
+		if (!fs.existsSync(skillsPath)) {
+			console.error(`❌ ${repo} 中找不到 skills/ 目錄`);
+			await rm(tmpDir, { recursive: true, force: true });
+			process.exit(1);
+		}
+
+		let skills = scanSkillsDir(skillsPath);
+
+		if (keyword) {
+			// 過濾關鍵字
+			const kw = keyword.toLowerCase();
+			skills = skills.filter(
+				(s) =>
+					s.name.toLowerCase().includes(kw) ||
+					s.description.toLowerCase().includes(kw),
+			);
+			if (skills.length === 0) {
+				console.log(`ℹ️  ${repo} 中找不到包含「${keyword}」的 skill`);
+				await rm(tmpDir, { recursive: true, force: true });
+				process.exit(0);
+			}
+			console.log(`\n🔍 搜尋「${keyword}」結果（${skills.length} 個）：\n`);
+			for (const { name, description } of skills) {
+				console.log(`  ${name}`);
+				if (description) console.log(`    ${description}`);
+			}
+			console.log();
+		}
+
+		installSkillsFrom(skills, { source: `github:${repo}` });
+		await rm(tmpDir, { recursive: true, force: true });
 		break;
+	}
 	case "--global":
 		console.log("ℹ️  --global 是預設行為（寫入 ~/.claude/skills/）。");
 		cmdList();

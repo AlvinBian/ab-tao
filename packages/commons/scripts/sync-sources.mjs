@@ -57,6 +57,21 @@ const SOURCES_CONFIG = {
 		validatePaths: ["skills"],
 		optional: true,
 	},
+	"skills-mp": {
+		url: "https://github.com/SkillsMP/SkillsMP.git",
+		icon: "🏪",
+		description: "Claude 官方 Skills Marketplace",
+		recommended: true,
+		validatePaths: ["skills"],
+		optional: true,
+	},
+	openskills: {
+		url: "https://github.com/numman-ali/openskills.git",
+		icon: "🌍",
+		description: "openskills — 社群 skills 集合",
+		validatePaths: ["skills"],
+		optional: true,
+	},
 };
 
 // ── 工具函式 ─────────────────────────────────────────────────────

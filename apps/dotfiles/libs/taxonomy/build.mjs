@@ -14,6 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getDirname } from "../core/paths.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 
 const __dirname = getDirname(import.meta);
 
@@ -108,13 +109,19 @@ function inferNpmName(name, url) {
 
 async function main() {
 	console.log("Building taxonomy from awesome-* lists...\n");
+	// spinner 指示進度，console.log 僅輸出摘要
 
 	// 1. awesome-nodejs
-	console.log("Fetching awesome-nodejs...");
-	const nodeResp = await fetch(
-		"https://raw.githubusercontent.com/sindresorhus/awesome-nodejs/main/readme.md",
+	const nodeContent = await withSpinner(
+		"下載 awesome-nodejs 列表",
+		async () => {
+			const resp = await fetch(
+				"https://raw.githubusercontent.com/sindresorhus/awesome-nodejs/main/readme.md",
+			);
+			return resp.text();
+		},
+		{ hint: "sindresorhus/awesome-nodejs" },
 	);
-	const nodeContent = await nodeResp.text();
 	const nodeCategories = parseAwesomeMarkdown(nodeContent);
 
 	const nodePackages = {};
@@ -134,11 +141,16 @@ async function main() {
 	);
 
 	// 2. awesome-php
-	console.log("Fetching awesome-php...");
-	const phpResp = await fetch(
-		"https://raw.githubusercontent.com/ziadoz/awesome-php/master/README.md",
+	const phpContent = await withSpinner(
+		"下載 awesome-php 列表",
+		async () => {
+			const resp = await fetch(
+				"https://raw.githubusercontent.com/ziadoz/awesome-php/master/README.md",
+			);
+			return resp.text();
+		},
+		{ hint: "ziadoz/awesome-php" },
 	);
-	const phpContent = await phpResp.text();
 	const _phpCategories = parseAwesomeMarkdown(phpContent);
 
 	const phpPackages = {};

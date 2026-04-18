@@ -13,6 +13,7 @@
 import { execFile, execFileSync, execSync } from "node:child_process";
 import { promisify } from "node:util";
 import { GH_API_TIMEOUT } from "../core/constants.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -307,64 +308,70 @@ export async function fetchRepoBundle(owner, name, filePaths = []) {
     }
   }`;
 
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
-	try {
-		const res = await fetch("https://api.github.com/graphql", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ query, variables: { owner, name } }),
-			signal: controller.signal,
-		});
-		clearTimeout(timer);
-		if (!res.ok) return null;
-		const { data } = await res.json();
-		if (!data?.repository) return null;
+	return withSpinner(
+		`分析 ${owner}/${name}`,
+		async () => {
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+			try {
+				const res = await fetch("https://api.github.com/graphql", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ query, variables: { owner, name } }),
+					signal: controller.signal,
+				});
+				clearTimeout(timer);
+				if (!res.ok) return null;
+				const { data } = await res.json();
+				if (!data?.repository) return null;
 
-		const repo = data.repository;
-		const branch = repo.defaultBranchRef?.name || "main";
+				const repo = data.repository;
+				const branch = repo.defaultBranchRef?.name || "main";
 
-		// 語言：轉成 { TypeScript: 12345, ... } 格式（與 REST API 相容）
-		const languages = {};
-		for (const edge of repo.languages?.edges || []) {
-			languages[edge.node.name] = edge.size;
-		}
+				// 語言：轉成 { TypeScript: 12345, ... } 格式（與 REST API 相容）
+				const languages = {};
+				for (const edge of repo.languages?.edges || []) {
+					languages[edge.node.name] = edge.size;
+				}
 
-		// 根目錄
-		const rootEntries = (repo.root?.entries || []).map((e) => ({
-			name: e.name,
-			type: e.type === "tree" ? "dir" : "file",
-		}));
+				// 根目錄
+				const rootEntries = (repo.root?.entries || []).map((e) => ({
+					name: e.name,
+					type: e.type === "tree" ? "dir" : "file",
+				}));
 
-		// 檔案內容
-		const files = {};
-		for (const a of fileAliases) {
-			const blob = repo[a.alias];
-			if (blob?.text) files[a.path] = blob.text;
-		}
+				// 檔案內容
+				const files = {};
+				for (const a of fileAliases) {
+					const blob = repo[a.alias];
+					if (blob?.text) files[a.path] = blob.text;
+				}
 
-		const description = repo.description || "";
-		const stars = repo.stargazerCount || 0;
-		const topics = (repo.repositoryTopics?.nodes || []).map(
-			(n) => n.topic.name,
-		);
+				const description = repo.description || "";
+				const stars = repo.stargazerCount || 0;
+				const topics = (repo.repositoryTopics?.nodes || []).map(
+					(n) => n.topic.name,
+				);
 
-		return {
-			branch,
-			languages,
-			rootEntries,
-			files,
-			description,
-			stars,
-			topics,
-		};
-	} catch {
-		clearTimeout(timer);
-		return null;
-	}
+				return {
+					branch,
+					languages,
+					rootEntries,
+					files,
+					description,
+					stars,
+					topics,
+				};
+			} catch {
+				clearTimeout(timer);
+				return null;
+			}
+		},
+		{ hint: `${owner}/${name}` },
+	);
 }
 
 /**
@@ -401,33 +408,39 @@ export async function fetchFilesBatch(owner, name, branch, filePaths) {
     }
   }`;
 
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
-	try {
-		const res = await fetch("https://api.github.com/graphql", {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ query, variables: { owner, name } }),
-			signal: controller.signal,
-		});
-		clearTimeout(timer);
-		if (!res.ok) return {};
-		const { data } = await res.json();
-		if (!data?.repository) return {};
+	return withSpinner(
+		`批次取得檔案 ${owner}/${name}`,
+		async () => {
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), GH_API_TIMEOUT);
+			try {
+				const res = await fetch("https://api.github.com/graphql", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ query, variables: { owner, name } }),
+					signal: controller.signal,
+				});
+				clearTimeout(timer);
+				if (!res.ok) return {};
+				const { data } = await res.json();
+				if (!data?.repository) return {};
 
-		const files = {};
-		for (const a of aliases) {
-			const blob = data.repository[a.alias];
-			if (blob?.text) files[a.path] = blob.text;
-		}
-		return files;
-	} catch {
-		clearTimeout(timer);
-		return {};
-	}
+				const files = {};
+				for (const a of aliases) {
+					const blob = data.repository[a.alias];
+					if (blob?.text) files[a.path] = blob.text;
+				}
+				return files;
+			} catch {
+				clearTimeout(timer);
+				return {};
+			}
+		},
+		{ hint: `${filePaths.length} 個檔案` },
+	);
 }
 
 /**

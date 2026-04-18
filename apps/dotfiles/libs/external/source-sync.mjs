@@ -34,6 +34,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { TECH_TO_LANG, validateFileContent } from "@ab-tao/commons";
 import { uniq } from "lodash-es";
+import { withProgressSpinner, withSpinner } from "../ui/with-spinner.mjs";
 import { gh } from "./github.mjs";
 
 // ── 常量 ──────────────────────────────────────────────────────────
@@ -420,17 +421,51 @@ export async function fetchAllSources(
 					sha = readManifest(cacheDir)?.sha || "cached";
 				} else {
 					onProgress(source.name, "indexing");
-					const index = await fetchIndex(source, techStacks);
+					const index = await withSpinner(
+						`掃描索引 ${source.name}`,
+						async () => fetchIndex(source, techStacks),
+						{ hint: source.repo },
+					);
 
 					onProgress(source.name, "downloading");
-					const [commands, agents, rules] = await Promise.all([
-						batchDownload(source.repo, index.commands),
-						batchDownload(source.repo, index.agents),
-						batchDownload(source.repo, index.rules),
-					]);
+					const allItems = [
+						...index.commands.map((f) => ({ ...f, _type: "commands" })),
+						...index.agents.map((f) => ({ ...f, _type: "agents" })),
+						...index.rules.map((f) => ({ ...f, _type: "rules" })),
+					];
+					const downloadedAll = await withProgressSpinner(
+						`下載 ${source.name}`,
+						allItems,
+						async (f) => {
+							const content = await downloadFile(source.repo, f.path);
+							if (!content) return null;
+							const validation = validateFileContent(f.name, content);
+							if (!validation.valid) {
+								console.warn(
+									`[security] skipped ${f.name}: ${validation.errors.map((e) => e.message).join(", ")}`,
+								);
+								return null;
+							}
+							return { name: f.name, content, _type: f._type };
+						},
+						{ hint: source.repo },
+					);
+					const commands = downloadedAll
+						.filter((r) => r?._type === "commands")
+						.map(({ _type: _t, ...r }) => r);
+					const agents = downloadedAll
+						.filter((r) => r?._type === "agents")
+						.map(({ _type: _t, ...r }) => r);
+					const rules = downloadedAll
+						.filter((r) => r?._type === "rules")
+						.map(({ _type: _t, ...r }) => r);
 					let hooks = null;
 					if (index.hooksPath)
-						hooks = await downloadFile(source.repo, index.hooksPath);
+						hooks = await withSpinner(
+							`下載 hooks.json`,
+							async () => downloadFile(source.repo, index.hooksPath),
+							{ hint: source.name },
+						);
 
 					allFiles = { commands, agents, rules, hooks };
 					sha =

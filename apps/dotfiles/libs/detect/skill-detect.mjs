@@ -23,6 +23,7 @@ import {
 	ghSync,
 	scanDir,
 } from "../external/github.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 
 const __dirname = getDirname(import.meta);
 export const REPO_DIR = path.resolve(__dirname, "../..");
@@ -165,17 +166,22 @@ export async function analyzeRepo(repoName) {
 			.map((e) => e.name);
 
 		// 列出各 workspace 子目錄（並行 REST，GraphQL 不支援動態 tree 遍歷）
-		const dirListings = await Promise.allSettled(
-			existingDirs.map((dir) =>
-				gh(`repos/${repoName}/contents/${dir}?ref=${result.branch}`).then(
-					(raw) => {
-						if (!raw) return [];
-						return JSON.parse(raw)
-							.filter((e) => e.type === "dir")
-							.map((e) => `${dir}/${e.name}`);
-					},
+		const dirListings = await withSpinner(
+			`掃描 Monorepo 子目錄`,
+			async () =>
+				Promise.allSettled(
+					existingDirs.map((dir) =>
+						gh(`repos/${repoName}/contents/${dir}?ref=${result.branch}`).then(
+							(raw) => {
+								if (!raw) return [];
+								return JSON.parse(raw)
+									.filter((e) => e.type === "dir")
+									.map((e) => `${dir}/${e.name}`);
+							},
+						),
+					),
 				),
-			),
+			{ hint: repoName },
 		);
 		const subPkgDirs = dirListings.flatMap((r) =>
 			r.status === "fulfilled" ? r.value : [],

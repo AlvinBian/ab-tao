@@ -21,6 +21,7 @@ import {
 	PHP_NOISE,
 } from "../config/npm-classify.mjs";
 import { gh } from "../external/github.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 import { extractDeps } from "./skill-detect.mjs";
 
 // ── 常量 ──────────────────────────────────────────────────────────
@@ -368,10 +369,24 @@ export async function identifySignificantTechs(
 	// 用 allSettled 確保單一生態分析失敗不影響其他生態結果
 	const ecoResults = await Promise.allSettled([
 		!isEmpty(npmAllDeps)
-			? analyzeNpmDeps(Object.keys(npmAllDeps), deps, devDeps)
+			? withSpinner(
+					"查詢 npm 套件分類",
+					async () => analyzeNpmDeps(Object.keys(npmAllDeps), deps, devDeps),
+					{ hint: "npms.io" },
+				)
 			: new Map(),
-		!isEmpty(phpDeps) ? analyzePhpDeps(phpDeps) : new Map(),
-		!isEmpty(pyDeps) ? analyzePythonDeps(pyDeps) : new Map(),
+		!isEmpty(phpDeps)
+			? withSpinner("查詢 PHP 套件資訊", async () => analyzePhpDeps(phpDeps), {
+					hint: "packagist.org",
+				})
+			: new Map(),
+		!isEmpty(pyDeps)
+			? withSpinner(
+					"查詢 Python 套件資訊",
+					async () => analyzePythonDeps(pyDeps),
+					{ hint: "pypi.org" },
+				)
+			: new Map(),
 		!isEmpty(goDeps) ? analyzeGoDeps(goDeps) : new Map(),
 	]);
 	const [npmTechs, phpTechs, pyTechs, goTechs] = ecoResults.map((r) =>

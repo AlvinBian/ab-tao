@@ -11,6 +11,7 @@
 | Feature 實作 | `feature-dev` plugin |
 | 代碼簡化 | `code-simplifier` plugin |
 | 廣域探索 | `Explore` subagent |
+| 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 
 ## 調度規則（強制）
 
@@ -26,5 +27,7 @@
 - 禁止只啟動 1 個 agent 處理明顯可拆分的多方向任務
 
 **4. Subagent 分層**：搜索密集、重 I/O 工作下放 subagent；主對話專注決策與整合。
+
+→ 多 phase 任務並行執行規則：見 `14-dag-parallel-execution.md`
 
 </agent_routing>

@@ -17,6 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { STACKS_DIR } from "../detect/skill-detect.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 import { callClaude, isClaudeAvailable } from "./claude-cli.mjs";
 
 // ── AI 可用性檢查 ──────────────────────────────────────────────
@@ -214,9 +215,12 @@ export async function ensureStack(id, meta, useAI = false) {
 	// 嘗試 AI 生成
 	let files = null;
 	if (useAI) {
-		process.stdout.write("  🤖 ");
 		try {
-			files = await generateSkillContent(id, meta);
+			files = await withSpinner(
+				`AI 生成 ${id} 技能片段`,
+				async () => generateSkillContent(id, meta),
+				{ hint: meta.label },
+			);
 		} catch {
 			/* AI 生成失敗則使用預設模板 */
 		}

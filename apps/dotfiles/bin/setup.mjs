@@ -24,6 +24,7 @@ import { getDirname, HOME } from "../libs/core/paths.mjs";
 import { checkIncompleteSession, loadSession } from "../libs/core/session.mjs";
 import { ensureEnvironment } from "../libs/detect/doctor.mjs";
 import { warmupCli } from "../libs/external/claude-cli.mjs";
+import { withSpinner } from "../libs/ui/with-spinner.mjs";
 
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
@@ -531,7 +532,11 @@ async function main() {
 
 		// install
 		if (!flagDryRun) {
-			const result = await feature.install(ctx, plan);
+			const result = await withSpinner(
+				`${step} 安裝 ${feature.label}`,
+				async () => feature.install(ctx, plan),
+				{ hint: feature.id },
+			);
 			featureResults[feature.id] = result;
 
 			// verify

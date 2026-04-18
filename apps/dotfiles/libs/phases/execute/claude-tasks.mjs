@@ -31,6 +31,7 @@ import {
 } from "../../external/source-sync.mjs";
 import { syncConfig } from "../../install/config-sync.mjs";
 import { runTarget } from "../../install/index.mjs";
+import { withSpinner } from "../../ui/with-spinner.mjs";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Skills 結構遷移（三層 → 二層）
@@ -262,9 +263,18 @@ export async function installAiResources(opts) {
 		}
 		syncResult = buildSyncResult(fetchedSources, aiResByType);
 		const claudePreview = path.join(previewDir, "claude");
-		await writeSyncedFiles(syncResult.downloaded, claudePreview);
+		await withSpinner(
+			"寫入 AI 資源（preview）",
+			async () => writeSyncedFiles(syncResult.downloaded, claudePreview),
+			{ hint: claudePreview },
+		);
 		if (!isManual)
-			await writeSyncedFiles(syncResult.downloaded, path.join(HOME, ".claude"));
+			await withSpinner(
+				"寫入 AI 資源（~/.claude）",
+				async () =>
+					writeSyncedFiles(syncResult.downloaded, path.join(HOME, ".claude")),
+				{ hint: "~/.claude" },
+			);
 		// 更新 installSelections 以反映 AI 資源安裝
 		for (const [type, names] of Object.entries(aiResByType)) {
 			for (const name of names) {
@@ -297,9 +307,17 @@ export async function installAiResources(opts) {
 			hooks: null,
 		}));
 		const claudePreview = path.join(previewDir, "claude");
-		await writeSyncedFiles(downloaded, claudePreview);
+		await withSpinner(
+			"寫入 Commons 資源（preview）",
+			async () => writeSyncedFiles(downloaded, claudePreview),
+			{ hint: claudePreview },
+		);
 		if (!isManual) {
-			await writeSyncedFiles(downloaded, path.join(HOME, ".claude"));
+			await withSpinner(
+				"寫入 Commons 資源（~/.claude）",
+				async () => writeSyncedFiles(downloaded, path.join(HOME, ".claude")),
+				{ hint: "~/.claude" },
+			);
 		}
 
 		// 安裝 skills（SKILL.md 格式，按用戶選擇過濾）
