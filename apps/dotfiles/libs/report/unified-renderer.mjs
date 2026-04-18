@@ -292,7 +292,7 @@ footer { text-align: center; font-size: .75rem; color: var(--text-dim); margin-t
 // ── Tab 渲染函式 ────────────────────────────────────────────────
 
 /**
- * 渲染概覽 Tab
+ * 渲染概覽 Tab（Wave 3 C2 擴充：drift 警告 + ccline 狀態）
  */
 function renderTabOverview(data) {
 	// 相容兩種資料形狀
@@ -301,6 +301,7 @@ function renderTabOverview(data) {
 	const rules = data.rules || data.installed?.rules || [];
 	const skills = data.skills || [];
 	const hooks = data.hooks || [];
+	const extended = data.extended || {};
 
 	const skillsEnabled = skills.filter((s) => s.enabled).length;
 	const skillsTotal = skills.length;
@@ -358,6 +359,52 @@ function renderTabOverview(data) {
 		)
 		.join("");
 
+	// Drift 警告 badge（Wave 3 C2）
+	const driftItems = Array.isArray(extended.drift) ? extended.drift : [];
+	let driftHtml = "";
+	if (driftItems.length > 0) {
+		driftHtml = `
+<div class="card" style="border-color:var(--yellow)">
+  <div class="section-title" style="color:var(--yellow)">⚠ 配置 Drift 警告</div>
+  <p style="font-size:.88rem;margin-bottom:8px">偵測到 <strong style="color:var(--yellow)">${driftItems.length}</strong> 個 managed 檔案已被修改或遺失，建議至 <strong>State</strong> 頁籤查看詳情。</p>
+  <div>
+    ${driftItems
+			.slice(0, 5)
+			.map(
+				(d) =>
+					`<span class="badge badge-yellow">${escapeHtml(d.decision)}: ${escapeHtml(d.path)}</span>`,
+			)
+			.join("")}
+    ${driftItems.length > 5 ? `<span class="badge badge-grey">...還有 ${driftItems.length - 5} 個</span>` : ""}
+  </div>
+</div>`;
+	}
+
+	// CCline 狀態 widget（Wave 3 C2）
+	const ccline = extended.ccline || {};
+	let cclineHtml = "";
+	if (ccline.installed !== undefined) {
+		const cclineStatus = ccline.installed
+			? '<span class="badge badge-green">已安裝</span>'
+			: '<span class="badge badge-grey">未安裝</span>';
+		const cclineConfigured = ccline.statusLineConfigured
+			? '<span class="badge badge-blue">statusLineTool 已配置</span>'
+			: '<span class="badge badge-yellow">statusLineTool 未配置</span>';
+		const cmdDisplay = ccline.command
+			? `<div class="mono" style="font-size:.78rem;margin-top:4px;word-break:break-all">${escapeHtml(ccline.command)}</div>`
+			: "";
+		cclineHtml = `
+<div class="card">
+  <div class="section-title">CCline 狀態列</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    ${cclineStatus}
+    ${cclineConfigured}
+    ${ccline.themes && ccline.themes.length > 0 ? `<span class="badge badge-purple">${ccline.themes.length} 個主題</span>` : ""}
+  </div>
+  ${cmdDisplay}
+</div>`;
+	}
+
 	return `
 <div id="tab-overview" class="tab-content active">
   ${healthHtml}
@@ -365,6 +412,8 @@ function renderTabOverview(data) {
     <div class="section-title">核心統計</div>
     <div class="stat-grid">${statsHtml}</div>
   </div>
+  ${driftHtml}
+  ${cclineHtml}
 </div>`;
 }
 
@@ -432,6 +481,10 @@ function renderTabSkills(data) {
   <div class="card">
     <div class="section-title">Skills（${skills.length} 個）</div>
     <p class="section-desc">勾選 / 取消勾選會在下方 Script Panel 累積對應的 shell 指令，確認無誤後複製執行。</p>
+    <div style="margin-bottom:12px">
+      <button class="btn" onclick="copyFindSkillsCmd()" title="複製 pnpm run c:skills --find 指令">🔍 c:skills --find</button>
+      <span style="font-size:.78rem;color:var(--text-dim);margin-left:8px">快速搜尋可安裝的 skills</span>
+    </div>
     ${groupsHtml}
   </div>
 </div>`;
@@ -504,7 +557,7 @@ function renderTabResources(data) {
 }
 
 /**
- * 渲染 Environment Tab
+ * 渲染 Environment Tab（Wave 3 C2 擴充：active profile + failed plugins）
  */
 function renderTabEnvironment(data) {
 	const zsh = data.zsh || {};
@@ -512,6 +565,7 @@ function renderTabEnvironment(data) {
 	const permissions = data.permissions || {};
 	const plugins = data.installedPlugins;
 	const localPlugins = data.plugins || [];
+	const extended = data.extended || {};
 
 	// ZSH 模組
 	const zshInstalled = zsh.installed || [];
@@ -565,6 +619,29 @@ function renderTabEnvironment(data) {
 		pluginsHtml += `<div style="margin-top:8px;font-size:.82rem;color:var(--text-dim)">本地構建（${localPlugins.length} 個）：${localPlugins.map((pl) => escapeHtml(pl.name)).join("、")}</div>`;
 	}
 
+	// Active Profile（Wave 3 C2）
+	const activeProfile =
+		data.activeProfile || data.configStatus?.activeProfile || null;
+	const profileHtml = activeProfile
+		? `<div style="margin-bottom:8px"><strong>Active Profile：</strong> <span class="badge badge-blue">${escapeHtml(activeProfile)}</span></div>`
+		: "";
+
+	// Failed Plugins（Wave 3 C2）— 從 mcp.enabledPlugins 與 installedPlugins 差集計算
+	const mcpData = extended.mcp || {};
+	const enabledInSettings = mcpData.enabledPlugins || [];
+	const installedNames = Array.isArray(plugins)
+		? plugins.map((p) => p.name)
+		: [];
+	const failedPlugins = enabledInSettings.filter(
+		(name) =>
+			installedNames.length > 0 && !installedNames.some((n) => n === name),
+	);
+	const failedPluginsHtml =
+		failedPlugins.length > 0
+			? `<div style="margin-top:8px"><strong style="color:var(--red)">未能載入的 Plugins（${failedPlugins.length}）：</strong>
+      <div style="margin-top:4px">${failedPlugins.map((p) => `<span class="badge badge-red">${escapeHtml(p)}</span>`).join("")}</div></div>`
+			: "";
+
 	return `
 <div id="tab-environment" class="tab-content">
   <div class="card">
@@ -574,6 +651,7 @@ function renderTabEnvironment(data) {
   </div>
   <div class="card">
     <div class="section-title">AI 模型</div>
+    ${profileHtml}
     <p style="font-size:.88rem">模型：<strong>${aiModel}</strong></p>
     <p style="font-size:.88rem;margin-top:4px">推理強度：<strong>${aiEffort}</strong></p>
     ${aiRepo !== "—" ? `<p style="font-size:.88rem;margin-top:4px">Repo 分類模型：<strong>${aiRepo}</strong></p>` : ""}
@@ -586,12 +664,13 @@ function renderTabEnvironment(data) {
   <div class="card">
     <div class="section-title">Plugins</div>
     ${pluginsHtml}
+    ${failedPluginsHtml}
   </div>
 </div>`;
 }
 
 /**
- * 渲染 Audit Tab
+ * 渲染 Audit Tab（Wave 3 C2 擴充：last rules verify result）
  * 顯示快取時間戳、安裝統計；若無快取則提示執行 d:setup
  */
 function renderTabAudit(data) {
@@ -600,6 +679,7 @@ function renderTabAudit(data) {
 	const mode = data.mode || "—";
 	const stacks = data.stacks || [];
 	const repos = data.repos || [];
+	const extended = data.extended || {};
 
 	if (!ts && !installed.commands && !installed.agents) {
 		return `
@@ -628,12 +708,48 @@ function renderTabAudit(data) {
 		)
 		.join("");
 
+	// Rules Verify 結果（Wave 3 C2）
+	// 從 state.json managed 中統計 rules/ 相關項目的 drift 狀態
+	const stateData = extended.state || {};
+	const driftItems = Array.isArray(extended.drift) ? extended.drift : [];
+	const managedCount = Object.keys(stateData.managed || {}).length;
+	const driftCount = driftItems.length;
+	const rulesVerifyScore = managedCount > 0 ? managedCount - driftCount : null;
+
+	let rulesVerifyHtml = "";
+	if (rulesVerifyScore !== null) {
+		const color =
+			driftCount === 0
+				? "var(--green)"
+				: driftCount <= 2
+					? "var(--yellow)"
+					: "var(--red)";
+		const label = driftCount === 0 ? "全數通過" : `${driftCount} 個 drift`;
+		rulesVerifyHtml = `
+<div class="card">
+  <div class="section-title">Rules Verify 結果</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:1.8rem;font-weight:700;color:${color}">${rulesVerifyScore}/${managedCount}</div>
+    <div>
+      <div style="font-size:.9rem;color:${color};font-weight:600">${escapeHtml(label)}</div>
+      <div style="font-size:.78rem;color:var(--text-dim)">managed 檔案完整性檢查</div>
+    </div>
+  </div>
+  ${
+		driftCount > 0
+			? `<div style="margin-top:10px;font-size:.82rem;color:var(--text-dim)">詳細 drift 清單請至 <strong>State</strong> 頁籤查看。</div>`
+			: ""
+	}
+</div>`;
+	}
+
 	return `
 <div id="tab-audit" class="tab-content">
   <div class="card">
     <div class="section-title">安裝摘要</div>
     <table>${rowsHtml}</table>
   </div>
+  ${rulesVerifyHtml}
 </div>`;
 }
 
@@ -701,6 +817,455 @@ function renderTabRepos(cachedRepos) {
   <div class="card">
     <div class="section-title">Repos（${cachedRepos.length} 個）</div>
     ${cards}
+  </div>
+</div>`;
+}
+
+// ── 5 個新 Tab 渲染函式（Wave 3 C2）────────────────────────────
+
+/**
+ * 渲染 Hooks Tab
+ * 顯示 hooks.json 中所有 hook 的名稱、event、script 路徑、狀態
+ */
+function renderTabHooks(data) {
+	const extended = data.extended || {};
+	const hooksData = extended.hooks || { hooks: [], total: 0, healthy: 0 };
+	const hooks = hooksData.hooks || [];
+
+	if (hooks.length === 0) {
+		return `
+<div id="tab-hooks" class="tab-content">
+  <div class="info-box">暫無 Hooks 資料（~/.claude/hooks.json 為空或不存在）。</div>
+</div>`;
+	}
+
+	// 依 event 分組
+	const byEvent = /** @type {Record<string, typeof hooks>} */ ({});
+	for (const h of hooks) {
+		if (!byEvent[h.event]) byEvent[h.event] = [];
+		byEvent[h.event].push(h);
+	}
+
+	const healthyCount = hooksData.healthy ?? 0;
+	const totalCount = hooksData.total ?? hooks.length;
+
+	let groupsHtml = "";
+	for (const [event, items] of Object.entries(byEvent).sort()) {
+		const rows = items
+			.map((h) => {
+				const statusIcon = h.exists && h.executable ? "✅" : "❌";
+				const statusBadge =
+					h.exists && h.executable
+						? '<span class="badge badge-green">healthy</span>'
+						: !h.exists
+							? '<span class="badge badge-red">missing</span>'
+							: '<span class="badge badge-yellow">not executable</span>';
+				return `<tr>
+  <td>${escapeHtml(h.name)}</td>
+  <td><span class="badge badge-blue">${escapeHtml(event)}</span></td>
+  <td class="mono" style="font-size:.78rem;word-break:break-all;max-width:400px">${escapeHtml(h.script)}</td>
+  <td>${statusIcon} ${statusBadge}</td>
+</tr>`;
+			})
+			.join("");
+
+		groupsHtml += `
+<details open>
+  <summary>${escapeHtml(event)} <span class="badge badge-grey" style="font-size:.7rem">${items.length}</span></summary>
+  <div class="details-body" style="padding:0">
+    <table>
+      <thead><tr>
+        <th>名稱</th>
+        <th>Event</th>
+        <th>Script</th>
+        <th>狀態</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+</details>`;
+	}
+
+	return `
+<div id="tab-hooks" class="tab-content">
+  <div class="card">
+    <div class="section-title">Hooks（${totalCount} 個，${healthyCount} healthy）</div>
+    <p class="section-desc">來源：~/.claude/hooks.json</p>
+    ${groupsHtml}
+  </div>
+</div>`;
+}
+
+/**
+ * 渲染 State Tab
+ * 顯示 state.json 摘要：managed count、choices/decisions、drift items
+ */
+function renderTabState(data) {
+	const extended = data.extended || {};
+	const stateData = extended.state || {};
+	const driftItems = Array.isArray(extended.drift) ? extended.drift : [];
+
+	const managed = stateData.managed || {};
+	const choices = stateData.choices || {};
+	const managedKeys = Object.keys(managed);
+	const choicesKeys = Object.keys(choices);
+
+	// Managed 清單
+	const managedRowsHtml =
+		managedKeys.length > 0
+			? managedKeys
+					.map((relPath) => {
+						const entry = managed[relPath];
+						const hasDrift = driftItems.some((d) => d.path === relPath);
+						const badgeHtml = hasDrift
+							? '<span class="badge badge-red">drift</span>'
+							: '<span class="badge badge-green">ok</span>';
+						const source = entry.source || "—";
+						const installedAt = entry.installedAt
+							? entry.installedAt.slice(0, 10)
+							: "—";
+						return `<tr>
+  <td class="mono" style="font-size:.78rem">${escapeHtml(relPath)}</td>
+  <td><span class="badge badge-grey" style="font-size:.72rem">${escapeHtml(source)}</span></td>
+  <td style="font-size:.78rem;color:var(--text-dim)">${escapeHtml(installedAt)}</td>
+  <td>${badgeHtml}</td>
+</tr>`;
+					})
+					.join("")
+			: '<tr><td colspan="4" style="color:var(--text-dim);padding:12px">暫無 managed 項目</td></tr>';
+
+	// Choices / Decisions
+	const choicesRowsHtml =
+		choicesKeys.length > 0
+			? choicesKeys
+					.map((relPath) => {
+						const choice = choices[relPath];
+						const decisionColor =
+							choice.decision === "keep-local"
+								? "yellow"
+								: choice.decision === "use-ab-tao"
+									? "blue"
+									: choice.decision === "merge"
+										? "purple"
+										: "grey";
+						return `<tr>
+  <td class="mono" style="font-size:.78rem">${escapeHtml(relPath)}</td>
+  <td><span class="badge badge-${decisionColor}">${escapeHtml(choice.decision || "—")}</span></td>
+  <td style="font-size:.78rem;color:var(--text-dim)">${escapeHtml((choice.lockedAt || "").slice(0, 10))}</td>
+</tr>`;
+					})
+					.join("")
+			: '<tr><td colspan="3" style="color:var(--text-dim);padding:12px">暫無 choices 記錄</td></tr>';
+
+	// Drift 清單
+	let driftHtml = "";
+	if (driftItems.length > 0) {
+		const driftRows = driftItems
+			.map((d) => {
+				const decisionColor =
+					d.decision === "deleted"
+						? "red"
+						: d.decision === "modified"
+							? "yellow"
+							: "grey";
+				return `<tr>
+  <td class="mono" style="font-size:.78rem">${escapeHtml(d.path)}</td>
+  <td><span class="badge badge-${decisionColor}">${escapeHtml(d.decision)}</span></td>
+  <td class="mono" style="font-size:.72rem;color:var(--text-dim)">${d.localHash ? escapeHtml(d.localHash.slice(0, 12)) + "..." : "—"}</td>
+</tr>`;
+			})
+			.join("");
+
+		driftHtml = `
+<div class="card" style="border-color:var(--yellow)">
+  <div class="section-title" style="color:var(--yellow)">⚠ Drift 清單（${driftItems.length} 個）</div>
+  <table>
+    <thead><tr><th>路徑</th><th>狀態</th><th>本地 Hash</th></tr></thead>
+    <tbody>${driftRows}</tbody>
+  </table>
+</div>`;
+	} else if (managedKeys.length > 0) {
+		driftHtml = `
+<div class="card" style="border-color:var(--green)">
+  <div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+    <span style="font-size:1.4rem">✅</span>
+    <span style="color:var(--green);font-weight:600">所有 managed 檔案均無 drift</span>
+  </div>
+</div>`;
+	}
+
+	return `
+<div id="tab-state" class="tab-content">
+  ${driftHtml}
+  <div class="card">
+    <div class="section-title">Managed 檔案（${managedKeys.length} 個）</div>
+    <p class="section-desc">由 ab-tao 追蹤的檔案清單（state.json v${escapeHtml(stateData.version || "—")}）</p>
+    <table>
+      <thead><tr><th>路徑</th><th>來源</th><th>安裝日期</th><th>狀態</th></tr></thead>
+      <tbody>${managedRowsHtml}</tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="section-title">Choices / Decisions（${choicesKeys.length} 個）</div>
+    <p class="section-desc">使用者對各檔案的配置選擇記錄</p>
+    <table>
+      <thead><tr><th>路徑</th><th>決策</th><th>鎖定時間</th></tr></thead>
+      <tbody>${choicesRowsHtml}</tbody>
+    </table>
+  </div>
+</div>`;
+}
+
+/**
+ * 渲染 Sync Tab
+ * 顯示 SOURCES_CONFIG 4 個來源 + state.json.sync 範圍
+ */
+function renderTabSync(data) {
+	const extended = data.extended || {};
+	const stateData = extended.state || {};
+	const sync = stateData.sync || { tool: "ab-tao", included: [], excluded: [] };
+
+	// 4 個 AI 來源（硬編碼名稱 + 說明，與 commons 的 SOURCES_CONFIG 對應）
+	const sources = [
+		{
+			key: "ecc",
+			name: "ECC（Everything Claude Code）",
+			desc: "全功能 commands、agents、rules、skills、docs",
+			url: "https://github.com/disler/everything-claude-code",
+		},
+		{
+			key: "anthropic",
+			name: "Anthropic 官方資源",
+			desc: "官方 prompting guides、安全規則",
+			url: "https://github.com/anthropics/claude-code",
+		},
+		{
+			key: "superpowers",
+			name: "Superpowers",
+			desc: "進階 prompts、multi-agent 工作流",
+			url: "https://github.com/NicolasZon/Claude-Superpowers",
+		},
+		{
+			key: "context-engineering",
+			name: "Context Engineering",
+			desc: "PRP（Product Requirements Prompt）框架",
+			url: "https://github.com/coleam00/context-engineering-intro",
+		},
+	];
+
+	const sourcesHtml = sources
+		.map(
+			(s) => `
+<div class="card" style="margin-bottom:10px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-weight:600;color:var(--accent)">${escapeHtml(s.name)}</div>
+      <div style="font-size:.82rem;color:var(--text-dim);margin-top:2px">${escapeHtml(s.desc)}</div>
+    </div>
+    <span class="badge badge-grey" style="font-size:.72rem;word-break:break-all">${escapeHtml(s.url)}</span>
+  </div>
+</div>`,
+		)
+		.join("");
+
+	// Sync 範圍
+	const includedHtml =
+		sync.included.length > 0
+			? sync.included
+					.map((p) => `<span class="badge badge-green">${escapeHtml(p)}</span>`)
+					.join("")
+			: '<span style="color:var(--text-dim);font-size:.85rem">（空）</span>';
+
+	const excludedHtml =
+		sync.excluded.length > 0
+			? sync.excluded
+					.map((p) => `<span class="badge badge-red">${escapeHtml(p)}</span>`)
+					.join("")
+			: '<span style="color:var(--text-dim);font-size:.85rem">（空）</span>';
+
+	return `
+<div id="tab-sync" class="tab-content">
+  <div class="card">
+    <div class="section-title">AI 來源（${sources.length} 個）</div>
+    <p class="section-desc">執行 <code>pnpm run c:ai-sync --select</code> 可互動式選擇同步。</p>
+    ${sourcesHtml}
+  </div>
+  <div class="card">
+    <div class="section-title">同步範圍（state.json.sync）</div>
+    <p class="section-desc">工具：<strong>${escapeHtml(sync.tool || "ab-tao")}</strong></p>
+    <div style="margin-bottom:10px">
+      <div class="section-title" style="font-size:.82rem;margin-bottom:6px">Included（${sync.included.length}）</div>
+      <div>${includedHtml}</div>
+    </div>
+    <div>
+      <div class="section-title" style="font-size:.82rem;margin-bottom:6px">Excluded（${sync.excluded.length}）</div>
+      <div>${excludedHtml}</div>
+    </div>
+  </div>
+</div>`;
+}
+
+/**
+ * 渲染 Memory & Plans Tab
+ * 顯示 global + per-project memory/plans/tasks 樹狀結構
+ */
+function renderTabMemory(data) {
+	const extended = data.extended || {};
+	const memoryData = extended.memory || {
+		global: { memory: [], plans: [], tasks: [] },
+		projects: [],
+	};
+
+	const global = memoryData.global || { memory: [], plans: [], tasks: [] };
+	const projects = memoryData.projects || [];
+
+	const renderFileList = (files, emptyText = "（空）") => {
+		if (!files || files.length === 0) {
+			return `<span style="color:var(--text-dim);font-size:.82rem">${emptyText}</span>`;
+		}
+		return files
+			.map(
+				(f) =>
+					`<div class="mono" style="font-size:.8rem;padding:2px 0;color:var(--text)">${escapeHtml(f)}</div>`,
+			)
+			.join("");
+	};
+
+	const renderLayer = (label, memory, plans, tasks, badge = "blue") =>
+		`<details open>
+  <summary>${escapeHtml(label)}
+    <span class="badge badge-${badge}" style="font-size:.7rem">${memory.length + plans.length + tasks.length} 個</span>
+  </summary>
+  <div class="details-body">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+      <div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:4px">Memory（${memory.length}）</div>
+        ${renderFileList(memory)}
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:4px">Plans（${plans.length}）</div>
+        ${renderFileList(plans)}
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:4px">Tasks（${tasks.length}）</div>
+        ${renderFileList(tasks)}
+      </div>
+    </div>
+  </div>
+</details>`;
+
+	const globalHtml = renderLayer(
+		"Global（~/.claude/）",
+		global.memory,
+		global.plans,
+		global.tasks,
+		"purple",
+	);
+
+	const projectsHtml =
+		projects.length > 0
+			? projects
+					.map((proj) => {
+						// 嘗試解碼 encoded 路徑為可讀名稱
+						const label = proj.encoded
+							.replace(/^-Users-[^-]+-/, "~/")
+							.replace(/-/g, "/");
+						return renderLayer(
+							label,
+							proj.memory,
+							proj.plans,
+							proj.tasks,
+							"grey",
+						);
+					})
+					.join("")
+			: '<div class="info-box" style="margin-top:12px">無專案層 memory/plans/tasks 資料</div>';
+
+	const totalFiles =
+		global.memory.length +
+		global.plans.length +
+		global.tasks.length +
+		projects.reduce(
+			(s, p) => s + p.memory.length + p.plans.length + p.tasks.length,
+			0,
+		);
+
+	return `
+<div id="tab-memory" class="tab-content">
+  <div class="card">
+    <div class="section-title">Memory & Plans（${totalFiles} 個檔案）</div>
+    <p class="section-desc">全域與各專案的 memory、plans、tasks 文件樹。</p>
+    ${globalHtml}
+    ${projects.length > 0 ? `<div style="margin-top:12px"><div class="section-title" style="font-size:.88rem">專案層（${projects.length} 個）</div></div>${projectsHtml}` : projectsHtml}
+  </div>
+</div>`;
+}
+
+/**
+ * 渲染 MCP & Plugins Tab
+ * 顯示 MCP servers 清單 + enabledPlugins
+ */
+function renderTabMcp(data) {
+	const extended = data.extended || {};
+	const mcpData = extended.mcp || { servers: [], enabledPlugins: [] };
+	const servers = mcpData.servers || [];
+	const enabledPlugins = mcpData.enabledPlugins || [];
+
+	// MCP Servers 表格
+	let serversHtml = "";
+	if (servers.length === 0) {
+		serversHtml =
+			'<div class="info-box">未配置 MCP Servers（~/.claude/settings.json 的 mcpServers 為空）。</div>';
+	} else {
+		const rows = servers
+			.map(
+				(s) => `<tr>
+  <td style="font-weight:600;color:var(--accent)">${escapeHtml(s.name)}</td>
+  <td><span class="badge badge-${s.type === "sse" || s.type === "http" ? "blue" : "grey"}">${escapeHtml(s.type)}</span></td>
+  <td class="mono" style="font-size:.78rem;word-break:break-all">${escapeHtml(s.command)}</td>
+</tr>`,
+			)
+			.join("");
+
+		serversHtml = `
+<table>
+  <thead><tr><th>名稱</th><th>類型</th><th>Command / URL</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>`;
+	}
+
+	// Enabled Plugins
+	let pluginsHtml = "";
+	if (enabledPlugins.length === 0) {
+		pluginsHtml =
+			'<p style="color:var(--text-dim);font-size:.85rem">暫無啟用的 Plugins。</p>';
+	} else {
+		pluginsHtml = enabledPlugins
+			.map((p) => {
+				// 格式：name@publisher
+				const parts = p.split("@");
+				const pluginName = parts[0] || p;
+				const publisher = parts[1] || "";
+				return `<div class="skill-item">
+  <span class="skill-name">${escapeHtml(pluginName)}</span>
+  ${publisher ? `<span class="badge badge-purple">${escapeHtml(publisher)}</span>` : ""}
+  <span class="skill-status enabled">enabled</span>
+</div>`;
+			})
+			.join("");
+	}
+
+	return `
+<div id="tab-mcp" class="tab-content">
+  <div class="card">
+    <div class="section-title">MCP Servers（${servers.length} 個）</div>
+    <p class="section-desc">來源：~/.claude/settings.json mcpServers 區塊</p>
+    ${serversHtml}
+  </div>
+  <div class="card">
+    <div class="section-title">Enabled Plugins（${enabledPlugins.length} 個）</div>
+    <p class="section-desc">來源：~/.claude/settings.json enabledPlugins 區塊</p>
+    ${pluginsHtml}
   </div>
 </div>`;
 }
@@ -789,6 +1354,17 @@ function renderInlineScript() {
     updatePanel();
   };
 
+  // ── c:skills --find 快捷按鈕（Wave 3 C2）──
+  window.copyFindSkillsCmd = function() {
+    var cmd = 'pnpm run c:skills --find';
+    navigator.clipboard.writeText(cmd).then(function() {
+      alert('已複製：' + cmd);
+    }).catch(function() {
+      // fallback
+      alert('請手動執行：' + cmd);
+    });
+  };
+
   // ── 複製腳本 ──
   window.copyScript = function() {
     var pre = document.getElementById('scriptOutput');
@@ -850,7 +1426,7 @@ export function generateUnifiedReport(data) {
 	const hasTechStacks = Object.keys(cachedTechStacks).length > 0;
 	const hasRepos = cachedRepos.length > 0;
 
-	// 組合 Tab 按鈕
+	// 組合 Tab 按鈕（Wave 3 C2 新增 5 個 Tab）
 	const tabButtons = [
 		{ key: "overview", label: "Overview" },
 		{ key: "skills", label: "Skills" },
@@ -859,6 +1435,12 @@ export function generateUnifiedReport(data) {
 		{ key: "audit", label: "Audit" },
 		...(hasTechStacks ? [{ key: "techstacks", label: "Tech Stacks" }] : []),
 		...(hasRepos ? [{ key: "repos", label: "Repos" }] : []),
+		// 5 個新 Tab（永遠顯示，無資料時顯示空狀態）
+		{ key: "hooks", label: "Hooks" },
+		{ key: "state", label: "State" },
+		{ key: "sync", label: "Sync" },
+		{ key: "memory", label: "Memory & Plans" },
+		{ key: "mcp", label: "MCP & Plugins" },
 	];
 
 	const tabNav = `
@@ -875,6 +1457,12 @@ export function generateUnifiedReport(data) {
 		renderTabAudit(data),
 		...(hasTechStacks ? [renderTabTechStacks(cachedTechStacks)] : []),
 		...(hasRepos ? [renderTabRepos(cachedRepos)] : []),
+		// 5 個新 Tab（Wave 3 C2）
+		renderTabHooks(data),
+		renderTabState(data),
+		renderTabSync(data),
+		renderTabMemory(data),
+		renderTabMcp(data),
 		renderScriptPanel(),
 		renderInlineScript(),
 	].join("\n");

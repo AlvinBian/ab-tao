@@ -2,10 +2,15 @@
  * config-sync.mjs — Claude 配置同步 Orchestrator
  *
  * 職責：
- *   1. 掃描 template 目錄，分類每個項目的同步操作
- *   2. 渲染計畫摘要並視模式確認
- *   3. 執行計畫（含 _archive/ 備份）
- *   4. 更新 state.json 與 chmod +x .sh 檔
+ *   1. 首次部署提示（firstRunSeen）
+ *   2. 掃描 template 目錄，分類每個項目的同步操作
+ *   3. 渲染計畫摘要（renderPlanSummary）
+ *   4. 批次或逐一確認 drift（confirmPlan）
+ *   5. 執行計畫（含 _archive/ 備份）
+ *   6. 更新 state.json 與 chmod +x .sh 檔
+ *
+ * CI / 靜默模式：process.env.CI || process.env.AB_TAO_QUIET
+ *   → 跳過互動，批次 drift 策略預設為「全部使用 ab-tao template」
  */
 
 import crypto from "node:crypto";
@@ -14,26 +19,34 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { APP_VERSION } from "../core/constants.mjs";
-import { stateSetManaged, stateWrite } from "../state/state.mjs";
+import { stateRead, stateSetManaged, stateWrite } from "../state/state.mjs";
+import { showFirstRunNotice } from "../ui/first-run-notice.mjs";
+import { renderPlanSummary } from "../ui/plan-summary.mjs";
 import { mergeConfig } from "./config-merge.mjs";
 
 // ── 計畫項目型別 ────────────────────────────────────────────────
 
 /**
- * @typedef {'create'|'mergeJson'|'overwriteFile'|'additiveKeep'|'forbiddenSkip'|'noChange'} PlanAction
+ * @typedef {'create'|'mergeJson'|'overwriteFile'|'overwriteInteractive'|'lockedKeep'|'additiveKeep'|'forbiddenSkip'|'noChange'} PlanAction
  *
- * create        — home 不存在 → 直接複製
- * mergeJson     — JSON 檔 + local 有修改 → mergeConfig()
- * overwriteFile — non-JSON + 非 additive + drift → 需確認
- * additiveKeep  — ADDITIVE_DIRS 中的本地獨有檔 → 保留
- * forbiddenSkip — FORBIDDEN_DIRS → 完全跳過
- * noChange      — 內容相同，無需操作
+ * create               — home 不存在 → 直接複製
+ * mergeJson            — JSON 檔 + 內容不同 → mergeConfig()
+ * overwriteFile        — 非 JSON + 非 additive + drift + template 新版（本地無手動改動）
+ * overwriteInteractive — 非 JSON + drift + 需使用者決策
+ * lockedKeep           — choices.decision = keep-local（使用者已明確鎖定）
+ * additiveKeep         — ADDITIVE_DIRS 中的本地獨有檔 → 保留
+ * forbiddenSkip        — FORBIDDEN_DIRS → 完全跳過
+ * noChange             — 內容相同，無需操作
  */
 
 // ── 主入口 ────────────────────────────────────────────────────────
 
 /**
  * 同步 Claude 配置
+ *
+ * 流程：
+ *   showFirstRunNotice → buildSyncPlan → renderPlanSummary
+ *     → confirmPlan（互動模式）→ executePlan → updateStateJson → chmodShFiles
  *
  * @param {object} opts
  * @param {string}  opts.home      目標目錄（~/.claude/）
@@ -52,16 +65,27 @@ export async function syncConfig({
 	// 確保目標目錄存在
 	fs.mkdirSync(home, { recursive: true });
 
+	// P1.3 — 首次部署提示
+	const state = stateRead();
+	showFirstRunNotice(state);
+
 	const plan = await buildSyncPlan(home, template, policy);
-	await renderPlanSummary(plan);
+
+	// P1.1 — 計畫摘要
+	renderPlanSummary(plan);
 
 	if (dryRun) {
 		console.log(pc.yellow("Dry-run 模式：不執行任何寫入"));
 		return;
 	}
 
-	if (mode === "interactive") {
+	// P1.2 — 批次 / 逐一互動確認
+	const isQuiet = process.env.CI || process.env.AB_TAO_QUIET;
+	if (mode === "interactive" && !isQuiet) {
 		await confirmPlan(plan);
+	} else if (isQuiet) {
+		// CI 模式：全部 drift 自動使用 ab-tao template（等同批次 A）
+		_applyBatchStrategy(plan, "A");
 	}
 
 	await executePlan(plan, home, template, policy);
@@ -74,13 +98,26 @@ export async function syncConfig({
 /**
  * 掃描 template 並分類每個項目
  *
+ * 分類邏輯：
+ *   1. FORBIDDEN_DIRS → forbiddenSkip
+ *   2. 目標不存在 → create
+ *   3. 內容相同 → noChange
+ *   4. choices.decision = keep-local → lockedKeep
+ *   5. JSON 檔不同 → mergeJson
+ *   6. ADDITIVE_DIRS 有 drift → additiveKeep（不覆蓋）
+ *   7. 其他有 drift → overwriteInteractive（需決策）
+ *
  * @param {string} home     目標目錄
  * @param {string} template template 根目錄
  * @param {object} policy   preserve-policy
- * @returns {Promise<PlanItem[]>}
+ * @returns {Promise<Array<PlanItem>>}
  */
 export async function buildSyncPlan(home, template, policy) {
 	const { additiveDirs = [], forbiddenDirs = [] } = policy ?? {};
+
+	// 讀取現有 choices（用於 lockedKeep 判斷）
+	const state = stateRead();
+	const choices = state.choices ?? {};
 
 	const items = [];
 	await _walkTemplate(
@@ -89,6 +126,7 @@ export async function buildSyncPlan(home, template, policy) {
 		home,
 		additiveDirs,
 		forbiddenDirs,
+		choices,
 		items,
 	);
 	return items;
@@ -103,6 +141,7 @@ async function _walkTemplate(
 	homeRoot,
 	additiveDirs,
 	forbiddenDirs,
+	choices,
 	items,
 ) {
 	let entries;
@@ -120,9 +159,12 @@ async function _walkTemplate(
 		// 取第一層目錄名（用於判斷 forbidden/additive）
 		const topDir = relPath.split(path.sep)[0];
 
-		// FORBIDDEN_DIRS：完全跳過
+		// FORBIDDEN_DIRS：完全跳過（每個頂層目錄只記錄一次）
 		if (forbiddenDirs.includes(topDir)) {
-			items.push({ action: "forbiddenSkip", relPath, srcPath, destPath });
+			// 只在遇到頂層目錄本身時記錄（避免重複計數子目錄/檔案）
+			if (relPath === topDir) {
+				items.push({ action: "forbiddenSkip", relPath, srcPath, destPath });
+			}
 			continue;
 		}
 
@@ -133,6 +175,7 @@ async function _walkTemplate(
 				homeRoot,
 				additiveDirs,
 				forbiddenDirs,
+				choices,
 				items,
 			);
 			continue;
@@ -158,7 +201,12 @@ async function _walkTemplate(
 			continue;
 		}
 
-		// 內容不同
+		// 內容不同 — 先檢查使用者鎖定選擇
+		const choice = choices[relPath];
+		if (choice?.decision === "keep-local") {
+			items.push({ action: "lockedKeep", relPath, srcPath, destPath });
+			continue;
+		}
 
 		// JSON 檔 → mergeJson
 		if (entry.name.endsWith(".json")) {
@@ -166,112 +214,154 @@ async function _walkTemplate(
 			continue;
 		}
 
-		// ADDITIVE_DIRS 中的本地獨有檔 → additiveKeep（這裡是 template 有、home 也有但不同，不覆蓋）
+		// ADDITIVE_DIRS 中有 drift → additiveKeep（不覆蓋本地）
 		if (additiveDirs.includes(topDir)) {
 			items.push({ action: "additiveKeep", relPath, srcPath, destPath });
 			continue;
 		}
 
-		// 其他 → overwriteFile（需確認）
-		items.push({ action: "overwriteFile", relPath, srcPath, destPath });
+		// 其他 → overwriteInteractive（需使用者決策）
+		items.push({ action: "overwriteInteractive", relPath, srcPath, destPath });
 	}
-}
-
-// ── renderPlanSummary ──────────────────────────────────────────────
-
-/**
- * 印出計畫摘要（分類計數）
- * @param {PlanItem[]} plan
- */
-export async function renderPlanSummary(plan) {
-	const counts = {};
-	for (const item of plan) {
-		counts[item.action] = (counts[item.action] ?? 0) + 1;
-	}
-
-	const total = plan.length;
-	const actionable = plan.filter(
-		(i) => i.action !== "forbiddenSkip" && i.action !== "noChange",
-	).length;
-
-	const lines = [
-		pc.bold("配置同步計畫"),
-		`  總計 ${total} 個項目，${actionable} 個需操作`,
-		"",
-	];
-
-	const labels = {
-		create: `${pc.green("✚")} create         — 新增`,
-		mergeJson: `${pc.blue("⊕")} mergeJson      — JSON 合併`,
-		overwriteFile: `${pc.yellow("↺")} overwriteFile  — 覆蓋（需確認）`,
-		additiveKeep: `${pc.dim("○")} additiveKeep   — 保留本地`,
-		forbiddenSkip: `${pc.dim("⊘")} forbiddenSkip  — 禁止觸碰`,
-		noChange: `${pc.dim("─")} noChange       — 無變更`,
-	};
-
-	for (const [action, count] of Object.entries(counts)) {
-		lines.push(`  ${labels[action] ?? action}  ${pc.bold(String(count))} 個`);
-	}
-
-	p.log.info(lines.join("\n"));
 }
 
 // ── confirmPlan ────────────────────────────────────────────────────
 
 /**
- * 互動式確認計畫（使用 @clack/prompts）
- * drift ≥3 先問批次 [I/A/K/S]
+ * 互動式確認計畫（P1.2）
  *
- * @param {PlanItem[]} plan
+ * drift ≥ 3 先問批次 [I/A/K/S]，否則直接逐一確認。
+ * CI / 靜默模式由 syncConfig() 的呼叫方在進入此函式前攔截。
+ *
+ * 批次選項說明：
+ *   I — 逐檔互動（預設）
+ *   A — 全部使用 ab-tao template（自動備份本地 → _archive/）
+ *   K — 全部保留本地（標記 userOverride，寫入 choices.decision = keep-local）
+ *   S — 全部跳過本次（不做任何操作，不寫 state）
+ *
+ * @param {Array<PlanItem>} plan
  */
 export async function confirmPlan(plan) {
-	const overwriteItems = plan.filter((i) => i.action === "overwriteFile");
-	if (overwriteItems.length === 0) return;
+	// 只處理需要互動決策的項目
+	const driftItems = plan.filter((i) => i.action === "overwriteInteractive");
+	if (driftItems.length === 0) return;
 
-	// drift ≥3：先問批次策略
-	if (overwriteItems.length >= 3) {
+	// P1.2 — drift ≥ 3 先問批次策略
+	if (driftItems.length >= 3) {
 		const batchChoice = await p.select({
-			message: `有 ${overwriteItems.length} 個非 JSON 檔案有 drift，如何處理？`,
+			message: [
+				`🔀 偵測到 ${pc.bold(String(driftItems.length))} 個檔案有 drift：`,
+			].join(""),
 			options: [
-				{ value: "I", label: "逐一確認（Interactive）" },
-				{ value: "A", label: "全部使用 ab-tao 版本（Apply all）" },
-				{ value: "K", label: "全部保留本地版本（Keep all）" },
-				{ value: "S", label: "全部跳過本次（Skip all）" },
+				{ value: "I", label: "逐檔互動（預設）", hint: "I" },
+				{
+					value: "A",
+					label: "全部用 ab-tao template（自動 _archive/ 備份）",
+					hint: "A",
+				},
+				{ value: "K", label: "全部保留本地（標記 userOverride）", hint: "K" },
+				{ value: "S", label: "全部跳過", hint: "S" },
 			],
 		});
 
 		if (p.isCancel(batchChoice)) {
-			p.log.warn("已取消，保留本地版本");
-			for (const item of overwriteItems) item._skip = true;
+			// 取消 → 等同全部跳過
+			_applyBatchStrategy(plan, "S");
+			p.log.warn("已取消 drift 決策，本次全部跳過");
 			return;
 		}
 
-		if (batchChoice === "A") {
-			// 全部標記為執行
+		if (batchChoice !== "I") {
+			_applyBatchStrategy(plan, batchChoice);
+			_persistBatchChoices(driftItems, batchChoice);
 			return;
 		}
-		if (batchChoice === "K" || batchChoice === "S") {
-			for (const item of overwriteItems) item._skip = true;
-			return;
-		}
-		// 'I' → fallthrough 逐一確認
+		// batchChoice === 'I' → 繼續逐一確認
 	}
 
 	// 逐一確認
-	for (const item of overwriteItems) {
+	for (const item of driftItems) {
 		const choice = await p.select({
-			message: `檔案有 drift：${pc.cyan(item.relPath)}`,
+			message: `${pc.yellow("🔀 drift")}：${pc.cyan(item.relPath)}`,
 			options: [
-				{ value: "apply", label: "使用 ab-tao 版本（自動備份本地）" },
-				{ value: "keep", label: "保留本地版本" },
-				{ value: "skip", label: "跳過本次" },
+				{ value: "apply", label: "使用 ab-tao template（自動備份本地）" },
+				{ value: "keep", label: "保留本地（標記 userOverride）" },
+				{ value: "skip", label: "跳過本次（不做變更）" },
 			],
 		});
 
-		if (p.isCancel(choice) || choice === "keep" || choice === "skip") {
+		if (p.isCancel(choice) || choice === "skip") {
 			item._skip = true;
+		} else if (choice === "keep") {
+			item._skip = true;
+			// 持久化 keep-local 選擇
+			_persistSingleChoice(item.relPath, "keep-local");
 		}
+		// choice === 'apply' → 保持 item 原狀（執行階段會覆蓋並備份）
 	}
+}
+
+// ── 批次策略套用 ───────────────────────────────────────────────────
+
+/**
+ * 將批次策略套用到所有 overwriteInteractive 項目
+ *
+ * @param {Array<PlanItem>} plan
+ * @param {'A'|'K'|'S'} strategy
+ */
+function _applyBatchStrategy(plan, strategy) {
+	const driftItems = plan.filter((i) => i.action === "overwriteInteractive");
+	if (strategy === "A") {
+		// 全部使用 ab-tao template → 不標記 _skip，executePlan 會直接覆蓋並備份
+		return;
+	}
+	// K / S 都標記跳過（執行時不覆蓋）
+	for (const item of driftItems) {
+		item._skip = true;
+	}
+}
+
+/**
+ * 批次持久化選擇到 state.json
+ *
+ * @param {Array<PlanItem>} items
+ * @param {'A'|'K'|'S'} strategy
+ */
+function _persistBatchChoices(items, strategy) {
+	if (strategy === "K") {
+		// K → keep-local，寫入 choices
+		const now = new Date().toISOString();
+		stateWrite((draft) => {
+			for (const item of items) {
+				draft.choices[item.relPath] = {
+					decision: "keep-local",
+					lockedAt: now,
+				};
+				// 同步更新 managed.userOverride
+				if (draft.managed[item.relPath]) {
+					draft.managed[item.relPath].userOverride = true;
+				}
+			}
+		});
+	}
+	// A → 使用 ab-tao template，不寫入 choices（下次重新計算）
+	// S → 跳過本次，不持久化（下次重新 drift 判斷）
+}
+
+/**
+ * 持久化單一檔案的 keep-local 選擇
+ *
+ * @param {string} relPath
+ * @param {'keep-local'|'use-ab-tao'|'skip'} decision
+ */
+function _persistSingleChoice(relPath, decision) {
+	const now = new Date().toISOString();
+	stateWrite((draft) => {
+		draft.choices[relPath] = { decision, lockedAt: now };
+		if (draft.managed[relPath]) {
+			draft.managed[relPath].userOverride = decision === "keep-local";
+		}
+	});
 }
 
 // ── executePlan ────────────────────────────────────────────────────
@@ -279,7 +369,7 @@ export async function confirmPlan(plan) {
 /**
  * 執行計畫（含 _archive/ 備份）
  *
- * @param {PlanItem[]} plan
+ * @param {Array<PlanItem>} plan
  * @param {string} home
  * @param {string} template
  * @param {object} policy
@@ -326,6 +416,7 @@ async function _executeItem(item, home, template, policy, archiveBase) {
 			break;
 		}
 
+		case "overwriteInteractive":
 		case "overwriteFile": {
 			if (item._skip) {
 				p.log.info(`  ${pc.dim("○")} ${relPath} (跳過)`);
@@ -339,6 +430,10 @@ async function _executeItem(item, home, template, policy, archiveBase) {
 			p.log.success(`  ${pc.yellow("↺")} ${relPath}`);
 			break;
 		}
+
+		case "lockedKeep":
+			p.log.info(`  ${pc.dim("📌")} ${relPath} (鎖定保留本地)`);
+			break;
 
 		case "additiveKeep":
 		case "noChange":
@@ -365,7 +460,7 @@ function _archiveFile(srcPath, relPath, archiveBase) {
 
 /**
  * 更新 ~/.claude/.ab-tao/state.json
- * @param {PlanItem[]} plan
+ * @param {Array<PlanItem>} plan
  */
 export async function updateStateJson(plan) {
 	const now = new Date().toISOString();
@@ -375,6 +470,7 @@ export async function updateStateJson(plan) {
 			item.action === "forbiddenSkip" ||
 			item.action === "noChange" ||
 			item.action === "additiveKeep" ||
+			item.action === "lockedKeep" ||
 			item._skip
 		) {
 			continue;
@@ -395,7 +491,6 @@ export async function updateStateJson(plan) {
 	stateWrite((s) => {
 		s.installedAt = now;
 		s.abTaoVersion = APP_VERSION;
-		return s;
 	});
 }
 

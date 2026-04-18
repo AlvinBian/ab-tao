@@ -15,6 +15,11 @@
 		},
 		"installedAt": { "type": ["string", "null"], "format": "date-time" },
 		"abTaoVersion": { "type": ["string", "null"] },
+		"firstRunSeen": {
+			"type": "boolean",
+			"default": false,
+			"description": "true 表示使用者已看過首次部署提示，避免重複顯示"
+		},
 		"managed": {
 			"type": "object",
 			"description": "Files managed by ab-tao, keyed by path relative to ~/.claude/",
@@ -45,19 +50,6 @@
 					"lockedAt": { "type": "string", "format": "date-time" }
 				}
 			}
-		},
-		"preserve": {
-			"type": "object",
-			"description": "Per-file preserve overrides (key=filename, value=dot-paths to preserve)",
-			"additionalProperties": {
-				"type": "array",
-				"items": { "type": "string" }
-			}
-		},
-		"forbidden": {
-			"type": "array",
-			"description": "Additional directories to forbid (appended to policy defaults)",
-			"items": { "type": "string" }
 		},
 		"sync": {
 			"type": "object",

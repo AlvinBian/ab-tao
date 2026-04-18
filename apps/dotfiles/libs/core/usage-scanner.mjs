@@ -524,9 +524,16 @@ export async function collectUnifiedReportData() {
 		/* 無快取則略過 */
 	}
 
-	// 3. 擴充資料（Wave 3 新增：hooks 詳情、state、漂移偵測、memory 分層、MCP、ccline）
-	const { collectExtendedData } = await import("../report/collect-unified.mjs");
-	const extended = collectExtendedData();
+	// 3. 擴充資料（Wave 3 C2 — hooks 詳情、state、drift、memory、ccline、mcp）
+	let extended = {};
+	try {
+		const { collectExtendedData } = await import(
+			"../report/collect-unified.mjs"
+		);
+		extended = collectExtendedData();
+	} catch {
+		/* collect-unified.mjs 不存在或呼叫失敗時略過 */
+	}
 
 	return {
 		...live,
@@ -536,13 +543,8 @@ export async function collectUnifiedReportData() {
 		cachedTimestamp: cached.timestamp || null,
 		// skills 永遠使用即時掃描結果
 		skills: live.skills,
-		// Wave 3 擴充欄位
-		hooksDetail: extended.hooksDetail,
-		state: extended.state,
-		drift: extended.drift,
-		memory: extended.memory,
-		mcp: extended.mcp,
-		ccline: extended.ccline,
+		// 擴充資料（Wave 3 C2）
+		extended,
 	};
 }
 

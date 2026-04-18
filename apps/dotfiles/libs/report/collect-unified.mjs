@@ -1,315 +1,366 @@
 /**
- * collect-unified.mjs — 統一資料收集器
+ * collect-unified.mjs — 擴充資料收集層（Wave 3 C2）
  *
- * 職責：為 Wave 3 report.html 的新 Tab 提供額外的資料源。
- * 收集：hooks 詳情、state.json 狀態與漂移偵測、memory 分層、MCP 設定、ccline 狀態。
- *
- * 匯出：collectExtendedData() — 同步函式，回傳所有新增欄位。
- * 注意：此模組為純 sync，不依賴非同步 I/O。
- *
- * Requires: Node.js 18+
+ * 職責：為 unified-renderer.mjs 的 5 個新 Tab 提供資料：
+ *   readHooksDetail()    → Hooks Tab
+ *   readStateJson()      → State Tab
+ *   detectDrift()        → State Tab（drift 清單）
+ *   scanMemoryLayers()   → Memory & Plans Tab
+ *   checkCclineStatus()  → Overview 擴充
+ *   readMcpConfig()      → MCP & Plugins Tab
+ *   collectExtendedData()→ 整合呼叫，回傳全部 extended 資料
  */
 
-import crypto from "node:crypto";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { CLAUDE, HOME } from "../core/paths.mjs";
+import { CLAUDE, P } from "../core/paths.mjs";
 
-// CLAUDE_HOME = ~/.claude/
-const CLAUDE_HOME = CLAUDE;
-
-// ── 工具函式 ────────────────────────────────────────────────────
+// ── Hooks ────────────────────────────────────────────────────────
 
 /**
- * 遞迴計算目錄下的檔案數量
- * @param {string} dir
- * @returns {number}
- */
-function countFilesRecursive(dir) {
-	let count = 0;
-	try {
-		const entries = fs.readdirSync(dir, { withFileTypes: true });
-		for (const entry of entries) {
-			if (entry.isFile()) {
-				count++;
-			} else if (entry.isDirectory()) {
-				count += countFilesRecursive(path.join(dir, entry.name));
-			}
-		}
-	} catch {
-		/* 目錄不可讀則略過 */
-	}
-	return count;
-}
-
-// ── Collector 函式 ──────────────────────────────────────────────
-
-/**
- * 讀取 hooks 詳情
- *
- * 從 ~/.claude/hooks.json 解析所有 hook 事件，
- * 並檢查每個 hook 的腳本是否存在及可執行。
+ * 讀取 hooks.json 的詳細資訊
  *
  * @returns {{
- *   status: 'ok' | 'missing',
- *   hooks: Record<string, Array<object>>,
- *   count: number
+ *   hooks: Array<{name: string, event: string, script: string, exists: boolean, executable: boolean}>,
+ *   total: number,
+ *   healthy: number
  * }}
  */
-function readHooksDetail() {
-	const hooksJsonPath = path.join(CLAUDE_HOME, "hooks.json");
+export function readHooksDetail() {
+	let raw = {};
 	try {
-		const raw = JSON.parse(fs.readFileSync(hooksJsonPath, "utf8"));
-		// hooks.json 頂層結構：{ "$schema": ..., "hooks": { EventName: [...] } }
-		const hooksMap = raw.hooks || raw;
-		const detail = {};
-		for (const [event, hookList] of Object.entries(hooksMap)) {
-			if (!Array.isArray(hookList)) continue;
-			detail[event] = hookList.map((matcher) => {
-				// 每個 matcher 下可能有多個 hooks 子項
-				const subHooks = Array.isArray(matcher.hooks) ? matcher.hooks : [];
-				const enrichedSubs = subHooks.map((hook) => {
-					// 取得指令的第一段（可能是完整路徑或 node/sh 指令）
-					const cmdFirst = hook.command ? hook.command.split(" ")[0] : null;
-					const scriptExists = cmdFirst ? fs.existsSync(cmdFirst) : false;
-					return {
-						...hook,
-						scriptExists,
-					};
-				});
-				return {
-					...matcher,
-					hooks: enrichedSubs,
-				};
-			});
-		}
-		const count = Object.values(detail)
-			.flat()
-			.reduce((s, m) => s + (Array.isArray(m.hooks) ? m.hooks.length : 0), 0);
-		return { status: "ok", hooks: detail, count };
+		raw = JSON.parse(fs.readFileSync(P.hooksJson, "utf8"));
 	} catch {
-		return { status: "missing", hooks: {}, count: 0 };
+		return { hooks: [], total: 0, healthy: 0 };
 	}
+
+	const hooksMap = raw.hooks || {};
+	const result = [];
+
+	for (const [event, matchers] of Object.entries(hooksMap)) {
+		if (!Array.isArray(matchers)) continue;
+		for (const matcher of matchers) {
+			const subHooks = Array.isArray(matcher.hooks) ? matcher.hooks : [];
+			for (const hook of subHooks) {
+				const cmd = hook.command || "";
+				// 若命令超長則截短顯示
+				const scriptDisplay =
+					cmd.length > 120 ? `${cmd.slice(0, 117)}...` : cmd;
+
+				// 嘗試從命令字串中找到腳本路徑
+				const scriptPathMatch = cmd.match(
+					/(?:node\s+|bash\s+|sh\s+)([^\s;|&"']+\.(?:js|mjs|sh))/,
+				);
+				let exists = true;
+				let executable = true;
+
+				if (scriptPathMatch) {
+					const HOME = process.env.HOME || "";
+					const scriptPath = scriptPathMatch[1].replace(/^~/, HOME);
+					try {
+						fs.accessSync(scriptPath, fs.constants.F_OK);
+						try {
+							fs.accessSync(scriptPath, fs.constants.X_OK);
+						} catch {
+							executable = false;
+						}
+					} catch {
+						exists = false;
+						executable = false;
+					}
+				}
+
+				result.push({
+					name: matcher.description || hook.id || `${event} hook`,
+					event,
+					script: scriptDisplay,
+					exists,
+					executable,
+				});
+			}
+		}
+	}
+
+	const healthy = result.filter((h) => h.exists && h.executable).length;
+	return { hooks: result, total: result.length, healthy };
 }
 
+// ── State ────────────────────────────────────────────────────────
+
 /**
- * 讀取 ~/.claude/.ab-tao/state.json
+ * 讀取 ~/.claude/.ab-tao/state.json 摘要
  *
- * @returns {{ status: 'ok' | 'missing', data: object }}
+ * @returns {{
+ *   version: string,
+ *   managed: Record<string, object>,
+ *   choices: Record<string, {decision: string, lockedAt: string}>,
+ *   preserve: string[],
+ *   forbidden: string[],
+ *   sync: { tool: string, included: string[], excluded: string[] }
+ * }}
  */
-function readStateJson() {
-	const statePath = path.join(CLAUDE_HOME, ".ab-tao", "state.json");
+export function readStateJson() {
 	try {
+		const raw = fs.readFileSync(P.state, "utf8");
+		const state = JSON.parse(raw);
 		return {
-			status: "ok",
-			data: JSON.parse(fs.readFileSync(statePath, "utf8")),
+			version: state.version || "1.0.0",
+			managed: state.managed || {},
+			choices: state.choices || {},
+			preserve: state.preserve || [],
+			forbidden: state.forbidden || [],
+			sync: state.sync || { tool: "ab-tao", included: [], excluded: [] },
 		};
 	} catch {
-		return { status: "missing", data: {} };
+		return {
+			version: "—",
+			managed: {},
+			choices: {},
+			preserve: [],
+			forbidden: [],
+			sync: { tool: "ab-tao", included: [], excluded: [] },
+		};
 	}
 }
 
-/**
- * 偵測 managed 檔案的 sha256 漂移
- *
- * 比較 state.json managed 區塊中記錄的 sha256
- * 與當前檔案實際計算出的 sha256，找出差異。
- *
- * @returns {{
- *   driftedFiles: Array<{ path: string, reason?: string, expectedSha?: string, actualSha?: string }>,
- *   count: number
- * }}
- */
-function detectDrift() {
-	const state = readStateJson();
-	if (state.status !== "ok" || !state.data.managed) {
-		return { driftedFiles: [], count: 0 };
-	}
-
-	const drifted = [];
-	for (const [relPath, info] of Object.entries(state.data.managed)) {
-		const fullPath = path.join(CLAUDE_HOME, relPath);
-		if (!fs.existsSync(fullPath)) {
-			drifted.push({ path: relPath, reason: "missing" });
-			continue;
-		}
-		// 只在 state 有記錄 sha256 時才比對
-		if (!info.sha256) continue;
-		try {
-			const content = fs.readFileSync(fullPath);
-			const sha = crypto.createHash("sha256").update(content).digest("hex");
-			if (sha !== info.sha256) {
-				drifted.push({
-					path: relPath,
-					expectedSha: info.sha256.slice(0, 8),
-					actualSha: sha.slice(0, 8),
-				});
-			}
-		} catch {
-			drifted.push({ path: relPath, reason: "unreadable" });
-		}
-	}
-	return { driftedFiles: drifted, count: drifted.length };
-}
+// ── Drift ────────────────────────────────────────────────────────
 
 /**
- * 掃描 memory 分層結構
+ * 偵測 managed 檔案的 drift（sha256 比對）
  *
- * 包含全域 memory（~/.claude/memory/）
- * 以及 projects/ 下每個專案的 memory/plans/tasks 目錄狀態。
- *
- * @returns {{
- *   global: { exists: boolean, fileCount: number },
- *   projects: Array<{ encoded: string, hasMemory: boolean, hasPlans: boolean, hasTasks: boolean }>
- * }}
+ * @returns {Array<{path: string, localHash: string|null, templateHash: string, decision: string}>}
  */
-function scanMemoryLayers() {
-	const globalMemory = path.join(CLAUDE_HOME, "memory");
-	const projectsDir = path.join(CLAUDE_HOME, "projects");
+export function detectDrift() {
+	let state;
+	try {
+		const raw = fs.readFileSync(P.state, "utf8");
+		state = JSON.parse(raw);
+	} catch {
+		return [];
+	}
 
-	const globalExists = fs.existsSync(globalMemory);
-	const projects = [];
+	const managed = state.managed || {};
+	const choices = state.choices || {};
+	const results = [];
 
-	if (fs.existsSync(projectsDir)) {
-		let entries;
+	for (const [relPath, entry] of Object.entries(managed)) {
+		const absPath = path.join(CLAUDE, relPath);
+		let localHash = null;
+
 		try {
-			entries = fs.readdirSync(projectsDir, { withFileTypes: true });
+			const content = fs.readFileSync(absPath);
+			localHash = createHash("sha256").update(content).digest("hex");
 		} catch {
-			entries = [];
+			// 檔案不存在或無法讀取
 		}
-		for (const entry of entries) {
-			if (!entry.isDirectory()) continue;
-			const enc = entry.name;
-			const base = path.join(projectsDir, enc);
-			projects.push({
-				encoded: enc,
-				hasMemory: fs.existsSync(path.join(base, "memory")),
-				hasPlans: fs.existsSync(path.join(base, "plans")),
-				hasTasks: fs.existsSync(path.join(base, "tasks")),
+
+		const templateHash = entry.sha256 || "";
+		const isDrift =
+			localHash === null || (templateHash && localHash !== templateHash);
+
+		if (isDrift) {
+			const choice = choices[relPath];
+			results.push({
+				path: relPath,
+				localHash,
+				templateHash,
+				decision:
+					choice?.decision || (localHash === null ? "deleted" : "modified"),
 			});
 		}
+	}
+
+	return results;
+}
+
+// ── Memory ───────────────────────────────────────────────────────
+
+/**
+ * 掃描 global 及各專案的 memory/plans/tasks 結構
+ *
+ * @returns {{
+ *   global: { memory: string[], plans: string[], tasks: string[] },
+ *   projects: Array<{ encoded: string, memory: string[], plans: string[], tasks: string[] }>
+ * }}
+ */
+export function scanMemoryLayers() {
+	const readMdFiles = (dir) => {
+		try {
+			return fs
+				.readdirSync(dir)
+				.filter((f) => f.endsWith(".md"))
+				.sort();
+		} catch {
+			return [];
+		}
+	};
+
+	// Global 層
+	const globalMemory = readMdFiles(P.memory);
+	const globalPlans = readMdFiles(P.plans);
+	const globalTasks = readMdFiles(P.tasks);
+
+	// 各專案層
+	const projects = [];
+	const projectsDir = P.projects;
+
+	try {
+		const projectDirs = fs
+			.readdirSync(projectsDir, { withFileTypes: true })
+			.filter((d) => d.isDirectory());
+
+		for (const dir of projectDirs) {
+			const base = path.join(projectsDir, dir.name);
+			const projMemory = readMdFiles(path.join(base, "memory"));
+			const projPlans = readMdFiles(path.join(base, "plans"));
+			const projTasks = readMdFiles(path.join(base, "tasks"));
+
+			// 只收錄有資料的專案
+			if (
+				projMemory.length > 0 ||
+				projPlans.length > 0 ||
+				projTasks.length > 0
+			) {
+				projects.push({
+					encoded: dir.name,
+					memory: projMemory,
+					plans: projPlans,
+					tasks: projTasks,
+				});
+			}
+		}
+	} catch {
+		// projects 目錄不存在則略過
 	}
 
 	return {
 		global: {
-			exists: globalExists,
-			fileCount: globalExists ? countFilesRecursive(globalMemory) : 0,
+			memory: globalMemory,
+			plans: globalPlans,
+			tasks: globalTasks,
 		},
 		projects,
 	};
 }
 
-/**
- * 檢查 ccline 狀態
- *
- * 從 ~/.claude/settings.json 讀取 statusLine 配置，
- * 判斷腳本是否存在及已啟用。
- *
- * @returns {{
- *   enabled: boolean,
- *   command: string | null,
- *   scriptExists: boolean,
- *   status: 'ok' | 'degraded' | 'missing'
- * }}
- */
-function checkCclineStatus() {
-	const settingsPath = path.join(CLAUDE_HOME, "settings.json");
-	try {
-		const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-		const statusLine = settings?.statusLine;
-		const command = statusLine?.command || null;
-		// 展開 ~ 為實際 HOME 路徑
-		const scriptExists = command
-			? fs.existsSync(command.replace(/^~/, HOME))
-			: false;
-		const enabled = statusLine?.enabled !== false && Boolean(command);
-		return {
-			enabled,
-			command,
-			scriptExists,
-			status: scriptExists && enabled ? "ok" : "degraded",
-		};
-	} catch {
-		return {
-			enabled: false,
-			command: null,
-			scriptExists: false,
-			status: "missing",
-		};
-	}
-}
+// ── CCline ───────────────────────────────────────────────────────
 
 /**
- * 讀取 MCP 設定
- *
- * 嘗試從 ~/.claude/mcp.yml 讀取（若存在），
- * 否則從 settings.json 的 mcpServers 欄位讀取。
+ * 偵測 ccline 狀態
  *
  * @returns {{
- *   status: 'ok' | 'settings' | 'missing',
- *   path?: string,
- *   raw?: string,
- *   servers?: string[]
+ *   installed: boolean,
+ *   statusLineConfigured: boolean,
+ *   command: string|null,
+ *   themes: string[]
  * }}
  */
-function readMcpConfig() {
-	const mcpPath = path.join(CLAUDE_HOME, "mcp.yml");
-	// 嘗試讀取 mcp.yml
-	if (fs.existsSync(mcpPath)) {
-		try {
-			const raw = fs.readFileSync(mcpPath, "utf8");
-			return { status: "ok", path: mcpPath, raw };
-		} catch {
-			/* 讀取失敗則嘗試 settings.json */
+export function checkCclineStatus() {
+	const cclineScript = P.ccline;
+	const installed = fs.existsSync(cclineScript);
+
+	// 偵測 themes 目錄
+	const themesDir = path.join(path.dirname(cclineScript), "themes");
+	let themes = [];
+	try {
+		themes = fs
+			.readdirSync(themesDir)
+			.filter((f) => f.endsWith(".toml") || f.endsWith(".sh"))
+			.sort();
+	} catch {
+		// themes 目錄不存在
+	}
+
+	// 從 settings.json 讀取 statusLineTool 配置
+	let statusLineConfigured = false;
+	let command = null;
+	try {
+		const settings = JSON.parse(fs.readFileSync(P.settings, "utf8"));
+		const statusLine = settings.statusLineTool || settings.statusLine;
+		if (statusLine) {
+			statusLineConfigured = true;
+			command = statusLine;
 		}
-	}
-	// 退回到 settings.json 的 mcpServers 欄位
-	try {
-		const settings = JSON.parse(
-			fs.readFileSync(path.join(CLAUDE_HOME, "settings.json"), "utf8"),
-		);
-		const servers = Object.keys(settings?.mcpServers || {});
-		return { status: "settings", servers };
 	} catch {
-		return { status: "missing", servers: [] };
+		// settings.json 不存在
 	}
+
+	// 若 settings 中無配置，用 script 路徑作為 command
+	if (!command && installed) {
+		command = cclineScript;
+	}
+
+	return { installed, statusLineConfigured, command, themes };
 }
 
-// ── 主要匯出函式 ────────────────────────────────────────────────
+// ── MCP ─────────────────────────────────────────────────────────
 
 /**
- * 收集擴充資料（供 Wave 3 report.html 新 Tab 使用）
- *
- * 所有 collector 均為 sync，不影響 async 呼叫端。
- * 呼叫端（collectUnifiedReportData）可將此結果以 spread 方式合併至主資料物件。
+ * 讀取 MCP 配置（settings.json 的 mcpServers + enabledPlugins）
  *
  * @returns {{
- *   hooksDetail: ReturnType<typeof readHooksDetail>,
+ *   servers: Array<{name: string, type: string, command: string}>,
+ *   enabledPlugins: string[]
+ * }}
+ */
+export function readMcpConfig() {
+	let settings = {};
+	try {
+		settings = JSON.parse(fs.readFileSync(P.settings, "utf8"));
+	} catch {
+		return { servers: [], enabledPlugins: [] };
+	}
+
+	// MCP Servers
+	const mcpServers = settings.mcpServers || {};
+	const servers = Object.entries(mcpServers).map(([name, cfg]) => {
+		const type = cfg.type || (cfg.url ? "sse" : "stdio");
+		let command = "";
+		if (cfg.command) {
+			const args = Array.isArray(cfg.args)
+				? cfg.args
+						.filter((a) => !String(a).startsWith("-"))
+						.slice(0, 2)
+						.join(" ")
+				: "";
+			command = args ? `${cfg.command} ${args}` : cfg.command;
+		} else if (cfg.url) {
+			command = cfg.url;
+		}
+		return { name, type, command };
+	});
+
+	// enabledPlugins 物件的 key = plugin name，value = true/false
+	const enabledPluginsMap = settings.enabledPlugins || {};
+	const enabledPlugins = Object.entries(enabledPluginsMap)
+		.filter(([, enabled]) => enabled === true)
+		.map(([name]) => name);
+
+	return { servers, enabledPlugins };
+}
+
+// ── 整合呼叫 ─────────────────────────────────────────────────────
+
+/**
+ * 整合呼叫：收集全部擴充資料，供 unified-renderer.mjs 的 extended 欄位使用
+ *
+ * @returns {{
+ *   hooks: ReturnType<typeof readHooksDetail>,
  *   state: ReturnType<typeof readStateJson>,
  *   drift: ReturnType<typeof detectDrift>,
  *   memory: ReturnType<typeof scanMemoryLayers>,
- *   mcp: ReturnType<typeof readMcpConfig>,
- *   ccline: ReturnType<typeof checkCclineStatus>
+ *   ccline: ReturnType<typeof checkCclineStatus>,
+ *   mcp: ReturnType<typeof readMcpConfig>
  * }}
  */
 export function collectExtendedData() {
 	return {
-		hooksDetail: readHooksDetail(),
+		hooks: readHooksDetail(),
 		state: readStateJson(),
 		drift: detectDrift(),
 		memory: scanMemoryLayers(),
-		mcp: readMcpConfig(),
 		ccline: checkCclineStatus(),
+		mcp: readMcpConfig(),
 	};
 }
-
-// 個別匯出，供需要單獨使用的模組引用
-export {
-	checkCclineStatus,
-	countFilesRecursive,
-	detectDrift,
-	readHooksDetail,
-	readMcpConfig,
-	readStateJson,
-	scanMemoryLayers,
-};
