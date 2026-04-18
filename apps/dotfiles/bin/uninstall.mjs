@@ -217,6 +217,7 @@ async function main() {
 		"block-dangerous.sh",
 		"validate-memory-path.sh",
 		"inject-project-prompt.sh",
+		"relocate-plan.sh",
 	]) {
 		const shPath = path.join(CLAUDE_DIR, "hooks", sh);
 		if (fs.existsSync(shPath)) {

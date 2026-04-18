@@ -28,6 +28,7 @@
 		"flow": "node bin/flow.mjs",
 		"restore": "node bin/restore.mjs",
 		"uninstall": "node bin/uninstall.mjs",
+		"migrate-plans": "node bin/migrate-plans.mjs",
 		"hooks": "node bin/hooks.mjs",
 		"skills": "node bin/skills.mjs",
 		"doctor": "node bin/doctor.mjs",
