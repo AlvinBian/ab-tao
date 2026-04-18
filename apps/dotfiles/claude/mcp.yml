@@ -1,0 +1,52 @@
+# Claude MCP Server 宣告式配置 v1.0.0
+# 由 d:setup --apply-mcp 讀取，自動寫入 ~/.claude/settings.json 的 mcpServers 區塊。
+#
+# env_ref 指向環境變數名稱（從 ~/.env 或 macOS Keychain 讀取），
+# 不直接在此文件儲存 token/secret。
+#
+# enabled_in_profiles: 設定僅在哪些 profile 啟用（空 = 全 profile 均啟用）
+
+version: 1.0.0
+
+servers:
+  # ── 版本控制 / 協作 ──────────────────────────────────────────────
+  github:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-github"
+    env_ref: GITHUB_TOKEN
+    enabled_in_profiles:
+      - personal
+      - oss
+    description: "GitHub Issues / PR / Search 操作"
+
+  # ── 專案管理 ─────────────────────────────────────────────────────
+  linear:
+    command: npx
+    args:
+      - "-y"
+      - "@linear/mcp-server"
+    env_ref: LINEAR_API_KEY
+    enabled_in_profiles:
+      - work
+    description: "Linear Issue 追蹤（KKday）"
+
+  jira:
+    command: uvx
+    args:
+      - atlassian-mcp-server
+    env_ref: JIRA_TOKEN
+    enabled_in_profiles:
+      - work
+    description: "Jira / Confluence 操作"
+
+  # ── 上下文增強 ────────────────────────────────────────────────────
+  context7:
+    command: npx
+    args:
+      - "-y"
+      - "@upstash/context7-mcp"
+    # 無 env_ref — context7 不需要 token
+    enabled_in_profiles: []   # 空 = 全 profile 均啟用
+    description: "最新套件文件注入（自動更新）"
