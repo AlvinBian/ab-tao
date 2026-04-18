@@ -1,0 +1,21 @@
+name: oss
+description: 開源貢獻環境（公開代碼、嚴格安全）
+
+# 插件覆蓋
+plugins_enabled:
+  - commit-commands
+  - code-review
+  - security-guidance
+  - code-simplifier
+  - ralph-loop   # OSS 需要高品質審查
+plugins_disabled: []
+
+# 記憶範圍（OSS 獨立 pattern）
+memory_scope:
+  - ~/.claude/memory/preferences/
+  - ~/.claude/memory/patterns/
+
+# 備註
+notes: |
+  開源貢獻環境：強制安全審查、啟用 Ralph Loop 確保代碼品質。
+  切換指令：d:setup --profile oss

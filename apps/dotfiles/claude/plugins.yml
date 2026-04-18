@@ -64,9 +64,12 @@ plugins:
   #   enabled: false
   #   description: "官方 GitHub MCP server"
 
-# Phase 11：profile_overrides（切換 profile 時自動套用）
-# profile_overrides:
-#   work:
-#     disable: [feature-dev, code-simplifier]
-#   oss:
-#     enable: []
+# Phase 11′：profile_overrides（切換 profile 時自動套用）
+profile_overrides:
+  work:
+    disable: [ralph-loop, code-simplifier]
+  oss:
+    enable: [ralph-loop, code-simplifier]
+  personal:
+    enable: []
+    disable: []
