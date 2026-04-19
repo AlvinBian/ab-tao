@@ -1,106 +1,171 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
-onMounted(() => store.fetchOverview());
+onMounted(() => store.fetchData());
 
-const statItems = [
-	{ key: "commands", label: "Commands" },
-	{ key: "agents", label: "Agents" },
-	{ key: "rules", label: "Rules" },
-	{ key: "skills", label: "Skills" },
-];
+const d = computed(() => store.data);
+const healthPct = computed(() => d.value?.overview?.healthPct ?? 0);
 
-function countEnabled(
-	list:
-		| { core: string[]; ext: string[]; user: string[]; disabled: string[] }
-		| undefined,
-) {
-	if (!list) return 0;
-	return list.core.length + list.ext.length + list.user.length;
+const statCards = computed(() => [
+	{
+		label: "Skills",
+		value: d.value?.skills?.filter((s) => s.enabled).length ?? 0,
+		icon: "Star",
+	},
+	{
+		label: "Commands",
+		value: d.value?.commands?.length ?? 0,
+		icon: "Operation",
+	},
+	{ label: "Agents", value: d.value?.agents?.length ?? 0, icon: "Avatar" },
+	{
+		label: "Rules",
+		value: d.value?.rules?.filter((r) => r.enabled).length ?? 0,
+		icon: "List",
+	},
+	{
+		label: "Hooks",
+		value: d.value?.extended?.hooks?.healthy ?? 0,
+		icon: "Connection",
+	},
+	{
+		label: "Sessions",
+		value: d.value?.sessions?.total ?? 0,
+		icon: "ChatDotRound",
+	},
+]);
+
+const topProjects = computed(() => {
+	const byProject = d.value?.sessions?.byProject ?? {};
+	return Object.entries(byProject)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 5);
+});
+
+const healthColor = computed(() => {
+	if (healthPct.value >= 80) return "#67c23a";
+	if (healthPct.value >= 50) return "#e6a23c";
+	return "#f56c6c";
+});
+
+function formatBytes(bytes: number): string {
+	if (!bytes) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return `${(bytes / k ** i).toFixed(1)} ${sizes[i]}`;
 }
 </script>
 
 <template>
   <div v-loading="store.loading">
-    <el-row :gutter="16" style="margin-bottom: 16px">
-      <!-- 健康度 -->
-      <el-col :span="6">
-        <el-card shadow="never">
-          <div style="text-align:center; padding: 8px 0">
+    <el-alert v-if="store.error" :title="store.error" type="error" show-icon style="margin-bottom:16px" />
+
+    <!-- 健康度 + Stat 卡 -->
+    <el-row :gutter="16" style="margin-bottom:16px">
+      <el-col :span="5">
+        <el-card shadow="never" style="height:148px">
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%">
             <el-progress
               type="dashboard"
-              :percentage="store.overview?.healthPct ?? 0"
-              :color="[
-                { color: '#f56c6c', percentage: 40 },
-                { color: '#e6a23c', percentage: 70 },
-                { color: '#67c23a', percentage: 100 },
-              ]"
-              :stroke-width="12"
-              :width="120"
-            />
-            <div style="margin-top: 8px; font-weight: 600">健康度</div>
+              :percentage="healthPct"
+              :color="healthColor"
+              :stroke-width="10"
+              :width="100"
+            >
+              <template #default="{ percentage }">
+                <span style="font-size:18px; font-weight:700">{{ percentage }}%</span>
+              </template>
+            </el-progress>
+            <div style="margin-top:6px; font-size:13px; color:var(--el-text-color-secondary)">健康度</div>
           </div>
         </el-card>
       </el-col>
 
-      <!-- Stat 卡 -->
-      <el-col :span="18">
+      <el-col :span="19">
         <el-row :gutter="12">
-          <el-col
-            v-for="item in statItems"
-            :key="item.key"
-            :span="6"
-          >
-            <el-card shadow="never">
-              <el-statistic
-                :title="item.label"
-                :value="countEnabled((store.overview as Record<string, unknown>)?.[item.key] as Parameters<typeof countEnabled>[0])"
-              />
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="never">
-              <el-statistic
-                title="Hooks"
-                :value="store.overview?.hooks?.installed ? Object.values(store.overview.hooks.events ?? {}).reduce((a, b) => a + b, 0) : 0"
-              />
-            </el-card>
-          </el-col>
-          <el-col :span="6">
-            <el-card shadow="never">
-              <el-statistic
-                title="Sessions"
-                :value="store.overview?.sessions?.total ?? 0"
-              />
+          <el-col v-for="item in statCards" :key="item.label" :span="4">
+            <el-card shadow="never" style="height:68px; margin-bottom:12px">
+              <el-statistic :title="item.label" :value="item.value" style="--el-statistic-title-font-size:12px" />
             </el-card>
           </el-col>
         </el-row>
       </el-col>
     </el-row>
 
-    <!-- Drift 警告 -->
-    <template v-if="!store.loading && store.overview">
-      <el-alert
-        v-if="store.error"
-        :title="store.error"
-        type="error"
-        show-icon
-        style="margin-bottom: 16px"
-      />
-      <el-card shadow="never">
-        <template #header>
-          <span>AI 模型設定</span>
-        </template>
-        <el-descriptions :column="3" border>
-          <el-descriptions-item label="主要模型">{{ store.overview.ai?.model ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item label="Effort">{{ store.overview.ai?.effort ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item label="Repo 模型">{{ store.overview.ai?.repoModel ?? '—' }}</el-descriptions-item>
-        </el-descriptions>
-      </el-card>
-    </template>
+    <el-row :gutter="16" style="margin-bottom:16px">
+      <!-- AI 模型 -->
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header><span>AI 模型設定</span></template>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="主要模型">
+              <el-tag size="small">{{ d?.ai?.model ?? "—" }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="Effort">{{ d?.ai?.effort ?? "—" }}</el-descriptions-item>
+            <el-descriptions-item label="Repo 模型">{{ d?.ai?.repoModel ?? "—" }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+      </el-col>
 
-    <el-empty v-if="!store.loading && !store.overview && !store.error" description="尚無資料，請確認 API server 已啟動" />
+      <!-- 磁碟使用 -->
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header><span>磁碟使用</span></template>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="Cache">{{ formatBytes(d?.diskUsage?.cache ?? 0) }}</el-descriptions-item>
+            <el-descriptions-item label="Dist">{{ formatBytes(d?.diskUsage?.dist ?? 0) }}</el-descriptions-item>
+            <el-descriptions-item label="Projects">{{ formatBytes(d?.diskUsage?.claudeProjects ?? 0) }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="16" style="margin-bottom:16px">
+      <!-- Drift 警示 -->
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <span>Config Drift</span>
+            <el-tag
+              v-if="(d?.extended?.drift?.length ?? 0) > 0"
+              type="warning"
+              size="small"
+              style="margin-left:8px"
+            >{{ d?.extended?.drift?.length }} 個異動</el-tag>
+            <el-tag v-else type="success" size="small" style="margin-left:8px">無 Drift</el-tag>
+          </template>
+          <el-table :data="d?.extended?.drift?.slice(0, 5) ?? []" size="small" style="width:100%">
+            <el-table-column prop="path" label="路徑" show-overflow-tooltip />
+            <el-table-column prop="decision" label="狀態" width="90">
+              <template #default="{ row }">
+                <el-tag :type="row.decision === 'deleted' ? 'danger' : 'warning'" size="small">
+                  {{ row.decision }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+
+      <!-- Top Projects -->
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header><span>Top Sessions by Project</span></template>
+          <el-table :data="topProjects" size="small" style="width:100%">
+            <el-table-column label="專案" show-overflow-tooltip>
+              <template #default="{ row }">{{ row[0] }}</template>
+            </el-table-column>
+            <el-table-column label="Sessions" width="90" align="right">
+              <template #default="{ row }">{{ row[1] }}</template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-empty v-if="!store.loading && !store.data && !store.error" description="尚無資料，請確認 API server 已啟動" />
   </div>
 </template>
