@@ -846,7 +846,7 @@ function classifyTechs(flatList) {
 	}
 	// 所有規則皆未命中的技術歸入「其他」分類
 	const rest = flatList.filter((t) => !used.has(t));
-	if (rest.length > 0) result["其他"] = rest;
+	if (rest.length > 0) result.其他 = rest;
 	return result;
 }
 
@@ -877,7 +877,7 @@ function renderTabTechStacks(cachedTechStacks) {
 		normalized = flat.length > 0 ? classifyTechs(flat) : {};
 	} else if (shouldClassify && keys !== null) {
 		// 情況 2：單一 uncategorized key，取其值送入分類器
-		normalized = classifyTechs((cachedTechStacks || {})["uncategorized"] || []);
+		normalized = classifyTechs(cachedTechStacks?.uncategorized || []);
 	} else {
 		// 情況 3：已分類物件，直接使用
 		normalized = cachedTechStacks || {};
@@ -1022,7 +1022,7 @@ function renderTabHooks(data) {
 							: '<span class="badge badge-yellow">not executable</span>';
 				// 名稱截短：超過 48 字元截斷並加省略號，完整名稱保留於 title 屬性
 				const shortName =
-					h.name.length > 48 ? h.name.slice(0, 46) + "…" : h.name;
+					h.name.length > 48 ? `${h.name.slice(0, 46)}…` : h.name;
 				return `<tr>
   <td title="${escapeHtml(h.name)}" style="max-width:220px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(shortName)}</td>
   <td><span class="badge badge-blue">${escapeHtml(event)}</span></td>
