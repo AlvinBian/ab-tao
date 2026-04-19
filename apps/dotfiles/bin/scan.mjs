@@ -56,10 +56,14 @@ const flagOrg = args.includes("--org");
 const orgName = flagOrg ? args[args.indexOf("--org") + 1] : null;
 
 // --top <n>：只掃描前 n 個 repos（除錯用）
-const top = parseInt(args[args.indexOf("--top") + 1], 10) || 0;
+// Bug 3 修復：加 includes 守護，避免 --top 未傳入時 indexOf 返回 -1+1=0 取到第一個參數
+const top = args.includes("--top")
+	? parseInt(args[args.indexOf("--top") + 1], 10) || 0
+	: 0;
 
 // --skills <a,b,c>：只生成指定的 stacks（逗號分隔）
 const flagSkills = args.includes("--skills");
+// Bug 3 修復：同上，加 includes 守護避免 indexOf 返回 0 取到錯誤參數
 const onlySkills = flagSkills
 	? (args[args.indexOf("--skills") + 1] || "").split(",").filter(Boolean)
 	: null;

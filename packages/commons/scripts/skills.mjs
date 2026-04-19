@@ -337,7 +337,9 @@ function cmdUpdate(names) {
 	if (updated.length > 0) {
 		console.log(`\n✅ 已更新 ${updated.length} 個 skills`);
 		for (const n of updated) console.log(`   ↑ ${n}`);
-		printLiveReloadHint(false);
+		// Bug 5 修復：新安裝（dst 不存在）需重啟 session，更新已存在的 skill 可熱載入
+		const hasNewInstall = updated.some((n) => n.endsWith(" (新安裝)"));
+		printLiveReloadHint(hasNewInstall);
 		generateAgentsMd();
 	}
 	if (upToDate.length > 0) {
@@ -518,8 +520,12 @@ switch (flag) {
 			console.log();
 		}
 
-		installSkillsFrom(skills, { source: `github:${repo}` });
-		await rm(tmpDir, { recursive: true, force: true });
+		// Bug 4 修復：改用 try/finally 確保 tmpDir 無論成功或例外都能清理
+		try {
+			installSkillsFrom(skills, { source: `github:${repo}` });
+		} finally {
+			await rm(tmpDir, { recursive: true, force: true });
+		}
 		break;
 	}
 	case "--global":

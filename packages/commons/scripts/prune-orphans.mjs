@@ -21,6 +21,8 @@ const KNOWN_SOURCES = new Set([
 	"anthropic",
 	"superpowers",
 	"context-engineering",
+	"skills-mp",
+	"openskills",
 ]);
 
 if (!fs.existsSync(RESOURCES_PATH)) {

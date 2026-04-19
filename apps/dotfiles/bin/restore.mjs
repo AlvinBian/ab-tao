@@ -106,7 +106,21 @@ async function main() {
 		}
 		const s = p.spinner();
 		s.start("完全還原中...");
+		// Bug 7 修復：跳過備份目錄中的元資料檔案（.timestamp、.manual-preserved 等）
+		// 白名單：只還原已知的 HOME 配置條目，避免元資料被複製到 ~/
+		const KNOWN_RESTORE_ENTRIES = new Set([
+			"claude",
+			".claude",
+			"zshrc",
+			".zshrc",
+			"zsh",
+			".zsh",
+			"zshrc.d",
+			".zshrc.d",
+		]);
 		for (const item of items) {
+			// 跳過元資料檔案（以 . 開頭且不在白名單內的隱藏檔）
+			if (!KNOWN_RESTORE_ENTRIES.has(item)) continue;
 			const src = path.join(actualOriginalDir, item);
 			const dest = path.join(HOME, item.startsWith(".") ? item : `.${item}`);
 			try {

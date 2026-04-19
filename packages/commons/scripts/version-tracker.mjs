@@ -29,8 +29,9 @@ export function writeVersions(versions) {
  */
 export function recordSync(sourceName, sha) {
 	const versions = readVersions();
+	// 來源不存在時建立初始條目（支援 skills-mp、openskills 等新來源）
 	if (!versions[sourceName]) {
-		throw new Error(`未知的來源: ${sourceName}`);
+		versions[sourceName] = { sha: "", date: "", locked: false, type: "ai" };
 	}
 	if (versions[sourceName].locked) {
 		console.log(

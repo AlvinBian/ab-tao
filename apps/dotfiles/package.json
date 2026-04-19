@@ -30,6 +30,6 @@
 		"prefs-sync": "node bin/prefs-sync.mjs",
 		"restore": "node bin/restore.mjs",
 		"scan": "node bin/scan.mjs",
-		"report": "node bin/status.mjs --html"
+		"report": "node bin/status.mjs --report"
 	}
 }

@@ -14,6 +14,8 @@ const EXPECTED_STRUCTURES = {
 	anthropic: { required: [], format: "agent-skills" },
 	superpowers: { required: [], format: "agent-skills" },
 	"context-engineering": { required: [], format: "agent-skills" },
+	"skills-mp": { required: [], format: "agent-skills" },
+	openskills: { required: [], format: "agent-skills" },
 };
 
 function validateSourceStructure(sourceName, sourcePath) {
@@ -40,17 +42,25 @@ function validateSourceStructure(sourceName, sourcePath) {
 
 	// 格式專屬檢查
 	if (config.format === "agent-skills") {
-		const items = fs.readdirSync(sourcePath, { withFileTypes: true });
-		const hasSkills = items.some((entry) => {
-			return (
-				entry.isDirectory() &&
-				fs.existsSync(path.join(sourcePath, entry.name, "SKILL.md"))
-			);
-		});
+		// Bug 6 修復：實際路徑為 {sourcePath}/skills/{skill-name}/SKILL.md
+		// 而非原本的 {sourcePath}/{entry.name}/SKILL.md
+		const skillsDir = path.join(sourcePath, "skills");
+		const hasSkills =
+			fs.existsSync(skillsDir) &&
+			fs
+				.readdirSync(skillsDir, { withFileTypes: true })
+				.some(
+					(e) =>
+						e.isDirectory() &&
+						fs.existsSync(path.join(skillsDir, e.name, "SKILL.md")),
+				);
 
 		// agent-skills 格式不一定都有 SKILL.md — 僅警告
-		if (!hasSkills && items.length > 0) {
-			console.warn(`  警告: ${sourceName} 中未找到 SKILL.md（可能正常）`);
+		if (!hasSkills) {
+			const items = fs.readdirSync(sourcePath, { withFileTypes: true });
+			if (items.length > 0) {
+				console.warn(`  警告: ${sourceName} 中未找到 SKILL.md（可能正常）`);
+			}
 		}
 	}
 

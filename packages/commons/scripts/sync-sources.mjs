@@ -181,7 +181,7 @@ async function syncSource(sourceName, config, options = {}) {
 
 		try {
 			fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-			fs.cpSync(tempDir, targetPath, { recursive: true });
+			fs.cpSync(tempDir, targetPath, { recursive: true, dereference: true });
 			recordSync(sourceName, sha);
 
 			if (fs.existsSync(backupPath)) {
