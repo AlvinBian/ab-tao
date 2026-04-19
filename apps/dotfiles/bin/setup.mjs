@@ -10,8 +10,9 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 
-// 並發 clack 操作會加多個 stdin listener，提高上限避免 MaxListenersExceeded
+// 並發 clack 操作會加多個 stdin/SIGINT listener，提高上限避免 MaxListenersExceeded
 process.stdin.setMaxListeners(50);
+process.setMaxListeners(50);
 
 // 關閉 spinner 完成後的 │ 分隔線（多個並發 spinner 時輸出更緊湊）
 p.updateSettings({ withGuide: false });
@@ -46,7 +47,7 @@ async function ensureSetupEnvironment() {
 	const origBackup = ensureOriginalBackup();
 	if (origBackup && !isEmpty(origBackup)) {
 		p.log.success(
-			`首次使用：已備份原始配置 → ~/.ab-tao-original/\n${origBackup.map((r) => `  ${r}`).join("\n")}\n還原指令：pnpm run restore → 選擇「完全還原」`,
+			`首次使用：已備份原始配置 → ~/.ab-tao-original/\n${origBackup.map((r) => `  ${r}`).join("\n")}\n還原指令：pnpm run d:restore → 選擇「完全還原」`,
 		);
 	}
 
@@ -158,7 +159,7 @@ async function main() {
 
 		if (!hasRemotePrefs()) {
 			p.log.error(
-				"iCloud 上沒有可用的偏好檔案，請先在主機執行：pnpm run d:sync push",
+				"iCloud 上沒有可用的偏好檔案，請先在主機執行：pnpm run d:prefs-sync",
 			);
 			process.exit(1);
 		}
@@ -678,7 +679,12 @@ async function main() {
 			repos: (aggregatedPlan.repos || [])
 				.map((r) => r.fullName || r)
 				.filter(Boolean),
-			techStacks: pipelineResult?.techStacks || aggregatedPlan.techStacks || {},
+			techStacks: (() => {
+				const ts = pipelineResult?.techStacks || aggregatedPlan.techStacks;
+				if (Array.isArray(ts))
+					return ts.length > 0 ? { uncategorized: ts } : {};
+				return ts || {};
+			})(),
 		};
 		fs.writeFileSync(
 			path.join(cacheDir, "last-report-data.json"),

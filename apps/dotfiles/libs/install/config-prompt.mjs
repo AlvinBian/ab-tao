@@ -222,8 +222,6 @@ export function applyFileChoice(action, relPath, sourcePath, targetPath) {
 			);
 			return { applied: true, backupPath: backupPath ?? undefined };
 		}
-
-		case ChoiceAction.SKIP:
 		default:
 			return { applied: false };
 	}

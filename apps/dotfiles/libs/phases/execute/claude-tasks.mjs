@@ -231,36 +231,36 @@ export async function deployGlobalConfig(opts) {
 		}
 	}
 
-	// ── 階段 1c：合併 hooks.json → settings.json.hooks ──
-	const hooksJsonPath = path.join(claudeHome, "hooks.json");
-	if (fs.existsSync(hooksJsonPath) && fs.existsSync(localSettingsPath)) {
+	// ── 階段 1c：合併 hooks/defs/*.json → settings.json.hooks ──
+	const defsDir = path.join(repoDir, "claude", "hooks", "defs");
+	if (fs.existsSync(defsDir) && fs.existsSync(localSettingsPath)) {
 		try {
-			const hooksData = JSON.parse(fs.readFileSync(hooksJsonPath, "utf8"));
-			if (hooksData.hooks) {
-				const s = JSON.parse(fs.readFileSync(localSettingsPath, "utf8"));
-				s.hooks = s.hooks ?? {};
-				for (const [event, handlers] of Object.entries(hooksData.hooks)) {
-					const existing = s.hooks[event] ?? [];
-					const existingIds = new Set(existing.map((h) => h.id));
-					s.hooks[event] = [
-						...existing,
-						...handlers.filter((h) => !existingIds.has(h.id)),
-					];
-				}
-				fs.writeFileSync(
-					localSettingsPath,
-					`${JSON.stringify(s, null, 2)}\n`,
-					"utf8",
+			const s = JSON.parse(fs.readFileSync(localSettingsPath, "utf8"));
+			s.hooks = s.hooks ?? {};
+			let totalHooks = 0;
+			for (const file of fs
+				.readdirSync(defsDir)
+				.filter((f) => f.endsWith(".json"))) {
+				const def = JSON.parse(
+					fs.readFileSync(path.join(defsDir, file), "utf8"),
 				);
-				const totalHooks = Object.values(hooksData.hooks).reduce(
-					(n, a) => n + a.length,
-					0,
-				);
-				if (logger)
-					logger(
-						t.ok("hooks 已合併 settings.json", `${t.count(totalHooks)} 個`),
-					);
+				const event = def.event;
+				const handlers = def.hooks ?? [];
+				const existing = s.hooks[event] ?? [];
+				const existingIds = new Set(existing.map((h) => h.id));
+				s.hooks[event] = [
+					...existing,
+					...handlers.filter((h) => !existingIds.has(h.id)),
+				];
+				totalHooks += handlers.length;
 			}
+			fs.writeFileSync(
+				localSettingsPath,
+				`${JSON.stringify(s, null, 2)}\n`,
+				"utf8",
+			);
+			if (logger)
+				logger(t.ok("hooks 已合併 settings.json", `${t.count(totalHooks)} 個`));
 		} catch (hooksErr) {
 			if (logger) logger(t.warn(`hooks 合併失敗：${hooksErr.message}`));
 		}
@@ -321,6 +321,44 @@ export async function deployGlobalConfig(opts) {
 		} catch {
 			/* 不阻塞安裝 */
 		}
+	}
+
+	// ── 清理：移除 ab-tao 棄用部署檔案 + git 防護 ──
+	try {
+		// 防止 ~/.claude 被 git 管理
+		const gitDir = path.join(claudeHome, ".git");
+		if (fs.existsSync(gitDir)) {
+			fs.rmSync(gitDir, { recursive: true });
+			if (logger)
+				logger(
+					t.warn("已移除 ~/.claude/.git（Claude 配置目錄不應被 git 管理）"),
+				);
+		}
+		// 清理棄用的 ab-tao 部署檔案
+		const STALE_FILES = [
+			"hooks.json",
+			"mcp.yml",
+			"plugins.yml",
+			"chezmoi-ignore",
+			"ab-tao-template-origin.json",
+		];
+		const STALE_DIRS = ["profiles", "memory-templates"];
+		for (const f of STALE_FILES) {
+			const fp = path.join(claudeHome, f);
+			if (fs.existsSync(fp)) {
+				fs.unlinkSync(fp);
+				if (logger) logger(t.info(`已清理舊檔：${f}`));
+			}
+		}
+		for (const d of STALE_DIRS) {
+			const dp = path.join(claudeHome, d);
+			if (fs.existsSync(dp)) {
+				fs.rmSync(dp, { recursive: true });
+				if (logger) logger(t.info(`已清理舊目錄：${d}`));
+			}
+		}
+	} catch (cleanErr) {
+		if (logger) logger(t.warn(`清理步驟失敗：${cleanErr.message}`));
 	}
 
 	return { ...installSelections, cclineInstalled };

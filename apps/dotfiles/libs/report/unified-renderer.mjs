@@ -758,8 +758,14 @@ function renderTabAudit(data) {
  * @param {Record<string, string[]>} cachedTechStacks
  */
 function renderTabTechStacks(cachedTechStacks) {
-	const entries = Object.entries(cachedTechStacks || {}).filter(
-		([, techs]) => techs?.length > 0,
+	// 若傳入 Array（舊格式 ["typescript", "react"]），轉為 { uncategorized: [...] }
+	const normalized = Array.isArray(cachedTechStacks)
+		? cachedTechStacks.length > 0
+			? { uncategorized: cachedTechStacks }
+			: {}
+		: cachedTechStacks || {};
+	const entries = Object.entries(normalized).filter(
+		([, techs]) => Array.isArray(techs) && techs.length > 0,
 	);
 
 	if (entries.length === 0) return "";
@@ -971,7 +977,7 @@ function renderTabState(data) {
 				return `<tr>
   <td class="mono" style="font-size:.78rem">${escapeHtml(d.path)}</td>
   <td><span class="badge badge-${decisionColor}">${escapeHtml(d.decision)}</span></td>
-  <td class="mono" style="font-size:.72rem;color:var(--text-dim)">${d.localHash ? escapeHtml(d.localHash.slice(0, 12)) + "..." : "—"}</td>
+  <td class="mono" style="font-size:.72rem;color:var(--text-dim)">${d.localHash ? `${escapeHtml(d.localHash.slice(0, 12))}...` : "—"}</td>
 </tr>`;
 			})
 			.join("");
@@ -1421,7 +1427,12 @@ export function generateUnifiedReport(data) {
 	const ts = new Date().toISOString().replace("T", " ").slice(0, 19);
 
 	// 決定是否顯示條件 Tab
-	const cachedTechStacks = data.cachedTechStacks || {};
+	const _raw = data.cachedTechStacks;
+	const cachedTechStacks = Array.isArray(_raw)
+		? _raw.length > 0
+			? { uncategorized: _raw }
+			: {}
+		: _raw || {};
 	const cachedRepos = data.cachedRepos || [];
 	const hasTechStacks = Object.keys(cachedTechStacks).length > 0;
 	const hasRepos = cachedRepos.length > 0;

@@ -78,6 +78,14 @@ export function isClaudeAvailable() {
 }
 
 /**
+ * 取得 claude CLI 的絕對路徑（供其他模組直接呼叫 execFileSync 使用）
+ * @returns {string|null}
+ */
+export function getCliBin() {
+	return findCli();
+}
+
+/**
  * 預熱 Claude CLI — 背景啟動最小呼叫，讓後續呼叫更快
  *
  * 效果：

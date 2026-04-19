@@ -1,0 +1,16 @@
+{
+	"event": "Stop",
+	"hooks": [
+		{
+			"id": "ab-tao:stop",
+			"description": "macOS 匯總通知 + 會話評估",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/stop.sh",
+					"timeout": 10
+				}
+			]
+		}
+	]
+}

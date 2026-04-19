@@ -11,9 +11,9 @@
 - [ ] 所有 `@import` 指向存在的檔案（無斷鏈）
 - [ ] XML 標籤閉合完整，無孤立標籤
 - [ ] `settings.json` 無 phantom plugin（enabled 但未安裝）
-- [ ] `hooks.json` 所有 script 存在且有執行權限
+- [ ] `settings.json` hooks 區段所有 script 存在且有執行權限（hooks 由 settings.json 管理，源自 hooks/defs/*.json）
 - [ ] `memory/MEMORY.md` ≤ 200 行 / 25KB
-- [ ] `claude-md/` 14 個 section 檔全部存在
+- [ ] `claude-md/` 15 個 section 檔全部存在（00–14）
 - [ ] `rules/` 5 個條件規則檔有正確 `paths:` frontmatter
 - [ ] `docs/` 3 個參考文件存在
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）

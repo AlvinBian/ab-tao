@@ -21,6 +21,7 @@ import {
 } from "../core/constants.mjs";
 import { runAnalysisPipeline } from "../pipeline/pipeline-runner.mjs";
 import { generateProfile } from "../pipeline/profile-generator.mjs";
+import { withSpinner } from "../ui/with-spinner.mjs";
 
 export default {
 	id: "tech-analysis",
@@ -98,26 +99,32 @@ export default {
 			let aiResResult = { recommended: [] };
 
 			// ── 執行分析 pipeline ──
-			const spinner = p.spinner();
-			spinner.start(`分析 ${repos.length} 個 repos 的技術棧（約 10–30 秒）...`);
-
-			pipelineResult = await runAnalysisPipeline({
-				repos: repos.map((r) => r.fullName),
-				sources,
-				selectedAiSources,
-				baseDir: ctx.repoDir,
-				aiConfig: {
-					model: AI_REPO_MODEL,
-					effort: AI_REPO_EFFORT,
-					timeout: AI_REPO_TIMEOUT,
-					maxCategories: AI_REPO_MAX_CATEGORIES,
-					maxTechs: AI_REPO_MAX_TECHS,
-					cacheEnabled: AI_REPO_CACHE,
-					concurrency: AI_CONCURRENCY,
+			let completedRepos = 0;
+			pipelineResult = await withSpinner(
+				`分析 ${repos.length} 個 repos 的技術棧（約 10–30 秒）`,
+				async (update) => {
+					return await runAnalysisPipeline({
+						repos: repos.map((r) => r.fullName),
+						sources,
+						selectedAiSources,
+						baseDir: ctx.repoDir,
+						aiConfig: {
+							model: AI_REPO_MODEL,
+							effort: AI_REPO_EFFORT,
+							timeout: AI_REPO_TIMEOUT,
+							maxCategories: AI_REPO_MAX_CATEGORIES,
+							maxTechs: AI_REPO_MAX_TECHS,
+							cacheEnabled: AI_REPO_CACHE,
+							concurrency: AI_CONCURRENCY,
+						},
+						onPhase: () => {},
+						onRepoProgress: (repo) => {
+							completedRepos++;
+							update(`[${completedRepos}/${repos.length}] ${repo}`);
+						},
+					});
 				},
-				onPhase: () => {},
-				onRepoProgress: () => {},
-			});
+			);
 
 			// 提取所有偵測到的技術棧
 			const allTechs = [
@@ -125,10 +132,6 @@ export default {
 			].flatMap((m) => [...m.keys()]);
 			pipelineResult.detectedSkills = allTechs;
 			pipelineResult.preselectedTechs = allTechs;
-
-			spinner.stop(
-				`分析完成：${repos.length} repos · ${allTechs.length} 技術棧`,
-			);
 
 			// ── 等待 AI 資源匹配（非阻塞 promise）──
 			if (pipelineResult.aiResAiPromise) {

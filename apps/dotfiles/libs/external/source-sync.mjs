@@ -218,7 +218,7 @@ async function downloadFile(repo, filePath) {
  * @param {Array<{name: string, path: string}>} files - 要下載的檔案列表
  * @returns {Promise<Array<{name: string, content: string}>>} 成功下載的檔案陣列
  */
-async function batchDownload(repo, files) {
+async function _batchDownload(repo, files) {
 	const results = [];
 	for (let i = 0; i < files.length; i += BATCH_SIZE) {
 		const batch = files.slice(i, i + BATCH_SIZE);
@@ -655,7 +655,7 @@ function mergeHooksJson(destPath, incomingContent) {
 
 	const result = { ...existing, hooks: merged };
 	const tmpPath = `${destPath}.tmp.${process.pid}`;
-	fs.writeFileSync(tmpPath, JSON.stringify(result, null, 2) + "\n", "utf8");
+	fs.writeFileSync(tmpPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
 	fs.renameSync(tmpPath, destPath);
 }
 

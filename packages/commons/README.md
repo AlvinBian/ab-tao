@@ -28,6 +28,8 @@ resources/    — 同步下來的 AI 資源（按來源分目錄）
 | **anthropic**           | Anthropic 官方 Skills                                |
 | **superpowers**         | Claude Superpowers — 進階 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 優化/壓縮/評估） |
+| **skills-mp**           | Claude 官方 Skills Marketplace                       |
+| **openskills**          | openskills — 社群 skills 集合                        |
 
 ## 指令
 

@@ -134,7 +134,7 @@ async function main() {
 	  ${stats.hooks ? "hooks.json · " : ""}${stats.settings ? "settings.json · " : ""}${stats.keybindings ? "keybindings.json · " : ""}${stats.hookScripts ? `${stats.hookScripts} hook scripts` : ""}
 
 用戶自訂的 commands/agents/rules/skills 不會被刪除。
-完全恢復到 setup 前：pnpm run restore → 選擇「完全還原」`);
+完全恢復到 setup 前：pnpm run d:restore → 選擇「完全還原」`);
 
 	const confirm = await p.confirm({
 		message: "確定卸載？",
@@ -177,7 +177,7 @@ async function main() {
 				const tmp = `${hooksJsonPath}.tmp.${process.pid}`;
 				fs.writeFileSync(
 					tmp,
-					JSON.stringify(hooksData, null, 2) + "\n",
+					`${JSON.stringify(hooksData, null, 2)}\n`,
 					"utf8",
 				);
 				fs.renameSync(tmp, hooksJsonPath);

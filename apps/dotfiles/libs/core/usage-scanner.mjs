@@ -539,7 +539,11 @@ export async function collectUnifiedReportData() {
 		...live,
 		// session 快取欄位（repos、techStacks 來自上次 d:setup）
 		cachedRepos: cached.repos || [],
-		cachedTechStacks: cached.techStacks || {},
+		cachedTechStacks: Array.isArray(cached.techStacks)
+			? cached.techStacks.length > 0
+				? { uncategorized: cached.techStacks }
+				: {}
+			: cached.techStacks || {},
 		cachedTimestamp: cached.timestamp || null,
 		// skills 永遠使用即時掃描結果
 		skills: live.skills,

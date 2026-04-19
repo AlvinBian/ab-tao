@@ -7,7 +7,7 @@
 從 `@ab-tao/commons` 資源池中按技術棧動態篩選，只安裝匹配的工具與配置，部署到 `~/.claude/` 與 `~/`。
 
 ```
-bin/          — CLI 入口（setup / scan / doctor / status / report / restore / hooks / uninstall）
+bin/          — CLI 入口（setup / scan / status / report / restore / hooks / prefs-sync / uninstall）
 libs/         — 核心邏輯（分析、配置生成、部署、技術棧偵測）
 claude/       — Claude Code 資源（commands / agents / rules / hooks / skills）
 zsh/          — ZSH 環境（~/.zshrc.d/ + sheldon 插件管理，7 個模組）

@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.0.0)
+# ~/.claude/ 結構全圖 (v1.1.0)
 
 ```
 ~/.claude/
@@ -35,24 +35,29 @@
 │   ├── audit-checklists.md      三模式 checklist 完整版
 │   └── config-map.md            本文件
 │
-├── agents/                      # 3 focused agents
+├── agents/                      # 2 focused agents
 │   ├── architect.md             架構設計 + 5 維審查
-│   ├── debugger.md              根因定位 + 最小 diff
-│   └── planner.md               複雜計畫專家
+│   └── debugger.md              根因定位 + 最小 diff
 │
-├── commands/                    # 8 unique commands
+├── commands/                    # 5 unique commands
 │   ├── aside.md
 │   ├── check.md
 │   ├── db-migration.md
-│   ├── plan.md
-│   ├── review-pr.md
-│   ├── santa-loop.md
 │   ├── slack.md
 │   └── test.md
 │
-├── skills/                      # ~20 skills（按需載入）
+├── skills/                      # 23 skills（按需載入）
 │
 ├── hooks/                       # 7 hooks（事件驅動，零 context cost）
+│   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
+│   │   ├── session-start.json   ab-tao:session:start
+│   │   ├── pre-tool-bash.json   ab-tao:pre:bash
+│   │   ├── pre-tool-edit.json   ab-tao:pre:edit
+│   │   ├── pre-compact.json     ab-tao:pre-compact
+│   │   ├── post-tool.json       ab-tao:post-tool
+│   │   ├── stop.json            ab-tao:stop
+│   │   └── session-end.json     ab-tao:session:end
+│   └── *.sh                     Hook 執行腳本
 │
 ├── memory/                      # 全域記憶（所有 session 共享）
 │   ├── MEMORY.md                hot 索引（≤15 項）
@@ -68,7 +73,7 @@
 ├── tasks/                       # 原生 Claude Code tasks（Jan 2025+）
 ├── plans/                       # 原生 plansDirectory（Feb 2026+）
 │
-├── settings.json                # 清理 phantom，統一模式
+├── settings.json                # 主配置：hooks（7條合併）+ mcpServers + model + env
 ├── settings.local.json          # 機器獨立（不 sync，gitignored）
 │
 └── .ab-tao/                     # ab-tao 運行時資料夾
@@ -83,6 +88,14 @@
 所有路徑由 `apps/dotfiles/libs/core/paths.mjs` 的 `P.*` 命名空間統一管理。
 禁止在其他 ab-tao 程式碼中硬編碼 `path.join(HOME, ".claude", ...)` 字面量。
 
+## Hooks 架構
+
+Hook 定義存放於 repo 的 `apps/dotfiles/claude/hooks/defs/*.json`（每個 hook 一個檔案）。
+`d:setup` 執行時讀取所有 defs → 合併進 `~/.claude/settings.json` 的 `hooks` 欄位（id-dedup，ECC hooks 不受影響）。
+`d:hooks` 管理啟用 / 停用，直接讀寫 `settings.json`，無需單獨的 `hooks.json`。
+
+**不再部署到 `~/.claude/` 的檔案**：`hooks.json`、`mcp.yml`、`plugins.yml`、`profiles/`、`memory-templates/`
+
 ## 來源對照
 
 | ~/.claude/ 目錄 | ab-tao source | 管理方式 |
@@ -93,6 +106,7 @@
 | agents/ | apps/dotfiles/claude/agents/ | ab-tao d:setup |
 | commands/ | apps/dotfiles/claude/commands/ | ab-tao d:setup |
 | skills/ | apps/dotfiles/claude/skills/ | ab-tao d:setup / c:skills |
-| hooks/ | apps/dotfiles/claude/hooks/ | ab-tao d:setup |
+| hooks/*.sh | apps/dotfiles/claude/hooks/*.sh | ab-tao d:setup |
+| settings.json (hooks) | apps/dotfiles/claude/hooks/defs/*.json | ab-tao d:setup / d:hooks |
 | memory/ | — | 使用者自管 |
 | projects/ | — | 使用者自管 |

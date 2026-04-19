@@ -1,0 +1,16 @@
+{
+	"event": "SessionStart",
+	"hooks": [
+		{
+			"id": "ab-tao:session:start",
+			"description": "專案提醒注入 + 冷啟動 briefing + config drift 偵測",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/session-start.sh",
+					"timeout": 8
+				}
+			]
+		}
+	]
+}

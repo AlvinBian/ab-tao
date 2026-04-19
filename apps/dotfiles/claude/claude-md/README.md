@@ -18,5 +18,6 @@
 | 11-audit-system.md | 三種審查模式入口 | 10 |
 | 12-exceptions.md | 臨時偏離核心規則的條件 | 15 |
 | 13-agent-routing.md | Agent 速查表 + 調度規則（尾錨定）| 30 |
+| 14-dag-parallel-execution.md | DAG 並行執行規則（多 phase 強制並行）| 50 |
 
-**載入順序**：首尾權重最高（00/01/02 + 13），中段可被 /compact 犧牲。
+**載入順序**：首尾權重最高（00/01/02 + 13/14），中段可被 /compact 犧牲。

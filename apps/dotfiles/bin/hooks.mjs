@@ -2,97 +2,89 @@
 
 /**
  * hooks 互動式管理 — 啟用/停用個別 hook，不需重跑 setup
+ * 資料源：repo claude/hooks/defs/*.json（規格）+ ~/.claude/settings.json（狀態）
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { isEmpty } from "lodash-es";
-import { getDescription } from "../libs/config/descriptions.mjs";
-import { HOME } from "../libs/core/paths.mjs";
+import { getDirname, P } from "../libs/core/paths.mjs";
 
-const HOOKS_PATH = path.join(HOME, ".claude", "hooks.json");
-const HOOKS_BACKUP = path.join(HOME, ".claude", "hooks.json.bak");
+const DEFS_DIR = path.join(
+	getDirname(import.meta),
+	"..",
+	"claude",
+	"hooks",
+	"defs",
+);
 
-function loadHooks() {
-	if (!fs.existsSync(HOOKS_PATH)) return null;
-	return JSON.parse(fs.readFileSync(HOOKS_PATH, "utf8"));
+function loadCanonicalDefs() {
+	if (!fs.existsSync(DEFS_DIR)) return [];
+	const defs = [];
+	for (const file of fs
+		.readdirSync(DEFS_DIR)
+		.filter((f) => f.endsWith(".json"))) {
+		const raw = JSON.parse(fs.readFileSync(path.join(DEFS_DIR, file), "utf8"));
+		for (const hook of raw.hooks ?? []) {
+			defs.push({ event: raw.event, ...hook });
+		}
+	}
+	return defs;
 }
 
-function saveHooks(data) {
-	// 備份
-	if (fs.existsSync(HOOKS_PATH)) fs.copyFileSync(HOOKS_PATH, HOOKS_BACKUP);
-	fs.writeFileSync(HOOKS_PATH, `${JSON.stringify(data, null, 2)}\n`);
+function loadSettings() {
+	if (!fs.existsSync(P.settings)) return null;
+	return JSON.parse(fs.readFileSync(P.settings, "utf8"));
+}
+
+function saveSettings(data) {
+	fs.writeFileSync(P.settings, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+}
+
+function getActiveIds(settings) {
+	const ids = new Set();
+	for (const handlers of Object.values(settings.hooks ?? {})) {
+		for (const h of handlers) {
+			if (h.id) ids.add(h.id);
+		}
+	}
+	return ids;
 }
 
 async function main() {
 	p.intro(" hooks 管理 ");
 
-	const data = loadHooks();
-	if (!data?.hooks) {
-		p.log.error("找不到 ~/.claude/hooks.json");
+	const defs = loadCanonicalDefs();
+	if (defs.length === 0) {
+		p.log.error(`找不到 hook 定義（${DEFS_DIR}）\n請先執行 pnpm run d:setup`);
 		p.outro();
 		return;
 	}
 
-	// 展開所有 hooks 為平坦列表
-	const allHooks = [];
-	for (const [event, matchers] of Object.entries(data.hooks)) {
-		for (const m of matchers) {
-			for (const h of m.hooks || [m]) {
-				const key = `${event}:${m.matcher || "*"}`;
-				const hookDesc = {
-					"PostToolUse:Edit|Write": "自動格式化（prettier）",
-					"PreToolUse:Edit|Write": "檔案保護",
-					"PreToolUse:Bash": "危險命令攔截",
-					"SessionStart:": "Session 開始記錄",
-					"SessionStart:compact": "Context 壓縮提示",
-					"Notification:": "Claude 需要注意通知",
-					"SubagentStop:": "子代理完成",
-					"UserPromptSubmit:": "空提示檢查",
-					"PostCompact:": "壓縮後恢復",
-					"Stop:": "Claude 回應結束",
-					"PermissionDenied:": "權限請求被拒絕",
-					"SessionEnd:": "Session 結束",
-					"TaskCompleted:": "任務完成",
-					"PostToolUseFailure:": "工具執行失敗",
-					"PreCompact:auto": "Context 自動壓縮",
-				};
-				const desc =
-					hookDesc[key] ||
-					getDescription(key) ||
-					`${event} [${m.matcher || "*"}]`;
-				allHooks.push({
-					event,
-					matcher: m.matcher,
-					hookObj: h,
-					key,
-					desc,
-					type: h.type,
-					enabled: !h._disabled,
-				});
-			}
-		}
-	}
-
-	if (isEmpty(allHooks)) {
-		p.log.info("沒有 hooks");
+	const settings = loadSettings();
+	if (!settings) {
+		p.log.error("找不到 ~/.claude/settings.json\n請先執行 pnpm run d:setup");
 		p.outro();
 		return;
 	}
+	settings.hooks = settings.hooks ?? {};
+
+	const activeIds = getActiveIds(settings);
 
 	// 顯示當前狀態
-	const statusLines = allHooks
-		.map((h) => `  ${h.enabled ? "✅" : "❌"} ${h.desc}（${h.type}）`)
+	const statusLines = defs
+		.map(
+			(d) =>
+				`  ${activeIds.has(d.id) ? "✅" : "⭕"} ${d.description ?? d.id}（${d.event}）`,
+		)
 		.join("\n");
-	p.log.info(`當前 hooks（${allHooks.length} 個）：\n${statusLines}`);
+	p.log.info(`ab-tao hooks（${defs.length} 個）：\n${statusLines}`);
 
 	// 選擇操作
 	const action = await p.select({
 		message: "操作",
 		options: [
 			{ value: "toggle", label: "啟用/停用 hooks" },
-			{ value: "reset", label: "重置為預設（從備份恢復）" },
 			{ value: "exit", label: "← 退出" },
 		],
 	});
@@ -102,29 +94,15 @@ async function main() {
 		return;
 	}
 
-	if (action === "reset") {
-		if (fs.existsSync(HOOKS_BACKUP)) {
-			fs.copyFileSync(HOOKS_BACKUP, HOOKS_PATH);
-			p.log.success("已從備份恢復 hooks.json");
-		} else {
-			p.log.warn("找不到備份檔案");
-		}
-		p.outro();
-		return;
-	}
-
 	// toggle: multiselect 選啟用的
-	const choices = allHooks.map((h) => ({
-		value: h.key,
-		label: h.desc,
-		hint: h.type,
-	}));
-	const enabledKeys = allHooks.filter((h) => h.enabled).map((h) => h.key);
-
 	const selected = await p.multiselect({
 		message: "選擇要啟用的 hooks（Space 切換，Enter 確認）",
-		options: choices,
-		initialValues: enabledKeys,
+		options: defs.map((d) => ({
+			value: d.id,
+			label: d.description ?? d.id,
+			hint: d.event,
+		})),
+		initialValues: defs.filter((d) => activeIds.has(d.id)).map((d) => d.id),
 	});
 
 	if (p.isCancel(selected)) {
@@ -134,24 +112,31 @@ async function main() {
 
 	const selectedSet = new Set(selected);
 
-	// 重建 hooks.json：用 _disabled 標記停用的
-	for (const [event, matchers] of Object.entries(data.hooks)) {
-		for (const m of matchers) {
-			const key = `${event}:${m.matcher || "*"}`;
-			for (const h of m.hooks || [m]) {
-				if (selectedSet.has(key)) {
-					delete h._disabled;
-				} else {
-					h._disabled = true;
-				}
-			}
+	// 重建 settings.hooks：保留非 ab-tao: 的外掛 hooks（ECC 等），再疊加選中的 ab-tao hooks
+	for (const [event, handlers] of Object.entries(settings.hooks)) {
+		settings.hooks[event] = handlers.filter(
+			(h) => !h.id?.startsWith("ab-tao:"),
+		);
+	}
+
+	for (const def of defs) {
+		if (!selectedSet.has(def.id)) continue;
+		const { event, ...entry } = def;
+		const existing = settings.hooks[event] ?? [];
+		if (!existing.some((h) => h.id === def.id)) {
+			settings.hooks[event] = [...existing, entry];
 		}
 	}
 
-	saveHooks(data);
+	// 清理空 event key
+	for (const event of Object.keys(settings.hooks)) {
+		if (settings.hooks[event].length === 0) delete settings.hooks[event];
+	}
+
+	saveSettings(settings);
 
 	const enabledCount = selected.length;
-	const disabledCount = allHooks.length - enabledCount;
+	const disabledCount = defs.length - enabledCount;
 	p.log.success(`已更新：${enabledCount} 個啟用 · ${disabledCount} 個停用`);
 	p.outro("hooks 管理完成");
 }

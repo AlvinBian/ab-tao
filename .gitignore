@@ -32,4 +32,7 @@ packages/commons/resources/ai/
 
 # OS
 .DS_Store
-Thumbs.db.claude/worktrees/
+Thumbs.db
+
+# Claude Code project runtime (worktrees, session data)
+.claude/

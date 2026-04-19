@@ -69,7 +69,7 @@ export function stageClaudePreview(
 	previewDir,
 	step,
 	selected,
-	installHooks,
+	_installHooks,
 	skillIds = [],
 ) {
 	const targetDir = path.join(previewDir, "claude");
@@ -134,23 +134,6 @@ export function stageClaudePreview(
 				} else {
 					fs.copyFileSync(fileSrc, fileDest);
 				}
-			}
-		}
-	}
-
-	// hooks（支援篩選後的 hooks 資料）
-	if (installHooks) {
-		if (typeof installHooks === "object") {
-			// 篩選後的 hooks 資料
-			fs.writeFileSync(
-				path.join(targetDir, "hooks.json"),
-				`${JSON.stringify(installHooks, null, 2)}\n`,
-			);
-		} else {
-			// 布林值：直接複製完整 hooks.json
-			const hooksFile = path.join(repoDir, "claude/hooks.json");
-			if (fs.existsSync(hooksFile)) {
-				fs.copyFileSync(hooksFile, path.join(targetDir, "hooks.json"));
 			}
 		}
 	}

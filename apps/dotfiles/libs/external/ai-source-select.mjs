@@ -68,7 +68,15 @@ export async function selectAiSources() {
 			const pickArg = needSync.join(",");
 			execFileSync(
 				"pnpm",
-				["--filter", "@ab-tao/commons", "run", "sync", "--", "--pick", pickArg],
+				[
+					"--filter",
+					"@ab-tao/commons",
+					"run",
+					"ai-sync",
+					"--",
+					"--pick",
+					pickArg,
+				],
 				{
 					stdio: "pipe",
 					timeout: 120000,

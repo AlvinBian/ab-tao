@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
@@ -42,5 +42,5 @@ test("文件中無過時命令引用", () => {
 			}
 		}
 	}
-	assert.deepEqual(violations, [], "發現過時命令：" + violations.join("\n"));
+	assert.deepEqual(violations, [], `發現過時命令：${violations.join("\n")}`);
 });

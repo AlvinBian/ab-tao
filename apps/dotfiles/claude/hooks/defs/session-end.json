@@ -1,0 +1,16 @@
+{
+	"event": "SessionEnd",
+	"hooks": [
+		{
+			"id": "ab-tao:session:end",
+			"description": "Plan 歸位 + Memory decay scan + flush 通知 + 舊備份清理",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/session-end.sh",
+					"timeout": 10
+				}
+			]
+		}
+	]
+}

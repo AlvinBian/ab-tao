@@ -161,7 +161,7 @@ export async function phaseComplete(
 					"  cp -r dist/preview/zsh/* ~/.zshrc.d/",
 				]
 			: []),
-		...(fs.existsSync(BACKUP_DIR) ? ["", "還原：pnpm run restore"] : []),
+		...(fs.existsSync(BACKUP_DIR) ? ["", "還原：pnpm run d:restore"] : []),
 	];
 	p.log.success(`✅ 安裝完成\n${summaryLines.join("\n")}`);
 
@@ -265,8 +265,8 @@ export async function phaseComplete(
 		"",
 		"── 維護 ──",
 		"  pnpm run status   — 配置管理中心",
-		"  pnpm run doctor   — 環境診斷",
-		"  pnpm run restore  — 還原上次備份",
+		"  pnpm run d:setup --doctor  — 環境診斷",
+		"  pnpm run d:restore         — 還原上次備份",
 	);
 
 	p.log.info(guideLines.join("\n"));

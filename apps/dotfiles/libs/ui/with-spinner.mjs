@@ -1,20 +1,26 @@
 import { spinner } from "@clack/prompts";
 
+// 追蹤目前活躍的 spinner 數量，防止並行呼叫互相干擾造成 terminal 抖動
+let _activeCount = 0;
+
 /**
  * 包住長 I/O 操作，自動顯示 spinner + 成功/失敗狀態。
  * CI / quiet 模式下靜默執行。
+ * 若已有外層 spinner 活躍（嵌套呼叫），自動靜默避免 terminal 抖動。
  *
  * @param {string} label - spinner 標籤
  * @param {(update: (msg: string) => void) => Promise<any>} fn - 非同步操作
  * @param {{ hint?: string, silent?: boolean }} [opts]
  */
 export async function withSpinner(label, fn, { hint, silent } = {}) {
-	const isQuiet = silent || process.env.CI || process.env.AB_TAO_QUIET;
+	const isQuiet =
+		silent || process.env.CI || process.env.AB_TAO_QUIET || _activeCount > 0;
 
 	if (isQuiet) {
 		return fn(() => {});
 	}
 
+	_activeCount++;
 	const s = spinner();
 	s.start(label);
 
@@ -25,6 +31,8 @@ export async function withSpinner(label, fn, { hint, silent } = {}) {
 	} catch (err) {
 		s.stop(`❌ ${label} 失敗`);
 		throw err;
+	} finally {
+		_activeCount--;
 	}
 }
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, beforeEach, describe, it } from "node:test";
 
 // 用臨時目錄隔離，不污染實際 ~/.claude
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "ab-tao-state-test-"));

@@ -126,16 +126,19 @@ pnpm run help              # view all commands
 | `pnpm run d:report`    | Browser HTML Dashboard                           |
 | `pnpm run d:restore`   | Restore backup                                   |
 | `pnpm run d:hooks`     | Hook management                                  |
+| `pnpm run d:prefs-sync` | Sync preferences to/from iCloud                 |
 | `pnpm run d:uninstall` | Remove ab-tao                                    |
 
 ### c: commons (AI resource sync)
 
 | Command                       | Description                                         |
 | ----------------------------- | --------------------------------------------------- |
-| `pnpm run c:ai-sync`          | List 4 AI sources and their status (no sync by default) |
+| `pnpm run c:ai-sync`          | List AI sources and their status (no sync by default) |
 | `pnpm run c:ai-sync --select` | Interactively select sources to sync                |
-| `pnpm run c:ai-sync --all`    | Sync all 4 sources                                  |
+| `pnpm run c:ai-sync --all`    | Sync all sources                                    |
+| `pnpm run c:skills`           | Claude Skills management (--list / --install / --find) |
 | `pnpm run c:validate`         | Validate resource structure + security check        |
+| `pnpm run c:translate`        | Generate multi-language translations                |
 
 Sync specific sources: `pnpm run c:ai-sync -- --pick ecc,superpowers`
 

@@ -473,6 +473,6 @@ async function doClean() {
 	if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath);
 
 	p.log.success(
-		`清除完成：移除 ${removed} 個檔案（已備份到 dist/backup/）\n繼續安裝以重新配置，或執行 pnpm run restore 還原備份`,
+		`清除完成：移除 ${removed} 個檔案（已備份到 dist/backup/）\n繼續安裝以重新配置，或執行 pnpm run d:restore 還原備份`,
 	);
 }

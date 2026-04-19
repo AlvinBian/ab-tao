@@ -1,0 +1,16 @@
+{
+	"event": "PreCompact",
+	"hooks": [
+		{
+			"id": "ab-tao:pre-compact",
+			"description": "定向壓縮指令注入（保留核心需求 / 犧牲調試輸出）",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/pre-compact.sh",
+					"timeout": 5
+				}
+			]
+		}
+	]
+}

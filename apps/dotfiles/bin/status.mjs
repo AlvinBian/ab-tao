@@ -681,6 +681,7 @@ async function manageConfig(data) {
 			{ value: "commands", label: "⌨️ Commands — 刪除 / 從 ECC 新增" },
 			{ value: "agents", label: "🤖 Agents — 刪除 / 從 ECC 新增" },
 			{ value: "rules", label: "📐 Rules — 啟用 / 停用 / 刪除 / 從 ECC 新增" },
+			{ value: "skills", label: "🎯 Skills — 啟用 / 停用 / 刪除" },
 			{ value: "hooks", label: "🪝 Hooks — 移除事件" },
 			{ value: "zsh", label: "🐚 ZSH — 安裝 / 卸載模組" },
 			{ value: "permissions", label: "🔐 Permissions — 新增 / 刪除規則" },
@@ -855,15 +856,126 @@ async function manageConfig(data) {
 		}
 	}
 
-	if (category === "hooks") {
-		const hooksPath = path.join(CLAUDE_DIR, "hooks.json");
-		let hooksData = {};
-		try {
-			hooksData = JSON.parse(fs.readFileSync(hooksPath, "utf8"));
-		} catch {
-			/* hooks.json 不存在則略過 */
+	if (category === "skills") {
+		const skills = data.skills ?? scanSkillsDir();
+		const skillsDir = path.join(CLAUDE_DIR, "skills");
+
+		if (isEmpty(skills)) {
+			p.log.info("尚未安裝任何 skill（~/.claude/skills/ 為空）");
+			return false;
 		}
-		const events = Object.keys(hooksData.hooks || {});
+
+		const action = await p.select({
+			message: "Skills 操作",
+			options: [
+				{ value: "toggle", label: "🔄 啟用 / 停用" },
+				{ value: "delete", label: "🗑️ 刪除" },
+				{ value: "back", label: "← 返回" },
+			],
+		});
+		if (p.isCancel(action) || action === "back") return false;
+
+		if (action === "toggle") {
+			const selected = await p.multiselect({
+				message: "切換啟用/停用狀態",
+				options: skills.map((s) => ({
+					value: s.name,
+					label: `${s.enabled ? pc.green("✔") : pc.red("✘")} ${s.name}`,
+					hint: s.enabled
+						? `啟用中 → 將停用 (${s.source})`
+						: `已停用 → 將啟用 (${s.source})`,
+				})),
+				required: false,
+			});
+			if (!p.isCancel(selected) && !isEmpty(selected)) {
+				for (const name of selected) {
+					const skill = skills.find((s) => s.name === name);
+					const skillDir = fs
+						.readdirSync(skillsDir, { withFileTypes: true })
+						.filter((e) => e.isDirectory())
+						.flatMap((e) => {
+							const sub = path.join(skillsDir, e.name);
+							if (e.name === name) return [sub];
+							try {
+								return fs
+									.readdirSync(sub, { withFileTypes: true })
+									.filter((se) => se.isDirectory() && se.name === name)
+									.map((se) => path.join(sub, se.name));
+							} catch {
+								return [];
+							}
+						})[0];
+
+					if (!skillDir) continue;
+					if (skill.enabled) {
+						fs.renameSync(
+							path.join(skillDir, "SKILL.md"),
+							path.join(skillDir, "SKILL.md.disabled"),
+						);
+						p.log.info(`已停用 ${name}`);
+					} else {
+						fs.renameSync(
+							path.join(skillDir, "SKILL.md.disabled"),
+							path.join(skillDir, "SKILL.md"),
+						);
+						p.log.success(`已啟用 ${name}`);
+					}
+					changed = true;
+				}
+			}
+		} else if (action === "delete") {
+			const selected = await p.multiselect({
+				message: "選擇要刪除的 skills",
+				options: skills.map((s) => ({
+					value: s.name,
+					label: `${s.enabled ? "" : pc.red("✘ ")}${s.name}`,
+					hint: s.source,
+				})),
+				required: false,
+			});
+			if (!p.isCancel(selected) && !isEmpty(selected)) {
+				const confirm = await p.confirm({
+					message: `確認刪除 ${selected.length} 個 skill 目錄？`,
+				});
+				if (confirm) {
+					for (const name of selected) {
+						const skillDir = fs
+							.readdirSync(skillsDir, { withFileTypes: true })
+							.filter((e) => e.isDirectory())
+							.flatMap((e) => {
+								const sub = path.join(skillsDir, e.name);
+								if (e.name === name) return [sub];
+								try {
+									return fs
+										.readdirSync(sub, { withFileTypes: true })
+										.filter((se) => se.isDirectory() && se.name === name)
+										.map((se) => path.join(sub, se.name));
+								} catch {
+									return [];
+								}
+							})[0];
+
+						if (skillDir && fs.existsSync(skillDir)) {
+							fs.rmSync(skillDir, { recursive: true, force: true });
+							p.log.success(`已刪除 ${name}`);
+							changed = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (category === "hooks") {
+		const settingsPath = path.join(CLAUDE_DIR, "settings.json");
+		let settings = {};
+		try {
+			settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+		} catch {
+			/* settings.json 不存在則略過 */
+		}
+		const hooksMap = settings.hooks || {};
+		const events = Object.keys(hooksMap);
 
 		if (isEmpty(events)) {
 			p.log.info("沒有已配置的 Hook 事件");
@@ -871,22 +983,23 @@ async function manageConfig(data) {
 		}
 
 		const selected = await p.multiselect({
-			message: "選擇要移除的 Hook 事件（移除後可透過 pnpm run setup 重新安裝）",
+			message:
+				"選擇要移除的 Hook 事件（移除後可透過 pnpm run d:setup 重新安裝）",
 			options: events.map((e) => ({
 				value: e,
 				label: e,
-				hint: `${(hooksData.hooks[e] || []).reduce((s, m) => s + (m.hooks?.length || 0), 0)} 個子 hook`,
+				hint: `${(hooksMap[e] || []).reduce((s, m) => s + (m.hooks?.length || 0), 0)} 個子 hook`,
 			})),
 			required: false,
 		});
 		if (!p.isCancel(selected) && !isEmpty(selected)) {
 			for (const event of selected) {
-				delete hooksData.hooks[event];
+				delete settings.hooks[event];
 				p.log.info(`已移除 ${event}`);
 			}
-			fs.writeFileSync(hooksPath, `${JSON.stringify(hooksData, null, 2)}\n`);
+			fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 			p.log.success(
-				`已移除 ${selected.length} 個 Hook 事件（pnpm run setup 可重新安裝）`,
+				`已移除 ${selected.length} 個 Hook 事件（pnpm run d:setup 可重新安裝）`,
 			);
 			return true;
 		}

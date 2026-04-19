@@ -125,17 +125,20 @@ pnpm run help              # 查看所有命令
 | `pnpm run d:status`    | 配置状态仪表板                  |
 | `pnpm run d:report`    | 浏览器 HTML Dashboard           |
 | `pnpm run d:restore`   | 还原备份                        |
-| `pnpm run d:hooks`     | Hook 管理                       |
-| `pnpm run d:uninstall` | 移除 ab-tao                     |
+| `pnpm run d:hooks`      | Hook 管理                      |
+| `pnpm run d:prefs-sync` | iCloud 偏好档同步              |
+| `pnpm run d:uninstall`  | 移除 ab-tao                    |
 
 ### c: commons（AI 资源同步）
 
-| 命令                          | 说明                                  |
-| ----------------------------- | ------------------------------------- |
-| `pnpm run c:ai-sync`          | 列出 4 个 AI 来源与状态（默认不同步） |
-| `pnpm run c:ai-sync --select` | 交互式选择同步                        |
-| `pnpm run c:ai-sync --all`    | 同步全部 4 个来源                     |
-| `pnpm run c:validate`         | 验证资源结构 + 安全检查               |
+| 命令                          | 说明                                |
+| ----------------------------- | ----------------------------------- |
+| `pnpm run c:ai-sync`          | 列出 AI 来源与状态（默认不同步）    |
+| `pnpm run c:ai-sync --select` | 交互式选择同步                      |
+| `pnpm run c:ai-sync --all`    | 同步全部来源                        |
+| `pnpm run c:skills`           | Claude Skills 管理（--list / --install / --find） |
+| `pnpm run c:validate`         | 验证资源结构 + 安全检查             |
+| `pnpm run c:translate`        | 多语系翻译生成                      |
 
 指定同步：`pnpm run c:ai-sync -- --pick ecc,superpowers`
 

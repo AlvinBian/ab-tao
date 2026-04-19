@@ -189,7 +189,14 @@ async function _walkTemplate(
 		if (!entry.isFile()) continue;
 
 		// 由 adjustGlobalSettings() 特化處理的檔案，此處跳過
-		const SETTINGS_MANAGED = new Set(["settings.template.json", "hooks.json"]);
+		const SETTINGS_MANAGED = new Set([
+			"settings.template.json",
+			"hooks.json",
+			"mcp.yml",
+			"plugins.yml",
+			"chezmoi-ignore",
+			"ab-tao-template-origin.json",
+		]);
 		if (SETTINGS_MANAGED.has(entry.name) && relPath === entry.name) continue;
 
 		const destExists = fs.existsSync(destPath);
@@ -396,14 +403,14 @@ export async function executePlan(plan, home, template, policy) {
 	}
 }
 
-async function _executeItem(item, home, template, policy, archiveBase) {
+async function _executeItem(item, _home, _template, policy, archiveBase) {
 	const { action, srcPath, destPath, relPath } = item;
 
 	switch (action) {
 		case "create": {
 			fs.mkdirSync(path.dirname(destPath), { recursive: true });
 			fs.copyFileSync(srcPath, destPath);
-			p.log.success(`  ${pc.green("✚")} ${relPath}`);
+			console.log(`  ${pc.green("✚")} ${relPath}`);
 			break;
 		}
 
@@ -421,14 +428,14 @@ async function _executeItem(item, home, template, policy, archiveBase) {
 				`${JSON.stringify(merged, null, 2)}\n`,
 				"utf8",
 			);
-			p.log.success(`  ${pc.blue("⊕")} ${relPath} (merged)`);
+			console.log(`  ${pc.blue("⊕")} ${relPath} (merged)`);
 			break;
 		}
 
 		case "overwriteInteractive":
 		case "overwriteFile": {
 			if (item._skip) {
-				p.log.info(`  ${pc.dim("○")} ${relPath} (跳過)`);
+				console.log(`  ${pc.dim("○")} ${relPath} (跳過)`);
 				break;
 			}
 			// 備份舊版本
@@ -436,12 +443,12 @@ async function _executeItem(item, home, template, policy, archiveBase) {
 
 			fs.mkdirSync(path.dirname(destPath), { recursive: true });
 			fs.copyFileSync(srcPath, destPath);
-			p.log.success(`  ${pc.yellow("↺")} ${relPath}`);
+			console.log(`  ${pc.yellow("↺")} ${relPath}`);
 			break;
 		}
 
 		case "lockedKeep":
-			p.log.info(`  ${pc.dim("📌")} ${relPath} (鎖定保留本地)`);
+			console.log(`  ${pc.dim("📌")} ${relPath} (鎖定保留本地)`);
 			break;
 
 		case "additiveKeep":

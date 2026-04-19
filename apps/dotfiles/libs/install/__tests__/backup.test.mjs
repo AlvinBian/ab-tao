@@ -30,9 +30,9 @@ describe("backup.mjs", () => {
 	it("listBackups 回傳由新到舊的 backup 清單", () => {
 		const src = path.join(TMP, "multi.md");
 		fs.writeFileSync(src, "v1");
-		const b1 = backup(src);
+		const _b1 = backup(src);
 		fs.writeFileSync(src, "v2");
-		const b2 = backup(src);
+		const _b2 = backup(src);
 		const list = listBackups(src);
 		assert(list.length >= 2);
 		assert(list[0] >= list[1], "應由新到舊排序");

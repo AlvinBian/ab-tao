@@ -119,23 +119,26 @@ pnpm run help              # 查看所有指令
 
 | 指令                   | 說明                            |
 | ---------------------- | ------------------------------- |
-| `pnpm run d:setup`     | 互動式環境部署 + 第三方工具推薦 |
-| `pnpm run d:scan`      | 技術棧掃描 + 技能庫生成         |
-| `pnpm run d:setup --doctor` | 環境診斷                   |
-| `pnpm run d:status`    | 配置狀態儀表板                  |
-| `pnpm run d:report`    | 瀏覽器 HTML Dashboard           |
-| `pnpm run d:restore`   | 還原備份                        |
-| `pnpm run d:hooks`     | Hook 管理                       |
-| `pnpm run d:uninstall` | 移除 ab-tao                     |
+| `pnpm run d:setup`          | 互動式環境部署 + 第三方工具推薦 |
+| `pnpm run d:scan`           | 技術棧掃描 + 技能庫生成         |
+| `pnpm run d:setup --doctor` | 環境診斷（setup Phase 1）       |
+| `pnpm run d:status`         | 配置狀態儀表板                  |
+| `pnpm run d:report`         | 瀏覽器 HTML Dashboard           |
+| `pnpm run d:restore`        | 還原備份                        |
+| `pnpm run d:hooks`          | Hook 管理                       |
+| `pnpm run d:prefs-sync`     | iCloud 偏好檔同步               |
+| `pnpm run d:uninstall`      | 移除 ab-tao                     |
 
 ### c: commons（AI 資源同步）
 
-| 指令                          | 說明                                  |
-| ----------------------------- | ------------------------------------- |
-| `pnpm run c:ai-sync`          | 列出 4 個 AI 來源與狀態（預設不同步） |
-| `pnpm run c:ai-sync --select` | 互動式選擇同步                        |
-| `pnpm run c:ai-sync --all`    | 同步全部 4 個來源                     |
-| `pnpm run c:validate`         | 驗證資源結構 + 安全檢查               |
+| 指令                          | 說明                                   |
+| ----------------------------- | -------------------------------------- |
+| `pnpm run c:ai-sync`          | 列出 AI 來源與狀態（預設不同步）       |
+| `pnpm run c:ai-sync --select` | 互動式選擇同步                         |
+| `pnpm run c:ai-sync --all`    | 同步全部來源                           |
+| `pnpm run c:skills`           | Claude Skills 管理（list/install/diff）|
+| `pnpm run c:translate`        | 多語系翻譯生成                         |
+| `pnpm run c:validate`         | 驗證資源結構 + 安全檢查                |
 
 指定同步：`pnpm run c:ai-sync -- --pick ecc,superpowers`
 

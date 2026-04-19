@@ -37,6 +37,8 @@ export const FORBIDDEN_DIRS = [
 	"memory",
 	"tasks",
 	"_archive",
+	"profiles",
+	"memory-templates",
 ];
 
 /**

@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import { parse as parseYaml } from "yaml";
 import { P } from "../core/paths.mjs";
 
 const PROFILES_DIR = path.join(P.abTaoDir, "profiles");

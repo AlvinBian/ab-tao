@@ -16,7 +16,6 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { CLACK_LOGGER } from "../cli/logger.mjs";
-import { BACK, handleCancel } from "../cli/prompts.mjs";
 
 import { getDirname, HOME } from "../core/paths.mjs";
 import { loadSession, patchSession } from "../core/session.mjs";

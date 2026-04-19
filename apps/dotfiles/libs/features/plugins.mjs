@@ -5,10 +5,15 @@
  * 不依賴任何其他 feature，直接呼叫 claude plugin CLI。
  */
 
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
+import { getCliBin } from "../external/claude-cli.mjs";
 
 /** 官方推薦 Plugins */
 const RECOMMENDED_PLUGINS = [
@@ -27,7 +32,12 @@ let _installedCache;
 function getInstalledPlugins() {
 	if (_installedCache !== undefined) return _installedCache;
 	try {
-		const out = execFileSync("claude", ["plugin", "list", "--json"], {
+		const bin = getCliBin();
+		if (!bin) {
+			_installedCache = null;
+			return null;
+		}
+		const out = execFileSync(bin, ["plugin", "list", "--json"], {
 			stdio: ["pipe", "pipe", "pipe"],
 			timeout: 10000,
 		});
@@ -153,27 +163,33 @@ export default {
 	async install(_ctx, plan) {
 		if (!plan?.plugins?.length) return null;
 
+		const bin = getCliBin();
+		if (!bin) {
+			p.log.warn("Claude CLI 不可用，略過 plugins 安裝");
+			return null;
+		}
+
 		const s = p.spinner();
 
 		// 確保 marketplace 已加入
-		s.start("加入 marketplace...");
+		s.start("確認 marketplace...");
 		try {
-			const out = execFileSync(
-				"claude",
+			const { stdout } = await execFileAsync(
+				bin,
 				["plugin", "marketplace", "list", "--json"],
-				{ stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
-			).toString();
-			const list = JSON.parse(out);
+				{ timeout: 10000 },
+			);
+			const list = JSON.parse(stdout);
 			if (!list.some((m) => m.repo === MARKETPLACE_REPO)) {
-				execFileSync(
-					"claude",
+				s.message("加入 marketplace...");
+				await execFileAsync(
+					bin,
 					["plugin", "marketplace", "add", MARKETPLACE_REPO],
-					{ stdio: ["pipe", "pipe", "pipe"], timeout: 120000 },
+					{ timeout: 120000 },
 				);
 			}
-			s.message("安裝 plugins...");
 		} catch {
-			s.message("marketplace 加入失敗，嘗試直接安裝");
+			s.message("marketplace 加入失敗，嘗試直接安裝...");
 		}
 
 		const installed = [];
@@ -182,10 +198,10 @@ export default {
 			const name = plan.plugins[i];
 			s.message(`[${i + 1}/${plan.plugins.length}] 安裝 ${name}...`);
 			try {
-				execFileSync(
-					"claude",
+				await execFileAsync(
+					bin,
 					["plugin", "install", `${name}@claude-plugins-official`],
-					{ stdio: ["pipe", "pipe", "pipe"], timeout: 60000 },
+					{ timeout: 60000 },
 				);
 				installed.push(name);
 			} catch {

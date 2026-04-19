@@ -1,0 +1,16 @@
+{
+	"event": "PostToolUse",
+	"hooks": [
+		{
+			"id": "ab-tao:post-tool",
+			"description": "Memory 索引觸發（Phase 13 預留接口）",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/post-tool.sh",
+					"timeout": 5
+				}
+			]
+		}
+	]
+}
