@@ -13,6 +13,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ```
 apps/dotfiles/      — @ab-tao/dotfiles  — 智能篩選、互動安裝、動態配置
+apps/console/       — @ab-tao/console   — Vue 3 後台控制台（GUI 管理）
 packages/commons/   — @ab-tao/commons   — 純資源池：同步、驗證、提供 API
 packages/share/     — @ab-tao/share     — 共用工具庫：utils/libs
 ```
@@ -44,6 +45,10 @@ pnpm run c:ai-sync --all   # 同步全部來源
 pnpm run c:skills          # Claude Skills 管理
 pnpm run c:translate       # 多語系翻譯生成
 pnpm run c:validate        # 驗證資源結構
+
+pnpm run cs:dev            # 啟動後台控制台（Vite + API server）
+pnpm run cs:build          # 構建 console SPA
+pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
 ```
 
 ## v2.0.0 架構：輕量化配置 + 命令驅動
