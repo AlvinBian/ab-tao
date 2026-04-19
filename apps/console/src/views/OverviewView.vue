@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import SessionByProjectBar from "@/charts/SessionByProjectBar.vue";
+import UsageHeatmap from "@/charts/UsageHeatmap.vue";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
@@ -37,12 +39,17 @@ const statCards = computed(() => [
 	},
 ]);
 
-const topProjects = computed(() => {
-	const byProject = d.value?.sessions?.byProject ?? {};
-	return Object.entries(byProject)
-		.sort(([, a], [, b]) => b - a)
-		.slice(0, 5);
-});
+const dailyCounts = computed(
+	() => (d.value?.sessions?.dailyCounts as Record<string, number>) ?? {},
+);
+const hasDailyCounts = computed(
+	() => Object.keys(dailyCounts.value).length > 0,
+);
+
+const byProject = computed(
+	() => (d.value?.sessions?.byProject as Record<string, number>) ?? {},
+);
+const hasByProject = computed(() => Object.keys(byProject.value).length > 0);
 
 const healthColor = computed(() => {
 	if (healthPct.value >= 80) return "#67c23a";
@@ -95,23 +102,34 @@ function formatBytes(bytes: number): string {
       </el-col>
     </el-row>
 
+    <!-- Session 活躍度熱力圖 -->
+    <el-card v-if="hasDailyCounts" shadow="never" style="margin-bottom:16px">
+      <template #header><span>Session 活躍度（當年）</span></template>
+      <UsageHeatmap :daily-counts="dailyCounts" />
+    </el-card>
+
     <el-row :gutter="16" style="margin-bottom:16px">
-      <!-- AI 模型 -->
+      <!-- Top Projects Bar -->
       <el-col :span="12">
-        <el-card shadow="never">
-          <template #header><span>AI 模型設定</span></template>
-          <el-descriptions :column="1" border size="small">
-            <el-descriptions-item label="主要模型">
-              <el-tag size="small">{{ d?.ai?.model ?? "—" }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="Effort">{{ d?.ai?.effort ?? "—" }}</el-descriptions-item>
-            <el-descriptions-item label="Repo 模型">{{ d?.ai?.repoModel ?? "—" }}</el-descriptions-item>
-          </el-descriptions>
+        <el-card shadow="never" style="height:100%">
+          <template #header><span>Top Projects（Sessions 數）</span></template>
+          <SessionByProjectBar v-if="hasByProject" :by-project="byProject" :top-n="8" />
+          <el-empty v-else description="無 Session 資料" :image-size="40" />
         </el-card>
       </el-col>
 
-      <!-- 磁碟使用 -->
+      <!-- AI 模型 + 磁碟使用 -->
       <el-col :span="12">
+        <el-card shadow="never" style="margin-bottom:12px">
+          <template #header><span>AI 模型設定</span></template>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="主要模型">
+              <el-tag size="small">{{ d?.ai?.model ?? '—' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="Effort">{{ d?.ai?.effort ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item label="Repo 模型">{{ d?.ai?.repoModel ?? '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
         <el-card shadow="never">
           <template #header><span>磁碟使用</span></template>
           <el-descriptions :column="1" border size="small">
@@ -123,48 +141,29 @@ function formatBytes(bytes: number): string {
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <!-- Drift 警示 -->
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header>
-            <span>Config Drift</span>
-            <el-tag
-              v-if="(d?.extended?.drift?.length ?? 0) > 0"
-              type="warning"
-              size="small"
-              style="margin-left:8px"
-            >{{ d?.extended?.drift?.length }} 個異動</el-tag>
-            <el-tag v-else type="success" size="small" style="margin-left:8px">無 Drift</el-tag>
+    <!-- Drift 警示 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header>
+        <span>Config Drift</span>
+        <el-tag
+          v-if="(d?.extended?.drift?.length ?? 0) > 0"
+          type="warning"
+          size="small"
+          style="margin-left:8px"
+        >{{ d?.extended?.drift?.length }} 個異動</el-tag>
+        <el-tag v-else type="success" size="small" style="margin-left:8px">無 Drift</el-tag>
+      </template>
+      <el-table :data="d?.extended?.drift?.slice(0, 5) ?? []" size="small" style="width:100%">
+        <el-table-column prop="path" label="路徑" show-overflow-tooltip />
+        <el-table-column prop="decision" label="狀態" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.decision === 'deleted' ? 'danger' : 'warning'" size="small">
+              {{ row.decision }}
+            </el-tag>
           </template>
-          <el-table :data="d?.extended?.drift?.slice(0, 5) ?? []" size="small" style="width:100%">
-            <el-table-column prop="path" label="路徑" show-overflow-tooltip />
-            <el-table-column prop="decision" label="狀態" width="90">
-              <template #default="{ row }">
-                <el-tag :type="row.decision === 'deleted' ? 'danger' : 'warning'" size="small">
-                  {{ row.decision }}
-                </el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-
-      <!-- Top Projects -->
-      <el-col :span="12">
-        <el-card shadow="never">
-          <template #header><span>Top Sessions by Project</span></template>
-          <el-table :data="topProjects" size="small" style="width:100%">
-            <el-table-column label="專案" show-overflow-tooltip>
-              <template #default="{ row }">{{ row[0] }}</template>
-            </el-table-column>
-            <el-table-column label="Sessions" width="90" align="right">
-              <template #default="{ row }">{{ row[1] }}</template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <el-empty v-if="!store.loading && !store.data && !store.error" description="尚無資料，請確認 API server 已啟動" />
   </div>

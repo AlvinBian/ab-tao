@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import TechStackSunburst from "@/charts/TechStackSunburst.vue";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
@@ -83,6 +84,12 @@ function getCategoryColor(cat: string): string {
           />
         </el-col>
       </el-row>
+    </el-card>
+
+    <!-- Sunburst 圖 -->
+    <el-card v-if="!searchQuery && categories.length > 0" shadow="never" style="margin-bottom:16px">
+      <template #header><span>技術棧分布（Sunburst）</span></template>
+      <TechStackSunburst :stacks="stacks" />
     </el-card>
 
     <!-- 技術分類 -->

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import DriftScatter from "@/charts/DriftScatter.vue";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
@@ -76,6 +77,7 @@ function driftTagType(decision: string): "warning" | "danger" | "info" {
           </template>
         </el-table-column>
       </el-table>
+      <DriftScatter v-if="drift.length > 0" :drift="drift" style="margin-top:12px" />
       <el-empty v-else description="所有 managed 檔案與 template 一致" />
     </el-card>
 
