@@ -8,6 +8,7 @@
 
 import { createServer } from "node:http";
 import { URL } from "node:url";
+import { resourcesRouter } from "./routes/resources.mjs";
 import { statusRouter } from "./routes/status.mjs";
 
 const PORT = 5478;
@@ -62,6 +63,12 @@ const server = createServer(async (req, res) => {
 		// /api/status/* — 狀態資料
 		if (url.pathname.startsWith("/api/status")) {
 			const handled = await statusRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/resources/* — 資源管理（CRUD）
+		if (url.pathname.startsWith("/api/resources")) {
+			const handled = await resourcesRouter(req, res, url, json);
 			if (handled) return;
 		}
 
