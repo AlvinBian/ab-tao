@@ -57,7 +57,7 @@ async function onToggle(name: string, enabled: boolean) {
             <el-switch
               :model-value="row.enabled"
               :loading="store.toggling.has(row.name)"
-              @change="(v: boolean) => onToggle(row.name, v)"
+              @change="(v: string | number | boolean) => onToggle(row.name, v as boolean)"
             />
           </template>
         </el-table-column>

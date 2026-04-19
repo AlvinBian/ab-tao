@@ -9,6 +9,7 @@
 import { createServer } from "node:http";
 import { URL } from "node:url";
 import { resourcesRouter } from "./routes/resources.mjs";
+import { settingsRouter } from "./routes/settings.mjs";
 import { statusRouter } from "./routes/status.mjs";
 
 const PORT = 5478;
@@ -69,6 +70,15 @@ const server = createServer(async (req, res) => {
 		// /api/resources/* — 資源管理（CRUD）
 		if (url.pathname.startsWith("/api/resources")) {
 			const handled = await resourcesRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/settings/* + /api/preferences — 設定管理
+		if (
+			url.pathname.startsWith("/api/settings") ||
+			url.pathname.startsWith("/api/preferences")
+		) {
+			const handled = await settingsRouter(req, res, url, json);
 			if (handled) return;
 		}
 
