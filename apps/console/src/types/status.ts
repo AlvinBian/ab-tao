@@ -137,6 +137,7 @@ export interface HooksDetail {
 }
 
 export interface HookDetailItem {
+	id: string | null;
 	name: string;
 	event: string;
 	script: string;

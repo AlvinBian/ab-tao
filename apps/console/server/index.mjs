@@ -8,6 +8,7 @@
 
 import { createServer } from "node:http";
 import { URL } from "node:url";
+import { hooksRouter } from "./routes/hooks.mjs";
 import { resourcesRouter } from "./routes/resources.mjs";
 import { restoreRouter } from "./routes/restore.mjs";
 import { scanRouter } from "./routes/scan.mjs";
@@ -107,6 +108,12 @@ const server = createServer(async (req, res) => {
 		// /api/restore/* — 備份還原
 		if (url.pathname.startsWith("/api/restore")) {
 			const handled = await restoreRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/hooks/* — Hook 重新部署
+		if (url.pathname.startsWith("/api/hooks")) {
+			const handled = await hooksRouter(req, res, url, json);
 			if (handled) return;
 		}
 
