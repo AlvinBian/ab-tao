@@ -13,7 +13,9 @@
 			"!**/.cache",
 			"!**/resources",
 			"!ecc",
-			"!docs"
+			"!docs",
+			"!apps/console/src/auto-imports.d.ts",
+			"!apps/console/src/components.d.ts"
 		]
 	}
 }

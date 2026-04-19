@@ -31,6 +31,10 @@
 		"c:skills": "pnpm -C packages/commons run skills",
 		"c:validate": "pnpm -C packages/commons run validate",
 		"c:translate": "pnpm -C packages/commons run translate",
+		"cs:dev": "pnpm -C apps/console run dev",
+		"cs:build": "pnpm -C apps/console run build",
+		"cs:open": "pnpm -C apps/console run build && open apps/console/dist/index.html",
+		"cs:serve": "pnpm -C apps/console run serve",
 		"changeset": "changeset add",
 		"changeset:status": "changeset status",
 		"version": "changeset version",
@@ -39,7 +43,9 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"lefthook"
+			"esbuild",
+			"lefthook",
+			"vue-demi"
 		]
 	},
 	"devDependencies": {
