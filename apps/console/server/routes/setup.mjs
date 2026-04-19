@@ -89,10 +89,25 @@ export async function setupRouter(req, res, url, json) {
 			return true;
 		}
 
-		const { flags = [] } = req._body ?? {};
+		const {
+			flags = [],
+			dryRun = false,
+			mode = "quick",
+			fromIcloud = false,
+		} = req._body ?? {};
+		const extraFlags = Array.isArray(flags) ? [...flags] : [];
 		// 強制加上 --yes 跳過所有確認
-		const extraFlags = Array.isArray(flags) ? flags : [];
 		if (!extraFlags.includes("--yes")) extraFlags.push("--yes");
+		// 模式 flag（預設 quick）
+		if (mode === "manual" && !extraFlags.includes("--manual"))
+			extraFlags.push("--manual");
+		if (mode === "all" && !extraFlags.includes("--all"))
+			extraFlags.push("--all");
+		// 進階 flag
+		if (dryRun && !extraFlags.includes("--dry-run"))
+			extraFlags.push("--dry-run");
+		if (fromIcloud && !extraFlags.includes("--from-icloud"))
+			extraFlags.push("--from-icloud");
 
 		spawnSse(
 			res,

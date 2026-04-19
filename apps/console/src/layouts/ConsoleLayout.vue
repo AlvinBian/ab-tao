@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import {
+	CircleCheck,
 	Connection,
 	Cpu,
 	DataAnalysis,
 	Document,
+	Expand,
 	Files,
-	Link,
+	Fold,
 	Menu,
 	Monitor,
+	Odometer,
 	Operation,
 	Setting,
 	Tools,
@@ -20,9 +23,15 @@ const isCollapsed = ref(false);
 
 const menuItems = [
 	{
-		label: "儀表板",
+		label: "檢視",
 		children: [
 			{ path: "/overview", label: "Overview", icon: Monitor },
+			{ path: "/state", label: "State & Drift", icon: Document },
+			{ path: "/memory", label: "Memory & Plans", icon: Files },
+			{ path: "/mcp", label: "MCP & Plugins", icon: Connection },
+			{ path: "/hooks", label: "Hooks 健檢", icon: CircleCheck },
+			{ path: "/repos", label: "Repos", icon: DataAnalysis },
+			{ path: "/techstacks", label: "技術棧", icon: Menu },
 			{ path: "/environment", label: "環境資訊", icon: Cpu },
 		],
 	},
@@ -38,22 +47,11 @@ const menuItems = [
 	{
 		label: "配置中心",
 		children: [
-			{ path: "/hooks", label: "Hooks 健檢", icon: Link },
 			{ path: "/config/permissions", label: "Permissions", icon: Setting },
 			{ path: "/config/ai", label: "AI 模型", icon: DataAnalysis },
-			{ path: "/config/hooks", label: "Hook 開關", icon: Link },
+			{ path: "/config/hooks", label: "Hook 開關", icon: Odometer },
 			{ path: "/config/plugins", label: "Plugins", icon: Tools },
 			{ path: "/config/preferences", label: "偏好設定", icon: Setting },
-		],
-	},
-	{
-		label: "資料檢視",
-		children: [
-			{ path: "/state", label: "State & Drift", icon: Document },
-			{ path: "/memory", label: "Memory & Plans", icon: Files },
-			{ path: "/mcp", label: "MCP & Plugins", icon: Connection },
-			{ path: "/repos", label: "Repos", icon: DataAnalysis },
-			{ path: "/techstacks", label: "技術棧", icon: Menu },
 		],
 	},
 	{
@@ -62,6 +60,7 @@ const menuItems = [
 			{ path: "/actions/setup", label: "Setup 精靈", icon: Tools },
 			{ path: "/actions/scan", label: "技術棧掃描", icon: Operation },
 			{ path: "/actions/sync", label: "Sync 同步", icon: Connection },
+			{ path: "/actions/restore", label: "還原備份", icon: Files },
 		],
 	},
 ];
@@ -79,7 +78,7 @@ const activeMenu = computed(() => route.path);
           style="cursor:pointer"
           @click="isCollapsed = !isCollapsed"
         >
-          <component :is="isCollapsed ? 'Expand' : 'Fold'" />
+          <component :is="isCollapsed ? Expand : Fold" />
         </el-icon>
       </div>
       <el-menu

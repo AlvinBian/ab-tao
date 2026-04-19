@@ -6,6 +6,9 @@ import { useSse } from "@/composables/useSse";
 
 const session = ref<Record<string, unknown> | null>(null);
 const loadingSession = ref(false);
+const dryRun = ref(false);
+const mode = ref<"quick" | "manual" | "all">("quick");
+const fromIcloud = ref(false);
 
 const sse = useSse({
 	onDone: (e) => {
@@ -51,7 +54,12 @@ async function execute() {
 		{ confirmButtonText: "執行", cancelButtonText: "取消", type: "warning" },
 	);
 	sse.reset();
-	sse.start("/api/setup/execute", { flags: [] });
+	sse.start("/api/setup/execute", {
+		flags: [],
+		dryRun: dryRun.value,
+		mode: mode.value,
+		fromIcloud: fromIcloud.value,
+	});
 }
 
 async function cancel() {
@@ -98,6 +106,32 @@ async function clearProgress() {
           {{ ((session.progress as Record<string,unknown>)?.pendingTargets as unknown[])?.length ?? 0 }} 個
         </el-descriptions-item>
       </el-descriptions>
+    </el-card>
+
+    <!-- 安裝選項 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header><span>安裝選項</span></template>
+      <el-form label-width="100px" size="small">
+        <el-form-item label="模式">
+          <el-radio-group v-model="mode">
+            <el-radio-button value="quick">Quick（快速）</el-radio-button>
+            <el-radio-button value="manual">Manual（逐步確認）</el-radio-button>
+            <el-radio-button value="all">All（全量）</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="Dry-run">
+          <el-switch v-model="dryRun" />
+          <span style="margin-left:8px; color:var(--el-text-color-secondary); font-size:12px">
+            只預覽變更，不實際寫入
+          </span>
+        </el-form-item>
+        <el-form-item label="從 iCloud">
+          <el-switch v-model="fromIcloud" />
+          <span style="margin-left:8px; color:var(--el-text-color-secondary); font-size:12px">
+            從 iCloud 快速重建配置
+          </span>
+        </el-form-item>
+      </el-form>
     </el-card>
 
     <!-- 七階段流程 -->

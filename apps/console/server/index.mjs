@@ -9,6 +9,7 @@
 import { createServer } from "node:http";
 import { URL } from "node:url";
 import { resourcesRouter } from "./routes/resources.mjs";
+import { restoreRouter } from "./routes/restore.mjs";
 import { scanRouter } from "./routes/scan.mjs";
 import { settingsRouter } from "./routes/settings.mjs";
 import { setupRouter } from "./routes/setup.mjs";
@@ -100,6 +101,12 @@ const server = createServer(async (req, res) => {
 		// /api/sync/* — iCloud 偏好同步
 		if (url.pathname.startsWith("/api/sync")) {
 			const handled = await syncRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/restore/* — 備份還原
+		if (url.pathname.startsWith("/api/restore")) {
+			const handled = await restoreRouter(req, res, url, json);
 			if (handled) return;
 		}
 
