@@ -671,14 +671,30 @@ async function main() {
 	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);
 
 	// 儲存報告快取（供 d:report 的 collectUnifiedReportData 使用）
+	// 快取路徑：~/.claude/.cache/last-report-data.json
 	try {
 		const cacheDir = path.join(HOME, ".claude", ".cache");
 		fs.mkdirSync(cacheDir, { recursive: true });
 		const cacheData = {
+			// 記錄寫入時間戳，供 Dashboard 顯示「上次 d:setup 時間」
 			timestamp: new Date().toISOString(),
+			// repos：保留完整物件格式（含 role / localPath），讓 renderTabRepos() 能顯示 meta 資訊
+			// 純字串格式（舊快取）保持向下相容，物件格式則明確傳遞 role 與本地路徑
 			repos: (aggregatedPlan.repos || [])
-				.map((r) => r.fullName || r)
-				.filter(Boolean),
+				.filter((r) => r && (r.fullName || typeof r === "string"))
+				.map((r) =>
+					typeof r === "string"
+						? r
+						: {
+								name: r.fullName,
+								// role 優先使用 aggregatedPlan 內的值，其次查 roles map，預設為 "temp"
+								role: r.role || roles[r.fullName] || "temp",
+								// localPath 優先使用 aggregatedPlan 內的值，其次查 localPaths map
+								localPath: r.localPath || localPaths[r.fullName] || null,
+							},
+				),
+			// techStacks：優先使用 pipelineResult（掃描結果），其次 aggregatedPlan
+			// 若仍為扁平陣列，包裝為 { uncategorized: [...] } 讓 renderer 啟動分類器
 			techStacks: (() => {
 				const ts = pipelineResult?.techStacks || aggregatedPlan.techStacks;
 				if (Array.isArray(ts))
@@ -691,7 +707,7 @@ async function main() {
 			JSON.stringify(cacheData, null, 2),
 		);
 	} catch {
-		/* 快取寫入失敗不影響安裝結果 */
+		/* 快取寫入失敗不影響安裝主流程 */
 	}
 
 	// 可選：生成 HTML 報告（僅在有 project 結果時）

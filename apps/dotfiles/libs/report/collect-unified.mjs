@@ -28,6 +28,7 @@ import { CLAUDE, P } from "../core/paths.mjs";
  * }}
  */
 export function readHooksDetail() {
+	// 嘗試讀取 hooks.json；若不存在或格式錯誤，回傳空結果
 	let raw = {};
 	try {
 		raw = JSON.parse(fs.readFileSync(P.hooksJson, "utf8"));
@@ -35,43 +36,57 @@ export function readHooksDetail() {
 		return { hooks: [], total: 0, healthy: 0 };
 	}
 
+	// hooksMap 結構：{ [event]: Array<{ description?, hooks: [{ id?, command }] }> }
 	const hooksMap = raw.hooks || {};
+	// result：最終扁平化的 hook 項目清單（跨 event、跨 matcher 展開）
 	const result = [];
 
 	for (const [event, matchers] of Object.entries(hooksMap)) {
 		if (!Array.isArray(matchers)) continue;
 		for (const matcher of matchers) {
+			// 每個 matcher 可能包含多個子 hook
 			const subHooks = Array.isArray(matcher.hooks) ? matcher.hooks : [];
 			for (const hook of subHooks) {
 				const cmd = hook.command || "";
-				// 若命令超長則截短顯示
+				// 命令顯示字串：超過 120 字元時截短，避免表格欄位過寬
 				const scriptDisplay =
 					cmd.length > 120 ? `${cmd.slice(0, 117)}...` : cmd;
 
-				// 嘗試從命令字串中找到腳本路徑
-				const scriptPathMatch = cmd.match(
-					/(?:node\s+|bash\s+|sh\s+)([^\s;|&"']+\.(?:js|mjs|sh))/,
-				);
+				// isInline：node -e / --eval 為行內腳本，無對應實體檔案
+				// 不應嘗試 fs.accessSync 驗證，直接視為 healthy（exists=true, executable=true）
+				const isInline = /^node\s+(-e|--eval)\b/.test(cmd.trimStart());
+				// 健康狀態預設為 healthy，非 inline 時再做實際檔案檢查
 				let exists = true;
 				let executable = true;
 
-				if (scriptPathMatch) {
-					const HOME = process.env.HOME || "";
-					const scriptPath = scriptPathMatch[1].replace(/^~/, HOME);
-					try {
-						fs.accessSync(scriptPath, fs.constants.F_OK);
+				if (!isInline) {
+					// 從命令字串提取腳本路徑（支援 node / bash / sh 開頭的 .js/.mjs/.sh 檔）
+					const scriptPathMatch = cmd.match(
+						/(?:node\s+|bash\s+|sh\s+)([^\s;|&"']+\.(?:js|mjs|sh))/,
+					);
+					if (scriptPathMatch) {
+						const HOME = process.env.HOME || "";
+						// 展開路徑中的 ~ 為真實 HOME 目錄
+						const scriptPath = scriptPathMatch[1].replace(/^~/, HOME);
 						try {
-							fs.accessSync(scriptPath, fs.constants.X_OK);
+							// 先確認檔案存在（F_OK），再確認可執行（X_OK）
+							fs.accessSync(scriptPath, fs.constants.F_OK);
+							try {
+								fs.accessSync(scriptPath, fs.constants.X_OK);
+							} catch {
+								// 檔案存在但不可執行（缺少 x 權限）
+								executable = false;
+							}
 						} catch {
+							// 檔案不存在或無讀取權限
+							exists = false;
 							executable = false;
 						}
-					} catch {
-						exists = false;
-						executable = false;
 					}
 				}
 
 				result.push({
+					// 優先使用 matcher.description，其次 hook.id，最後回退為 "{event} hook"
 					name: matcher.description || hook.id || `${event} hook`,
 					event,
 					script: scriptDisplay,
@@ -82,6 +97,7 @@ export function readHooksDetail() {
 		}
 	}
 
+	// 計算 healthy 數量（exists=true 且 executable=true）
 	const healthy = result.filter((h) => h.exists && h.executable).length;
 	return { hooks: result, total: result.length, healthy };
 }
@@ -257,10 +273,12 @@ export function scanMemoryLayers() {
  * }}
  */
 export function checkCclineStatus() {
+	// cclineScript：ccline 腳本的絕對路徑（由 paths.mjs P.ccline 提供）
 	const cclineScript = P.ccline;
+	// installed：腳本檔案是否存在於磁碟
 	const installed = fs.existsSync(cclineScript);
 
-	// 偵測 themes 目錄
+	// themes 目錄與腳本同層，收集所有 .toml / .sh 主題檔
 	const themesDir = path.join(path.dirname(cclineScript), "themes");
 	let themes = [];
 	try {
@@ -269,24 +287,33 @@ export function checkCclineStatus() {
 			.filter((f) => f.endsWith(".toml") || f.endsWith(".sh"))
 			.sort();
 	} catch {
-		// themes 目錄不存在
+		// themes 目錄不存在時略過，themes 保持空陣列
 	}
 
-	// 從 settings.json 讀取 statusLineTool 配置
+	// 從 ~/.claude/settings.json 讀取 statusLineTool（或舊欄位名 statusLine）
 	let statusLineConfigured = false;
 	let command = null;
 	try {
 		const settings = JSON.parse(fs.readFileSync(P.settings, "utf8"));
+		// 優先使用新欄位名 statusLineTool，向下相容舊欄位名 statusLine
 		const statusLine = settings.statusLineTool || settings.statusLine;
 		if (statusLine) {
 			statusLineConfigured = true;
-			command = statusLine;
+			// statusLine 有兩種格式：
+			//   1. 純字串：直接為命令路徑（舊版 Claude Code settings）
+			//   2. 物件：{ type: "command", command: "...", padding: 0 }（新版格式）
+			if (typeof statusLine === "string") {
+				command = statusLine;
+			} else if (statusLine && typeof statusLine.command === "string") {
+				command = statusLine.command;
+			}
+			// 若格式不符（如 boolean），command 保持 null，避免渲染 [object Object]
 		}
 	} catch {
-		// settings.json 不存在
+		// settings.json 不存在或 JSON 格式錯誤，狀態保持預設值
 	}
 
-	// 若 settings 中無配置，用 script 路徑作為 command
+	// Fallback：settings 中未配置時，若腳本存在則直接用腳本路徑作為 command 顯示
 	if (!command && installed) {
 		command = cclineScript;
 	}

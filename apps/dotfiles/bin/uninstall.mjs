@@ -92,11 +92,27 @@ async function main() {
 			fs.existsSync(path.join(CLAUDE_DIR, "rules", `${r}.md`)),
 		).length,
 		skills: skillDirs.length,
-		hooks: fs.existsSync(path.join(CLAUDE_DIR, "hooks.json")) ? 1 : 0,
+		// Bug 1 修復：改為統計 settings.json 中 id 以 ab-tao: 開頭的 hook 條目數量
+		hooks: (() => {
+			const settingsPath = path.join(CLAUDE_DIR, "settings.json");
+			if (!fs.existsSync(settingsPath)) return 0;
+			try {
+				const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+				if (!data.hooks || typeof data.hooks !== "object") return 0;
+				return Object.values(data.hooks)
+					.flat()
+					.filter(
+						(e) => typeof e?.id === "string" && e.id.startsWith("ab-tao:"),
+					).length;
+			} catch {
+				return 0;
+			}
+		})(),
 		settings: fs.existsSync(path.join(CLAUDE_DIR, "settings.json")) ? 1 : 0,
 		keybindings: fs.existsSync(path.join(CLAUDE_DIR, "keybindings.json"))
 			? 1
 			: 0,
+		// Bug 2 修復：加入 relocate-plan.sh，與刪除清單對齊
 		hookScripts: (() => {
 			const hooksDir = path.join(CLAUDE_DIR, "hooks");
 			if (!fs.existsSync(hooksDir)) return 0;
@@ -109,6 +125,7 @@ async function main() {
 						"block-dangerous.sh",
 						"validate-memory-path.sh",
 						"inject-project-prompt.sh",
+						"relocate-plan.sh",
 					].includes(f),
 				).length;
 		})(),
@@ -131,7 +148,7 @@ async function main() {
 
 	p.log.info(`將移除：
 	  ${stats.commands} commands · ${stats.agents} agents · ${stats.rules} rules · ${stats.skills} skills
-	  ${stats.hooks ? "hooks.json · " : ""}${stats.settings ? "settings.json · " : ""}${stats.keybindings ? "keybindings.json · " : ""}${stats.hookScripts ? `${stats.hookScripts} hook scripts` : ""}
+	  ${stats.hooks ? `${stats.hooks} hooks · ` : ""}${stats.settings ? "settings.json · " : ""}${stats.keybindings ? "keybindings.json · " : ""}${stats.hookScripts ? `${stats.hookScripts} hook scripts` : ""}
 
 用戶自訂的 commands/agents/rules/skills 不會被刪除。
 完全恢復到 setup 前：pnpm run d:restore → 選擇「完全還原」`);
@@ -155,40 +172,50 @@ async function main() {
 		removed++;
 	}
 
-	// hooks.json：只移除 ab-tao: 條目，保留其他外掛（如 ECC）的 hooks
-	const hooksJsonPath = path.join(CLAUDE_DIR, "hooks.json");
-	if (fs.existsSync(hooksJsonPath)) {
+	// Bug 1 修復：從 settings.json 的 hooks 欄位過濾 ab-tao: 條目，保留其他外掛（如 ECC）的 hooks
+	const settingsJsonPath = path.join(CLAUDE_DIR, "settings.json");
+	if (fs.existsSync(settingsJsonPath)) {
 		try {
-			const hooksData = JSON.parse(fs.readFileSync(hooksJsonPath, "utf8"));
+			const settingsData = JSON.parse(
+				fs.readFileSync(settingsJsonPath, "utf8"),
+			);
 			let changed = false;
-			if (hooksData.hooks && typeof hooksData.hooks === "object") {
-				for (const [event, entries] of Object.entries(hooksData.hooks)) {
+			if (settingsData.hooks && typeof settingsData.hooks === "object") {
+				for (const [event, entries] of Object.entries(settingsData.hooks)) {
 					if (!Array.isArray(entries)) continue;
 					const filtered = entries.filter(
 						(e) => typeof e.id !== "string" || !e.id.startsWith("ab-tao:"),
 					);
 					if (filtered.length !== entries.length) {
-						hooksData.hooks[event] = filtered;
+						if (filtered.length === 0) {
+							delete settingsData.hooks[event];
+						} else {
+							settingsData.hooks[event] = filtered;
+						}
 						changed = true;
 					}
 				}
+				// 若 hooks 物件已空，移除整個 hooks 欄位
+				if (changed && Object.keys(settingsData.hooks).length === 0) {
+					delete settingsData.hooks;
+				}
 			}
 			if (changed) {
-				const tmp = `${hooksJsonPath}.tmp.${process.pid}`;
+				const tmp = `${settingsJsonPath}.tmp.${process.pid}`;
 				fs.writeFileSync(
 					tmp,
-					`${JSON.stringify(hooksData, null, 2)}\n`,
+					`${JSON.stringify(settingsData, null, 2)}\n`,
 					"utf8",
 				);
-				fs.renameSync(tmp, hooksJsonPath);
+				fs.renameSync(tmp, settingsJsonPath);
 				removed++;
 			}
 		} catch {
-			/* hooks.json 無法解析，跳過 */
+			/* settings.json 無法解析，跳過 */
 		}
 	}
 
-	for (const file of ["settings.json", "keybindings.json"]) {
+	for (const file of ["keybindings.json"]) {
 		const fp = path.join(CLAUDE_DIR, file);
 		if (fs.existsSync(fp)) {
 			fs.unlinkSync(fp);

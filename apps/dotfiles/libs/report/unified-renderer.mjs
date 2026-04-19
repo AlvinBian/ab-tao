@@ -380,18 +380,29 @@ function renderTabOverview(data) {
 </div>`;
 	}
 
-	// CCline 狀態 widget（Wave 3 C2）
+	// CCline 狀態 widget（Wave 3 C2）— 來自 collect-unified.mjs checkCclineStatus()
 	const ccline = extended.ccline || {};
 	let cclineHtml = "";
 	if (ccline.installed !== undefined) {
+		// 安裝狀態 badge
 		const cclineStatus = ccline.installed
 			? '<span class="badge badge-green">已安裝</span>'
 			: '<span class="badge badge-grey">未安裝</span>';
+		// settings.json 中 statusLineTool / statusLine 是否已配置
 		const cclineConfigured = ccline.statusLineConfigured
 			? '<span class="badge badge-blue">statusLineTool 已配置</span>'
 			: '<span class="badge badge-yellow">statusLineTool 未配置</span>';
-		const cmdDisplay = ccline.command
-			? `<div class="mono" style="font-size:.78rem;margin-top:4px;word-break:break-all">${escapeHtml(ccline.command)}</div>`
+		// Claude Code settings.json 的 statusLine 欄位可能是字串或物件 { type, command, padding }
+		// 需要做 type guard 提取 command 字串，避免直接渲染物件得到 "[object Object]"
+		const cmdStr =
+			typeof ccline.command === "string"
+				? ccline.command
+				: ccline.command && typeof ccline.command.command === "string"
+					? ccline.command.command
+					: "";
+		// 只有 cmdStr 有值才渲染命令路徑顯示區塊
+		const cmdDisplay = cmdStr
+			? `<div class="mono" style="font-size:.78rem;margin-top:4px;word-break:break-all">${escapeHtml(cmdStr)}</div>`
 			: "";
 		cclineHtml = `
 <div class="card">
@@ -754,16 +765,124 @@ function renderTabAudit(data) {
 }
 
 /**
+ * 將扁平技術清單依類型分組，產出分類後的物件
+ *
+ * 分類規則依序套用（先匹配者先歸類，避免重複），未命中任何規則的項目歸入「其他」。
+ * 規則的 `cat` 欄位為顯示名稱，`test` 函式接受小寫技術名稱回傳 boolean。
+ *
+ * @param {string[]} flatList - 扁平技術名稱陣列（來自 d:setup 快取）
+ * @returns {Record<string, string[]>} 以分類名稱為 key、對應技術名稱陣列為 value 的物件
+ */
+function classifyTechs(flatList) {
+	// 分類規則：依優先順序排列，先匹配者先佔用，同一技術不重複分類
+	const rules = [
+		{
+			cat: "Vue / Nuxt",
+			test: (t) =>
+				/^(vue$|vue2|vue3|nuxt|vue-router|vueuse|pinia|vuex|xstate)/.test(t),
+		},
+		{ cat: "TypeScript", test: (t) => t === "typescript" },
+		{ cat: "測試", test: (t) => /jest|vitest|cypress|playwright/.test(t) },
+		{ cat: "表單驗證", test: (t) => /vee-validate|yup/.test(t) },
+		{
+			cat: "CSS / 樣式",
+			test: (t) =>
+				/sass|postcss|tailwind|bootstrap|style-dict/.test(
+					t.replace(/@[^/]+\//, ""),
+				),
+		},
+		{
+			cat: "UI 組件",
+			test: (t) =>
+				/element-plus|vant|flowbite|swiper|splide|web-design|fontawesome|lottie/.test(
+					t,
+				),
+		},
+		{ cat: "i18n", test: (t) => /i18n/.test(t) },
+		{
+			cat: "Build Tools",
+			test: (t) =>
+				/vite|webpack|unbuild|turbo|gulp|changeset|storybook|npm-run|cross-env|svg2|^del$|^sharp$/.test(
+					t.replace(/@[^/]+\//, ""),
+				),
+		},
+		{
+			cat: "HTTP / API",
+			test: (t) =>
+				/^(axios|got|qs|web-vitals|socket\.io)/.test(t.replace(/@[^/]+\//, "")),
+		},
+		{ cat: "Email", test: (t) => /mjml|mailchimp/.test(t) },
+		{
+			cat: "後端 / 基礎設施",
+			test: (t) =>
+				/^(php|nginx|docker|postgres|redis|jaeger|pino|winston)/.test(t),
+		},
+		{
+			cat: "CLI / DevTools",
+			test: (t) => /listr2|clack|commander|picocolors|eslint/.test(t),
+		},
+		{
+			cat: "工具庫",
+			test: (t) =>
+				/^(lodash|lodash-es|dayjs|luxon|semver|dotenv|yaml)$/.test(t),
+		},
+		{
+			cat: "第三方服務",
+			test: (t) => /adyen|mixpanel|markercluster|gtm-support|twilio/.test(t),
+		},
+	];
+	// 已分配技術的去重集合，防止同一技術出現在多個分類
+	const used = new Set();
+	// 最終輸出物件：{ 分類名稱: [技術名稱, ...] }
+	const result = {};
+	for (const { cat, test } of rules) {
+		// 只挑選尚未被其他分類佔用且符合當前規則的技術
+		const matched = flatList.filter((t) => !used.has(t) && test(t));
+		if (matched.length > 0) {
+			result[cat] = matched;
+			// 標記已分配，後續規則不再重複匹配
+			for (const t of matched) used.add(t);
+		}
+	}
+	// 所有規則皆未命中的技術歸入「其他」分類
+	const rest = flatList.filter((t) => !used.has(t));
+	if (rest.length > 0) result["其他"] = rest;
+	return result;
+}
+
+/**
  * 渲染 Tech Stacks Tab（條件顯示）
- * @param {Record<string, string[]>} cachedTechStacks
+ *
+ * 輸入資料可能有三種形狀：
+ *   1. 扁平字串陣列（舊格式快取）→ 直接傳入 classifyTechs() 分類
+ *   2. 物件僅含 "uncategorized" 單一 key（d:setup 寫入時尚未分類）→ 同上
+ *   3. 已分類物件（包含多個 cat key）→ 直接使用
+ *
+ * @param {string[] | Record<string, string[]>} cachedTechStacks - 技術棧資料（來自快取）
  */
 function renderTabTechStacks(cachedTechStacks) {
-	// 若傳入 Array（舊格式 ["typescript", "react"]），轉為 { uncategorized: [...] }
-	const normalized = Array.isArray(cachedTechStacks)
-		? cachedTechStacks.length > 0
-			? { uncategorized: cachedTechStacks }
-			: {}
-		: cachedTechStacks || {};
+	// flat：若輸入是陣列則直接使用，否則為 null
+	const flat = Array.isArray(cachedTechStacks) ? cachedTechStacks : null;
+	// keys：物件時取 key 清單，用於判斷是否僅有 uncategorized 分組
+	const keys = flat ? null : Object.keys(cachedTechStacks || {});
+	// shouldClassify：需要重新分類的條件——扁平陣列 或 只有 uncategorized 單一 key
+	const shouldClassify =
+		flat !== null ||
+		(keys !== null && keys.length === 1 && keys[0] === "uncategorized");
+
+	// normalized：最終用來渲染的已分類物件
+	let normalized;
+	if (flat !== null) {
+		// 情況 1：扁平陣列，送入分類器
+		normalized = flat.length > 0 ? classifyTechs(flat) : {};
+	} else if (shouldClassify && keys !== null) {
+		// 情況 2：單一 uncategorized key，取其值送入分類器
+		normalized = classifyTechs((cachedTechStacks || {})["uncategorized"] || []);
+	} else {
+		// 情況 3：已分類物件，直接使用
+		normalized = cachedTechStacks || {};
+	}
+	// 過濾掉空分類，只保留有技術名稱的 entry
 	const entries = Object.entries(normalized).filter(
 		([, techs]) => Array.isArray(techs) && techs.length > 0,
 	);
@@ -796,24 +915,46 @@ function renderTabTechStacks(cachedTechStacks) {
 
 /**
  * 渲染 Repos Tab（條件顯示）
- * @param {{ name?: string, role?: string, path?: string, localPath?: string }[]} cachedRepos
+ *
+ * 快取格式相容兩種形狀：
+ *   - 純字串（舊快取）："org/repo-name"
+ *   - 物件（新快取）：{ name, role, localPath }
+ * 兩種格式均可正確渲染；meta 資訊（role / localPath）只在物件格式且有值時顯示。
+ *
+ * @param {(string | { name?: string, role?: string, path?: string, localPath?: string, repo?: string, fullName?: string })[]} cachedRepos
  */
 function renderTabRepos(cachedRepos) {
 	if (!cachedRepos || cachedRepos.length === 0) return "";
 
 	const cards = cachedRepos
 		.map((repo) => {
-			const name = repo.name || repo.repo || "—";
-			const role = repo.role || "—";
-			const repoPath = repo.path || repo.localPath || "—";
+			// isStr：舊快取為純字串，新快取為物件
+			const isStr = typeof repo === "string";
+			// raw：提取 repo 全名（org/repo），兼容多種欄位名稱
+			const raw = isStr ? repo : repo.name || repo.repo || repo.fullName || "—";
+			// 顯示格式：若含 "/" 則將 org 部分降低不透明度，視覺區分 org / repo-name
+			const slash = raw.indexOf("/");
+			const nameHtml =
+				slash > -1
+					? `<span style="opacity:.6">${escapeHtml(raw.slice(0, slash + 1))}</span>${escapeHtml(raw.slice(slash + 1))}`
+					: escapeHtml(raw);
+			// role / repoPath：僅物件格式才有；純字串快取沒有 meta 資訊
+			const role = isStr ? null : repo.role || null;
+			const repoPath = isStr ? null : repo.path || repo.localPath || null;
+			// role badge 顏色：main 為綠色，其餘（temp / secondary）為灰色
 			const roleColor = role === "main" ? "green" : "grey";
+			// metaHtml：只有在 role 或 repoPath 至少一個有值時才渲染，避免顯示空行
+			const metaHtml =
+				role || repoPath
+					? `
+  <div class="repo-meta">
+    ${role ? `<span class="badge badge-${roleColor}">${escapeHtml(role)}</span>` : ""}
+    ${repoPath ? `<span class="mono" style="font-size:.8rem">${escapeHtml(repoPath)}</span>` : ""}
+  </div>`
+					: "";
 			return `
 <div class="repo-card">
-  <div class="repo-name">${escapeHtml(name)}</div>
-  <div class="repo-meta">
-    <span class="badge badge-${roleColor}">${escapeHtml(role)}</span>
-    <span class="mono" style="font-size:.8rem">${escapeHtml(repoPath)}</span>
-  </div>
+  <div class="repo-name">${nameHtml}</div>${metaHtml}
 </div>`;
 		})
 		.join("");
@@ -831,10 +972,20 @@ function renderTabRepos(cachedRepos) {
 
 /**
  * 渲染 Hooks Tab
- * 顯示 hooks.json 中所有 hook 的名稱、event、script 路徑、狀態
+ *
+ * 從 data.extended.hooks（由 collect-unified.mjs readHooksDetail() 提供）讀取資料，
+ * 依 event 名稱分組後以表格形式展示每個 hook 的名稱、event、script 路徑和健康狀態。
+ *
+ * 健康狀態判斷規則：
+ *   - healthy：exists=true 且 executable=true
+ *   - missing：exists=false（腳本檔案找不到）
+ *   - not executable：exists=true 但 executable=false（缺少執行權限）
+ *   - inline（node -e）：無實體檔案，永遠視為 healthy
  */
 function renderTabHooks(data) {
+	// 擴充資料來自 collect-unified.mjs collectExtendedData()
 	const extended = data.extended || {};
+	// hooksData 結構：{ hooks: HookEntry[], total: number, healthy: number }
 	const hooksData = extended.hooks || { hooks: [], total: 0, healthy: 0 };
 	const hooks = hooksData.hooks || [];
 
@@ -845,13 +996,14 @@ function renderTabHooks(data) {
 </div>`;
 	}
 
-	// 依 event 分組
+	// 依 event 名稱分組（如 PreToolUse、PostToolUse、Stop 等）
 	const byEvent = /** @type {Record<string, typeof hooks>} */ ({});
 	for (const h of hooks) {
 		if (!byEvent[h.event]) byEvent[h.event] = [];
 		byEvent[h.event].push(h);
 	}
 
+	// healthy / total 計數，用於標題顯示
 	const healthyCount = hooksData.healthy ?? 0;
 	const totalCount = hooksData.total ?? hooks.length;
 
@@ -859,17 +1011,22 @@ function renderTabHooks(data) {
 	for (const [event, items] of Object.entries(byEvent).sort()) {
 		const rows = items
 			.map((h) => {
+				// 狀態圖示：healthy=✅，否則=❌
 				const statusIcon = h.exists && h.executable ? "✅" : "❌";
+				// 狀態 badge：三種狀態對應三種顏色
 				const statusBadge =
 					h.exists && h.executable
 						? '<span class="badge badge-green">healthy</span>'
 						: !h.exists
 							? '<span class="badge badge-red">missing</span>'
 							: '<span class="badge badge-yellow">not executable</span>';
+				// 名稱截短：超過 48 字元截斷並加省略號，完整名稱保留於 title 屬性
+				const shortName =
+					h.name.length > 48 ? h.name.slice(0, 46) + "…" : h.name;
 				return `<tr>
-  <td>${escapeHtml(h.name)}</td>
+  <td title="${escapeHtml(h.name)}" style="max-width:220px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escapeHtml(shortName)}</td>
   <td><span class="badge badge-blue">${escapeHtml(event)}</span></td>
-  <td class="mono" style="font-size:.78rem;word-break:break-all;max-width:400px">${escapeHtml(h.script)}</td>
+  <td class="mono" style="font-size:.78rem;word-break:break-all;max-width:360px">${escapeHtml(h.script)}</td>
   <td>${statusIcon} ${statusBadge}</td>
 </tr>`;
 			})
@@ -1293,12 +1450,28 @@ function renderScriptPanel() {
 </div>`;
 }
 
+/**
+ * 產生內嵌 <script> 的字串，包含 Dashboard 所有互動邏輯
+ *
+ * 重要實作細節：
+ *   本函式的回傳值本身是一個 template literal（反引號包裹），其中嵌入的 JS 程式碼
+ *   不能直接使用反斜線（\）或反引號（`）字面量，否則 Node.js 在解析時會因
+ *   多層 escape 吞字而在輸出的 HTML 產生 SyntaxError。
+ *
+ *   解法：以 String.fromCharCode() 在執行期動態取得這兩個字元：
+ *     BK（backslash）= charCode 92
+ *     BT（backtick）= charCode 96
+ *   需要這兩個字元的地方全部用變數拼接，不出現字面量。
+ */
 function renderInlineScript() {
 	return `
 <script>
 (function() {
-  // Script Panel 狀態
+  // Script Panel 累積的 shell 指令列表；切換 checkbox 時動態增減
   var lines = [];
+  // BK / BT 以 charCode 取得，避免在外層 template literal 中引發 escape 吞字問題
+  var BK = String.fromCharCode(92); // 反斜線（charCode 92）
+  var BT = String.fromCharCode(96); // 反引號（charCode 96）
 
   function updatePanel() {
     var pre   = document.getElementById('scriptOutput');
@@ -1321,7 +1494,7 @@ function renderInlineScript() {
     var skillPath = cb.dataset.skillPath; // 相對路徑，如 "deep-research" 或 "ecc/deep-research"
     var nowOn   = cb.checked;
     // 雙引號轉義：防止 $、反引號、\\、" 在 shell 中展開或中斷引號
-    var safePath = skillPath.replace(/\\/g, '\\\\').replace(/\\$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
+    var safePath = skillPath.split(BK).join(BK+BK).split('$').join(BK+'$').split(BT).join(BK+BT).split('"').join(BK+'"');
     var enabled  = '"$HOME/.claude/skills/' + safePath + '/SKILL.md"';
     var disabled = '"$HOME/.claude/skills/' + safePath + '/SKILL.md.disabled"';
     // 移除舊的同名指令
@@ -1345,7 +1518,7 @@ function renderInlineScript() {
     var nowOn  = cb.checked;
     var dir    = type === 'command' ? 'commands' : type === 'agent' ? 'agents' : 'rules';
     // 雙引號轉義：防止 shell 元字元注入
-    var safeName = name.replace(/\\/g, '\\\\').replace(/\\$/g, '\\$').replace(/\`/g, '\\\`').replace(/"/g, '\\"');
+    var safeName = name.split(BK).join(BK+BK).split('$').join(BK+'$').split(BT).join(BK+BT).split('"').join(BK+'"');
     var enabled  = '"$HOME/.claude/' + dir + '/' + safeName + '.md"';
     var disabled = '"$HOME/.claude/' + dir + '/' + safeName + '.md.disabled"';
     // 移除舊的同名指令
