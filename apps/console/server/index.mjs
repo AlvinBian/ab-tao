@@ -9,8 +9,11 @@
 import { createServer } from "node:http";
 import { URL } from "node:url";
 import { resourcesRouter } from "./routes/resources.mjs";
+import { scanRouter } from "./routes/scan.mjs";
 import { settingsRouter } from "./routes/settings.mjs";
+import { setupRouter } from "./routes/setup.mjs";
 import { statusRouter } from "./routes/status.mjs";
+import { syncRouter } from "./routes/sync.mjs";
 
 const PORT = 5478;
 
@@ -79,6 +82,24 @@ const server = createServer(async (req, res) => {
 			url.pathname.startsWith("/api/preferences")
 		) {
 			const handled = await settingsRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/setup/* — d:setup 安裝精靈
+		if (url.pathname.startsWith("/api/setup")) {
+			const handled = await setupRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/scan/* — d:scan 技術棧掃描
+		if (url.pathname.startsWith("/api/scan")) {
+			const handled = await scanRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/sync/* — iCloud 偏好同步
+		if (url.pathname.startsWith("/api/sync")) {
+			const handled = await syncRouter(req, res, url, json);
 			if (handled) return;
 		}
 

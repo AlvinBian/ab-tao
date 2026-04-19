@@ -5,8 +5,8 @@
  * 切換透過 fs.rename 實作（不走 child process）；所有 mutation 前先備份。
  */
 
-import { createWriteStream, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { copyFile, readdir, rename, stat } from "node:fs/promises";
+import { existsSync, mkdirSync } from "node:fs";
+import { copyFile, readdir, rename } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
