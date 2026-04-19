@@ -20,6 +20,7 @@ import { useRoute } from "vue-router";
 
 const route = useRoute();
 const isCollapsed = ref(false);
+const collapseIcon = computed(() => (isCollapsed.value ? Expand : Fold));
 
 const menuItems = [
 	{
@@ -78,7 +79,7 @@ const activeMenu = computed(() => route.path);
           style="cursor:pointer"
           @click="isCollapsed = !isCollapsed"
         >
-          <component :is="isCollapsed ? Expand : Fold" />
+          <component :is="collapseIcon" />
         </el-icon>
       </div>
       <el-menu
