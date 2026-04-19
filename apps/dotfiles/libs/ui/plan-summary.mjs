@@ -9,6 +9,7 @@
 
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { t } from "./theme.mjs";
 
 /**
  * 計畫項目分類對映（action → 顯示用 emoji + 標籤）
@@ -94,9 +95,7 @@ export function renderPlanSummary(plan) {
 	const activeActions = displayOrder.filter((a) => counts[a] > 0);
 
 	// 建構樹狀行
-	const lines = [
-		`${pc.bold("📦 配置同步計畫")}（共 ${pc.bold(String(total))} 項）`,
-	];
+	const lines = [`${pc.bold("📦 配置同步計畫")}（共 ${t.count(total)} 項）`];
 
 	for (let i = 0; i < activeActions.length; i++) {
 		const action = activeActions[i];
@@ -109,7 +108,7 @@ export function renderPlanSummary(plan) {
 		const unit = action === "forbiddenSkip" ? "目錄" : "個";
 
 		lines.push(
-			`${prefix} ${meta.icon}  ${pc.cyan(meta.label)}：${pc.bold(String(count))} ${unit}` +
+			`${prefix} ${meta.icon}  ${pc.cyan(meta.label)}：${t.count(count)} ${unit}` +
 				(meta.hint ? pc.dim(`（${meta.hint}）`) : ""),
 		);
 	}

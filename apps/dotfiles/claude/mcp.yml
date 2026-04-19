@@ -19,6 +19,7 @@ servers:
     enabled_in_profiles:
       - personal
       - oss
+      - work
     description: "GitHub Issues / PR / Search 操作"
 
   # ── 專案管理 ─────────────────────────────────────────────────────
@@ -39,7 +40,7 @@ servers:
     env_ref: JIRA_TOKEN
     enabled_in_profiles:
       - work
-    description: "Jira / Confluence 操作"
+    description: "Jira Issues + Confluence 文件（atlassian-mcp-server 統一處理）"
 
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:

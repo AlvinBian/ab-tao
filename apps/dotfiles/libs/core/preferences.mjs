@@ -19,6 +19,8 @@ export const GUI_EDITOR_PATHS = {
 		"/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
 };
 
+const GUI_EDITOR_LABELS = { cursor: "Cursor", kiro: "Kiro", vscode: "VS Code" };
+
 // ── 13 個預設危險指令模式（ERE 正則）──────────────────────────────
 const DEFAULT_DANGEROUS_PATTERNS = [
 	"sudo[[:space:]]+rm[[:space:]]",
@@ -38,7 +40,7 @@ const DEFAULT_DANGEROUS_PATTERNS = [
 
 // ── 偏好預設值 ────────────────────────────────────────────────────
 export const PREF_DEFAULTS = {
-	guiEditorOrder: ["cursor", "kiro", "vscode"],
+	guiEditorOrder: ["kiro", "cursor", "vscode"],
 	cliEditor: "vim",
 	nodeManagerOrder: ["fnm", "nvm", "n"],
 	keybinding: "emacs",
@@ -104,27 +106,62 @@ export async function collectPreferences(prevPrefs) {
 	// ── 🖥️ 終端環境 ──────────────────────────────────────────────
 	p.log.step("🖥️ 終端環境");
 
-	const guiEditorPrimary = handleCancel(
-		await p.select({
-			message: "主要 GUI 編輯器（open -e / code alias）",
-			options: [
-				{ value: "cursor", label: "Cursor" },
-				{ value: "kiro", label: "Kiro" },
-				{ value: "vscode", label: "VS Code" },
-				{ value: "none", label: "不設定" },
-			],
-			initialValue: current.guiEditorOrder[0] ?? "cursor",
-		}),
+	// 偵測已安裝的 GUI 編輯器（路徑存在即視為已安裝）
+	const ALL_GUI_EDITORS = ["kiro", "cursor", "vscode"];
+	const installedEditors = ALL_GUI_EDITORS.filter((e) =>
+		fs.existsSync(GUI_EDITOR_PATHS[e]),
 	);
-	if (guiEditorPrimary === BACK) return null;
 
-	const guiEditorOrder =
-		guiEditorPrimary === "none"
-			? []
-			: [
-					guiEditorPrimary,
-					...["cursor", "kiro", "vscode"].filter((e) => e !== guiEditorPrimary),
-				];
+	let guiEditorOrder;
+	if (installedEditors.length === 0) {
+		p.log.warn("未偵測到已安裝的 GUI 編輯器，略過排序設定");
+		guiEditorOrder = [];
+	} else {
+		p.log.info(
+			`偵測到已安裝：${installedEditors.map((e) => GUI_EDITOR_LABELS[e]).join("、")}`,
+		);
+
+		const defaultOrderLabels = installedEditors
+			.map((e) => GUI_EDITOR_LABELS[e])
+			.join(" > ");
+		const isOrderCorrect = handleCancel(
+			await p.confirm({
+				message: `預設優先順序：${defaultOrderLabels}，是否正確？`,
+				initialValue: true,
+			}),
+		);
+		if (isOrderCorrect === BACK) return null;
+
+		if (isOrderCorrect) {
+			guiEditorOrder = installedEditors;
+		} else {
+			// 序列 select：依序讓使用者指定第 1、第 2… 優先的編輯器
+			const remaining = [...installedEditors];
+			const ordered = [];
+			const ordinals = ["第一", "第二", "第三"];
+
+			for (let i = 0; i < installedEditors.length; i++) {
+				if (remaining.length === 1) {
+					ordered.push(remaining[0]);
+					break;
+				}
+				const pick = handleCancel(
+					await p.select({
+						message: `${ordinals[i] ?? `第 ${i + 1}`}優先 GUI 編輯器`,
+						options: remaining.map((e) => ({
+							value: e,
+							label: GUI_EDITOR_LABELS[e],
+						})),
+						initialValue: remaining[0],
+					}),
+				);
+				if (pick === BACK) return null;
+				ordered.push(pick);
+				remaining.splice(remaining.indexOf(pick), 1);
+			}
+			guiEditorOrder = ordered;
+		}
+	}
 
 	const cliEditor = handleCancel(
 		await p.select({

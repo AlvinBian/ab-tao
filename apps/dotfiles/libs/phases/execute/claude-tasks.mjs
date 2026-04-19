@@ -29,8 +29,11 @@ import {
 	writeSkillFiles,
 	writeSyncedFiles,
 } from "../../external/source-sync.mjs";
+import { mergeConfig } from "../../install/config-merge.mjs";
 import { syncConfig } from "../../install/config-sync.mjs";
 import { runTarget } from "../../install/index.mjs";
+import { applyMcpServers } from "../../install/mcp-manager.mjs";
+import { t } from "../../ui/theme.mjs";
 import { withSpinner } from "../../ui/with-spinner.mjs";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -189,9 +192,106 @@ export async function deployGlobalConfig(opts) {
 		}
 	}
 
+	// ── 階段 1b：部署 settings.json（template + preserve merge）──
+	const templateSettingsPath = path.join(
+		repoDir,
+		"claude",
+		"settings.template.json",
+	);
+	const localSettingsPath = path.join(claudeHome, "settings.json");
+	if (fs.existsSync(templateSettingsPath)) {
+		try {
+			const templateSettings = JSON.parse(
+				fs.readFileSync(templateSettingsPath, "utf8"),
+			);
+			const localSettings = fs.existsSync(localSettingsPath)
+				? JSON.parse(fs.readFileSync(localSettingsPath, "utf8"))
+				: {};
+			const merged = mergeConfig(templateSettings, localSettings, {
+				preservePaths: SETTINGS_PRESERVE_PATHS,
+				arrayMerge: SETTINGS_ARRAY_MERGE,
+			});
+			// 用戶選擇的 model 總是優先（若有傳入）
+			if (model) merged.model = model;
+			fs.writeFileSync(
+				localSettingsPath,
+				`${JSON.stringify(merged, null, 2)}\n`,
+				"utf8",
+			);
+			if (logger)
+				logger(
+					t.ok(
+						"settings.json 已部署",
+						`${t.count(Object.keys(merged).length)} 個欄位`,
+					),
+				);
+		} catch (settingsErr) {
+			if (logger)
+				logger(t.warn(`settings.json 部署失敗：${settingsErr.message}`));
+		}
+	}
+
+	// ── 階段 1c：合併 hooks.json → settings.json.hooks ──
+	const hooksJsonPath = path.join(claudeHome, "hooks.json");
+	if (fs.existsSync(hooksJsonPath) && fs.existsSync(localSettingsPath)) {
+		try {
+			const hooksData = JSON.parse(fs.readFileSync(hooksJsonPath, "utf8"));
+			if (hooksData.hooks) {
+				const s = JSON.parse(fs.readFileSync(localSettingsPath, "utf8"));
+				s.hooks = s.hooks ?? {};
+				for (const [event, handlers] of Object.entries(hooksData.hooks)) {
+					const existing = s.hooks[event] ?? [];
+					const existingIds = new Set(existing.map((h) => h.id));
+					s.hooks[event] = [
+						...existing,
+						...handlers.filter((h) => !existingIds.has(h.id)),
+					];
+				}
+				fs.writeFileSync(
+					localSettingsPath,
+					`${JSON.stringify(s, null, 2)}\n`,
+					"utf8",
+				);
+				const totalHooks = Object.values(hooksData.hooks).reduce(
+					(n, a) => n + a.length,
+					0,
+				);
+				if (logger)
+					logger(
+						t.ok("hooks 已合併 settings.json", `${t.count(totalHooks)} 個`),
+					);
+			}
+		} catch (hooksErr) {
+			if (logger) logger(t.warn(`hooks 合併失敗：${hooksErr.message}`));
+		}
+	}
+
+	// ── 階段 1d：套用 mcp.yml → settings.json.mcpServers ──
+	// applyMcpServers() 是 sync 函數，只更新 mcpServers key，不影響 hooks 或其他欄位
+	try {
+		const mcpProfile = opts?.profile ?? "personal";
+		const mcpResult = applyMcpServers({ profile: mcpProfile, dryRun: false });
+		const applied = mcpResult.applied?.length ?? 0;
+		const skipped = mcpResult.missing_secrets?.length ?? 0;
+		if (logger)
+			logger(
+				t.ok(
+					"MCP servers 已套用",
+					`${t.count(applied)} 個${skipped > 0 ? `，${t.count(skipped)} 個待設定 token` : ""}`,
+				),
+			);
+		if (skipped > 0 && mcpResult.missing_secrets) {
+			for (const s of mcpResult.missing_secrets) {
+				if (logger) logger(t.info(s));
+			}
+		}
+	} catch (mcpErr) {
+		if (logger) logger(t.warn(`MCP 套用失敗：${mcpErr.message}`));
+	}
+
 	// ── 階段 2：runTarget 安裝 commands/agents/rules/hooks ──
 	const completed = new Set();
-	for (const key of targetKeys.filter((t) => t !== "zsh")) {
+	for (const key of targetKeys.filter((tk) => tk !== "zsh")) {
 		if (!targets[key]) continue;
 		const result = await runTarget(repoDir, previewDir, key, targets[key], {
 			selectedTargets: targetKeys,

@@ -90,6 +90,15 @@ export default {
 					cclineInstalled,
 				},
 				model: ctx.prev?.install?.model || "opusplan",
+				claudeMdAction: "keep",
+				selectedCategories: [
+					"commands",
+					"agents",
+					"rules",
+					"hooks",
+					"settings",
+					"claude-md",
+				],
 			};
 		}
 
@@ -130,17 +139,98 @@ export default {
 			model = selected;
 		}
 
+		// CLAUDE.md 處理方式選擇 + 類別選擇（--all 模式跳過，使用預設值）
+		const claudeMdExists = fs.existsSync(path.join(CLAUDE_DIR, "CLAUDE.md"));
+		let claudeMdAction = claudeMdExists ? "keep" : "install";
+		let selectedCategories = [
+			"commands",
+			"agents",
+			"rules",
+			"hooks",
+			"settings",
+			"claude-md",
+		];
+
+		if (!ctx.flags?.all) {
+			const selectedClaudeMd = handleCancel(
+				await p.select({
+					message: "CLAUDE.md 處理方式",
+					options: [
+						{
+							value: "install",
+							label: "install",
+							hint: claudeMdExists
+								? "覆蓋現有 CLAUDE.md（自動備份）"
+								: "安裝 CLAUDE.md",
+						},
+						{
+							value: "merge",
+							label: "merge",
+							hint: "將缺少的 @import 行追加至現有 CLAUDE.md",
+						},
+						{
+							value: "keep",
+							label: "keep",
+							hint: "跳過，保留現有 CLAUDE.md 不變",
+						},
+					],
+					initialValue: claudeMdAction,
+				}),
+			);
+			if (selectedClaudeMd === BACK) return null;
+			claudeMdAction = selectedClaudeMd;
+
+			const selectedCats = handleCancel(
+				await p.multiselect({
+					message: "選擇要安裝的類別",
+					options: [
+						{
+							value: "commands",
+							label: "commands",
+							hint: `${ALL_COMMANDS.length} 個`,
+						},
+						{
+							value: "agents",
+							label: "agents",
+							hint: `${ALL_AGENTS.length} 個`,
+						},
+						{ value: "rules", label: "rules", hint: `${ALL_RULES.length} 個` },
+						{ value: "hooks", label: "hooks", hint: `${ALL_HOOKS.length} 個` },
+						{
+							value: "settings",
+							label: "settings",
+							hint: "settings.json + permissions",
+						},
+						{
+							value: "claude-md",
+							label: "claude-md",
+							hint: "claude-md/ 子目錄模組",
+						},
+					],
+					initialValues: selectedCategories,
+				}),
+			);
+			if (selectedCats === BACK) return null;
+			selectedCategories = selectedCats;
+		}
+
 		return {
 			global: {
-				commands: ALL_COMMANDS,
-				agents: ALL_AGENTS,
-				rules: ALL_RULES,
-				hooks: ALL_HOOKS,
-				permissions: PERMISSION_PRESETS,
-				settings: { ...SETTINGS_PRESETS, model },
+				commands: selectedCategories.includes("commands") ? ALL_COMMANDS : [],
+				agents: selectedCategories.includes("agents") ? ALL_AGENTS : [],
+				rules: selectedCategories.includes("rules") ? ALL_RULES : [],
+				hooks: selectedCategories.includes("hooks") ? ALL_HOOKS : [],
+				permissions: selectedCategories.includes("settings")
+					? PERMISSION_PRESETS
+					: null,
+				settings: selectedCategories.includes("settings")
+					? { ...SETTINGS_PRESETS, model }
+					: null,
 				cclineInstalled,
 			},
 			model,
+			claudeMdAction,
+			selectedCategories,
 		};
 	},
 
@@ -152,6 +242,15 @@ export default {
 		return {
 			global: config.global,
 			model: config.model,
+			claudeMdAction: config.claudeMdAction ?? "keep",
+			selectedCategories: config.selectedCategories ?? [
+				"commands",
+				"agents",
+				"rules",
+				"hooks",
+				"settings",
+				"claude-md",
+			],
 			features: ["claude-base"],
 			targets: ["claude-dev"],
 		};
@@ -179,7 +278,7 @@ export default {
 	},
 
 	/**
-	 * 6. 安裝 — 委託 deployGlobalConfig 執行實際部署
+	 * 6. 安裝 — 委託 deployGlobalConfig 執行實際部署，並處理 CLAUDE.md
 	 */
 	async install(ctx, plan) {
 		if (!plan) return null;
@@ -188,7 +287,7 @@ export default {
 			"../phases/execute/claude-tasks.mjs"
 		);
 
-		return await deployGlobalConfig({
+		const result = await deployGlobalConfig({
 			repoDir: ctx.repoDir,
 			previewDir: ctx.previewDir || path.join(ctx.repoDir, "dist", "preview"),
 			targets: ctx.targets || {},
@@ -197,6 +296,45 @@ export default {
 			targetKeys: plan.targets || [],
 			preferences: ctx.preferences ?? null,
 		});
+
+		// ── CLAUDE.md 處理 ──
+		const claudeMdAction = plan.claudeMdAction ?? "keep";
+		const srcMd = path.join(ctx.repoDir, "claude", "CLAUDE.md");
+		const destMd = path.join(CLAUDE_DIR, "CLAUDE.md");
+
+		if (claudeMdAction === "install" && fs.existsSync(srcMd)) {
+			// install：備份現有，直接覆蓋
+			if (fs.existsSync(destMd)) {
+				const { backupIfExists } = await import("../core/backup.mjs");
+				await backupIfExists(destMd, "claude/CLAUDE.md");
+			}
+			fs.copyFileSync(srcMd, destMd);
+			result.claudeMd = "installed";
+		} else if (claudeMdAction === "merge" && fs.existsSync(srcMd)) {
+			// merge：讀取來源 @import 行，將目標缺少的行追加至末尾
+			const srcLines = fs
+				.readFileSync(srcMd, "utf8")
+				.split("\n")
+				.filter((l) => l.trimStart().startsWith("@"));
+			if (fs.existsSync(destMd)) {
+				const destContent = fs.readFileSync(destMd, "utf8");
+				const destLines = new Set(destContent.split("\n").map((l) => l.trim()));
+				const toAppend = srcLines.filter((l) => !destLines.has(l.trim()));
+				if (toAppend.length > 0) {
+					const sep = destContent.endsWith("\n") ? "" : "\n";
+					fs.appendFileSync(destMd, `${sep}${toAppend.join("\n")}\n`);
+				}
+				result.claudeMd = `merged (${toAppend.length} 行)`;
+			} else if (fs.existsSync(srcMd)) {
+				// 目標不存在則直接複製
+				fs.copyFileSync(srcMd, destMd);
+				result.claudeMd = "installed (merge fallback)";
+			}
+		} else {
+			result.claudeMd = "kept";
+		}
+
+		return result;
 	},
 
 	/**

@@ -55,14 +55,15 @@ plugins:
     description: "代碼簡化輔助"
 
   # ── 可選（按需啟用）──────────────────────────────────────────
-  # typescript-lsp:
-  #   enabled: false
-  #   marketplace: claude-plugins-official
-  #   description: "TypeScript LSP 型別即時回饋"
-  #
-  # github:
-  #   enabled: false
-  #   description: "官方 GitHub MCP server"
+  typescript-lsp:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "TypeScript LSP 型別即時回饋"
+
+  github:
+    enabled: true
+    marketplace: claude-plugins-official
+    description: "官方 GitHub MCP server"
 
 # Phase 11′：profile_overrides（切換 profile 時自動套用）
 profile_overrides:

@@ -16,6 +16,7 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { CLACK_LOGGER } from "../cli/logger.mjs";
+import { BACK, handleCancel } from "../cli/prompts.mjs";
 
 import { getDirname, HOME } from "../core/paths.mjs";
 import { loadSession, patchSession } from "../core/session.mjs";
@@ -157,16 +158,49 @@ export async function adjustGlobalSettings() {
 		return;
 	}
 
-	p.log.info(
-		`以下欄位將新增或更新：${changedKeys.map((k) => pc.cyan(k)).join("、")}`,
-	);
+	// local 沒有的 key（新增）→ 預設全選
+	const newKeys = changedKeys.filter((k) => !(k in local));
+	// local 已有但值不同的 key（更新）→ 預設不選
+	const updateKeys = changedKeys.filter((k) => k in local);
 
-	const confirm = await p.confirm({
-		message: "套用到 ~/.claude/settings.json？",
-	});
-	if (!confirm || p.isCancel(confirm)) {
-		p.log.warn("已取消，settings.json 未修改");
+	let selectedNew = newKeys;
+	if (newKeys.length > 0) {
+		const result = await p.multiselect({
+			message: "以下為新增欄位，請選擇要套用的項目：",
+			options: newKeys.map((k) => ({ value: k, label: pc.cyan(k) })),
+			initialValues: newKeys,
+		});
+		if (p.isCancel(result)) {
+			p.log.warn("已取消，settings.json 未修改");
+			return;
+		}
+		selectedNew = result;
+	}
+
+	let selectedUpdate = [];
+	if (updateKeys.length > 0) {
+		const result = await p.multiselect({
+			message: "以下為更新欄位（local 已有不同值），請選擇要覆蓋的項目：",
+			options: updateKeys.map((k) => ({ value: k, label: pc.cyan(k) })),
+			initialValues: [],
+		});
+		if (p.isCancel(result)) {
+			p.log.warn("已取消，settings.json 未修改");
+			return;
+		}
+		selectedUpdate = result;
+	}
+
+	const selectedKeys = [...selectedNew, ...selectedUpdate];
+	if (selectedKeys.length === 0) {
+		p.log.warn("未選擇任何欄位，settings.json 未修改");
 		return;
+	}
+
+	// 以 local 為基底，只套用選擇的 key
+	const finalConfig = structuredClone(local);
+	for (const k of selectedKeys) {
+		finalConfig[k] = merged[k];
 	}
 
 	// 備份現有 settings.json
@@ -177,7 +211,7 @@ export async function adjustGlobalSettings() {
 		fs.copyFileSync(localPath, path.join(backupDir, "settings.json"));
 	}
 
-	fs.writeFileSync(localPath, JSON.stringify(merged, null, "\t"), "utf8");
+	fs.writeFileSync(localPath, JSON.stringify(finalConfig, null, "\t"), "utf8");
 	p.log.success("✅ settings.json 已更新（hooks.json 已合併）");
 	await patchSession({ adjustedAt: new Date().toISOString() });
 }

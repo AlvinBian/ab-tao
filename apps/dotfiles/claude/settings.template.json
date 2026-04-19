@@ -14,8 +14,7 @@
 	"includeGitInstructions": false,
 	"statusLine": {
 		"type": "command",
-		"command": "~/.claude/ccline/my-ccline.sh",
-		"enabled": true
+		"command": "~/.claude/ccline/my-ccline.sh"
 	},
 	"mcpServers": {},
 	"extraKnownMarketplaces": [],
