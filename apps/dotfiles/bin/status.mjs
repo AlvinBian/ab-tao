@@ -143,12 +143,6 @@ async function main() {
 		spinner.stop("掃描完成");
 	}
 
-	if (process.argv.includes("--report")) {
-		p.log.warn("--report 已移除，HTML Dashboard 已整合至後台控制台");
-		p.log.info("請執行 pnpm run cs:open 啟動後台控制台");
-		process.exit(0);
-	}
-
 	await terminalMode(data);
 }
 
@@ -251,7 +245,7 @@ function showOverview(data) {
 		`  🪝 Hooks      ${hooks.reduce((s, h) => s + h.subHooks, 0)} 個子 hook（${hooks.length} 事件）`,
 	);
 	console.log(
-		`  🐚 ZSH        ${pc.green(zsh.installed.length)}/${zsh.available.length} 模組`,
+		`  🐚 ZSH        ${pc.green(zsh.installed.length)}/${zsh.available.length} 模組${zsh.loaderDuplicates > 0 ? pc.red(` ⚠ ~/.zshrc loader 重複 ${zsh.loaderDuplicates} 份（執行 grep -n "ab-tao:loader" ~/.zshrc 確認）`) : ""}`,
 	);
 	const rtkStatus = getRtkStatus();
 	console.log(

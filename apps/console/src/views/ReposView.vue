@@ -7,9 +7,11 @@ const store = useStatusStore();
 onMounted(() => store.fetchData());
 
 const repos = computed(() => store.data?.cachedRepos ?? []);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const timestamp = computed(() => store.data?.cachedTimestamp);
 const searchQuery = ref("");
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredRepos = computed(() => {
 	const q = searchQuery.value.toLowerCase();
 	if (!q) return repos.value;
@@ -19,6 +21,7 @@ const filteredRepos = computed(() => {
 	});
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function getRepoName(repo: CachedRepo): string {
 	if (repo.name) return String(repo.name);
 	if (repo.localPath)
@@ -26,10 +29,12 @@ function getRepoName(repo: CachedRepo): string {
 	return "—";
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function getRole(repo: CachedRepo): string {
 	return String(repo.role ?? "—");
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function roleTagType(role: string): "primary" | "success" | "warning" | "info" {
 	if (role === "main") return "primary";
 	if (role === "lib") return "success";
@@ -37,6 +42,7 @@ function roleTagType(role: string): "primary" | "success" | "warning" | "info" {
 	return "info";
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function formatTimestamp(ts: string | null | undefined): string {
 	if (!ts) return "從未更新";
 	return new Date(ts).toLocaleString("zh-TW");
@@ -69,6 +75,12 @@ function formatTimestamp(ts: string | null | undefined): string {
       </el-row>
     </el-card>
 
+    <!-- Repo 角色分佈 -->
+    <el-card v-if="repos.length > 0" shadow="never" style="margin-bottom:16px">
+      <template #header><span>Repo 角色分佈</span></template>
+      <RepoRolePie :repos="repos.map(r => ({ name: getRepoName(r), role: getRole(r) }))" />
+    </el-card>
+
     <!-- Repo 卡片清單 -->
     <el-row :gutter="12" v-if="filteredRepos.length > 0">
       <el-col
@@ -86,8 +98,11 @@ function formatTimestamp(ts: string | null | undefined): string {
           <div v-if="repo.localPath" style="font-size:12px; color:var(--el-text-color-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
             {{ repo.localPath }}
           </div>
-          <!-- 額外欄位 -->
-          <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px">
+          <!-- 額外欄位（防呆：repo 必須是物件，避免字串字符化展開）-->
+          <div
+            v-if="typeof repo === 'object' && repo"
+            style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px"
+          >
             <template v-for="[key, val] in Object.entries(repo)" :key="key">
               <el-tag
                 v-if="key !== 'name' && key !== 'localPath' && key !== 'role' && val"

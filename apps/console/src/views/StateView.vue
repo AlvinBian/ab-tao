@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import DriftScatter from "@/charts/DriftScatter.vue";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
 onMounted(() => store.fetchData());
 
 const d = computed(() => store.data?.extended?.state);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const drift = computed(() => store.data?.extended?.drift ?? []);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const managedEntries = computed(() =>
 	Object.entries(d.value?.managed ?? {}).map(([path, entry]) => ({
 		path,
@@ -18,6 +19,7 @@ const managedEntries = computed(() =>
 	})),
 );
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const choiceEntries = computed(() =>
 	Object.entries(d.value?.choices ?? {}).map(([path, entry]) => ({
 		path,
@@ -26,6 +28,7 @@ const choiceEntries = computed(() =>
 	})),
 );
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function driftTagType(decision: string): "warning" | "danger" | "info" {
 	if (decision === "deleted") return "danger";
 	if (decision === "modified") return "warning";
@@ -46,6 +49,28 @@ function driftTagType(decision: string): "warning" | "danger" | "info" {
         <el-descriptions-item label="Managed 檔案數">{{ managedEntries.length }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
+
+    <!-- Drift + Choices 圖表 -->
+    <el-row v-if="(drift.length > 0 || choiceEntries.length > 0)" :gutter="16" style="margin-bottom:16px">
+      <el-col :span="8">
+        <el-card shadow="never" style="height:100%">
+          <template #header><span>Drift 決策分佈</span></template>
+          <DriftAgePie :drift="drift" />
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" style="height:100%">
+          <template #header><span>安裝選擇分佈</span></template>
+          <ChoiceDecisionPie :choices="choiceEntries" />
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never" style="height:100%">
+          <template #header><span>Managed 檔案來源</span></template>
+          <ManagedSourceBar :managed="d?.managed ?? {}" />
+        </el-card>
+      </el-col>
+    </el-row>
 
     <!-- Drift 報告 -->
     <el-card shadow="never" style="margin-bottom:16px">
@@ -86,7 +111,7 @@ function driftTagType(decision: string): "warning" | "danger" | "info" {
       <template #header><span>Managed 檔案（{{ managedEntries.length }}）</span></template>
       <el-table :data="managedEntries" stripe size="small" max-height="300">
         <el-table-column prop="path" label="路徑" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="source" label="來源" width="100" />
+        <el-table-column prop="source" label="來源" min-width="160" show-overflow-tooltip />
         <el-table-column label="SHA256" width="100">
           <template #default="{ row }">
             <code style="font-size:11px">{{ row.sha256.slice(0, 8) }}</code>

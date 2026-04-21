@@ -13,6 +13,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOTFILES_LIB = path.resolve(__dirname, "../../../dotfiles/libs");
 
+// 靜態 import 路徑：routes/ → server/ → console/ → apps/dotfiles/libs/core/
+// （3 層上去抵達 apps/，dotfiles 為 console 同層目錄）
+import { parseSource } from "../../../dotfiles/libs/core/source-classifier.mjs";
+
 /** 懶載入 P（paths.mjs） */
 let _P = null;
 async function getP() {
@@ -43,7 +47,10 @@ async function scanFlatResources(dir) {
 		const disabled = entry.endsWith(".md.disabled");
 		if (!enabled && !disabled) continue;
 		const name = enabled ? entry.slice(0, -3) : entry.slice(0, -11);
-		items.push({ name, enabled });
+		const filePath = path.join(dir, entry);
+		// 呼叫共用分類器，修復「所有資源顯示為 custom」的 bug
+		const source = parseSource(filePath);
+		items.push({ name, enabled, source });
 	}
 	return items;
 }
@@ -153,6 +160,11 @@ export async function resourcesRouter(req, res, url, json) {
 	if (req.method === "PATCH" && toggleMatch) {
 		const kind = toggleMatch[1];
 		const name = decodeURIComponent(toggleMatch[2]);
+		const SAFE_NAME = /^[A-Za-z0-9._-]+$/;
+		if (!SAFE_NAME.test(name) || path.basename(name) !== name) {
+			json(res, 400, "name 格式無效", null, 400);
+			return true;
+		}
 		const { enabled } = req._body ?? {};
 
 		if (typeof enabled !== "boolean") {

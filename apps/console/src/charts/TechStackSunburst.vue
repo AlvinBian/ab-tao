@@ -1,36 +1,22 @@
 <script setup lang="ts">
 import { computed } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
 import VChart from "vue-echarts";
 import "@/charts/registry";
+import { getCategoryColor } from "./categoryColors";
 import type { ECOption } from "./types";
 
 const props = defineProps<{
 	stacks: Record<string, string[]>;
 }>();
 
-// 顏色對應 13 個技術類別
-const CATEGORY_COLORS: Record<string, string> = {
-	Frontend: "#409EFF",
-	Backend: "#67C23A",
-	Mobile: "#E6A23C",
-	DevOps: "#F56C6C",
-	Database: "#909399",
-	Testing: "#B0C4DE",
-	Security: "#DC143C",
-	AI_ML: "#9370DB",
-	Infrastructure: "#20B2AA",
-	"Desktop/Native": "#FF8C00",
-	Blockchain: "#7B68EE",
-	IoT: "#3CB371",
-	Other: "#C0C0C0",
-};
-
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const option = computed<ECOption>(() => {
 	const children = Object.entries(props.stacks)
 		.filter(([, techs]) => techs.length > 0)
 		.map(([category, techs]) => ({
 			name: category,
-			itemStyle: { color: CATEGORY_COLORS[category] ?? "#999" },
+			itemStyle: { color: getCategoryColor(category) },
 			children: techs.slice(0, 15).map((t) => ({
 				name: t,
 				value: 1,

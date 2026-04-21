@@ -303,13 +303,23 @@ export default {
 		const destMd = path.join(CLAUDE_DIR, "CLAUDE.md");
 
 		if (claudeMdAction === "install" && fs.existsSync(srcMd)) {
-			// install：備份現有，直接覆蓋
-			if (fs.existsSync(destMd)) {
-				const { backupIfExists } = await import("../core/backup.mjs");
-				await backupIfExists(destMd, "claude/CLAUDE.md");
+			// install：內容相同時跳過（idempotency 保護）
+			if (
+				fs.existsSync(destMd) &&
+				fs.readFileSync(srcMd).toString() === fs.readFileSync(destMd).toString()
+			) {
+				result.messages ??= [];
+				result.messages.push("CLAUDE.md 已是最新，跳過");
+				result.claudeMd = "skipped (已是最新)";
+			} else {
+				// 備份現有，直接覆蓋
+				if (fs.existsSync(destMd)) {
+					const { backupIfExists } = await import("../core/backup.mjs");
+					await backupIfExists(destMd, "claude/CLAUDE.md");
+				}
+				fs.copyFileSync(srcMd, destMd);
+				result.claudeMd = "installed";
 			}
-			fs.copyFileSync(srcMd, destMd);
-			result.claudeMd = "installed";
 		} else if (claudeMdAction === "merge" && fs.existsSync(srcMd)) {
 			// merge：讀取來源 @import 行，將目標缺少的行追加至末尾
 			const srcLines = fs

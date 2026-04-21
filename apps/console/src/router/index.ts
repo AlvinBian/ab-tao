@@ -1,7 +1,7 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
-	history: createWebHashHistory(),
+	history: createWebHistory(import.meta.env.BASE_URL),
 	routes: [
 		{
 			path: "/",
@@ -20,7 +20,7 @@ const router = createRouter({
 				{
 					path: "hooks",
 					name: "hooks",
-					meta: { title: "Hooks 健檢" },
+					meta: { title: "Hooks 健檢狀態" },
 					component: () => import("@/views/HooksView.vue"),
 				},
 				{
@@ -38,7 +38,7 @@ const router = createRouter({
 				{
 					path: "mcp",
 					name: "mcp",
-					meta: { title: "MCP & Plugins" },
+					meta: { title: "MCP 伺服器" },
 					component: () => import("@/views/McpView.vue"),
 				},
 				{
@@ -92,7 +92,7 @@ const router = createRouter({
 				{
 					path: "config/hooks",
 					name: "config-hooks",
-					meta: { title: "Hook 開關" },
+					meta: { title: "Hooks 啟用設定" },
 					component: () => import("@/views/config/HooksConfigView.vue"),
 				},
 				{
@@ -104,7 +104,7 @@ const router = createRouter({
 				{
 					path: "config/plugins",
 					name: "config-plugins",
-					meta: { title: "Plugins" },
+					meta: { title: "Claude 擴充套件" },
 					component: () => import("@/views/config/PluginsView.vue"),
 				},
 				{
@@ -112,6 +112,12 @@ const router = createRouter({
 					name: "config-preferences",
 					meta: { title: "偏好設定" },
 					component: () => import("@/views/config/PreferencesView.vue"),
+				},
+				{
+					path: "config/chrome",
+					name: "config-chrome",
+					meta: { title: "Chrome 優化" },
+					component: () => import("@/views/config/ChromeView.vue"),
 				},
 				{
 					path: "actions/setup",

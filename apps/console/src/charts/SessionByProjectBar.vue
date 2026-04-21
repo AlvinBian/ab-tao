@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
 import VChart from "vue-echarts";
 import "@/charts/registry";
+import { useElCssVar } from "@/composables/useElCssVar";
 import type { ECOption } from "./types";
 
 const props = defineProps<{
@@ -9,29 +11,40 @@ const props = defineProps<{
 	topN?: number;
 }>();
 
+// ECharts canvas 不解析 CSS 變數，runtime 解析後注入實色
+const primaryColor = useElCssVar("--el-color-primary", "#409eff");
+const labelSecondary = useElCssVar("--el-text-color-secondary", "#909399");
+const labelRegular = useElCssVar("--el-text-color-regular", "#606266");
+const splitLine = useElCssVar("--el-border-color-lighter", "#ebeef5");
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const hasData = computed(() => Object.keys(props.byProject ?? {}).length > 0);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const option = computed<ECOption>(() => {
 	const sorted = Object.entries(props.byProject)
 		.sort(([, a], [, b]) => b - a)
 		.slice(0, props.topN ?? 8);
 
+	// byProject key 已由 server-side humanizeProjectPath 還原為可讀路徑，取最後一段即可
 	const names = sorted.map(([k]) => k.split("/").pop() ?? k);
 	const values = sorted.map(([, v]) => v);
 
 	return {
 		tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-		grid: { left: 100, right: 20, top: 10, bottom: 30 },
+		grid: { left: 170, right: 20, top: 10, bottom: 30 },
 		xAxis: {
 			type: "value",
-			axisLabel: { color: "var(--el-text-color-secondary)", fontSize: 11 },
-			splitLine: { lineStyle: { color: "var(--el-border-color-lighter)" } },
+			axisLabel: { color: labelSecondary.value, fontSize: 11 },
+			splitLine: { lineStyle: { color: splitLine.value } },
 		},
 		yAxis: {
 			type: "category",
 			data: names.reverse(),
 			axisLabel: {
-				color: "var(--el-text-color-regular)",
+				color: labelRegular.value,
 				fontSize: 11,
-				width: 90,
+				width: 160,
 				overflow: "truncate",
 			},
 		},
@@ -39,7 +52,7 @@ const option = computed<ECOption>(() => {
 			{
 				type: "bar",
 				data: values.reverse(),
-				itemStyle: { color: "var(--el-color-primary)" },
+				itemStyle: { color: primaryColor.value, borderRadius: [0, 4, 4, 0] },
 				barMaxWidth: 20,
 			},
 		],
@@ -49,8 +62,10 @@ const option = computed<ECOption>(() => {
 
 <template>
   <v-chart
+    v-if="hasData"
     :option="option"
     :style="{ height: '240px', width: '100%' }"
     autoresize
   />
+  <el-empty v-else description="無 Session 資料" :image-size="40" />
 </template>

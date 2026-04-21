@@ -8,7 +8,12 @@ onMounted(() => store.fetchData());
 const mem = computed(() => store.data?.extended?.memory);
 const global = computed(() => mem.value?.global);
 const projects = computed(() => mem.value?.projects ?? []);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const hasMemoryData = computed(
+	() => !!global.value || projects.value.length > 0,
+);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function decodeProjectName(encoded: string): string {
 	try {
 		return decodeURIComponent(encoded.replace(/-/g, "/"));
@@ -21,6 +26,21 @@ function decodeProjectName(encoded: string): string {
 <template>
   <div v-loading="store.loading">
     <el-alert v-if="store.error" :title="store.error" type="error" show-icon style="margin-bottom:16px" />
+
+    <!-- Memory 分佈圖 -->
+    <el-card v-if="hasMemoryData" shadow="never" style="margin-bottom:16px">
+      <template #header><span>Memory 分佈（Global + 各專案）</span></template>
+      <MemoryStackedBar :global="global" :projects="projects" />
+    </el-card>
+
+    <!-- 各專案檔案數排行 -->
+    <el-card v-if="projects.length > 0" shadow="never" style="margin-bottom:16px">
+      <template #header><span>專案 Memory 檔案數排行（Top 10）</span></template>
+      <MemorySizeBar
+        :projects="projects.map(p => ({ label: decodeProjectName(p.encoded), count: p.memory.length + p.plans.length + p.tasks.length }))"
+        :top-n="10"
+      />
+    </el-card>
 
     <!-- 全域 Memory -->
     <el-card shadow="never" style="margin-bottom:16px">

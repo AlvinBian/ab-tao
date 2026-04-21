@@ -229,8 +229,20 @@ export default {
 				const dest = path.join(HOME, ".config", "starship.toml");
 				if (fs.existsSync(presetSrc)) {
 					fs.mkdirSync(path.dirname(dest), { recursive: true });
-					fs.copyFileSync(presetSrc, dest);
-					CLACK_LOGGER.info(`Starship preset → ${preset}`);
+					let starshipChanged = true;
+					if (fs.existsSync(dest)) {
+						try {
+							starshipChanged = !fs
+								.readFileSync(presetSrc)
+								.equals(fs.readFileSync(dest));
+						} catch {
+							/* proceed */
+						}
+					}
+					if (starshipChanged) {
+						fs.copyFileSync(presetSrc, dest);
+						CLACK_LOGGER.info(`Starship preset → ${preset}`);
+					}
 				}
 			} catch {
 				/* 不阻塞安裝 */

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
 import VChart from "vue-echarts";
 import "@/charts/registry";
 import type { ECOption } from "./types";
@@ -11,6 +12,7 @@ const props = defineProps<{
 
 const targetYear = computed(() => props.year ?? new Date().getFullYear());
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const option = computed<ECOption>(() => {
 	const data = Object.entries(props.dailyCounts).map(([date, count]) => [
 		date,

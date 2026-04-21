@@ -6,9 +6,17 @@
 // 圖型
 import {
 	BarChart,
+	GaugeChart,
+	GraphChart,
 	HeatmapChart,
+	LineChart,
+	PieChart,
+	RadarChart,
+	SankeyChart,
 	ScatterChart,
 	SunburstChart,
+	TreeChart,
+	TreemapChart,
 } from "echarts/charts";
 // 元件
 import {
@@ -16,6 +24,7 @@ import {
 	DataZoomComponent,
 	GridComponent,
 	LegendComponent,
+	RadarComponent,
 	TitleComponent,
 	TooltipComponent,
 	VisualMapComponent,
@@ -26,9 +35,17 @@ import { CanvasRenderer } from "echarts/renderers";
 use([
 	CanvasRenderer,
 	BarChart,
+	GaugeChart,
+	GraphChart,
 	HeatmapChart,
+	LineChart,
+	PieChart,
+	RadarChart,
+	SankeyChart,
 	ScatterChart,
 	SunburstChart,
+	TreeChart,
+	TreemapChart,
 	TitleComponent,
 	TooltipComponent,
 	GridComponent,
@@ -36,4 +53,5 @@ use([
 	CalendarComponent,
 	VisualMapComponent,
 	DataZoomComponent,
+	RadarComponent,
 ]);

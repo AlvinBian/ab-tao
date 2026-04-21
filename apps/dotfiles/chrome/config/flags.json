@@ -1,0 +1,13 @@
+{
+	"description": "Chrome 效能與開發者 flags（寫入 Local State → browser.enabled_labs_experiments）",
+	"experiments": [
+		"enable-gpu-rasterization@1",
+		"enable-zero-copy@1",
+		"enable-parallel-downloading@1",
+		"enable-heavy-ad-intervention@1",
+		"enable-skia-graphite@1",
+		"tab-loading-spinner-throttle-policy@1",
+		"enable-prerender2@1",
+		"smooth-scrolling@1"
+	]
+}

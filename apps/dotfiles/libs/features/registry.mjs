@@ -18,6 +18,7 @@ import { BACK, handleCancel } from "../cli/prompts.mjs";
 
 const FEATURE_DEFS = [
 	// ── 使用者可見（選單項目）──────────────────────────────
+	// order 欄位控制選單顯示順序（數字越小越前）
 	{
 		id: "zsh",
 		label: "🐚 ZSH 環境模組",
@@ -25,6 +26,16 @@ const FEATURE_DEFS = [
 		load: () => import("./zsh.mjs"),
 		dependsOn: [],
 		visible: true,
+		order: 10,
+	},
+	{
+		id: "chrome",
+		label: "🌐 Chrome 優化配置",
+		hint: "flags · 搜尋引擎 · 記憶體優化 · ZSH 工具",
+		load: () => import("./chrome.mjs"),
+		dependsOn: [],
+		visible: true,
+		order: 20,
 	},
 	{
 		id: "claude-base",
@@ -33,6 +44,7 @@ const FEATURE_DEFS = [
 		load: () => import("./claude-base.mjs"),
 		dependsOn: [],
 		visible: true,
+		order: 30,
 	},
 	{
 		id: "plugins",
@@ -41,6 +53,7 @@ const FEATURE_DEFS = [
 		load: () => import("./plugins.mjs"),
 		dependsOn: [],
 		visible: true,
+		order: 40,
 	},
 	{
 		id: "project-install",
@@ -49,6 +62,7 @@ const FEATURE_DEFS = [
 		load: () => import("./project-install.mjs"),
 		dependsOn: ["repos", "tech-analysis"],
 		visible: true,
+		order: 50,
 	},
 
 	// ── 內部功能（依賴鏈自動拉入，不在選單中顯示）────────
@@ -78,7 +92,9 @@ const FEATURE_DEFS = [
  * @returns {Promise<string[]>} 選擇的 feature id 陣列（含自動展開的依賴）
  */
 export async function selectFeatures() {
-	const visibleDefs = FEATURE_DEFS.filter((f) => f.visible !== false);
+	const visibleDefs = FEATURE_DEFS.filter((f) => f.visible !== false).sort(
+		(a, b) => (a.order ?? 99) - (b.order ?? 99),
+	);
 	const selected = handleCancel(
 		await p.multiselect({
 			message: "選擇安裝功能  Space 選擇 · Enter 確認（直接 Enter 取消）",

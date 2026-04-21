@@ -32,6 +32,7 @@ const flatHooks = computed<HookEntryFlat[]>(() => {
 	return result;
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const events = computed(() => [
 	...new Set(flatHooks.value.map((h) => h.event)),
 ]);

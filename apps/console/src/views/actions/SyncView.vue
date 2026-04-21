@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
 import { onMounted, ref } from "vue";
-import ProgressWithLog from "@/components/ProgressWithLog.vue";
 import { useSse } from "@/composables/useSse";
 
 interface SyncDiff {
@@ -48,8 +47,14 @@ async function fetchStatus() {
 	loadingStatus.value = true;
 	try {
 		const r = await fetch("/api/sync/status");
-		const { data } = await r.json();
+		const { code, message, data } = await r.json();
+		if (code !== 0) {
+			ElMessage.error(message ?? "無法載入同步狀態");
+			return;
+		}
 		syncStatus.value = data;
+	} catch {
+		ElMessage.error("無法載入同步狀態");
 	} finally {
 		loadingStatus.value = false;
 	}
@@ -57,16 +62,19 @@ async function fetchStatus() {
 
 onMounted(fetchStatus);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function push() {
 	pushSse.reset();
 	pushSse.start("/api/sync/push", {});
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function pull() {
 	pullSse.reset();
 	pullSse.start("/api/sync/pull", {});
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const STATUS_MAP: Record<
 	string,
 	{ label: string; type: "success" | "danger" | "info" | "warning" }
@@ -122,6 +130,15 @@ const STATUS_MAP: Record<
             {{ syncStatus.device ?? '—' }}
           </el-descriptions-item>
         </el-descriptions>
+
+        <!-- 同步狀態分佈 -->
+        <SyncDiffBar
+          v-if="syncStatus.diffs.length > 0"
+          :synced="syncStatus.diffs.filter(d => d.status === 'in-sync').length"
+          :drift="syncStatus.diffs.filter(d => d.status === 'diverged' || d.status === 'local-only' || d.status === 'remote-only').length"
+          :unknown="syncStatus.diffs.filter(d => d.status === 'both-missing' || d.status === 'error').length"
+          style="margin-bottom:12px"
+        />
 
         <!-- 檔案差異清單 -->
         <el-table :data="syncStatus.diffs" size="small" style="width:100%; margin-bottom:16px">

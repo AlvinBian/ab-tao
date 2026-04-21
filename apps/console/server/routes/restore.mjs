@@ -83,7 +83,19 @@ export async function restoreRouter(req, res, url, json) {
 			json(res, 400, "backupId 必填", null, 400);
 			return true;
 		}
+		const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+		if (!SAFE_ID.test(backupId)) {
+			json(res, 400, "backupId 格式無效", null, 400);
+			return true;
+		}
 		const backupDir = path.join(BACKUP_BASE, backupId);
+		if (
+			!backupDir.startsWith(BACKUP_BASE + path.sep) &&
+			backupDir !== BACKUP_BASE
+		) {
+			json(res, 400, "backupId 格式無效", null, 400);
+			return true;
+		}
 		if (!fs.existsSync(backupDir)) {
 			json(res, 404, `備份不存在：${backupId}`, null, 404);
 			return true;
@@ -92,6 +104,9 @@ export async function restoreRouter(req, res, url, json) {
 			const contents = fs.readdirSync(backupDir);
 			const restored = [];
 			for (const item of contents) {
+				if (path.basename(item) !== item) {
+					continue; // 跳過含路徑分隔符的 item
+				}
 				const src = path.join(backupDir, item);
 				let dest;
 				if (item === "zshrc") dest = path.join(HOME, ".zshrc");

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
 import { onMounted, ref, watch } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import SettingRow from "@/components/SettingRow.vue";
 import { useSettingsStore } from "@/stores/settings";
 
 const store = useSettingsStore();
@@ -19,10 +21,12 @@ watch(
 	{ immediate: true },
 );
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function onChange() {
 	dirty.value = true;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function save() {
 	try {
 		await store.savePrefs(form.value);
@@ -33,12 +37,14 @@ async function save() {
 	}
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function reset() {
 	if (!store.prefs) return;
 	form.value = { ...store.prefs.prefs };
 	dirty.value = false;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function getDefault(key: string): unknown {
 	return store.prefs?.defaults?.[key];
 }
@@ -61,58 +67,60 @@ function getDefault(key: string): unknown {
       <template #header><span>Preferences 設定</span></template>
 
       <el-form v-if="store.prefs" label-width="180px" label-position="left">
-        <!-- notifyFlushSecs -->
-        <el-form-item label="Notify Flush (秒)">
+        <SettingRow label="Notify Flush (秒)">
           <el-input-number
             v-model="(form as Record<string, number>).notifyFlushSecs"
             :min="1"
             :max="3600"
             @change="onChange"
           />
-          <span style="margin-left:8px; color:var(--el-text-color-secondary); font-size:12px">
-            預設：{{ getDefault('notifyFlushSecs') }}
-          </span>
-        </el-form-item>
+          <template #description>預設：{{ getDefault('notifyFlushSecs') }}</template>
+        </SettingRow>
 
-        <!-- keybinding -->
-        <el-form-item label="Keybinding">
+        <SettingRow
+          label="Keybinding"
+          description="ZSH readline 鍵位綁定；emacs 為大多數終端預設，vi 適合習慣 vim 的使用者。"
+        >
           <el-radio-group v-model="(form as Record<string, string>).keybinding" @change="onChange">
             <el-radio value="emacs">emacs</el-radio>
             <el-radio value="vi">vi</el-radio>
           </el-radio-group>
-        </el-form-item>
+        </SettingRow>
 
-        <!-- cliEditor -->
-        <el-form-item label="CLI Editor">
+        <SettingRow
+          label="CLI Editor"
+          description="終端文字編輯器，用於 git commit message 及互動式操作。"
+        >
           <el-select v-model="(form as Record<string, string>).cliEditor" placeholder="選擇編輯器" @change="onChange">
             <el-option label="vim" value="vim" />
             <el-option label="nvim" value="nvim" />
             <el-option label="nano" value="nano" />
             <el-option label="emacs" value="emacs" />
           </el-select>
-        </el-form-item>
+        </SettingRow>
 
-        <!-- batTheme -->
-        <el-form-item label="Bat Theme">
+        <SettingRow
+          label="Bat Theme"
+          description="bat 語法高亮主題，影響 cat 替代指令的色彩呈現。"
+        >
           <el-select v-model="(form as Record<string, string>).batTheme" placeholder="選擇主題" @change="onChange" clearable>
             <el-option label="Dracula" value="Dracula" />
             <el-option label="TwoDark" value="TwoDark" />
             <el-option label="OneHalfDark" value="OneHalfDark" />
             <el-option label="GitHub" value="GitHub" />
           </el-select>
-        </el-form-item>
+        </SettingRow>
 
-        <!-- uvOverridePip -->
-        <el-form-item label="UV Override Pip">
+        <SettingRow label="UV Override Pip" description="使用 uv 取代 pip，提升 Python 套件安裝速度。">
           <el-switch v-model="(form as Record<string, boolean>).uvOverridePip" @change="onChange" />
-          <span style="margin-left:8px; font-size:12px; color:var(--el-text-color-secondary)">使用 uv 取代 pip</span>
-        </el-form-item>
+        </SettingRow>
 
-        <!-- sync99Local -->
-        <el-form-item label="Sync 99-local">
+        <SettingRow
+          label="Sync 99-local"
+          description="啟用後將 ~/.claude/settings.local.json 同步至 iCloud；內含個人 token 與本機路徑等敏感資訊，僅在受信任的個人環境啟用。"
+        >
           <el-switch v-model="(form as Record<string, boolean>).sync99Local" @change="onChange" />
-          <span style="margin-left:8px; font-size:12px; color:var(--el-text-color-secondary)">同步 99-local 設定</span>
-        </el-form-item>
+        </SettingRow>
       </el-form>
 
       <div style="text-align:right; margin-top:16px; display:flex; gap:8px; justify-content:flex-end">

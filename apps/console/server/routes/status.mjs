@@ -13,6 +13,7 @@ const DOTFILES_LIB = path.resolve(__dirname, "../../../dotfiles/libs");
 
 let _collectFn = null;
 let _usageFn = null;
+let _humanizeFn = null;
 
 async function getCollectFn() {
 	if (!_collectFn) {
@@ -28,6 +29,14 @@ async function getUsageFn() {
 		_usageFn = m.scanUsageStats;
 	}
 	return _usageFn;
+}
+
+async function getHumanizeFn() {
+	if (!_humanizeFn) {
+		const m = await import(path.join(DOTFILES_LIB, "core/usage-scanner.mjs"));
+		_humanizeFn = m.humanizeProjectPath;
+	}
+	return _humanizeFn;
 }
 
 /** Map / Set → plain object（JSON.stringify 無法序列化 Map） */
@@ -48,7 +57,18 @@ export async function statusRouter(req, res, url, json) {
 	// GET /api/status/overview — 含 extended 資料
 	if (req.method === "GET" && url.pathname === "/api/status/overview") {
 		const collect = await getCollectFn();
+		const humanize = await getHumanizeFn();
 		const raw = await collect();
+		// 將 sessions.byProject 的 Claude 編碼路徑（-Users-alvin-…）還原為可讀形式
+		// byProject 可能是 Map（來自 scanUsage），必須用 Map API 而非 Object.entries
+		if (raw?.sessions?.byProject) {
+			const src = raw.sessions.byProject;
+			const entries =
+				src instanceof Map ? [...src.entries()] : Object.entries(src);
+			raw.sessions.byProject = Object.fromEntries(
+				entries.map(([k, v]) => [humanize(k), v]),
+			);
+		}
 		json(res, 0, "ok", serializeData(raw));
 		return true;
 	}

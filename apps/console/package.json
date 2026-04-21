@@ -9,9 +9,10 @@
 		"pnpm": ">=9"
 	},
 	"scripts": {
-		"dev": "concurrently -n \"vite,api\" -c \"cyan,yellow\" \"vite\" \"node server/index.mjs\"",
+		"dev": "node scripts/start.mjs",
 		"build": "vue-tsc --noEmit && vite build",
 		"preview": "vite preview",
+		"open": "node scripts/start.mjs --open",
 		"serve": "node server/index.mjs",
 		"test": "vitest run",
 		"test:watch": "vitest",

@@ -74,3 +74,25 @@
 - [ ] 無 TODO / FIXME 未解決（或已建 task 追蹤）
 - [ ] 無重複邏輯（DRY）
 - [ ] 函式長度 ≤ 50 行（超出考慮拆分）
+
+---
+
+## 【審查 PR】堆疊 PR 提交前檢查
+
+結束標誌：「已完成 PR 全量審查，無更多問題。」
+
+### 標題與描述
+- [ ] PR title 符合 `[TICKET][PROJECT] 主描述 - PR-N 子描述`
+- [ ] PROJECT tag 屬於 `docs/project-tags.md` canonical 列表
+- [ ] PR description 列出依賴 `#PR-N` 與合併順序
+- [ ] 含 DB migration 已標註（filename + 順序）
+
+### Stack 狀態
+- [ ] base branch 為上一支 PR 的 head（非 main，除 PR-1）
+- [ ] `pr-stack sync` 已跑（無 outdated parent）
+- [ ] 對應 `backup/<branch>` 已建（force push 前必備）
+
+### 工具與安全
+- [ ] 無 `gh pr merge` 批次合併指令（必須人工逐 PR）
+- [ ] 無未經 backup 的 force push
+- [ ] pre-push 測試通過（禁用 `--no-verify` 除 hotfix）

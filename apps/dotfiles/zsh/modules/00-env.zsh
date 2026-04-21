@@ -31,10 +31,6 @@ export SHELDON_DATA_DIR="$HOME/.zshrc.d/sheldon"
 export YSU_MESSAGE_POSITION="before"
 export YSU_MODE="ALL"
 
-# pnpm PATH（guard：已在 PATH 就跳過）
-export PNPM_HOME="$HOME/Library/pnpm"
-[[ ":$PATH:" != *":$PNPM_HOME:"* ]] && export PATH="$PNPM_HOME:$PATH"
-
 # Node 版本管理 — 依 AB_NODE_MANAGER_ORDER 優先順序載入
 # 預設：fnm > nvm > n（互斥，只載入第一個匹配的）
 _setup_fnm() {

@@ -10,6 +10,7 @@ const d = computed(() => store.data?.extended?.hooks);
 const filterStatus = ref<"all" | "healthy" | "unhealthy">("all");
 const redeploying = ref<string | null>(null);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredHooks = computed(() => {
 	const hooks = d.value?.hooks ?? [];
 	if (filterStatus.value === "healthy")
@@ -19,6 +20,7 @@ const filteredHooks = computed(() => {
 	return hooks;
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function tagType(row: {
 	exists: boolean;
 	executable: boolean;
@@ -28,6 +30,7 @@ function tagType(row: {
 	return "danger";
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function tagLabel(row: { exists: boolean; executable: boolean }): string {
 	if (row.exists && row.executable) return "healthy";
 	if (row.exists) return "not-exec";
@@ -59,12 +62,18 @@ async function redeploy(hookId: string) {
 	}
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function redeployAll() {
-	await ElMessageBox.confirm(
-		"將重新複製所有 Hook 腳本並更新 settings.json，確定繼續？",
-		"全部重新部署",
-		{ confirmButtonText: "確認", cancelButtonText: "取消", type: "warning" },
-	);
+	try {
+		await ElMessageBox.confirm(
+			"將重新複製所有 Hook 腳本並更新 settings.json，確定繼續？",
+			"全部重新部署",
+			{ confirmButtonText: "確認", cancelButtonText: "取消", type: "warning" },
+		);
+	} catch {
+		// 用戶取消，不做任何操作
+		return;
+	}
 	await redeploy("all");
 }
 </script>
@@ -100,6 +109,22 @@ async function redeployAll() {
       </el-col>
     </el-row>
 
+    <!-- Hooks 健康分佈 + 事件流 -->
+    <el-row v-if="(d?.hooks ?? []).length > 0" :gutter="16" style="margin-bottom:16px">
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header><span>Hooks 健康分佈（各事件）</span></template>
+          <HooksByEventBar :hooks="d?.hooks ?? []" />
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header><span>事件流向（Sankey）</span></template>
+          <HookEventFlowSankey :hooks="d?.hooks ?? []" />
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- Hooks 表格 -->
     <el-card shadow="never">
       <template #header>
@@ -122,7 +147,7 @@ async function redeployAll() {
           </el-button>
         </div>
       </template>
-      <el-table :data="filteredHooks" stripe style="width:100%">
+      <el-table :data="filteredHooks" stripe size="small" style="width:100%">
         <el-table-column prop="event" label="Event" width="180" />
         <el-table-column prop="name" label="名稱" min-width="160" show-overflow-tooltip />
         <el-table-column label="狀態" width="110" align="center">

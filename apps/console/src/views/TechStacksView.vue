@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import TechStackSunburst from "@/charts/TechStackSunburst.vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { getCategoryColor } from "@/charts/categoryColors";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { formatRelative } from "@/composables/useFormatRelative";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
 onMounted(() => store.fetchData());
 
 const stacks = computed(() => store.data?.cachedTechStacks ?? {});
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const timestamp = computed(() => store.data?.cachedTimestamp);
 const searchQuery = ref("");
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const chartMode = ref<"sunburst" | "pie" | "bar" | "treemap">("sunburst");
 
 const categories = computed(() => {
 	return Object.entries(stacks.value)
@@ -16,6 +22,7 @@ const categories = computed(() => {
 		.sort(([, a], [, b]) => b.length - a.length);
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredCategories = computed(() => {
 	const q = searchQuery.value.toLowerCase();
 	if (!q) return categories.value;
@@ -30,34 +37,10 @@ const filteredCategories = computed(() => {
 		.filter(([, techs]) => techs.length > 0);
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const totalTechs = computed(() =>
 	Object.values(stacks.value).reduce((sum, arr) => sum + arr.length, 0),
 );
-
-function formatTimestamp(ts: string | null | undefined): string {
-	if (!ts) return "從未更新";
-	return new Date(ts).toLocaleString("zh-TW");
-}
-
-const categoryColors: Record<string, string> = {
-	frontend: "#409eff",
-	backend: "#67c23a",
-	mobile: "#e6a23c",
-	devops: "#f56c6c",
-	database: "#909399",
-	testing: "#6f7ad3",
-	tooling: "#17c0eb",
-	language: "#1abc9c",
-	framework: "#8e44ad",
-	cloud: "#2980b9",
-	ai: "#e74c3c",
-	security: "#c0392b",
-	uncategorized: "#bdc3c7",
-};
-
-function getCategoryColor(cat: string): string {
-	return categoryColors[cat.toLowerCase()] ?? "#909399";
-}
 </script>
 
 <template>
@@ -71,7 +54,7 @@ function getCategoryColor(cat: string): string {
           <el-statistic title="技術總數" :value="totalTechs" style="display:inline-block; margin-right:24px" />
           <el-statistic title="分類數" :value="categories.length" style="display:inline-block" />
           <div style="margin-top:4px; font-size:12px; color:var(--el-text-color-secondary)">
-            快取時間：{{ formatTimestamp(timestamp) }}
+            快取時間：{{ formatRelative(timestamp) }}
           </div>
         </el-col>
         <el-col :span="8">
@@ -86,10 +69,23 @@ function getCategoryColor(cat: string): string {
       </el-row>
     </el-card>
 
-    <!-- Sunburst 圖 -->
+    <!-- 圖表（搜尋時隱藏） -->
     <el-card v-if="!searchQuery && categories.length > 0" shadow="never" style="margin-bottom:16px">
-      <template #header><span>技術棧分布（Sunburst）</span></template>
-      <TechStackSunburst :stacks="stacks" />
+      <template #header>
+        <div style="display:flex; align-items:center; gap:12px">
+          <span>技術棧分布</span>
+          <el-radio-group v-model="chartMode" size="small">
+            <el-radio-button value="sunburst">Sunburst</el-radio-button>
+            <el-radio-button value="pie">Pie</el-radio-button>
+            <el-radio-button value="bar">Bar</el-radio-button>
+            <el-radio-button value="treemap">Treemap</el-radio-button>
+          </el-radio-group>
+        </div>
+      </template>
+      <TechStackSunburst v-if="chartMode === 'sunburst'" :stacks="stacks" />
+      <TechStackPie v-else-if="chartMode === 'pie'" :stacks="stacks" />
+      <TechStackBar v-else-if="chartMode === 'bar'" :stacks="stacks" />
+      <TechStackTreemap v-else :stacks="stacks" />
     </el-card>
 
     <!-- 技術分類 -->

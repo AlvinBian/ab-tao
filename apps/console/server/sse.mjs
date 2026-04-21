@@ -56,7 +56,7 @@ export function spawnSse(res, taskType, cmd, args, opts = {}) {
 				const parsed = JSON.parse(trimmed);
 				if (parsed.type) {
 					sseSend(res, parsed);
-					return;
+					continue;
 				}
 			} catch {
 				// 非 JSON，當普通 log

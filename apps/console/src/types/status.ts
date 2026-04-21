@@ -176,6 +176,8 @@ export interface DriftItem {
 	localHash: string | null;
 	templateHash: string;
 	decision: string;
+	/** drift 年齡（天數），從 state.json 的 installedAt 計算 */
+	age: number;
 }
 
 export interface MemoryLayers {
@@ -209,16 +211,4 @@ export interface McpServer {
 	name: string;
 	type: string;
 	command: string;
-}
-
-/** scanUsageStats() 序列化後的型別（Map → Record） */
-export type UsageStatsMap = Record<string, UsageStatItem>;
-
-export interface UsageStatItem {
-	name: string;
-	type: "command" | "agent";
-	callCount: number;
-	lastUsed: string | null;
-	firstUsed: string | null;
-	stale: boolean;
 }

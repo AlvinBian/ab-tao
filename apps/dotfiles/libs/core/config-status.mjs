@@ -121,6 +121,16 @@ export function getConfigStatus() {
 
 	const env = loadEnvValues();
 
+	// ── ~/.zshrc marker 重複檢查 ──
+	let zshrcLoaderCount = 0;
+	const zshrcPath = path.join(HOME, ".zshrc");
+	try {
+		const zshrcContent = fs.readFileSync(zshrcPath, "utf8");
+		zshrcLoaderCount = (zshrcContent.match(/ab-tao:loader/g) ?? []).length;
+	} catch {
+		/* 檔案不存在或不可讀，略過 */
+	}
+
 	// ── CLAUDE.md 數量 ──
 	let claudeMdCount = 0;
 	const projectsDir = path.join(CLAUDE_DIR, "projects");
@@ -160,6 +170,7 @@ export function getConfigStatus() {
 			expected: ALL_ZSH_MODULES,
 			installed: installedZsh,
 			missing: zshMissing,
+			loaderDuplicates: zshrcLoaderCount > 1 ? zshrcLoaderCount : 0,
 		},
 		env: {
 			aiModel: env.AI_REPO_MODEL || null,

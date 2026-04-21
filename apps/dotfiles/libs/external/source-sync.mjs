@@ -654,8 +654,16 @@ function mergeHooksJson(destPath, incomingContent) {
 	}
 
 	const result = { ...existing, hooks: merged };
+	const resultJson = `${JSON.stringify(result, null, 2)}\n`;
+	if (fs.existsSync(destPath)) {
+		try {
+			if (fs.readFileSync(destPath, "utf8") === resultJson) return;
+		} catch {
+			/* proceed with write */
+		}
+	}
 	const tmpPath = `${destPath}.tmp.${process.pid}`;
-	fs.writeFileSync(tmpPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
+	fs.writeFileSync(tmpPath, resultJson, "utf8");
 	fs.renameSync(tmpPath, destPath);
 }
 
@@ -674,11 +682,15 @@ export async function writeSyncedFiles(downloaded, targetDir) {
 					skipped.push(`commands/${safeName}`);
 					continue;
 				}
-				fs.writeFileSync(
-					dest,
-					injectMarker(GENERATED_MARKER, f.content),
-					"utf8",
-				);
+				const newContent = injectMarker(GENERATED_MARKER, f.content);
+				if (fs.existsSync(dest)) {
+					try {
+						if (fs.readFileSync(dest, "utf8") === newContent) continue;
+					} catch {
+						/* proceed with write */
+					}
+				}
+				fs.writeFileSync(dest, newContent, "utf8");
 				written.push(dest);
 			}
 			for (const f of src.agents) {
@@ -688,11 +700,15 @@ export async function writeSyncedFiles(downloaded, targetDir) {
 					skipped.push(`agents/${safeName}`);
 					continue;
 				}
-				fs.writeFileSync(
-					dest,
-					injectMarker(GENERATED_MARKER, f.content),
-					"utf8",
-				);
+				const newContent = injectMarker(GENERATED_MARKER, f.content);
+				if (fs.existsSync(dest)) {
+					try {
+						if (fs.readFileSync(dest, "utf8") === newContent) continue;
+					} catch {
+						/* proceed with write */
+					}
+				}
+				fs.writeFileSync(dest, newContent, "utf8");
 				written.push(dest);
 			}
 			for (const f of src.rules) {
@@ -702,11 +718,15 @@ export async function writeSyncedFiles(downloaded, targetDir) {
 					skipped.push(`rules/${safeName}`);
 					continue;
 				}
-				fs.writeFileSync(
-					dest,
-					injectMarker(GENERATED_MARKER, f.content),
-					"utf8",
-				);
+				const newContent = injectMarker(GENERATED_MARKER, f.content);
+				if (fs.existsSync(dest)) {
+					try {
+						if (fs.readFileSync(dest, "utf8") === newContent) continue;
+					} catch {
+						/* proceed with write */
+					}
+				}
+				fs.writeFileSync(dest, newContent, "utf8");
 				written.push(dest);
 			}
 			if (src.hooks)

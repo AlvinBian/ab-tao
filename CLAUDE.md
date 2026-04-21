@@ -73,6 +73,8 @@ pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
 ## 開發規範
 
 - **Commit** — Conventional Commits（繁體中文）
+- **PR 命名** — 標準 `[TICKET][PROJECT] 主描述`；堆疊 PR 用 ` - PR-N 子描述` 後綴
+  - 例：`[VM-1482][M] 新訂單明細頁 - PR-1 BFF base + eventCollection`
 - **版本** — `pnpm run changeset` 建立變更記錄，`pnpm run version` 更新版本
 - **安全** — 外部資源必須通過 security-validator（eval/sudo/rm-rf 攔截 + 512KB 限制，.md 為警告模式）
 - **測試** — Node.js 原生 test runner，`node --test __tests__/*.test.mjs`

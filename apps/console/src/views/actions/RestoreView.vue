@@ -17,7 +17,11 @@ async function fetchBackups() {
 	loading.value = true;
 	try {
 		const r = await fetch("/api/restore/backups");
-		const { data } = await r.json();
+		const { code, message, data } = await r.json();
+		if (code !== 0) {
+			ElMessage.error(message ?? "無法載入備份列表");
+			return;
+		}
 		backups.value = Array.isArray(data) ? data : [];
 	} catch {
 		ElMessage.error("無法載入備份列表");
@@ -26,6 +30,7 @@ async function fetchBackups() {
 	}
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function restore(backupId: string) {
 	restoring.value = backupId;
 	try {
@@ -49,6 +54,14 @@ onMounted(fetchBackups);
 
 <template>
   <div>
+    <!-- 備份趨勢圖 -->
+    <el-card v-if="backups.length > 0" shadow="never" style="margin-bottom:16px">
+      <template #header><span>備份歷史（最近 12 筆）</span></template>
+      <BackupSizeBar
+        :backups="backups.map(b => ({ id: b.id, fileCount: b.fileCount }))"
+      />
+    </el-card>
+
     <el-card shadow="never" style="margin-bottom:16px">
       <template #header>
         <span>備份列表</span>

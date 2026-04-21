@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import { formatRelative } from "@/composables/useFormatRelative";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
 onMounted(() => store.fetchData());
 
 const d = computed(() => store.data);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const ccline = computed(() => d.value?.extended?.ccline);
 
 const zshInstalled = computed(() => d.value?.zsh?.installed ?? []);
 const zshAvailable = computed(() => d.value?.zsh?.available ?? []);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const zshMissing = computed(() =>
 	zshAvailable.value.filter((m) => !zshInstalled.value.includes(m)),
 );
 
 const envHealth = computed(() => d.value?.envHealth);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const hasEnvIssues = computed(
 	() =>
 		(envHealth.value?.missing?.length ?? 0) +
@@ -22,17 +27,36 @@ const hasEnvIssues = computed(
 		0,
 );
 
-const claudeMdFiles = computed(() => d.value?.claudeMd ?? []);
-const pluginFiles = computed(() => d.value?.plugins ?? []);
+const zshCoveredCount = computed(
+	() => zshAvailable.value.filter((m) => zshInstalled.value.includes(m)).length,
+);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const zshExtraCount = computed(() =>
+	Math.max(0, zshInstalled.value.length - zshCoveredCount.value),
+);
 
-function formatDate(iso: string): string {
-	return new Date(iso).toLocaleString("zh-TW");
-}
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const claudeMdFiles = computed(() => d.value?.claudeMd ?? []);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const pluginFiles = computed(() => d.value?.plugins ?? []);
 </script>
 
 <template>
   <div v-loading="store.loading">
     <el-alert v-if="store.error" :title="store.error" type="error" show-icon style="margin-bottom:16px" />
+
+    <!-- 環境健康總覽 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header><span>環境健康總覽</span></template>
+      <EnvHealthGauge
+        :zsh-installed="zshInstalled"
+        :zsh-available="zshAvailable"
+        :ccline-installed="ccline?.installed ?? false"
+        :ccline-status-line-configured="ccline?.statusLineConfigured ?? false"
+        :env-missing-count="envHealth?.missing?.length ?? 0"
+        :env-empty-count="envHealth?.empty?.length ?? 0"
+      />
+    </el-card>
 
     <el-row :gutter="16" style="margin-bottom:16px">
       <!-- ZSH 模組 -->
@@ -44,7 +68,7 @@ function formatDate(iso: string): string {
               :type="zshMissing.length > 0 ? 'warning' : 'success'"
               size="small"
               style="margin-left:8px"
-            >{{ zshInstalled.length }}/{{ zshAvailable.length }}</el-tag>
+            >{{ zshCoveredCount }}/{{ zshAvailable.length }}<template v-if="zshExtraCount > 0"> +{{ zshExtraCount }} 額外</template></el-tag>
           </template>
           <div style="display:flex; flex-wrap:wrap; gap:6px">
             <el-tag
@@ -167,7 +191,7 @@ function formatDate(iso: string): string {
       <el-table :data="claudeMdFiles" size="small" max-height="200">
         <el-table-column prop="path" label="路徑" min-width="200" show-overflow-tooltip />
         <el-table-column label="修改時間" width="160">
-          <template #default="{ row }">{{ formatDate(row.mtime) }}</template>
+          <template #default="{ row }">{{ formatRelative(row.mtime) }}</template>
         </el-table-column>
       </el-table>
     </el-card>
@@ -178,7 +202,7 @@ function formatDate(iso: string): string {
       <el-table :data="pluginFiles" size="small" max-height="200">
         <el-table-column prop="name" label="名稱" min-width="200" show-overflow-tooltip />
         <el-table-column label="修改時間" width="160">
-          <template #default="{ row }">{{ formatDate(row.mtime) }}</template>
+          <template #default="{ row }">{{ formatRelative(row.mtime) }}</template>
         </el-table-column>
       </el-table>
     </el-card>

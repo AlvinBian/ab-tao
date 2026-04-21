@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, ref } from "vue";
-import ProgressWithLog from "@/components/ProgressWithLog.vue";
+import { computed, onMounted, ref, watch } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import SettingRow from "@/components/SettingRow.vue";
 import { useSse } from "@/composables/useSse";
 
 const session = ref<Record<string, unknown> | null>(null);
@@ -9,6 +10,8 @@ const loadingSession = ref(false);
 const dryRun = ref(false);
 const mode = ref<"quick" | "manual" | "all">("quick");
 const fromIcloud = ref(false);
+const selectedStep = ref(0);
+const userInteracted = ref(false);
 
 const sse = useSse({
 	onDone: (e) => {
@@ -40,13 +43,35 @@ onMounted(async () => {
 	loadingSession.value = true;
 	try {
 		const r = await fetch("/api/setup/session");
-		const { data } = await r.json();
+		const { code, message, data } = await r.json();
+		if (code !== 0) {
+			ElMessage.error(message ?? "無法載入 Session 記錄");
+			return;
+		}
 		session.value = data && Object.keys(data).length > 0 ? data : null;
+	} catch {
+		ElMessage.error("無法載入 Session 記錄");
 	} finally {
 		loadingSession.value = false;
 	}
 });
 
+watch(
+	() => activeStep(),
+	(v) => {
+		if (!userInteracted.value) selectedStep.value = v;
+	},
+);
+
+watch(sse.done, (done) => {
+	if (done) {
+		setTimeout(() => {
+			userInteracted.value = false;
+		}, 5000);
+	}
+});
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function execute() {
 	await ElMessageBox.confirm(
 		"d:setup 會修改 ~/.claude/ 的配置文件，執行前已自動備份。\n確定繼續？",
@@ -62,14 +87,51 @@ async function execute() {
 	});
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function cancel() {
 	sse.stop();
-	await fetch("/api/setup/execute", { method: "DELETE" });
+	const r = await fetch("/api/setup/execute", { method: "DELETE" });
+	const { code, message } = await r.json();
+	if (code !== 0) {
+		ElMessage.error(message ?? "取消失敗");
+		return;
+	}
 	ElMessage.info("已發送取消訊號");
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const setupPhases = computed(() => {
+	const active = activeStep();
+	return SETUP_STEPS.map((step, i) => ({
+		name: step.title,
+		status: (i < active
+			? "done"
+			: i === active
+				? sse.done.value
+					? sse.success.value
+						? "done"
+						: "failed"
+					: sse.running.value
+						? "running"
+						: "pending"
+				: "pending") as "done" | "running" | "pending" | "failed",
+		deps: i > 0 ? [SETUP_STEPS[i - 1].title] : undefined,
+	}));
+});
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const currentPhaseName = computed(() =>
+	sse.running.value ? SETUP_STEPS[activeStep()]?.title : undefined,
+);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function clearProgress() {
-	await fetch("/api/setup/progress", { method: "DELETE" });
+	const r = await fetch("/api/setup/progress", { method: "DELETE" });
+	const { code, message } = await r.json();
+	if (code !== 0) {
+		ElMessage.error(message ?? "清除進度失敗");
+		return;
+	}
 	ElMessage.success("斷點進度已清除");
 	session.value = null;
 }
@@ -108,35 +170,15 @@ async function clearProgress() {
       </el-descriptions>
     </el-card>
 
-    <!-- 安裝選項 -->
+    <!-- 七階段流程 + 各步驟子任務流程圖 -->
     <el-card shadow="never" style="margin-bottom:16px">
-      <template #header><span>安裝選項</span></template>
-      <el-form label-width="100px" size="small">
-        <el-form-item label="模式">
-          <el-radio-group v-model="mode">
-            <el-radio-button value="quick">Quick（快速）</el-radio-button>
-            <el-radio-button value="manual">Manual（逐步確認）</el-radio-button>
-            <el-radio-button value="all">All（全量）</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="Dry-run">
-          <el-switch v-model="dryRun" />
-          <span style="margin-left:8px; color:var(--el-text-color-secondary); font-size:12px">
-            只預覽變更，不實際寫入
-          </span>
-        </el-form-item>
-        <el-form-item label="從 iCloud">
-          <el-switch v-model="fromIcloud" />
-          <span style="margin-left:8px; color:var(--el-text-color-secondary); font-size:12px">
-            從 iCloud 快速重建配置
-          </span>
-        </el-form-item>
-      </el-form>
-    </el-card>
+      <template #header>
+        <span>安裝流程（七階段）</span>
+        <span style="color:var(--el-text-color-secondary);font-size:12px;margin-left:8px">
+          點選步驟查看詳細流程
+        </span>
+      </template>
 
-    <!-- 七階段流程 -->
-    <el-card shadow="never" style="margin-bottom:16px">
-      <template #header><span>安裝流程（七階段）</span></template>
       <el-steps
         :active="activeStep()"
         finish-status="success"
@@ -150,6 +192,82 @@ async function clearProgress() {
           :description="step.description"
         />
       </el-steps>
+
+      <!-- 步驟選擇器 -->
+      <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding:4px 0 12px">
+        <el-tag
+          v-for="(step, i) in SETUP_STEPS"
+          :key="step.title"
+          :effect="selectedStep === i ? 'dark' : 'plain'"
+          :type="selectedStep === i ? undefined : 'info'"
+          size="small"
+          style="cursor:pointer;user-select:none"
+          @click="selectedStep = i; userInteracted = true"
+        >
+          {{ i + 1 }}. {{ step.title }}
+        </el-tag>
+      </div>
+
+      <el-divider style="margin:0 0 12px">
+        <span style="font-size:12px;color:var(--el-text-color-secondary)">
+          {{ SETUP_STEPS[selectedStep].title }} — 子任務流程
+        </span>
+      </el-divider>
+
+      <!-- 圖例 -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding:0 8px">
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--el-color-info)"/>
+          自動執行
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--el-color-primary)"/>
+          需要互動
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--el-color-warning)"/>
+          並行執行
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#b8c0cc"/>
+          可選
+        </span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--el-color-success)"/>
+          產出
+        </span>
+      </div>
+
+      <SetupStepFlowDiagram :step-index="selectedStep" />
+    </el-card>
+
+    <!-- 安裝選項 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header><span>安裝選項</span></template>
+      <el-form label-width="100px" size="small">
+        <SettingRow
+          label="模式"
+          description="Quick = 自動套用推薦設定；Manual = 逐步確認每個選項；All = 安裝全部可用功能。"
+        >
+          <el-radio-group v-model="mode">
+            <el-radio-button value="quick">Quick（快速）</el-radio-button>
+            <el-radio-button value="manual">Manual（逐步確認）</el-radio-button>
+            <el-radio-button value="all">All（全量）</el-radio-button>
+          </el-radio-group>
+        </SettingRow>
+        <SettingRow label="Dry-run" description="只預覽變更，不實際寫入；確認無誤後再正式執行。">
+          <el-switch v-model="dryRun" />
+        </SettingRow>
+        <SettingRow label="從 iCloud" description="從 iCloud 快速重建配置，適合換機或重裝後恢復個人設定。">
+          <el-switch v-model="fromIcloud" />
+        </SettingRow>
+      </el-form>
+    </el-card>
+
+    <!-- 階段 DAG -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <template #header><span>階段依賴視覺化</span></template>
+      <SetupPhaseDag :phases="setupPhases" :current-phase="currentPhaseName" />
     </el-card>
 
     <!-- 執行控制 + 進度 -->

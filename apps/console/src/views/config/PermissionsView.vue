@@ -20,6 +20,7 @@ const initFromStore = () => {
 	dirty.value = false;
 };
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const templateAllow = computed(() => {
 	if (!store.settings?.permissions) return [];
 	return (
@@ -28,6 +29,7 @@ const templateAllow = computed(() => {
 	);
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function addAllow() {
 	const v = newAllow.value.trim();
 	if (!v || allow.value.includes(v)) return;
@@ -36,11 +38,13 @@ function addAllow() {
 	dirty.value = true;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function removeAllow(item: string) {
 	allow.value = allow.value.filter((a) => a !== item);
 	dirty.value = true;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function addDeny() {
 	const v = newDeny.value.trim();
 	if (!v || deny.value.includes(v)) return;
@@ -49,11 +53,13 @@ function addDeny() {
 	dirty.value = true;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function removeDeny(item: string) {
 	deny.value = deny.value.filter((d) => d !== item);
 	dirty.value = true;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function save() {
 	try {
 		await store.patchPermissions(allow.value, deny.value);
@@ -64,6 +70,7 @@ async function save() {
 	}
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function reset() {
 	initFromStore();
 }
@@ -159,6 +166,12 @@ watch(() => store.settings, initFromStore, { immediate: true });
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 權限分類分佈圖 -->
+    <el-card v-if="allow.length > 0 || deny.length > 0" shadow="never" style="margin-top:16px; margin-bottom:16px">
+      <template #header><span>權限分類分佈</span></template>
+      <PermissionCategoryBar :allow="allow" :deny="deny" />
+    </el-card>
 
     <!-- Template Allow（唯讀參考） -->
     <el-card shadow="never" style="margin-top:16px" v-if="templateAllow.length > 0">

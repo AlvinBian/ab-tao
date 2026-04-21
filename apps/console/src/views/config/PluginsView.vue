@@ -13,10 +13,12 @@ const pluginEntries = computed(() => {
 		.map(([name, enabled]) => ({ name, enabled }));
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const enabledCount = computed(
 	() => pluginEntries.value.filter((p) => p.enabled).length,
 );
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function onToggle(name: string, enabled: boolean) {
 	try {
 		await store.patchPluginEnabled(name, enabled);
@@ -26,10 +28,12 @@ async function onToggle(name: string, enabled: boolean) {
 	}
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function pluginShortName(full: string): string {
 	return full.split("@")[0] ?? full;
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function pluginSource(full: string): string {
 	return full.split("@")[1] ?? "—";
 }
@@ -51,8 +55,14 @@ function pluginSource(full: string): string {
       </el-row>
     </el-card>
 
+    <!-- 啟用比例圖 -->
+    <el-card v-if="pluginEntries.length > 0" shadow="never" style="margin-bottom:16px">
+      <template #header><span>啟用比例</span></template>
+      <PluginStatusPie :total="pluginEntries.length" :enabled="enabledCount" />
+    </el-card>
+
     <el-card shadow="never">
-      <el-table :data="pluginEntries" stripe style="width:100%">
+      <el-table :data="pluginEntries" stripe size="small" style="width:100%">
         <el-table-column label="名稱" min-width="180">
           <template #default="{ row }">
             <span style="font-weight:500">{{ pluginShortName(row.name) }}</span>

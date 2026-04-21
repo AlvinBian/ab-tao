@@ -7,9 +7,20 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOTFILES_BIN } from "../sse.mjs";
+import { backupSettings } from "./settings.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOTFILES_ROOT = path.resolve(DOTFILES_BIN, "..");
+const DOTFILES_LIB = path.resolve(DOTFILES_ROOT, "libs");
+
+let _P = null;
+async function getP() {
+	if (!_P) {
+		const m = await import(path.join(DOTFILES_LIB, "core/paths.mjs"));
+		_P = m.P;
+	}
+	return _P;
+}
 const HOOKS_SOURCE = path.join(DOTFILES_ROOT, "claude", "hooks");
 const DEFS_DIR = path.join(HOOKS_SOURCE, "defs");
 const HOME = os.homedir();
@@ -82,6 +93,7 @@ export async function hooksRouter(req, res, url, json) {
 			return true;
 		}
 		try {
+			const P = await getP();
 			const defs = loadDefs();
 			const toRedeploy =
 				hookId === "all"
@@ -93,6 +105,7 @@ export async function hooksRouter(req, res, url, json) {
 				json(res, 404, `找不到 Hook "${hookId}"`, null, 404);
 				return true;
 			}
+			await backupSettings(P);
 			const results = toRedeploy.flatMap(redeployDef);
 			json(res, 0, "重新部署完成", { hookId, results });
 		} catch (e) {

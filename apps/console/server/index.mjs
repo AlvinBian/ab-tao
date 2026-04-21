@@ -8,7 +8,12 @@
 
 import { createServer } from "node:http";
 import { URL } from "node:url";
+// assertTrustedOrigin 已就緒，供 A3 新增 mutation endpoint 時使用
+// import { assertTrustedOrigin } from "./utils/security.mjs";
+import { aiUsageRouter } from "./routes/ai-usage.mjs";
+import { chromeRouter } from "./routes/chrome.mjs";
 import { hooksRouter } from "./routes/hooks.mjs";
+import { mcpRouter } from "./routes/mcp.mjs";
 import { resourcesRouter } from "./routes/resources.mjs";
 import { restoreRouter } from "./routes/restore.mjs";
 import { scanRouter } from "./routes/scan.mjs";
@@ -17,7 +22,7 @@ import { setupRouter } from "./routes/setup.mjs";
 import { statusRouter } from "./routes/status.mjs";
 import { syncRouter } from "./routes/sync.mjs";
 
-const PORT = 5478;
+const PORT = Number(process.env.PORT) || 5478;
 
 /** 解析 request body（JSON） */
 async function parseBody(req) {
@@ -41,8 +46,12 @@ function json(res, code, message, data, status = 200) {
 }
 
 const server = createServer(async (req, res) => {
-	// CORS — 僅供 localhost 開發使用
-	res.setHeader("Access-Control-Allow-Origin", "*");
+	// CORS — 允許所有 localhost 來源（端口動態分配）
+	const origin = req.headers.origin ?? "";
+	if (/^http:\/\/localhost:\d+$/.test(origin)) {
+		res.setHeader("Access-Control-Allow-Origin", origin);
+		res.setHeader("Vary", "Origin");
+	}
 	res.setHeader(
 		"Access-Control-Allow-Methods",
 		"GET, POST, PATCH, DELETE, OPTIONS",
@@ -65,6 +74,9 @@ const server = createServer(async (req, res) => {
 			json(res, 0, "ok", { status: "healthy", version: "0.1.0" });
 			return;
 		}
+
+		// /api/status/ai-usage — AI 使用統計
+		if (await aiUsageRouter(req, res, url, json)) return;
 
 		// /api/status/* — 狀態資料
 		if (url.pathname.startsWith("/api/status")) {
@@ -114,6 +126,18 @@ const server = createServer(async (req, res) => {
 		// /api/hooks/* — Hook 重新部署
 		if (url.pathname.startsWith("/api/hooks")) {
 			const handled = await hooksRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/chrome/* — Chrome 優化
+		if (url.pathname.startsWith("/api/chrome")) {
+			const handled = await chromeRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/mcp/* — MCP Servers / Plugins / Marketplace
+		if (url.pathname.startsWith("/api/mcp")) {
+			const handled = await mcpRouter(req, res, url, json);
 			if (handled) return;
 		}
 

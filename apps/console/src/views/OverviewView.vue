@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import SessionByProjectBar from "@/charts/SessionByProjectBar.vue";
-import UsageHeatmap from "@/charts/UsageHeatmap.vue";
+import { useElCssVar } from "@/composables/useElCssVar";
 import { useStatusStore } from "@/stores/status";
 
 const store = useStatusStore();
 onMounted(() => store.fetchData());
 
+const successColor = useElCssVar("--el-color-success", "#67c23a");
+const warningColor = useElCssVar("--el-color-warning", "#e6a23c");
+const dangerColor = useElCssVar("--el-color-danger", "#f56c6c");
+
 const d = computed(() => store.data);
 const healthPct = computed(() => d.value?.overview?.healthPct ?? 0);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const statCards = computed(() => [
 	{
 		label: "Skills",
@@ -42,6 +46,7 @@ const statCards = computed(() => [
 const dailyCounts = computed(
 	() => (d.value?.sessions?.dailyCounts as Record<string, number>) ?? {},
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const hasDailyCounts = computed(
 	() => Object.keys(dailyCounts.value).length > 0,
 );
@@ -49,14 +54,40 @@ const hasDailyCounts = computed(
 const byProject = computed(
 	() => (d.value?.sessions?.byProject as Record<string, number>) ?? {},
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const hasByProject = computed(() => Object.keys(byProject.value).length > 0);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const radarScores = computed(() => ({
+	commandUsageRate: Math.min(100, (d.value?.commands?.length ?? 0) * 5),
+	agentUsageRate: Math.min(100, (d.value?.agents?.length ?? 0) * 25),
+	hookHealthRate:
+		(d.value?.extended?.hooks?.total ?? 0) > 0
+			? Math.round(
+					((d.value?.extended?.hooks?.healthy ?? 0) /
+						(d.value?.extended?.hooks?.total ?? 1)) *
+						100,
+				)
+			: 0,
+	skillEnabledRate:
+		(d.value?.skills?.length ?? 0) > 0
+			? Math.round(
+					((d.value?.skills?.filter((s) => s.enabled).length ?? 0) /
+						(d.value?.skills?.length ?? 1)) *
+						100,
+				)
+			: 0,
+	envScore: Math.max(0, 100 - (d.value?.extended?.drift?.length ?? 0) * 10),
+}));
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const healthColor = computed(() => {
-	if (healthPct.value >= 80) return "#67c23a";
-	if (healthPct.value >= 50) return "#e6a23c";
-	return "#f56c6c";
+	if (healthPct.value >= 80) return successColor.value;
+	if (healthPct.value >= 50) return warningColor.value;
+	return dangerColor.value;
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function formatBytes(bytes: number): string {
 	if (!bytes) return "0 B";
 	const k = 1024;
@@ -94,13 +125,19 @@ function formatBytes(bytes: number): string {
       <el-col :span="19">
         <el-row :gutter="12">
           <el-col v-for="item in statCards" :key="item.label" :span="4">
-            <el-card shadow="never" style="height:68px; margin-bottom:12px">
+            <el-card shadow="never" class="overview-stat-card">
               <el-statistic :title="item.label" :value="item.value" style="--el-statistic-title-font-size:12px" />
             </el-card>
           </el-col>
         </el-row>
       </el-col>
     </el-row>
+
+    <!-- 健康維度雷達 -->
+    <el-card v-if="d" shadow="never" style="margin-bottom:16px">
+      <template #header><span>健康維度雷達</span></template>
+      <OverviewRadar v-bind="radarScores" />
+    </el-card>
 
     <!-- Session 活躍度熱力圖 -->
     <el-card v-if="hasDailyCounts" shadow="never" style="margin-bottom:16px">
@@ -168,3 +205,18 @@ function formatBytes(bytes: number): string {
     <el-empty v-if="!store.loading && !store.data && !store.error" description="尚無資料，請確認 API server 已啟動" />
   </div>
 </template>
+
+<style scoped>
+/* 統計卡與健康卡同高（148px），內容垂直水平居中 */
+.overview-stat-card {
+  height: 148px;
+}
+.overview-stat-card :deep(.el-card__body) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+</style>

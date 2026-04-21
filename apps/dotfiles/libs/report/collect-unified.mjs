@@ -190,12 +190,23 @@ export function detectDrift() {
 
 		if (isDrift) {
 			const choice = choices[relPath];
+			// 從 installedAt 計算 drift 年齡（天數），供前端 DriftScatter 的 Y 軸使用
+			const installedAt = entry.installedAt || null;
+			const age = installedAt
+				? Math.max(
+						0,
+						Math.floor(
+							(Date.now() - new Date(installedAt).getTime()) / 86400000,
+						),
+					)
+				: 0;
 			results.push({
 				path: relPath,
 				localHash,
 				templateHash,
 				decision:
 					choice?.decision || (localHash === null ? "deleted" : "modified"),
+				age,
 			});
 		}
 	}
