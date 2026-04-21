@@ -246,11 +246,12 @@ setup 完成后会推荐安装以下工具：
 {
   "statusLine": {
     "type": "command",
-    "command": "ccline",
-    "padding": 0
+    "command": "~/.claude/ccline/my-ccline.sh"
   }
 }
 ```
+
+`my-ccline.sh` 是包装脚本，以 `ccline` 为核心输出，并附加 Node.js / pnpm / Python / Go 版本段。
 
 ## GitFlow
 

@@ -246,11 +246,12 @@ After installation, `~/.claude/settings.json` is automatically updated:
 {
   "statusLine": {
     "type": "command",
-    "command": "ccline",
-    "padding": 0
+    "command": "~/.claude/ccline/my-ccline.sh"
   }
 }
 ```
+
+`my-ccline.sh` is a wrapper script that uses `ccline` as the core output and appends Node.js / pnpm / Python / Go version segments.
 
 ## GitFlow
 
