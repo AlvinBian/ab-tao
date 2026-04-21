@@ -342,33 +342,45 @@ export function deployZshPrefs(prefs) {
 
 	const lines = [
 		"# ab-tao 個人偏好（自動生成 — pnpm run d:setup 重新配置）",
-		"# 請勿手動編輯，下次 setup 會覆蓋此檔案",
+		"# 使用 :- 格式：~/.zshrc 已設定的值優先，此檔僅提供預設值",
 		"",
 		"# GUI 編輯器偵測順序（open -e / code alias）",
-		"AB_GUI_EDITOR_ORDER=(",
-		...editorPaths.map((ep) => `  "${ep}"`),
-		")",
+		'if [[ -z "${AB_GUI_EDITOR_ORDER+_}" ]]; then',
+		"  AB_GUI_EDITOR_ORDER=(",
+		...editorPaths.map((ep) => `    "${ep}"`),
+		"  )",
+		"fi",
 		"",
 		"# CLI 編輯器（git commit / 終端工具使用 $EDITOR）",
-		`AB_CLI_EDITOR="${prefs.cliEditor}"`,
+		`: "\${AB_CLI_EDITOR:=${prefs.cliEditor}}"`,
 		"",
 		"# Node 版本管理器優先順序",
-		`AB_NODE_MANAGER_ORDER=(${prefs.nodeManagerOrder.map((m) => `"${m}"`).join(" ")})`,
+		'if [[ -z "${AB_NODE_MANAGER_ORDER+_}" ]]; then',
+		`  AB_NODE_MANAGER_ORDER=(${prefs.nodeManagerOrder.map((m) => `"${m}"`).join(" ")})`,
+		"fi",
 		"",
 		"# ZSH 按鍵模式",
-		`AB_KEYBINDING="${prefs.keybinding}"`,
+		`: "\${AB_KEYBINDING:=${prefs.keybinding}}"`,
 		"",
 		"# uv 覆蓋 pip",
-		`AB_UV_OVERRIDE_PIP=${prefs.uvOverridePip ? "true" : "false"}`,
+		`: "\${AB_UV_OVERRIDE_PIP:=${prefs.uvOverridePip ? "true" : "false"}}"`,
 		"",
 		"# Starship preset",
-		`AB_STARSHIP_PRESET="${prefs.starshipPreset}"`,
+		`: "\${AB_STARSHIP_PRESET:=${prefs.starshipPreset}}"`,
 		"",
 		"# bat 語法高亮主題",
-		`AB_BAT_THEME="${prefs.batTheme ?? "TwoDark"}"`,
+		`: "\${AB_BAT_THEME:=${prefs.batTheme ?? "TwoDark"}}"`,
 	];
 
-	fs.writeFileSync(dest, `${lines.join("\n")}\n`);
+	const newContent = `${lines.join("\n")}\n`;
+	if (fs.existsSync(dest)) {
+		try {
+			if (fs.readFileSync(dest, "utf8") === newContent) return dest;
+		} catch {
+			/* proceed with write */
+		}
+	}
+	fs.writeFileSync(dest, newContent);
 	return dest;
 }
 
@@ -383,6 +395,13 @@ export function deployHookPrefs(prefs) {
 
 	// 原子寫入：先寫 .tmp，再 rename，避免 hook 腳本讀到半空檔案
 	const atomicWrite = (dest, content) => {
+		if (fs.existsSync(dest)) {
+			try {
+				if (fs.readFileSync(dest, "utf8") === content) return;
+			} catch {
+				/* proceed with write */
+			}
+		}
 		const tmp = `${dest}.tmp.${process.pid}`;
 		fs.writeFileSync(tmp, content, "utf8");
 		fs.renameSync(tmp, dest);
@@ -442,28 +461,27 @@ export function readPrefsFromDisk() {
 		try {
 			const content = fs.readFileSync(zshPrefsPath, "utf8");
 
-			// AB_CLI_EDITOR="vim"
-			const cli = content.match(/^AB_CLI_EDITOR="([^"]+)"/m);
-			if (cli) prefs.cliEditor = cli[1];
+			// AB_CLI_EDITOR="vim"  OR  : "${AB_CLI_EDITOR:=vim}"
+			const cli = content.match(/AB_CLI_EDITOR(?:="|:=)([^"}\n]+)/m);
+			if (cli) prefs.cliEditor = cli[1].trim();
 
-			// AB_KEYBINDING="emacs"
-			const kb = content.match(/^AB_KEYBINDING="([^"]+)"/m);
-			if (kb) prefs.keybinding = kb[1];
+			// AB_KEYBINDING="emacs"  OR  : "${AB_KEYBINDING:=emacs}"
+			const kb = content.match(/AB_KEYBINDING(?:="|:=)([^"}\n]+)/m);
+			if (kb) prefs.keybinding = kb[1].trim();
 
-			// AB_UV_OVERRIDE_PIP=true|false
-			const uv = content.match(/^AB_UV_OVERRIDE_PIP=(\w+)/m);
+			// AB_UV_OVERRIDE_PIP=true|false  OR  : "${AB_UV_OVERRIDE_PIP:=true}"
+			const uv = content.match(/AB_UV_OVERRIDE_PIP(?:=|:=)(\w+)/m);
 			if (uv) prefs.uvOverridePip = uv[1] === "true";
 
-			// AB_STARSHIP_PRESET="default"
-			const sp = content.match(/^AB_STARSHIP_PRESET="([^"]+)"/m);
-			if (sp) prefs.starshipPreset = sp[1];
+			// AB_STARSHIP_PRESET="default"  OR  : "${AB_STARSHIP_PRESET:=default}"
+			const sp = content.match(/AB_STARSHIP_PRESET(?:="|:=)([^"}\n]+)/m);
+			if (sp) prefs.starshipPreset = sp[1].trim();
 
-			// AB_BAT_THEME="TwoDark"
-			const bt = content.match(/^AB_BAT_THEME="([^"]+)"/m);
-			if (bt) prefs.batTheme = bt[1];
+			// AB_BAT_THEME="TwoDark"  OR  : "${AB_BAT_THEME:=TwoDark}"
+			const bt = content.match(/AB_BAT_THEME(?:="|:=)([^"}\n]+)/m);
+			if (bt) prefs.batTheme = bt[1].trim();
 
-			// AB_GUI_EDITOR_ORDER=( "/path/..." ... )
-			// 抓所有 /Applications/ 開頭的路徑，反查 editor key
+			// AB_GUI_EDITOR_ORDER=( "/path/..." ... )  ← 新舊格式皆抓 /Applications/ 路徑
 			const guiPaths = [...content.matchAll(/"(\/Applications\/[^"]+)"/g)].map(
 				(m) => m[1],
 			);
@@ -477,8 +495,8 @@ export function readPrefsFromDisk() {
 				if (guiEditorOrder.length > 0) prefs.guiEditorOrder = guiEditorOrder;
 			}
 
-			// AB_NODE_MANAGER_ORDER=("fnm" "nvm" "n")
-			const nm = content.match(/^AB_NODE_MANAGER_ORDER=\(([^)]+)\)/m);
+			// AB_NODE_MANAGER_ORDER=("fnm" "nvm" "n")  ← 新舊格式括號內容相同
+			const nm = content.match(/AB_NODE_MANAGER_ORDER=\(([^)]+)\)/m);
 			if (nm) {
 				const order = nm[1].replace(/"/g, "").split(/\s+/).filter(Boolean);
 				if (order.length > 0) prefs.nodeManagerOrder = order;

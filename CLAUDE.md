@@ -13,6 +13,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 ```
 apps/dotfiles/      — @ab-tao/dotfiles  — 智能篩選、互動安裝、動態配置
+apps/console/       — @ab-tao/console   — Vue 3 後台控制台（GUI 管理）
 packages/commons/   — @ab-tao/commons   — 純資源池：同步、驗證、提供 API
 packages/share/     — @ab-tao/share     — 共用工具庫：utils/libs
 ```
@@ -32,7 +33,6 @@ pnpm run d:setup           # 互動式環境部署
 pnpm run d:scan            # 技術棧掃描
 pnpm run d:setup --doctor  # 環境診斷（setup Phase 1）
 pnpm run d:status          # 配置儀表板
-pnpm run d:report          # 瀏覽器 HTML Dashboard
 pnpm run d:restore         # 還原備份
 pnpm run d:hooks           # Hook 管理
 pnpm run d:prefs-sync      # iCloud 偏好檔同步
@@ -44,6 +44,10 @@ pnpm run c:ai-sync --all   # 同步全部來源
 pnpm run c:skills          # Claude Skills 管理
 pnpm run c:translate       # 多語系翻譯生成
 pnpm run c:validate        # 驗證資源結構
+
+pnpm run cs:dev            # 啟動後台控制台（Vite + API server）
+pnpm run cs:build          # 構建 console SPA
+pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
 ```
 
 ## v2.0.0 架構：輕量化配置 + 命令驅動
@@ -69,6 +73,8 @@ pnpm run c:validate        # 驗證資源結構
 ## 開發規範
 
 - **Commit** — Conventional Commits（繁體中文）
+- **PR 命名** — 標準 `[TICKET][PROJECT] 主描述`；堆疊 PR 用 ` - PR-N 子描述` 後綴
+  - 例：`[VM-1482][M] 新訂單明細頁 - PR-1 BFF base + eventCollection`
 - **版本** — `pnpm run changeset` 建立變更記錄，`pnpm run version` 更新版本
 - **安全** — 外部資源必須通過 security-validator（eval/sudo/rm-rf 攔截 + 512KB 限制，.md 為警告模式）
 - **測試** — Node.js 原生 test runner，`node --test __tests__/*.test.mjs`

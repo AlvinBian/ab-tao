@@ -11,12 +11,14 @@ export const SETTINGS_PRESERVE_PATHS = [
 	"statusLine",
 	"statusLine.command",
 	"mcpServers",
-	"extraKnownMarketplaces",
 	"env",
 	"permissions.allow",
-	"permissions.deny",
 	"model",
 	"autoMemoryEnabled",
+	"enabledPlugins",
+	// ab-tao 內部命名空間：Console hooks UI 的 disabledHooks 等運行時狀態
+	// d:setup 不應將此命名空間視為 drift，應完整保留本地值
+	"_abTao",
 ];
 
 /**
@@ -47,8 +49,15 @@ export const FORBIDDEN_DIRS = [
  *   local-wins — 本地陣列完全勝出
  */
 export const SETTINGS_ARRAY_MERGE = {
-	"permissions.allow": "union",
 	"permissions.deny": "union",
-	enabledPlugins: "local-wins",
-	extraKnownMarketplaces: "union",
 };
+
+/**
+ * HOOKS_DEDUP_KEY：hooks 三元組 dedup 的 key 計算函式
+ * key = `${matcher}::${commands}` — 相同 (matcher, commands) 視為重複條目
+ *
+ * @param {object} entry hooks entry（含 matcher 與 hooks 陣列）
+ * @returns {string} dedup key
+ */
+export const HOOKS_DEDUP_KEY = (entry) =>
+	`${entry.matcher ?? ""}::${(entry.hooks ?? []).map((h) => h.command).join("|")}`;

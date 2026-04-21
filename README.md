@@ -123,7 +123,7 @@ pnpm run help              # 查看所有指令
 | `pnpm run d:scan`           | 技術棧掃描 + 技能庫生成         |
 | `pnpm run d:setup --doctor` | 環境診斷（setup Phase 1）       |
 | `pnpm run d:status`         | 配置狀態儀表板                  |
-| `pnpm run d:report`         | 瀏覽器 HTML Dashboard           |
+| `pnpm run cs:open`          | Web 後台控制台（HTML Dashboard 已取代）|
 | `pnpm run d:restore`        | 還原備份                        |
 | `pnpm run d:hooks`          | Hook 管理                       |
 | `pnpm run d:prefs-sync`     | iCloud 偏好檔同步               |

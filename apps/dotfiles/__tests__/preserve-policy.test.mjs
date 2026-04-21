@@ -43,6 +43,13 @@ test("SETTINGS_PRESERVE_PATHS：包含必要的保留路徑", () => {
 	}
 });
 
+test("SETTINGS_PRESERVE_PATHS：包含 _abTao（Console 運行時命名空間）", () => {
+	assert.ok(
+		SETTINGS_PRESERVE_PATHS.includes("_abTao"),
+		"_abTao 應在 SETTINGS_PRESERVE_PATHS，避免 d:setup 覆蓋 disabledHooks 等運行時狀態",
+	);
+});
+
 // ── ADDITIVE_DIRS vs FORBIDDEN_DIRS ──────────────────────────────
 
 test("ADDITIVE_DIRS 與 FORBIDDEN_DIRS 無重疊", () => {
@@ -93,8 +100,13 @@ test("SETTINGS_ARRAY_MERGE：策略值僅為 union 或 local-wins", () => {
 	}
 });
 
-test("SETTINGS_ARRAY_MERGE：permissions.allow 使用 union 策略", () => {
-	assert.equal(SETTINGS_ARRAY_MERGE["permissions.allow"], "union");
+test("SETTINGS_ARRAY_MERGE：permissions.allow 不在 arrayMerge（由 preserve pin 處理）", () => {
+	// allow 走 SETTINGS_PRESERVE_PATHS preserve（使用者偏好不被覆蓋），不走 arrayMerge
+	assert.equal(SETTINGS_ARRAY_MERGE["permissions.allow"], undefined);
+	assert.ok(
+		SETTINGS_PRESERVE_PATHS.includes("permissions.allow"),
+		"permissions.allow 應在 SETTINGS_PRESERVE_PATHS",
+	);
 });
 
 test("SETTINGS_ARRAY_MERGE：permissions.deny 使用 union 策略", () => {

@@ -1,0 +1,25 @@
+{
+	"description": "Chrome 記憶體與效能調校（寫入 Default/Preferences → profile 段）",
+	"preferences": {
+		"performance_tuning": {
+			"high_efficiency_mode": {
+				"state": 2
+			},
+			"battery_saver_mode": {
+				"state": 1
+			}
+		},
+		"tab_discard_threshold_mb": 4096,
+		"discarding_tabs_enabled": true,
+		"profile": {
+			"content_settings": {
+				"exceptions": {
+					"background_sync": { "*,*": { "last_modified": "0", "setting": 2 } },
+					"automatic_downloads": {
+						"*,*": { "last_modified": "0", "setting": 2 }
+					}
+				}
+			}
+		}
+	}
+}

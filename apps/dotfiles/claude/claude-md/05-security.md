@@ -11,4 +11,22 @@
 - 明確授權的批量操作（已在 CLAUDE.md 聲明範圍）
 
 禁止：在互動式對話中主動請求 bypassPermissions；禁止用於繞過安全 hook。
+
+## 外部通訊安全（強規則）
+
+### Slack 訊息發送
+❗ **嚴禁** 在未得到使用者明確指示的情況下呼叫任何 Slack 傳送工具
+（`slack_send_message` / `slack_schedule_message` 或任何傳送型 MCP Slack tool）。
+
+**明確指示**定義（必須同時符合）：
+- 使用者在當前 turn 直接使用動作語義：「發送這條 Slack」、「把這個發到 Slack」、「send this to slack」等
+- 或在 CLAUDE.md / plan 中預先聲明「此任務自動發送 Slack」
+
+**不屬於明確指示的情況（必須停下確認）**：
+- 「通知一下」、「讓 XX 知道」但未指定 Slack
+- 任務完成後自行判斷要通知
+- 使用者說「幫我起草一條 Slack 訊息」（起草 ≠ 發送）
+- 任何需要推斷是否發送的情況
+
+**強制流程**：如有疑問 → 呈現完整草稿 → 明確詢問「是否發送至 Slack？[Y/N]」→ 等待明確確認後才執行。
 </security>

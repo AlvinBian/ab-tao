@@ -1,0 +1,45 @@
+{
+	"description": "開發者常用搜尋引擎（透過 sqlite3 注入 Default/Web Data）",
+	"engines": [
+		{
+			"keyword": "mdn",
+			"short_name": "MDN Web Docs",
+			"url": "https://developer.mozilla.org/en-US/search?q={searchTerms}"
+		},
+		{
+			"keyword": "npm",
+			"short_name": "npm",
+			"url": "https://www.npmjs.com/search?q={searchTerms}"
+		},
+		{
+			"keyword": "caniuse",
+			"short_name": "Can I Use",
+			"url": "https://caniuse.com/?search={searchTerms}"
+		},
+		{
+			"keyword": "gh",
+			"short_name": "GitHub",
+			"url": "https://github.com/search?q={searchTerms}"
+		},
+		{
+			"keyword": "ghc",
+			"short_name": "GitHub Code",
+			"url": "https://github.com/search?type=code&q={searchTerms}"
+		},
+		{
+			"keyword": "ts",
+			"short_name": "TypeScript Docs",
+			"url": "https://www.typescriptlang.org/search?q={searchTerms}"
+		},
+		{
+			"keyword": "lin",
+			"short_name": "Linear",
+			"url": "https://linear.app/search?q={searchTerms}"
+		},
+		{
+			"keyword": "figma",
+			"short_name": "Figma",
+			"url": "https://www.figma.com/search?q={searchTerms}"
+		}
+	]
+}

@@ -117,6 +117,16 @@ export async function ensureEnvironment() {
 			actionLabel: null,
 			optional: true,
 		},
+		// optional — 缺失不阻塞安裝流程
+		{
+			name: "pr-stack",
+			ok: has("gh-stack") || has("gs"),
+			ver: has("gh-stack") ? ver("gh-stack") : has("gs") ? ver("gs") : null,
+			failLabel:
+				"未安裝（可選 — 堆疊 PR 工具，建議 brew install abhinav/tap/git-spice）",
+			actionLabel: null,
+			optional: true,
+		},
 	];
 
 	const missing = checks.filter((c) => !c.ok && !c.optional);

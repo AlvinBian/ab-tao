@@ -28,16 +28,26 @@ import { CLAUDE, P } from "../core/paths.mjs";
  * }}
  */
 export function readHooksDetail() {
-	// 嘗試讀取 hooks.json；若不存在或格式錯誤，回傳空結果
-	let raw = {};
+	// 優先讀取 settings.json.hooks（新架構），fallback 到 hooks.json（舊架構）
+	let hooksMap = {};
 	try {
-		raw = JSON.parse(fs.readFileSync(P.hooksJson, "utf8"));
+		const settings = JSON.parse(fs.readFileSync(P.settings, "utf8"));
+		if (settings.hooks && typeof settings.hooks === "object") {
+			hooksMap = settings.hooks;
+		}
 	} catch {
-		return { hooks: [], total: 0, healthy: 0 };
+		// fallback
+	}
+	if (Object.keys(hooksMap).length === 0) {
+		try {
+			const raw = JSON.parse(fs.readFileSync(P.hooksJson, "utf8"));
+			hooksMap = raw.hooks || {};
+		} catch {
+			return { hooks: [], total: 0, healthy: 0 };
+		}
 	}
 
-	// hooksMap 結構：{ [event]: Array<{ description?, hooks: [{ id?, command }] }> }
-	const hooksMap = raw.hooks || {};
+	// hooksMap 結構：{ [event]: Array<{ id?, description?, hooks: [{ id?, command }] }> }
 	// result：最終扁平化的 hook 項目清單（跨 event、跨 matcher 展開）
 	const result = [];
 
@@ -61,13 +71,15 @@ export function readHooksDetail() {
 
 				if (!isInline) {
 					// 從命令字串提取腳本路徑（支援 node / bash / sh 開頭的 .js/.mjs/.sh 檔）
-					const scriptPathMatch = cmd.match(
-						/(?:node\s+|bash\s+|sh\s+)([^\s;|&"']+\.(?:js|mjs|sh))/,
-					);
+					const scriptPathMatch =
+						cmd.match(
+							/(?:node\s+|bash\s+|sh\s+)([^\s;|&"']+\.(?:js|mjs|sh))/,
+						) || cmd.match(/^(\$HOME\/[^\s;|&"']+\.(?:js|mjs|sh))/);
 					if (scriptPathMatch) {
 						const HOME = process.env.HOME || "";
-						// 展開路徑中的 ~ 為真實 HOME 目錄
-						const scriptPath = scriptPathMatch[1].replace(/^~/, HOME);
+						const scriptPath = scriptPathMatch[1]
+							.replace(/^\$HOME/, HOME)
+							.replace(/^~/, HOME);
 						try {
 							// 先確認檔案存在（F_OK），再確認可執行（X_OK）
 							fs.accessSync(scriptPath, fs.constants.F_OK);
@@ -86,6 +98,7 @@ export function readHooksDetail() {
 				}
 
 				result.push({
+					id: matcher.id ?? null,
 					// 優先使用 matcher.description，其次 hook.id，最後回退為 "{event} hook"
 					name: matcher.description || hook.id || `${event} hook`,
 					event,
@@ -177,12 +190,23 @@ export function detectDrift() {
 
 		if (isDrift) {
 			const choice = choices[relPath];
+			// 從 installedAt 計算 drift 年齡（天數），供前端 DriftScatter 的 Y 軸使用
+			const installedAt = entry.installedAt || null;
+			const age = installedAt
+				? Math.max(
+						0,
+						Math.floor(
+							(Date.now() - new Date(installedAt).getTime()) / 86400000,
+						),
+					)
+				: 0;
 			results.push({
 				path: relPath,
 				localHash,
 				templateHash,
 				decision:
 					choice?.decision || (localHash === null ? "deleted" : "modified"),
+				age,
 			});
 		}
 	}

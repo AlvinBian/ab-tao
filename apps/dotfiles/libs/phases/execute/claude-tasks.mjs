@@ -20,6 +20,7 @@ import { listrLogger } from "../../cli/logger.mjs";
 import {
 	ADDITIVE_DIRS,
 	FORBIDDEN_DIRS,
+	HOOKS_DEDUP_KEY,
 	SETTINGS_ARRAY_MERGE,
 	SETTINGS_PRESERVE_PATHS,
 } from "../../config/preserve-policy.mjs";
@@ -35,6 +36,38 @@ import { runTarget } from "../../install/index.mjs";
 import { applyMcpServers } from "../../install/mcp-manager.mjs";
 import { t } from "../../ui/theme.mjs";
 import { withSpinner } from "../../ui/with-spinner.mjs";
+import { snapshotHashes, writeReloadMarker } from "./reload-marker.mjs";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Hooks 三元組 dedup：(matcher, command) 相同時保留 id 版本
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * 對同一 event 下的 hooks 陣列做 (matcher, command) 三元組 dedup。
+ * 若同一 (matcher, innerCommands) 組合同時存在匿名條目 + id 條目，保留 id 版本並移除匿名。
+ *
+ * @param {Array} arr hooks 陣列（同一 event 下）
+ * @returns {Array} dedup 後的陣列
+ */
+function _deduplicateHooks(arr) {
+	const seen = new Map(); // key = HOOKS_DEDUP_KEY(entry) → index in out
+	const out = [];
+	for (const entry of arr) {
+		const key = HOOKS_DEDUP_KEY(entry);
+		if (!seen.has(key)) {
+			seen.set(key, out.length);
+			out.push(entry);
+			continue;
+		}
+		// 重複 key：若新進來的有 id 而既存的沒有 → 用 id 版本替換
+		const prevIdx = seen.get(key);
+		if (entry.id && !out[prevIdx].id) {
+			out[prevIdx] = entry;
+		}
+		// 否則丟棄（已有更好或同等版本）
+	}
+	return out;
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Skills 結構遷移（三層 → 二層）
@@ -124,6 +157,7 @@ export async function deployGlobalConfig(opts) {
 		preferences = null,
 	} = opts;
 
+	const preHashes = snapshotHashes();
 	const installSelections = {};
 
 	// ── 階段 0：CCometixLine 安裝檢驗 + my-ccline.sh 部署 ──
@@ -213,11 +247,26 @@ export async function deployGlobalConfig(opts) {
 			});
 			// 用戶選擇的 model 總是優先（若有傳入）
 			if (model) merged.model = model;
-			fs.writeFileSync(
-				localSettingsPath,
-				`${JSON.stringify(merged, null, 2)}\n`,
-				"utf8",
-			);
+			// Strip empty extraKnownMarketplaces（Claude Code 不需要此空陣列）
+			if (
+				Array.isArray(merged.extraKnownMarketplaces) &&
+				merged.extraKnownMarketplaces.length === 0
+			) {
+				delete merged.extraKnownMarketplaces;
+			}
+			const mergedJson = `${JSON.stringify(merged, null, 2)}\n`;
+			let shouldWriteSettings = true;
+			if (fs.existsSync(localSettingsPath)) {
+				try {
+					shouldWriteSettings =
+						fs.readFileSync(localSettingsPath, "utf8") !== mergedJson;
+				} catch {
+					/* proceed with write */
+				}
+			}
+			if (shouldWriteSettings) {
+				fs.writeFileSync(localSettingsPath, mergedJson, "utf8");
+			}
 			if (logger)
 				logger(
 					t.ok(
@@ -232,10 +281,15 @@ export async function deployGlobalConfig(opts) {
 	}
 
 	// ── 階段 1c：合併 hooks/defs/*.json → settings.json.hooks ──
+	// 使用 (matcher, command) 三元組 dedup，清除匿名殘留並保留 id 版本
 	const defsDir = path.join(repoDir, "claude", "hooks", "defs");
 	if (fs.existsSync(defsDir) && fs.existsSync(localSettingsPath)) {
 		try {
-			const s = JSON.parse(fs.readFileSync(localSettingsPath, "utf8"));
+			const existingSettingsContent = fs.readFileSync(
+				localSettingsPath,
+				"utf8",
+			);
+			const s = JSON.parse(existingSettingsContent);
 			s.hooks = s.hooks ?? {};
 			let totalHooks = 0;
 			for (const file of fs
@@ -247,18 +301,19 @@ export async function deployGlobalConfig(opts) {
 				const event = def.event;
 				const handlers = def.hooks ?? [];
 				const existing = s.hooks[event] ?? [];
-				const existingIds = new Set(existing.map((h) => h.id));
-				s.hooks[event] = [
+				const existingIds = new Set(existing.map((h) => h.id).filter(Boolean));
+				const merged = [
 					...existing,
 					...handlers.filter((h) => !existingIds.has(h.id)),
 				];
+				// 三元組 dedup：(matcher, command) 相同時，保留有 id 的版本，清除匿名殘留
+				s.hooks[event] = _deduplicateHooks(merged);
 				totalHooks += handlers.length;
 			}
-			fs.writeFileSync(
-				localSettingsPath,
-				`${JSON.stringify(s, null, 2)}\n`,
-				"utf8",
-			);
+			const hooksJson = `${JSON.stringify(s, null, 2)}\n`;
+			if (hooksJson !== existingSettingsContent) {
+				fs.writeFileSync(localSettingsPath, hooksJson, "utf8");
+			}
 			if (logger)
 				logger(t.ok("hooks 已合併 settings.json", `${t.count(totalHooks)} 個`));
 		} catch (hooksErr) {
@@ -361,6 +416,7 @@ export async function deployGlobalConfig(opts) {
 		if (logger) logger(t.warn(`清理步驟失敗：${cleanErr.message}`));
 	}
 
+	writeReloadMarker({ preHashes });
 	return { ...installSelections, cclineInstalled };
 }
 

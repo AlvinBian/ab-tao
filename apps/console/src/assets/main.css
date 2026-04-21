@@ -1,0 +1,34 @@
+/* ab-tao Console 全域樣式 — 僅補充 Element Plus 未涵蓋的基礎樣式 */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: var(--el-font-family);
+	background-color: var(--el-bg-color-page);
+	color: var(--el-text-color-primary);
+}
+
+/* 程式碼 / mono 字體 */
+.mono {
+	font-family:
+		"JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+	font-size: 0.85em;
+}
+
+/* 截斷文字（表格用） */
+.truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

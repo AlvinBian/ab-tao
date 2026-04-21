@@ -17,7 +17,6 @@
 		"command": "~/.claude/ccline/my-ccline.sh"
 	},
 	"mcpServers": {},
-	"extraKnownMarketplaces": [],
 	"env": {
 		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
 		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",

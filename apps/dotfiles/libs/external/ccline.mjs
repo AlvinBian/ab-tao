@@ -17,11 +17,55 @@ const CCLINE_DEST_DIR = path.join(HOME, ".claude", "ccline");
 
 /**
  * 檢查 ccline 是否已安裝
+ *
+ * 使用三層偵測策略，避免 Node.js 進程 PATH 不含 pnpm global bin 造成誤判：
+ * 1. 權威查詢：pnpm 全域套件清單（不靠 PATH）
+ * 2. fallback：解析 pnpm global bin 路徑，直接 stat 檢查 binary 存在且可執行
+ * 3. 最後 fallback：原 which（保留向後兼容）
+ *
  * @returns {boolean}
  */
 export function isCclineInstalled() {
-	const result = spawnSync("which", [CCLINE_BIN], { stdio: "ignore" });
-	return result.status === 0;
+	// 1. 權威查詢：pnpm 全域套件清單（不靠 PATH）
+	const list = spawnSync("pnpm", ["list", "-g", CCLINE_PACKAGE, "--json"], {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	if (list.status === 0) {
+		try {
+			const arr = JSON.parse(list.stdout);
+			if (
+				Array.isArray(arr) &&
+				arr.some((r) => r.dependencies?.[CCLINE_PACKAGE])
+			) {
+				return true;
+			}
+		} catch {
+			/* fallthrough */
+		}
+	}
+
+	// 2. fallback：resolved bin path 檢查（size>0 + executable）
+	const pnpmBin = spawnSync("pnpm", ["bin", "-g"], {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	if (pnpmBin.status === 0) {
+		const resolvedBin = path.join(pnpmBin.stdout.trim(), CCLINE_BIN);
+		const st = fs.statSync(resolvedBin, { throwIfNoEntry: false });
+		if (st && st.size > 0) {
+			try {
+				fs.accessSync(resolvedBin, fs.constants.X_OK);
+				return true;
+			} catch {
+				/* 不可執行，視為未安裝 */
+			}
+		}
+	}
+
+	// 3. 最後 fallback：原 which（保留向後兼容）
+	const which = spawnSync("which", [CCLINE_BIN], { stdio: "ignore" });
+	return which.status === 0;
 }
 
 /**
@@ -94,8 +138,23 @@ export function deployCclineScript(repoDir) {
 	}
 
 	fs.mkdirSync(CCLINE_DEST_DIR, { recursive: true });
-	fs.copyFileSync(src, dest);
+
+	// idempotency：比對 size + content，相同則跳過複製
+	let shouldWrite = true;
+	if (fs.existsSync(dest)) {
+		const srcSt = fs.statSync(src);
+		const destSt = fs.statSync(dest);
+		if (srcSt.size === destSt.size) {
+			const srcBuf = fs.readFileSync(src);
+			const destBuf = fs.readFileSync(dest);
+			if (srcBuf.equals(destBuf)) shouldWrite = false;
+		}
+	}
+
+	if (shouldWrite) fs.copyFileSync(src, dest);
+
+	// chmod 永遠執行（冪等，修復 umask 或使用者改權限的 drift）
 	fs.chmodSync(dest, 0o755);
 
-	return { deployed: true, scriptPath: dest };
+	return { deployed: true, scriptPath: dest, skipped: !shouldWrite };
 }

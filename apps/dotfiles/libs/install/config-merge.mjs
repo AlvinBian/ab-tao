@@ -122,7 +122,9 @@ export function mergeConfig(template, local, policy) {
 	// ── 第二步：套用 preserve paths（強制 pin local 值）─────────────
 	for (const dotPath of preservePaths) {
 		if (hasPath(loc, dotPath)) {
-			setPath(result, dotPath, getPath(loc, dotPath));
+			const locVal = getPath(loc, dotPath);
+			if (locVal == null) continue; // null/undefined 不 pin，避免洗掉模板
+			setPath(result, dotPath, locVal);
 		}
 	}
 

@@ -42,6 +42,16 @@ servers:
       - work
     description: "Jira Issues + Confluence 文件（atlassian-mcp-server 統一處理）"
 
+  # ── 瀏覽器開發工具 ───────────────────────────────────────────────
+  chrome-devtools:
+    command: npx
+    args:
+      - "-y"
+      - "chrome-devtools-mcp@latest"
+    # 無 env_ref — 不需要 token，Node.js v20.19+ 即可
+    enabled_in_profiles: []   # 空 = 全 profile 均啟用
+    description: "Chrome DevTools MCP（Lighthouse · 記憶體洩漏偵測 · 無障礙除錯）"
+
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:
     command: npx

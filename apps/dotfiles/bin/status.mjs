@@ -4,7 +4,7 @@
  * pnpm run status — 配置管理中心
  *
  * 終端模式：互動式查看 + 管理所有配置
- * --report：生成 HTML Dashboard 在瀏覽器中查看
+ * HTML Dashboard 已整合至後台控制台，執行 pnpm run cs:open
  */
 
 import fs from "node:fs";
@@ -28,8 +28,6 @@ import { listProfiles, loadActiveProfile } from "../libs/install/profiles.mjs";
 const __dirname = getDirname(import.meta);
 const REPO = path.resolve(__dirname, "..");
 const CLAUDE_DIR = path.join(HOME, ".claude");
-const isReport = process.argv.includes("--report");
-
 // ═══════════════════════════════════════════════════════════════
 // Skills 掃描輔助函式
 // ═══════════════════════════════════════════════════════════════
@@ -145,23 +143,6 @@ async function main() {
 		spinner.stop("掃描完成");
 	}
 
-	if (isReport) {
-		const { collectUnifiedReportData } = await import(
-			"../libs/core/usage-scanner.mjs"
-		);
-		const { saveAndOpenReport } = await import(
-			"../libs/report/unified-renderer.mjs"
-		);
-		const s = p.spinner();
-		s.start("生成報告...");
-		const reportData = await collectUnifiedReportData();
-		s.stop("完成");
-		const outputPath = path.join(REPO, "dist", "report.html");
-		await saveAndOpenReport(reportData, outputPath);
-		p.log.success(`報告已開啟：${outputPath}`);
-		return;
-	}
-
 	await terminalMode(data);
 }
 
@@ -182,9 +163,9 @@ async function terminalMode(data) {
 				{ value: "detail", label: "📋 查看詳情", hint: "展開某個分類" },
 				{ value: "manage", label: "⚙️ 管理配置", hint: "增/刪/啟用/關閉" },
 				{
-					value: "report",
-					label: "📊 生成 HTML 報告",
-					hint: "在瀏覽器中查看完整 Dashboard",
+					value: "console",
+					label: "🖥 開啟 Web Console",
+					hint: "執行 pnpm run cs:open 啟動後台控制台",
 				},
 				{ value: "refresh", label: "🔄 重新掃描", hint: "更新使用數據" },
 				{ value: "exit", label: "👋 退出" },
@@ -210,20 +191,9 @@ async function terminalMode(data) {
 				showOverview(currentData);
 			}
 		}
-		if (action === "report") {
-			const { collectUnifiedReportData } = await import(
-				"../libs/core/usage-scanner.mjs"
-			);
-			const { saveAndOpenReport } = await import(
-				"../libs/report/unified-renderer.mjs"
-			);
-			const s = p.spinner();
-			s.start("生成報告...");
-			const reportData = await collectUnifiedReportData();
-			s.stop("完成");
-			const outputPath = path.join(REPO, "dist", "report.html");
-			await saveAndOpenReport(reportData, outputPath);
-			p.log.success(`報告已開啟：${outputPath}`);
+		if (action === "console") {
+			p.log.info("請執行 pnpm run cs:open 啟動 Web 後台控制台");
+			p.log.info("或使用 pnpm run cs:dev 進入開發模式");
 		}
 		if (action === "refresh") {
 			const spinner = p.spinner();
@@ -275,7 +245,7 @@ function showOverview(data) {
 		`  🪝 Hooks      ${hooks.reduce((s, h) => s + h.subHooks, 0)} 個子 hook（${hooks.length} 事件）`,
 	);
 	console.log(
-		`  🐚 ZSH        ${pc.green(zsh.installed.length)}/${zsh.available.length} 模組`,
+		`  🐚 ZSH        ${pc.green(zsh.installed.length)}/${zsh.available.length} 模組${zsh.loaderDuplicates > 0 ? pc.red(` ⚠ ~/.zshrc loader 重複 ${zsh.loaderDuplicates} 份（執行 grep -n "ab-tao:loader" ~/.zshrc 確認）`) : ""}`,
 	);
 	const rtkStatus = getRtkStatus();
 	console.log(

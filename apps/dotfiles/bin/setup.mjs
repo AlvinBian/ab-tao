@@ -39,6 +39,20 @@ const REPO = path.resolve(__dirname, "..");
 const PREVIEW_DIR = path.join(REPO, "dist", "preview");
 
 /**
+ * 檢查指定 pid 的程序是否仍在執行
+ * signal 0 = 純存在性檢查，不發送實際信號
+ */
+function _isPidAlive(pid) {
+	if (!pid || typeof pid !== "number") return false;
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * 確保環境就緒：備份原始配置 + 環境檢查
  */
 async function ensureSetupEnvironment() {
@@ -112,6 +126,116 @@ async function main() {
 	let prev = loadSession();
 	let projectFolders = loadProjectFolders(config, prev);
 	const selectedAiSources = prev?.selectedAiSources || [];
+
+	// ── 互斥鎖：防止 Console 在 d:setup 執行期間寫入配置 ──
+	const setupLockPath = path.join(HOME, ".claude", ".ab-tao", "state.lock");
+
+	function _releaseLock() {
+		try {
+			fs.unlinkSync(setupLockPath);
+		} catch {
+			/* 已被清除，忽略 */
+		}
+	}
+
+	try {
+		// 確保目錄存在
+		fs.mkdirSync(path.dirname(setupLockPath), { recursive: true });
+		// 檢查是否有 stale lock（pid 不存在）
+		if (fs.existsSync(setupLockPath)) {
+			try {
+				const existing = JSON.parse(fs.readFileSync(setupLockPath, "utf8"));
+				if (!existing.pid) {
+					// malformed lock — 視為 stale，直接清除
+					_releaseLock();
+				} else if (_isPidAlive(existing.pid)) {
+					// pid 仍存活 → 真正的 lock，不清除，也不阻塞（Console 只是唯讀）
+					p.log.warn(
+						`⚠ 偵測到另一個 d:setup 正在執行（pid: ${existing.pid}，since: ${existing.since}），繼續執行`,
+					);
+				} else {
+					// stale lock — pid 不存在，清理並繼續
+					p.log.warn(
+						`⚠ 偵測到 stale lock（pid: ${existing.pid} 已不存在），已清理`,
+					);
+					_releaseLock();
+				}
+			} catch {
+				// 無法解析 — 視為 stale，繼續覆寫
+				_releaseLock();
+			}
+		}
+		fs.writeFileSync(
+			setupLockPath,
+			JSON.stringify({
+				owner: "ab-tao_setup",
+				pid: process.pid,
+				since: new Date().toISOString(),
+			}),
+			"utf8",
+		);
+	} catch (err) {
+		// lock 寫入失敗不阻斷流程，僅警告
+		p.log.warn(`⚠ 無法寫入 state.lock: ${err.message}`);
+	}
+
+	// 確保退出時清理 lock
+	process.on("exit", _releaseLock);
+	// SIGINT / SIGTERM 觸發 process.exit()，進而觸發 exit 事件完成清理
+	process.on("SIGINT", () => process.exit(130));
+	process.on("SIGTERM", () => process.exit(143));
+	// uncaughtException：確保異常結束時也清除 lock
+	process.on("uncaughtException", (e) => {
+		_releaseLock();
+		console.error(e);
+		process.exit(1);
+	});
+
+	// ── ~/.zshrc 重複 loader 注入偵測 ──
+	const zshrcPath = path.join(HOME, ".zshrc");
+	if (fs.existsSync(zshrcPath)) {
+		const zshrcContent = fs.readFileSync(zshrcPath, "utf8");
+		// 計算起始標記出現次數（每個完整區塊只有一個起始標記）
+		const startMarkerCount = (
+			zshrcContent.match(/=== ab-tao:loader ===/g) ?? []
+		).length;
+		if (startMarkerCount >= 2) {
+			p.log.warn(
+				`⚠ ~/.zshrc 偵測到 ${startMarkerCount} 份 ab-tao:loader 注入，可能導致 ZSH 啟動緩慢`,
+			);
+			const { dedupeZshrc } = await import("../libs/install/zshrc-dedupe.mjs");
+			// 非互動模式（CI / pipe）自動修復
+			if (process.stdin.isTTY === false) {
+				p.log.info("非互動模式：自動修復重複注入...");
+				const result = dedupeZshrc(zshrcPath);
+				if (result.removed > 0) {
+					p.log.success(
+						`已自動修復：移除 ${result.removed} 份重複注入（備份：${result.backupPath}）`,
+					);
+				}
+			} else {
+				// 互動模式：詢問用戶
+				const fix = await p.confirm({
+					message: "執行 d:setup 前自動修復重複注入？",
+					initialValue: true,
+				});
+				if (p.isCancel(fix)) {
+					p.log.warn("已跳過修復，繼續安裝");
+				} else if (fix) {
+					const result = dedupeZshrc(zshrcPath);
+					if (result.removed > 0) {
+						p.log.success(
+							`已修復：移除 ${result.removed} 份重複注入（備份：${result.backupPath}）`,
+						);
+					}
+				} else {
+					p.log.warn(
+						"已跳過修復，可稍後執行：node apps/dotfiles/libs/install/zshrc-dedupe.mjs",
+					);
+				}
+			}
+		}
+	}
 
 	// 斷點續裝偵測
 	const incomplete = checkIncompleteSession();
@@ -233,23 +357,11 @@ async function main() {
 						label: "📊 查看/調整配置",
 						hint: "Claude / ZSH 健康狀態",
 					},
-					{ value: "report", label: "📋 查看上次報告" },
 				],
 			}),
 		);
 		if (action === BACK) {
 			p.outro("已取消");
-			process.exit(0);
-		}
-		if (action === "report") {
-			const reportPath = path.join(REPO, "dist", "report.html");
-			if (fs.existsSync(reportPath)) {
-				const { openInBrowser } = await import("../libs/report.mjs");
-				await openInBrowser(reportPath);
-			} else {
-				p.log.warn("⚠️ 找不到上次報告");
-			}
-			p.outro("已關閉");
 			process.exit(0);
 		}
 		if (action === "status") {
@@ -670,7 +782,7 @@ async function main() {
 
 	p.log.success(`✅ 全部完成（${loaded.length} 功能 · 耗時 ${elapsed}s）`);
 
-	// 儲存報告快取（供 d:report 的 collectUnifiedReportData 使用）
+	// 儲存快取供 Console API server 讀取（上次 d:setup 的 repos / techStacks）
 	// 快取路徑：~/.claude/.cache/last-report-data.json
 	try {
 		const cacheDir = path.join(HOME, ".claude", ".cache");
@@ -678,25 +790,31 @@ async function main() {
 		const cacheData = {
 			// 記錄寫入時間戳，供 Dashboard 顯示「上次 d:setup 時間」
 			timestamp: new Date().toISOString(),
-			// repos：保留完整物件格式（含 role / localPath），讓 renderTabRepos() 能顯示 meta 資訊
-			// 純字串格式（舊快取）保持向下相容，物件格式則明確傳遞 role 與本地路徑
+			// repos：強制物件格式 { name, role, localPath }，避免前端 Object.entries(string) 字符化亂碼
 			repos: (aggregatedPlan.repos || [])
 				.filter((r) => r && (r.fullName || typeof r === "string"))
 				.map((r) =>
 					typeof r === "string"
-						? r
+						? {
+								name: r,
+								role: roles[r] || "temp",
+								localPath: localPaths[r] || null,
+							}
 						: {
 								name: r.fullName,
-								// role 優先使用 aggregatedPlan 內的值，其次查 roles map，預設為 "temp"
 								role: r.role || roles[r.fullName] || "temp",
-								// localPath 優先使用 aggregatedPlan 內的值，其次查 localPaths map
 								localPath: r.localPath || localPaths[r.fullName] || null,
 							},
 				),
-			// techStacks：優先使用 pipelineResult（掃描結果），其次 aggregatedPlan
-			// 若仍為扁平陣列，包裝為 { uncategorized: [...] } 讓 renderer 啟動分類器
+			// techStacks：優先從 pipelineResult.categorizedTechs Map 取分類物件
+			// 退路順序：aggregatedPlan.techStacks（已分類）→ 扁平陣列包 uncategorized → 空物件
 			techStacks: (() => {
-				const ts = pipelineResult?.techStacks || aggregatedPlan.techStacks;
+				const cat = pipelineResult?.categorizedTechs;
+				if (cat instanceof Map && cat.size > 0)
+					return Object.fromEntries(
+						[...cat].map(([k, v]) => [k, [...v.keys()]]),
+					);
+				const ts = aggregatedPlan.techStacks;
 				if (Array.isArray(ts))
 					return ts.length > 0 ? { uncategorized: ts } : {};
 				return ts || {};
@@ -708,52 +826,6 @@ async function main() {
 		);
 	} catch {
 		/* 快取寫入失敗不影響安裝主流程 */
-	}
-
-	// 可選：生成 HTML 報告（僅在有 project 結果時）
-	if (pipelineResult) {
-		try {
-			const { generateReport, openInBrowser, saveReport } = await import(
-				"../libs/report.mjs"
-			);
-			// 簡化版報告：用 aggregated data
-			const repoRoles = Object.fromEntries(
-				aggregatedPlan.repos
-					.filter((r) => r.fullName)
-					.map((r) => [
-						r.fullName,
-						{
-							role: r.role || roles[r.fullName] || "temp",
-							localPath: r.localPath || localPaths[r.fullName] || null,
-						},
-					]),
-			);
-			const reportData = {
-				username: aggregatedPlan.repos[0]?.fullName?.split("/")[0] || "",
-				org: [
-					...new Set(
-						aggregatedPlan.repos
-							.map((r) => r.fullName?.split("/")[0])
-							.filter(Boolean),
-					),
-				].join(", "),
-				repos: aggregatedPlan.repos.map((r) => r.fullName).filter(Boolean),
-				repoRoles,
-				perRepoReasoning: pipelineResult?.perRepoReasoning || {},
-				installed: aggregatedSelections,
-				stacks: aggregatedPlan.techStacks,
-				mode: aggregatedPlan.mode,
-				timestamp: new Date().toISOString(),
-			};
-			const html = generateReport(reportData);
-			const reportPath = saveReport(html, path.join(REPO, "dist"));
-			const openIt = handleCancel(
-				await p.confirm({ message: "開啟安裝報告？", initialValue: false }),
-			);
-			if (openIt === true) await openInBrowser(reportPath);
-		} catch {
-			// 報告生成失敗不影響安裝結果
-		}
 	}
 
 	// 偵測 catppuccin preset → 提示安裝 Nerd Font

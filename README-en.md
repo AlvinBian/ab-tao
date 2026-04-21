@@ -123,7 +123,7 @@ pnpm run help              # view all commands
 | `pnpm run d:scan`      | Tech-stack scan + skill library generation       |
 | `pnpm run d:setup --doctor` | Environment diagnostics                     |
 | `pnpm run d:status`    | Config status dashboard                          |
-| `pnpm run d:report`    | Browser HTML Dashboard                           |
+| `pnpm run cs:open`     | Web admin console (replaced HTML Dashboard)      |
 | `pnpm run d:restore`   | Restore backup                                   |
 | `pnpm run d:hooks`     | Hook management                                  |
 | `pnpm run d:prefs-sync` | Sync preferences to/from iCloud                 |

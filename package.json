@@ -1,6 +1,6 @@
 {
 	"name": "ab-tao",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"private": true,
 	"description": "ab-tao: 統一 monorepo — dotfiles 環境管理 + 共用資源庫",
 	"type": "module",
@@ -26,11 +26,15 @@
 		"d:prefs-sync": "pnpm -C apps/dotfiles run prefs-sync",
 		"d:restore": "pnpm -C apps/dotfiles run restore",
 		"d:scan": "pnpm -C apps/dotfiles run scan",
-		"d:report": "pnpm -C apps/dotfiles run report",
+		"d:chrome": "pnpm -C apps/dotfiles run chrome",
 		"c:ai-sync": "pnpm -C packages/commons run ai-sync",
 		"c:skills": "pnpm -C packages/commons run skills",
 		"c:validate": "pnpm -C packages/commons run validate",
 		"c:translate": "pnpm -C packages/commons run translate",
+		"cs:dev": "pnpm -C apps/console run dev",
+		"cs:build": "pnpm -C apps/console run build",
+		"cs:open": "pnpm -C apps/console run build && pnpm -C apps/console run open",
+		"cs:serve": "pnpm -C apps/console run serve",
 		"changeset": "changeset add",
 		"changeset:status": "changeset status",
 		"version": "changeset version",
@@ -39,7 +43,9 @@
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"lefthook"
+			"esbuild",
+			"lefthook",
+			"vue-demi"
 		]
 	},
 	"devDependencies": {
