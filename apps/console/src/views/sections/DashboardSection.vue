@@ -1,17 +1,27 @@
 <script setup lang="ts">
-// Phase B.3 填充：Overview / State & Drift / Environment tabs
+import type { SectionTabConfig } from "@/components/SectionTabs.vue";
+import SectionTabs from "@/components/SectionTabs.vue";
+import EnvironmentView from "@/views/EnvironmentView.vue";
+import OverviewView from "@/views/OverviewView.vue";
+import StateView from "@/views/StateView.vue";
+
+const tabs: SectionTabConfig[] = [
+	{ key: "overview", label: "Overview" },
+	{ key: "state", label: "State & Drift" },
+	{ key: "environment", label: "Environment" },
+];
 </script>
 
 <template>
-  <div class="section-placeholder">
-    <h2>Dashboard</h2>
-    <p>Overview、State &amp; Drift、環境資訊 — Phase B.3 實作</p>
-  </div>
+  <SectionTabs :tabs="tabs" default-tab="overview">
+    <template #overview>
+      <OverviewView />
+    </template>
+    <template #state>
+      <StateView />
+    </template>
+    <template #environment>
+      <EnvironmentView />
+    </template>
+  </SectionTabs>
 </template>
-
-<style scoped>
-.section-placeholder {
-  padding: 20px;
-  color: var(--el-text-color-secondary);
-}
-</style>
