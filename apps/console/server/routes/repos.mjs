@@ -82,15 +82,18 @@ export async function reposRouter(req, res, url, json) {
 			const P = await getP();
 			const { readFile } = await import("node:fs/promises");
 
-			const [reposRaw, stacksRaw] = await Promise.all([
-				readFile(P.cachedRepos, "utf8").catch(() => "[]"),
-				readFile(P.cachedTechStacks, "utf8").catch(() => "{}"),
-			]);
+			// 資料來源：last-report-data.json（由 d:status 產生）
+			const cacheFile = `${P.cache}/last-report-data.json`;
+			const raw = await readFile(cacheFile, "utf8").catch(() => "{}");
+			const cached = JSON.parse(raw);
 
 			/** @type {Record<string, unknown>[]} */
-			const repos = JSON.parse(reposRaw);
+			const repos = Array.isArray(cached.repos) ? cached.repos : [];
 			/** @type {Record<string, string[]>} */
-			const stacks = JSON.parse(stacksRaw);
+			const stacks =
+				cached.techStacks && typeof cached.techStacks === "object"
+					? cached.techStacks
+					: {};
 
 			const enriched = repos.map((r) => enrichRepo(r, stacks));
 			json(res, 0, "ok", enriched);
