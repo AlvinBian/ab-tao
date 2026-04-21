@@ -14,18 +14,64 @@ const hasMemoryData = computed(
 );
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
+const totalMemory = computed(
+	() =>
+		(global.value?.memory?.length ?? 0) +
+		projects.value.reduce((s, p) => s + p.memory.length, 0),
+);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const totalPlans = computed(
+	() =>
+		(global.value?.plans?.length ?? 0) +
+		projects.value.reduce((s, p) => s + p.plans.length, 0),
+);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const totalTasks = computed(
+	() =>
+		(global.value?.tasks?.length ?? 0) +
+		projects.value.reduce((s, p) => s + p.tasks.length, 0),
+);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function decodeProjectName(encoded: string): string {
-	try {
-		return decodeURIComponent(encoded.replace(/-/g, "/"));
-	} catch {
-		return encoded;
+	// Claude encodes project paths by replacing '/' with '-', then prepending '-' for the leading slash.
+	// We strip the leading '-' and replace remaining '-' with '/', but project names can also contain '-'.
+	// Best effort: strip leading '-' and show as-is with '~' prefix substitution.
+	const stripped = encoded.startsWith("-") ? encoded.slice(1) : encoded;
+	// Replace the Users-{username} prefix with '~'
+	const homeMatch = stripped.match(/^Users-[^-]+(-|$)(.*)/);
+	if (homeMatch) {
+		const rest = homeMatch[2] ? homeMatch[2].replace(/-/g, "/") : "";
+		return rest ? `~/${rest}` : "~";
 	}
+	return encoded;
 }
 </script>
 
 <template>
   <div v-loading="store.loading">
     <el-alert v-if="store.error" :title="store.error" type="error" show-icon style="margin-bottom:16px" />
+
+    <!-- 總覽統計列 -->
+    <el-card shadow="never" style="margin-bottom:16px">
+      <el-row :gutter="16" align="middle">
+        <el-col :span="6">
+          <el-statistic title="Memory 檔案（全部）" :value="totalMemory" />
+          <div style="font-size:11px; color:var(--el-text-color-placeholder); margin-top:2px">全域 {{ global?.memory?.length ?? 0 }} + 專案 {{ totalMemory - (global?.memory?.length ?? 0) }}</div>
+        </el-col>
+        <el-col :span="6">
+          <el-statistic title="Plans（全部）" :value="totalPlans" />
+          <div style="font-size:11px; color:var(--el-text-color-placeholder); margin-top:2px">全域 {{ global?.plans?.length ?? 0 }} + 專案 {{ totalPlans - (global?.plans?.length ?? 0) }}</div>
+        </el-col>
+        <el-col :span="6">
+          <el-statistic title="Tasks（全部）" :value="totalTasks" />
+          <div style="font-size:11px; color:var(--el-text-color-placeholder); margin-top:2px">全域 {{ global?.tasks?.length ?? 0 }} + 專案 {{ totalTasks - (global?.tasks?.length ?? 0) }}</div>
+        </el-col>
+        <el-col :span="6">
+          <el-statistic title="有資料的專案" :value="projects.length" />
+        </el-col>
+      </el-row>
+    </el-card>
 
     <!-- Memory 分佈圖 -->
     <el-card v-if="hasMemoryData" shadow="never" style="margin-bottom:16px">
