@@ -1,17 +1,27 @@
 <script setup lang="ts">
-// Phase B.2 填充：MCP / Repos / Tech Stacks tabs
+import type { SectionTabConfig } from "@/components/SectionTabs.vue";
+import SectionTabs from "@/components/SectionTabs.vue";
+import McpView from "@/views/McpView.vue";
+import ReposView from "@/views/ReposView.vue";
+import TechStacksView from "@/views/TechStacksView.vue";
+
+const tabs: SectionTabConfig[] = [
+	{ key: "mcp", label: "MCP Servers" },
+	{ key: "repos", label: "Repos" },
+	{ key: "techstacks", label: "Tech Stacks" },
+];
 </script>
 
 <template>
-  <div class="section-placeholder">
-    <h2>Integrations</h2>
-    <p>MCP 伺服器、Repos、技術棧 — Phase B.2 實作</p>
-  </div>
+  <SectionTabs :tabs="tabs" default-tab="mcp">
+    <template #mcp>
+      <McpView />
+    </template>
+    <template #repos>
+      <ReposView />
+    </template>
+    <template #techstacks>
+      <TechStacksView />
+    </template>
+  </SectionTabs>
 </template>
-
-<style scoped>
-.section-placeholder {
-  padding: 20px;
-  color: var(--el-text-color-secondary);
-}
-</style>

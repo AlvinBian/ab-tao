@@ -38,7 +38,7 @@ watch(
 	},
 );
 
-// 使用者點擊 tab → 更新 URL（replace 不累積歷史堆疊）
+// biome-ignore lint/correctness/noUnusedVariables: used in template via @tab-change
 function onTabChange(key: string): void {
 	activeTab.value = key;
 	void router.replace({ query: { ...route.query, tab: key } });

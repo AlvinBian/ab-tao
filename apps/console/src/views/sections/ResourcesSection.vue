@@ -1,17 +1,42 @@
 <script setup lang="ts">
-// Phase B.2 填充：Memory / Skills / Commands / Agents / Rules tabs
+import { onMounted } from "vue";
+import type { SectionTabConfig } from "@/components/SectionTabs.vue";
+import SectionTabs from "@/components/SectionTabs.vue";
+import { useStatusStore } from "@/stores/status";
+import MemoryView from "@/views/MemoryView.vue";
+import AgentsView from "@/views/resources/AgentsView.vue";
+import CommandsView from "@/views/resources/CommandsView.vue";
+import RulesView from "@/views/resources/RulesView.vue";
+import SkillsView from "@/views/resources/SkillsView.vue";
+
+const statusStore = useStatusStore();
+onMounted(() => statusStore.fetchData());
+
+const tabs: SectionTabConfig[] = [
+	{ key: "memory", label: "Memory & Plans" },
+	{ key: "skills", label: "Skills" },
+	{ key: "commands", label: "Commands" },
+	{ key: "agents", label: "Agents" },
+	{ key: "rules", label: "Rules" },
+];
 </script>
 
 <template>
-  <div class="section-placeholder">
-    <h2>Resources</h2>
-    <p>Memory &amp; Plans、Skills、Commands、Agents、Rules — Phase B.2 實作</p>
-  </div>
+  <SectionTabs :tabs="tabs" default-tab="memory">
+    <template #memory>
+      <MemoryView />
+    </template>
+    <template #skills>
+      <SkillsView />
+    </template>
+    <template #commands>
+      <CommandsView />
+    </template>
+    <template #agents>
+      <AgentsView />
+    </template>
+    <template #rules>
+      <RulesView />
+    </template>
+  </SectionTabs>
 </template>
-
-<style scoped>
-.section-placeholder {
-  padding: 20px;
-  color: var(--el-text-color-secondary);
-}
-</style>
