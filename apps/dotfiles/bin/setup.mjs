@@ -129,24 +129,40 @@ async function main() {
 
 	// ── 互斥鎖：防止 Console 在 d:setup 執行期間寫入配置 ──
 	const setupLockPath = path.join(HOME, ".claude", ".ab-tao", "state.lock");
+
+	function _releaseLock() {
+		try {
+			fs.unlinkSync(setupLockPath);
+		} catch {
+			/* 已被清除，忽略 */
+		}
+	}
+
 	try {
+		// 確保目錄存在
+		fs.mkdirSync(path.dirname(setupLockPath), { recursive: true });
 		// 檢查是否有 stale lock（pid 不存在）
 		if (fs.existsSync(setupLockPath)) {
 			try {
 				const existing = JSON.parse(fs.readFileSync(setupLockPath, "utf8"));
-				const isAlive = _isPidAlive(existing.pid);
-				if (isAlive) {
-					console.error(
-						`✗ d:setup 已在執行中（pid: ${existing.pid}，since: ${existing.since}）`,
+				if (!existing.pid) {
+					// malformed lock — 視為 stale，直接清除
+					_releaseLock();
+				} else if (_isPidAlive(existing.pid)) {
+					// pid 仍存活 → 真正的 lock，不清除，也不阻塞（Console 只是唯讀）
+					p.log.warn(
+						`⚠ 偵測到另一個 d:setup 正在執行（pid: ${existing.pid}，since: ${existing.since}），繼續執行`,
 					);
-					process.exit(1);
+				} else {
+					// stale lock — pid 不存在，清理並繼續
+					p.log.warn(
+						`⚠ 偵測到 stale lock（pid: ${existing.pid} 已不存在），已清理`,
+					);
+					_releaseLock();
 				}
-				// stale lock — 清理並繼續
-				console.warn(
-					`⚠ 偵測到 stale lock（pid: ${existing.pid} 已不存在），已清理`,
-				);
 			} catch {
 				// 無法解析 — 視為 stale，繼續覆寫
+				_releaseLock();
 			}
 		}
 		fs.writeFileSync(
@@ -160,20 +176,20 @@ async function main() {
 		);
 	} catch (err) {
 		// lock 寫入失敗不阻斷流程，僅警告
-		console.warn(`⚠ 無法寫入 state.lock: ${err.message}`);
+		p.log.warn(`⚠ 無法寫入 state.lock: ${err.message}`);
 	}
 
 	// 確保退出時清理 lock
-	process.on("exit", () => {
-		try {
-			fs.unlinkSync(setupLockPath);
-		} catch {
-			/* 已被清除，忽略 */
-		}
-	});
+	process.on("exit", _releaseLock);
 	// SIGINT / SIGTERM 觸發 process.exit()，進而觸發 exit 事件完成清理
 	process.on("SIGINT", () => process.exit(130));
 	process.on("SIGTERM", () => process.exit(143));
+	// uncaughtException：確保異常結束時也清除 lock
+	process.on("uncaughtException", (e) => {
+		_releaseLock();
+		console.error(e);
+		process.exit(1);
+	});
 
 	// ── ~/.zshrc 重複 loader 注入偵測 ──
 	const zshrcPath = path.join(HOME, ".zshrc");
