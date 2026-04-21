@@ -254,6 +254,18 @@ export async function deployGlobalConfig(opts) {
 			) {
 				delete merged.extraKnownMarketplaces;
 			}
+			// ── Slack 通知環境變數設定 ──
+			try {
+				const { setupSlackNotify } = await import(
+					"../../install/slack-setup.mjs"
+				);
+				const slackEnv = await setupSlackNotify(merged.env ?? {});
+				if (slackEnv) {
+					merged.env = { ...(merged.env ?? {}), ...slackEnv };
+				}
+			} catch {
+				/* 非阻塞，Slack 設定失敗不影響主流程 */
+			}
 			const mergedJson = `${JSON.stringify(merged, null, 2)}\n`;
 			let shouldWriteSettings = true;
 			if (fs.existsSync(localSettingsPath)) {
