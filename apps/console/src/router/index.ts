@@ -1,151 +1,119 @@
-import { createRouter, createWebHistory } from "vue-router";
+import {
+	createRouter,
+	createWebHistory,
+	type RouteLocationGeneric,
+} from "vue-router";
+
+// ── 舊路由向後相容映射（24 條）────────────────────────────────────────────────
+const REDIRECT_MAP: Record<string, { path: string; tab: string }> = {
+	"/overview": { path: "/dashboard", tab: "overview" },
+	"/state": { path: "/dashboard", tab: "state" },
+	"/environment": { path: "/dashboard", tab: "environment" },
+	"/memory": { path: "/resources", tab: "memory" },
+	"/resources/skills": { path: "/resources", tab: "skills" },
+	"/resources/commands": { path: "/resources", tab: "commands" },
+	"/resources/agents": { path: "/resources", tab: "agents" },
+	"/resources/rules": { path: "/resources", tab: "rules" },
+	"/mcp": { path: "/integrations", tab: "mcp" },
+	"/hooks": { path: "/integrations", tab: "hooks" },
+	"/repos": { path: "/integrations", tab: "repos" },
+	"/techstacks": { path: "/integrations", tab: "techstacks" },
+	"/tech-stacks": { path: "/integrations", tab: "techstacks" },
+	"/config/permissions": { path: "/configuration", tab: "permissions" },
+	"/config/hooks": { path: "/configuration", tab: "hooks" },
+	"/config/ai": { path: "/configuration", tab: "ai" },
+	"/config/ai-model": { path: "/configuration", tab: "ai" },
+	"/config/plugins": { path: "/configuration", tab: "plugins" },
+	"/config/preferences": { path: "/configuration", tab: "preferences" },
+	"/config/chrome": { path: "/configuration", tab: "chrome" },
+	"/actions/setup": { path: "/actions", tab: "setup" },
+	"/actions/scan": { path: "/actions", tab: "scan" },
+	"/actions/sync": { path: "/actions", tab: "sync" },
+	"/actions/restore": { path: "/actions", tab: "restore" },
+};
+
+const redirectRoutes = Object.entries(REDIRECT_MAP).map(
+	([from, { path, tab }]) => ({
+		path: from,
+		redirect: (to: RouteLocationGeneric) => ({
+			path,
+			query: { ...to.query, tab },
+		}),
+	}),
+);
+
+// ── 6 主路由（lazy import）────────────────────────────────────────────────────
+const sectionRoutes = [
+	{
+		path: "dashboard",
+		name: "dashboard",
+		meta: { title: "Dashboard" },
+		component: () => import("@/views/sections/DashboardSection.vue"),
+	},
+	{
+		path: "resources",
+		name: "resources",
+		meta: { title: "Resources" },
+		component: () => import("@/views/sections/ResourcesSection.vue"),
+	},
+	{
+		path: "integrations",
+		name: "integrations",
+		meta: { title: "Integrations" },
+		component: () => import("@/views/sections/IntegrationsSection.vue"),
+	},
+	{
+		path: "configuration",
+		name: "configuration",
+		meta: { title: "Configuration" },
+		component: () => import("@/views/sections/ConfigurationSection.vue"),
+	},
+	{
+		path: "actions",
+		name: "actions",
+		meta: { title: "Actions" },
+		component: () => import("@/views/sections/ActionsSection.vue"),
+	},
+	{
+		path: "about",
+		name: "about",
+		meta: { title: "About" },
+		component: () => import("@/views/sections/AboutSection.vue"),
+	},
+];
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
 	routes: [
-		{
-			path: "/",
-			redirect: "/overview",
-		},
+		{ path: "/", redirect: "/dashboard" },
 		{
 			path: "/",
 			component: () => import("@/layouts/ConsoleLayout.vue"),
-			children: [
-				{
-					path: "overview",
-					name: "overview",
-					meta: { title: "總覽" },
-					component: () => import("@/views/OverviewView.vue"),
-				},
-				{
-					path: "hooks",
-					name: "hooks",
-					meta: { title: "Hooks 健檢狀態" },
-					component: () => import("@/views/HooksView.vue"),
-				},
-				{
-					path: "state",
-					name: "state",
-					meta: { title: "State & Drift" },
-					component: () => import("@/views/StateView.vue"),
-				},
-				{
-					path: "memory",
-					name: "memory",
-					meta: { title: "Memory & Plans" },
-					component: () => import("@/views/MemoryView.vue"),
-				},
-				{
-					path: "mcp",
-					name: "mcp",
-					meta: { title: "MCP 伺服器" },
-					component: () => import("@/views/McpView.vue"),
-				},
-				{
-					path: "repos",
-					name: "repos",
-					meta: { title: "Repos" },
-					component: () => import("@/views/ReposView.vue"),
-				},
-				{
-					path: "techstacks",
-					name: "techstacks",
-					meta: { title: "技術棧" },
-					component: () => import("@/views/TechStacksView.vue"),
-				},
-				{
-					path: "environment",
-					name: "environment",
-					meta: { title: "環境資訊" },
-					component: () => import("@/views/EnvironmentView.vue"),
-				},
-				{
-					path: "resources/skills",
-					name: "resources-skills",
-					meta: { title: "Skills" },
-					component: () => import("@/views/resources/SkillsView.vue"),
-				},
-				{
-					path: "resources/commands",
-					name: "resources-commands",
-					meta: { title: "Commands" },
-					component: () => import("@/views/resources/CommandsView.vue"),
-				},
-				{
-					path: "resources/agents",
-					name: "resources-agents",
-					meta: { title: "Agents" },
-					component: () => import("@/views/resources/AgentsView.vue"),
-				},
-				{
-					path: "resources/rules",
-					name: "resources-rules",
-					meta: { title: "Rules" },
-					component: () => import("@/views/resources/RulesView.vue"),
-				},
-				{
-					path: "config/permissions",
-					name: "config-permissions",
-					meta: { title: "Permissions" },
-					component: () => import("@/views/config/PermissionsView.vue"),
-				},
-				{
-					path: "config/hooks",
-					name: "config-hooks",
-					meta: { title: "Hooks 啟用設定" },
-					component: () => import("@/views/config/HooksConfigView.vue"),
-				},
-				{
-					path: "config/ai",
-					name: "config-ai",
-					meta: { title: "AI 模型" },
-					component: () => import("@/views/config/AiModelView.vue"),
-				},
-				{
-					path: "config/plugins",
-					name: "config-plugins",
-					meta: { title: "Claude 擴充套件" },
-					component: () => import("@/views/config/PluginsView.vue"),
-				},
-				{
-					path: "config/preferences",
-					name: "config-preferences",
-					meta: { title: "偏好設定" },
-					component: () => import("@/views/config/PreferencesView.vue"),
-				},
-				{
-					path: "config/chrome",
-					name: "config-chrome",
-					meta: { title: "Chrome 優化" },
-					component: () => import("@/views/config/ChromeView.vue"),
-				},
-				{
-					path: "actions/setup",
-					name: "actions-setup",
-					meta: { title: "Setup 精靈" },
-					component: () => import("@/views/actions/SetupWizardView.vue"),
-				},
-				{
-					path: "actions/scan",
-					name: "actions-scan",
-					meta: { title: "技術棧掃描" },
-					component: () => import("@/views/actions/ScanView.vue"),
-				},
-				{
-					path: "actions/sync",
-					name: "actions-sync",
-					meta: { title: "Sync 同步" },
-					component: () => import("@/views/actions/SyncView.vue"),
-				},
-				{
-					path: "actions/restore",
-					name: "actions-restore",
-					meta: { title: "還原備份" },
-					component: () => import("@/views/actions/RestoreView.vue"),
-				},
-			],
+			children: sectionRoutes,
 		},
+		...redirectRoutes,
+		{ path: "/:pathMatch(.*)*", redirect: "/dashboard" },
 	],
+});
+
+// ── ChunkLoadError 全局 retry（最多 3 次）────────────────────────────────────
+const chunkRetryCount = new Map<string, number>();
+
+router.onError((error, to) => {
+	const isChunkError =
+		error.message.includes("Failed to fetch dynamically imported module") ||
+		error.message.includes("Importing a module script failed");
+	if (!isChunkError) return;
+
+	const key = String(to.fullPath);
+	const attempts = (chunkRetryCount.get(key) ?? 0) + 1;
+	chunkRetryCount.set(key, attempts);
+
+	if (attempts <= 3) {
+		void router.replace(to.fullPath);
+	} else {
+		chunkRetryCount.delete(key);
+	}
 });
 
 export default router;
