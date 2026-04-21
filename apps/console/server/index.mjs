@@ -14,6 +14,7 @@ import { aiUsageRouter } from "./routes/ai-usage.mjs";
 import { chromeRouter } from "./routes/chrome.mjs";
 import { hooksRouter } from "./routes/hooks.mjs";
 import { mcpRouter } from "./routes/mcp.mjs";
+import { reposRouter } from "./routes/repos.mjs";
 import { resourcesRouter } from "./routes/resources.mjs";
 import { restoreRouter } from "./routes/restore.mjs";
 import { scanRouter } from "./routes/scan.mjs";
@@ -138,6 +139,12 @@ const server = createServer(async (req, res) => {
 		// /api/mcp/* — MCP Servers / Plugins / Marketplace
 		if (url.pathname.startsWith("/api/mcp")) {
 			const handled = await mcpRouter(req, res, url, json);
+			if (handled) return;
+		}
+
+		// /api/repos/* — Repo 清單與掃描
+		if (url.pathname.startsWith("/api/repos")) {
+			const handled = await reposRouter(req, res, url, json);
 			if (handled) return;
 		}
 

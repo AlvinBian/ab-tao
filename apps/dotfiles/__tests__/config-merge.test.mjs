@@ -185,3 +185,34 @@ test("mergeConfig：深層巢狀物件遞迴合併", () => {
 	// KEY_C：local 獨有，保留
 	assert.equal(result.env.KEY_C, "local-c");
 });
+
+test("mergeConfig：_abTao 命名空間（template 無此 key）→ local 完整保留", () => {
+	const template = {
+		model: "sonnet",
+		permissions: { allow: [] },
+	};
+	const local = {
+		model: "opus",
+		permissions: { allow: ["Bash"] },
+		_abTao: {
+			disabledHooks: {
+				PreToolUse: [{ matcher: "Bash", hooks: [{ command: "rtk.sh" }] }],
+			},
+			schemaVersion: "1.0.0",
+		},
+	};
+	const policy = {
+		preservePaths: ["_abTao"],
+		arrayMerge: {},
+	};
+
+	const result = mergeConfig(template, local, policy);
+	// _abTao 不在 template → local 完整保留（不被清除或覆蓋）
+	assert.ok(Object.hasOwn(result, "_abTao"), "_abTao 應保留在合併結果中");
+	assert.deepEqual(result._abTao, local._abTao);
+	// disabledHooks 結構完整
+	assert.ok(
+		Array.isArray(result._abTao.disabledHooks.PreToolUse),
+		"disabledHooks.PreToolUse 應為陣列",
+	);
+});

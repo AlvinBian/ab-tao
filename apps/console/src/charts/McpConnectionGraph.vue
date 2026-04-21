@@ -9,7 +9,12 @@ import type { ECOption } from "./types";
 const props = defineProps<{
 	servers: Array<{ name: string; type?: string; toolCount?: number }>;
 	plugins?: Array<{ name: string; enabled: boolean }>;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const primary = useElCssVar("--el-color-primary", "#409eff");
 const success = useElCssVar("--el-color-success", "#67c23a");
@@ -99,11 +104,14 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
-  <v-chart
-    v-if="hasData"
-    :option="option"
-    :style="{ height: '300px', width: '100%' }"
-    autoresize
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="hasData">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+    />
+  </template>
   <el-empty v-else description="無連線資料" :image-size="40" />
 </template>

@@ -8,9 +8,13 @@ onMounted(() => store.fetchData());
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const appVersion = import.meta.env.VITE_APP_VERSION ?? "dev";
 // biome-ignore lint/correctness/noUnusedVariables: used in template
-const doctorData = computed(() => store.data?.doctor);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const loading = computed(() => store.loading);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const overview = computed(() => store.data?.overview);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const skills = computed(() => store.data?.skills ?? []);
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const plugins = computed(() => store.data?.plugins ?? []);
 </script>
 
 <template>
@@ -19,33 +23,32 @@ const loading = computed(() => store.loading);
       <el-descriptions-item label="版本">
         <el-tag type="info">{{ appVersion }}</el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="文件">
-        <el-link type="primary" href="https://github.com/alvin-b/ab-tao" target="_blank">
-          GitHub
-        </el-link>
+      <el-descriptions-item label="健康度">
+        <el-progress
+          v-if="overview"
+          :percentage="overview.healthPct"
+          :status="overview.healthPct >= 80 ? 'success' : overview.healthPct >= 50 ? 'warning' : 'exception'"
+          style="width: 200px"
+        />
+        <span v-else>—</span>
+      </el-descriptions-item>
+      <el-descriptions-item label="Skills 安裝數">
+        {{ skills.length }}
+      </el-descriptions-item>
+      <el-descriptions-item label="Plugins 安裝數">
+        {{ plugins.length }}
       </el-descriptions-item>
     </el-descriptions>
 
     <el-divider />
 
-    <div v-if="loading">
-      <el-skeleton :rows="4" animated />
-    </div>
-    <div v-else-if="doctorData">
-      <h3 style="margin-bottom: 12px">模組安裝狀態</h3>
-      <el-table :data="Object.entries(doctorData)" stripe size="small">
-        <el-table-column label="模組" min-width="180">
-          <template #default="{ row }">{{ row[0] }}</template>
-        </el-table-column>
-        <el-table-column label="狀態" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row[1] ? 'success' : 'danger'" size="small">
-              {{ row[1] ? '已安裝' : '未安裝' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
-    <el-empty v-else description="無法取得模組狀態" />
+    <el-skeleton v-if="loading" :rows="4" animated />
+    <el-empty v-else-if="!overview" description="無法取得狀態資訊" />
+    <el-descriptions v-else title="系統資訊" :column="2" border>
+      <el-descriptions-item label="已安裝總計">{{ overview.totalInstalled }}</el-descriptions-item>
+      <el-descriptions-item label="已使用總計">{{ overview.totalUsed }}</el-descriptions-item>
+      <el-descriptions-item label="指令使用率">{{ (overview.commandUsageRate * 100).toFixed(1) }}%</el-descriptions-item>
+      <el-descriptions-item label="Agent 使用率">{{ (overview.agentUsageRate * 100).toFixed(1) }}%</el-descriptions-item>
+    </el-descriptions>
   </div>
 </template>

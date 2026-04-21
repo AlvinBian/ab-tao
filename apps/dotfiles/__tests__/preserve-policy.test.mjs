@@ -43,6 +43,13 @@ test("SETTINGS_PRESERVE_PATHS：包含必要的保留路徑", () => {
 	}
 });
 
+test("SETTINGS_PRESERVE_PATHS：包含 _abTao（Console 運行時命名空間）", () => {
+	assert.ok(
+		SETTINGS_PRESERVE_PATHS.includes("_abTao"),
+		"_abTao 應在 SETTINGS_PRESERVE_PATHS，避免 d:setup 覆蓋 disabledHooks 等運行時狀態",
+	);
+});
+
 // ── ADDITIVE_DIRS vs FORBIDDEN_DIRS ──────────────────────────────
 
 test("ADDITIVE_DIRS 與 FORBIDDEN_DIRS 無重疊", () => {

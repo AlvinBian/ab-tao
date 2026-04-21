@@ -12,7 +12,12 @@ const props = defineProps<{
 	hookHealthRate: number;
 	skillEnabledRate: number;
 	envScore: number;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const primary = useElCssVar("--el-color-primary", "#409eff");
 const fill = useElCssVar("--el-color-primary-light-7", "#c6e2ff");
@@ -57,9 +62,12 @@ const option = computed<ECOption>(() => ({
 </script>
 
 <template>
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
   <v-chart
+    v-else
     :option="option"
-    :style="{ height: '260px', width: '100%' }"
+    :style="{ height: heightPx, width: '100%' }"
     autoresize
   />
 </template>

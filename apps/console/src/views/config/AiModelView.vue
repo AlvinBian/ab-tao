@@ -77,7 +77,7 @@ function reset() {
       style="margin-bottom:16px"
     />
 
-    <el-card shadow="never" style="max-width:600px">
+    <el-card shadow="never">
       <template #header><span>AI 模型設定</span></template>
 
       <el-form label-width="120px" label-position="left">

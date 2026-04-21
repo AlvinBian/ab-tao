@@ -14,7 +14,12 @@ const props = defineProps<{
 	cclineStatusLineConfigured: boolean;
 	envMissingCount: number;
 	envEmptyCount: number;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const successColor = useElCssVar("--el-color-success", "#67c23a");
 const warningColor = useElCssVar("--el-color-warning", "#e6a23c");
@@ -96,9 +101,12 @@ const option = computed<ECOption>(() => ({
 </script>
 
 <template>
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
   <v-chart
+    v-else
     :option="option"
-    :style="{ height: '220px', width: '100%' }"
+    :style="{ height: heightPx, width: '100%' }"
     autoresize
   />
 </template>

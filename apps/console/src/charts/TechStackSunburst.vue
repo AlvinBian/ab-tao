@@ -8,7 +8,15 @@ import type { ECOption } from "./types";
 
 const props = defineProps<{
 	stacks: Record<string, string[]>;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const hasData = computed(() => Object.keys(props.stacks ?? {}).length > 0);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const option = computed<ECOption>(() => {
@@ -59,9 +67,13 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <el-empty v-else-if="!hasData" description="無技術棧資料" :image-size="40" />
   <v-chart
+    v-else
     :option="option"
-    :style="{ height: '380px', width: '100%' }"
+    :style="{ height: heightPx, width: '100%' }"
     autoresize
   />
 </template>

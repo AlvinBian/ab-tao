@@ -16,7 +16,23 @@ interface DriftItem {
 
 const props = defineProps<{
 	drift: DriftItem[];
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+function isEmpty(d: unknown): boolean {
+	return (
+		d == null ||
+		(Array.isArray(d) && d.length === 0) ||
+		(typeof d === "object" &&
+			!Array.isArray(d) &&
+			Object.keys(d as object).length === 0)
+	);
+}
 
 const dangerColor = useElCssVar("--el-color-danger", "#f56c6c");
 const warningColor = useElCssVar("--el-color-warning", "#e6a23c");
@@ -76,9 +92,13 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <el-empty v-else-if="isEmpty(drift)" description="無 Drift 資料" :image-size="40" />
   <v-chart
+    v-else
     :option="option"
-    :style="{ height: '240px', width: '100%' }"
+    :style="{ height: heightPx, width: '100%' }"
     autoresize
   />
 </template>

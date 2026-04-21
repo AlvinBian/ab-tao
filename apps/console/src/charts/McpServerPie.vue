@@ -8,7 +8,12 @@ import type { ECOption } from "./types";
 
 const props = defineProps<{
 	servers: Array<{ name: string; type?: string }>;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const primary = useElCssVar("--el-color-primary", "#409eff");
 const warning = useElCssVar("--el-color-warning", "#e6a23c");
@@ -56,11 +61,14 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
-  <v-chart
-    v-if="servers.length > 0"
-    :option="option"
-    :style="{ height: '260px', width: '100%' }"
-    autoresize
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="servers.length > 0">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+    />
+  </template>
   <el-empty v-else description="無 MCP Server" :image-size="40" />
 </template>

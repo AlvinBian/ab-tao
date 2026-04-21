@@ -9,7 +9,12 @@ import type { ECOption } from "./types";
 const props = defineProps<{
 	projects: Array<{ label: string; count: number }>;
 	topN?: number;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const emit = defineEmits<{ select: [label: string] }>();
 
@@ -67,12 +72,15 @@ function handleClick(params: { name: string }) {
 </script>
 
 <template>
-  <v-chart
-    v-if="hasData"
-    :option="option"
-    :style="{ height: '260px', width: '100%' }"
-    autoresize
-    @click="handleClick"
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="hasData">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+      @click="handleClick"
+    />
+  </template>
   <el-empty v-else description="無 Memory 資料" :image-size="40" />
 </template>

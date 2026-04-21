@@ -12,7 +12,12 @@ const props = defineProps<{
 		exists: boolean;
 		executable: boolean;
 	}>;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const successColor = useElCssVar("--el-color-success", "#67c23a");
 const dangerColor = useElCssVar("--el-color-danger", "#f56c6c");
@@ -76,11 +81,14 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
-  <v-chart
-    v-if="hooks.length > 0"
-    :option="option"
-    :style="{ height: '240px', width: '100%' }"
-    autoresize
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="hooks.length > 0">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+    />
+  </template>
   <el-empty v-else description="無 Hook 資料" :image-size="40" />
 </template>

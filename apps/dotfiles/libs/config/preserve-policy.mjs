@@ -16,6 +16,9 @@ export const SETTINGS_PRESERVE_PATHS = [
 	"model",
 	"autoMemoryEnabled",
 	"enabledPlugins",
+	// ab-tao 內部命名空間：Console hooks UI 的 disabledHooks 等運行時狀態
+	// d:setup 不應將此命名空間視為 drift，應完整保留本地值
+	"_abTao",
 ];
 
 /**

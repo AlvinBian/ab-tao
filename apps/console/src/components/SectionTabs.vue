@@ -39,9 +39,10 @@ watch(
 );
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template via @tab-change
-function onTabChange(key: string): void {
-	activeTab.value = key;
-	void router.replace({ query: { ...route.query, tab: key } });
+function onTabChange(key: string | number): void {
+	const keyStr = String(key);
+	activeTab.value = keyStr;
+	void router.replace({ query: { ...route.query, tab: keyStr } });
 }
 </script>
 
@@ -61,7 +62,7 @@ function onTabChange(key: string): void {
           {{ tab.label }}
           <el-badge
             v-if="tab.badge !== undefined"
-            :value="tab.badge"
+            :value="tab.badge.value"
             class="section-tab-badge"
           />
         </span>

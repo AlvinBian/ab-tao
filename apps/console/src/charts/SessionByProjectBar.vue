@@ -9,7 +9,12 @@ import type { ECOption } from "./types";
 const props = defineProps<{
 	byProject: Record<string, number>;
 	topN?: number;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 // ECharts canvas 不解析 CSS 變數，runtime 解析後注入實色
 const primaryColor = useElCssVar("--el-color-primary", "#409eff");
@@ -61,11 +66,14 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
-  <v-chart
-    v-if="hasData"
-    :option="option"
-    :style="{ height: '240px', width: '100%' }"
-    autoresize
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="hasData">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+    />
+  </template>
   <el-empty v-else description="無 Session 資料" :image-size="40" />
 </template>

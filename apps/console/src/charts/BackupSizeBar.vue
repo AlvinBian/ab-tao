@@ -8,7 +8,12 @@ import type { ECOption } from "./types";
 
 const props = defineProps<{
 	backups: Array<{ id: string; date?: string; fileCount?: number }>;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const emit = defineEmits<{ select: [id: string] }>();
 
@@ -59,12 +64,15 @@ function handleClick(params: { dataIndex: number }) {
 </script>
 
 <template>
-  <v-chart
-    v-if="hasData"
-    :option="option"
-    :style="{ height: '200px', width: '100%' }"
-    autoresize
-    @click="handleClick"
-  />
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <template v-else-if="hasData">
+    <v-chart
+      :option="option"
+      :style="{ height: heightPx, width: '100%' }"
+      autoresize
+      @click="handleClick"
+    />
+  </template>
   <el-empty v-else description="無備份記錄" :image-size="40" />
 </template>

@@ -8,7 +8,15 @@ import type { ECOption } from "./types";
 const props = defineProps<{
 	dailyCounts: Record<string, number>;
 	year?: number;
+	loading?: boolean;
+	error?: string | null;
+	height?: number;
 }>();
+
+const heightPx = computed(() => `${props.height ?? 320}px`);
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const hasData = computed(() => Object.keys(props.dailyCounts ?? {}).length > 0);
 
 const targetYear = computed(() => props.year ?? new Date().getFullYear());
 
@@ -66,9 +74,13 @@ const option = computed<ECOption>(() => {
 </script>
 
 <template>
+  <el-skeleton v-if="loading" :rows="3" animated />
+  <el-alert v-else-if="error" :title="error" type="error" show-icon />
+  <el-empty v-else-if="!hasData" description="無使用記錄" :image-size="40" />
   <v-chart
+    v-else
     :option="option"
-    :style="{ height: '140px', width: '100%' }"
+    :style="{ height: heightPx, width: '100%' }"
     autoresize
   />
 </template>
