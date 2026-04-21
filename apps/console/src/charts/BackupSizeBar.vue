@@ -13,6 +13,7 @@ const props = defineProps<{
 	height?: number;
 }>();
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const emit = defineEmits<{ select: [id: string] }>();

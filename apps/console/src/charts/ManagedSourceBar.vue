@@ -13,6 +13,7 @@ const props = defineProps<{
 	height?: number;
 }>();
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const heightPx = computed(() => `${props.height ?? 320}px`);
 
 const primary = useElCssVar("--el-color-primary", "#409eff");

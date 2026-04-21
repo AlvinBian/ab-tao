@@ -36,12 +36,15 @@ const currentBackupId = ref<string | null>(null);
 const logLines = ref<string[]>([]);
 const logContainer = ref<HTMLElement | null>(null);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const successCount = computed(
 	() => logLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const warnCount = computed(
 	() => logLines.value.filter((l) => /⚠|warn/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const errorCount = computed(
 	() => logLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
 );
@@ -132,9 +135,11 @@ async function copyTraceId() {
 	ElMessage.success("已複製 traceId");
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isRunning = computed(
 	() => actionState.value === "running" || actionState.value === "retrying",
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isFailed = computed(
 	() => actionState.value === "failed" || actionState.value === "retry-failed",
 );

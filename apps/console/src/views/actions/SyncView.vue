@@ -45,12 +45,15 @@ const pushTraceId = ref("");
 const pushLogLines = ref<string[]>([]);
 const pushLogContainer = ref<HTMLElement | null>(null);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushSuccessCount = computed(
 	() => pushLogLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushWarnCount = computed(
 	() => pushLogLines.value.filter((l) => /⚠|warn/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushErrorCount = computed(
 	() => pushLogLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
 );
@@ -93,12 +96,15 @@ const pullTraceId = ref("");
 const pullLogLines = ref<string[]>([]);
 const pullLogContainer = ref<HTMLElement | null>(null);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullSuccessCount = computed(
 	() => pullLogLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullWarnCount = computed(
 	() => pullLogLines.value.filter((l) => /⚠|warn/i.test(l)).length,
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullErrorCount = computed(
 	() => pullLogLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
 );
@@ -227,18 +233,22 @@ async function copyPullTraceId() {
 }
 
 // ── Computed helpers ──
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isPushRunning = computed(
 	() => pushState.value === "running" || pushState.value === "retrying",
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isPushFailed = computed(
 	() => pushState.value === "failed" || pushState.value === "retry-failed",
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushRetryExhausted = computed(() => pushRetryCount.value >= MAX_RETRIES);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isPullRunning = computed(
 	() => pullState.value === "running" || pullState.value === "retrying",
 );
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isPullFailed = computed(
 	() => pullState.value === "failed" || pullState.value === "retry-failed",
 );
@@ -258,6 +268,7 @@ const STATUS_MAP: Record<
 	error: { label: "錯誤", type: "danger" },
 };
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const logStyle = {
 	height: "200px",
 	overflowY: "auto" as const,
@@ -269,6 +280,7 @@ const logStyle = {
 	borderRadius: "4px",
 };
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function lineColor(line: string): string {
 	if (/✗|error|FAIL/i.test(line)) return "#f56c6c";
 	if (/⚠|warn/i.test(line)) return "#e6a23c";

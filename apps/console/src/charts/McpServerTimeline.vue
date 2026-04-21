@@ -15,8 +15,10 @@ const props = defineProps<{
 	height?: number;
 }>();
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const heightPx = computed(() => `${props.height ?? 320}px`);
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function isEmpty(d: unknown): boolean {
 	return (
 		d == null ||
@@ -27,12 +29,14 @@ function isEmpty(d: unknown): boolean {
 	);
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const STATUS_COLOR: Record<string, string> = {
 	connected: "var(--el-color-success)",
 	disconnected: "var(--el-color-danger)",
 	unknown: "var(--el-color-info)",
 };
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const STATUS_TYPE: Record<
 	string,
 	"success" | "danger" | "info" | "primary" | "warning"
@@ -42,6 +46,7 @@ const STATUS_TYPE: Record<
 	unknown: "info",
 };
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 function statusLabel(s?: string): string {
 	const map: Record<string, string> = {
 		connected: "已連線",

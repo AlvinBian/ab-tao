@@ -13,6 +13,7 @@ interface EnrichedRepo {
 }
 
 // ── 工具函式 ──────────────────────────────────────────────────────────
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const isEmpty = (d: unknown): boolean =>
 	d == null ||
 	(Array.isArray(d) && d.length === 0) ||
@@ -65,6 +66,7 @@ interface RoleGroup {
 	items: EnrichedRepo[];
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const roleGroups = computed<RoleGroup[]>(() => {
 	const groups: Record<"main" | "temp" | "archived", EnrichedRepo[]> = {
 		main: [],
@@ -86,9 +88,11 @@ const roleGroups = computed<RoleGroup[]>(() => {
 		.filter((g) => g.items.length > 0);
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const activeCollapse = ref<string[]>(["main"]);
 
 // ── 動作 ──────────────────────────────────────────────────────────────
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function scanRepo(name: string): Promise<void> {
 	if (scanningRepos.value.has(name)) return;
 	scanningRepos.value = new Set([...scanningRepos.value, name]);

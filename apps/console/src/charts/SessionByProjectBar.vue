@@ -14,6 +14,7 @@ const props = defineProps<{
 	height?: number;
 }>();
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const heightPx = computed(() => `${props.height ?? 320}px`);
 
 // ECharts canvas 不解析 CSS 變數，runtime 解析後注入實色
