@@ -14,6 +14,7 @@ Core capabilities:
 - **Tech-stack awareness** — Scans your GitHub repos, uses AI to classify tech stacks, and installs only matching tools and configs
 - **AI resource pool** — Integrates community and official AI sources with version tracking + security validation; sync to latest with a single command
 - **Quick reference sheet** — Claude Code Traditional Chinese edition, auto-synced daily and deployed to GitHub Pages
+- **Web console** — Vue 3 admin GUI for visually managing configs, memory, resources, and actions
 
 Typical use cases:
 
@@ -21,6 +22,7 @@ Typical use cases:
 New machine / new job / setting up for a friend → pnpm run d:setup → full dev environment in 10 minutes
 Keep AI resources up to date                   → pnpm run c:ai-sync --all → stay current on all tools
 Look up Claude Code shortcuts                   → open https://alvinbian.github.io/ab-tao/
+Manage configs and memory                       → pnpm run cs:open → open the Web console
 ```
 
 ## Core Advantages
@@ -52,13 +54,15 @@ When syncing external resources, all files go through multi-layer validation: da
 | Role-differentiated    | ✗                  | ✓ main / temp / tool three-tier auto classification  |
 | Security validation    | ✗                  | ✓ dangerous pattern blocking + SHA256                |
 | Resumable install      | ✗                  | ✓ detects incomplete state, supports item recovery   |
+| Web console            | ✗                  | ✓ Vue 3 GUI — config / memory / resources / actions  |
 
 ## Architecture
 
 ```
 ab-tao/
 ├── apps/
-│   └── dotfiles/          @ab-tao/dotfiles — smart filtering, interactive install, dynamic config
+│   ├── dotfiles/          @ab-tao/dotfiles — smart filtering, interactive install, dynamic config
+│   └── console/           @ab-tao/console  — Vue 3 admin console (GUI management)
 └── packages/
     ├── commons/           @ab-tao/commons  — pure resource pool: sync, validate, provide API
     └── share/             @ab-tao/share    — shared utilities (utils/libs)
@@ -73,6 +77,13 @@ Separation of concerns: `commons` only syncs resources → `dotfiles` filters by
 - **Modular ZSH environment** — 7 modules (aliases, git, fzf, nvm, completion...)
 - **Claude Code config generation** — commands + agents + rules + hooks
 
+### apps/console
+
+- **6-section IA** — Dashboard / Resources / Integrations / Configuration / Actions / About
+- **Visual management** — config editing, memory browsing, AI resource status, hook management
+- **Action execution** — GUI trigger interface for Setup / Scan / Sync / Restore
+- **Offline mode** — `cs:open` opens as `file://` static build, no dev server needed
+
 ### packages/commons — AI resource sources
 
 | Source                  | Description                                              |
@@ -81,6 +92,8 @@ Separation of concerns: `commons` only syncs resources → `dotfiles` filters by
 | **anthropic**           | Anthropic official Skills                                |
 | **superpowers**         | Claude Superpowers — advanced agent capabilities         |
 | **context-engineering** | Context Engineering Skills (context optimization/compression/evaluation) |
+| **skills-mp**           | Skills Marketplace — curated community skill packs       |
+| **openskills**          | OpenSkills — open-source skill collection                |
 
 ## Tech Stack
 
@@ -88,6 +101,8 @@ Separation of concerns: `commons` only syncs resources → `dotfiles` filters by
 - **Turborepo** — task orchestration and caching
 - **Biome** — formatting and lint
 - **Changesets** — version management
+- **Vue 3 + Vite** — console frontend framework
+- **Element Plus** — console UI component library
 
 ## Quick Start
 
@@ -102,7 +117,7 @@ pnpm run help              # view all commands
 
 ## Commands
 
-> Prefix convention: `d:` = dotfiles · `c:` = commons
+> Prefix convention: `d:` = dotfiles · `c:` = commons · `cs:` = console
 
 ### Global
 
@@ -117,17 +132,26 @@ pnpm run help              # view all commands
 
 ### d: dotfiles (interactive, requires TTY)
 
-| Command                | Description                                      |
-| ---------------------- | ------------------------------------------------ |
-| `pnpm run d:setup`     | Interactive environment deployment + third-party tool recommendations |
-| `pnpm run d:scan`      | Tech-stack scan + skill library generation       |
-| `pnpm run d:setup --doctor` | Environment diagnostics                     |
-| `pnpm run d:status`    | Config status dashboard                          |
-| `pnpm run cs:open`     | Web admin console (replaced HTML Dashboard)      |
-| `pnpm run d:restore`   | Restore backup                                   |
-| `pnpm run d:hooks`     | Hook management                                  |
-| `pnpm run d:prefs-sync` | Sync preferences to/from iCloud                 |
-| `pnpm run d:uninstall` | Remove ab-tao                                    |
+| Command                     | Description                                      |
+| --------------------------- | ------------------------------------------------ |
+| `pnpm run d:setup`          | Interactive environment deployment + third-party tool recommendations |
+| `pnpm run d:scan`           | Tech-stack scan + skill library generation       |
+| `pnpm run d:setup --doctor` | Environment diagnostics (setup Phase 1)          |
+| `pnpm run d:status`         | Config status dashboard                          |
+| `pnpm run d:restore`        | Restore backup                                   |
+| `pnpm run d:hooks`          | Hook management                                  |
+| `pnpm run d:prefs-sync`     | Sync preferences to/from iCloud                  |
+| `pnpm run d:chrome`         | Chrome bookmarks / settings sync                 |
+| `pnpm run d:uninstall`      | Remove ab-tao                                    |
+
+### cs: console (Web admin console)
+
+| Command               | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `pnpm run cs:dev`     | Vite + API dev server (development mode)      |
+| `pnpm run cs:build`   | Build SPA                                     |
+| `pnpm run cs:open`    | Build then open as file:// (offline mode)     |
+| `pnpm run cs:serve`   | Start API server only                         |
 
 ### c: commons (AI resource sync)
 
@@ -136,7 +160,7 @@ pnpm run help              # view all commands
 | `pnpm run c:ai-sync`          | List AI sources and their status (no sync by default) |
 | `pnpm run c:ai-sync --select` | Interactively select sources to sync                |
 | `pnpm run c:ai-sync --all`    | Sync all sources                                    |
-| `pnpm run c:skills`           | Claude Skills management (--list / --install / --find) |
+| `pnpm run c:skills`           | Claude Skills management (list/install/diff)        |
 | `pnpm run c:validate`         | Validate resource structure + security check        |
 | `pnpm run c:translate`        | Generate multi-language translations                |
 
@@ -158,6 +182,7 @@ pnpm run release          # build + publish
 | -------------------------------------------------------- | ------------------------------------------------------------------ |
 | [CLAUDE.md](CLAUDE.md)                                   | Project commands, architecture overview, development guidelines    |
 | [apps/dotfiles/README.md](apps/dotfiles/README.md)       | dotfiles sub-package — install wizard, commands, directory structure, changelog |
+| [apps/console/README.md](apps/console/README.md)         | console sub-package — 6-section IA, charts, API server             |
 | [packages/commons/README.md](packages/commons/README.md) | commons sub-package — AI resource sources, security validation, commands |
 
 ### Claude Code reference
@@ -172,6 +197,26 @@ pnpm run release          # build + publish
 | Document                                                | Description                          |
 | ------------------------------------------------------- | ------------------------------------ |
 | [gmail-filters.md](apps/dotfiles/docs/gmail-filters.md) | Gmail auto-classification rules guide |
+
+### Flowcharts (Mermaid)
+
+Located at [`apps/dotfiles/docs/flows/`](apps/dotfiles/docs/flows/):
+
+| Flowchart                                                                   | Description               |
+| --------------------------------------------------------------------------- | ------------------------- |
+| [setup-main.mmd](apps/dotfiles/docs/flows/setup-main.mmd)                   | Install wizard main flow  |
+| [phase-plan.mmd](apps/dotfiles/docs/flows/phase-plan.mmd)                   | Planning phase flow       |
+| [phase-execute.mmd](apps/dotfiles/docs/flows/phase-execute.mmd)             | Execution phase flow      |
+| [ecc-pipeline.mmd](apps/dotfiles/docs/flows/ecc-pipeline.mmd)               | ECC resource sync pipeline |
+| [env-check.mmd](apps/dotfiles/docs/flows/env-check.mmd)                     | Environment check flow    |
+| [feature-map.mmd](apps/dotfiles/docs/flows/feature-map.mmd)                 | Feature landscape map     |
+| [role-system.mmd](apps/dotfiles/docs/flows/role-system.mmd)                 | Role and permission system |
+| [session-lifecycle.mmd](apps/dotfiles/docs/flows/session-lifecycle.mmd)     | Session lifecycle         |
+| [repo-select.mmd](apps/dotfiles/docs/flows/repo-select.mmd)                 | Repository selection flow |
+| [config-protection.mmd](apps/dotfiles/docs/flows/config-protection.mmd)     | Config protection mechanism |
+| [setup-status.mmd](apps/dotfiles/docs/flows/setup-status.mmd)               | Install status tracking   |
+| [slack-setup.mmd](apps/dotfiles/docs/flows/slack-setup.mmd)                 | Slack integration setup   |
+| [upgrade-legacy.mmd](apps/dotfiles/docs/flows/upgrade-legacy.mmd)           | Legacy upgrade flow       |
 
 ## Recommended Third-Party Tools
 

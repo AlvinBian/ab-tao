@@ -14,6 +14,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 - **技術棧感知** — 掃描你的 GitHub repos，用 AI 分類技術棧，只安裝匹配的工具與配置
 - **AI 資源池** — 整合社群與官方 AI 來源，版本追蹤 + 安全驗證，一條指令同步到最新
 - **快速參考表** — Claude Code 繁體中文版，每日自動同步，部署到 GitHub Pages
+- **Web 控制台** — Vue 3 後台 GUI，可視化管理配置、記憶體、資源、執行動作
 
 典型使用場景：
 
@@ -21,6 +22,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 新機器 / 換工作 / 幫朋友設定 → pnpm run d:setup → 10 分鐘搞定全套開發環境
 定期更新 AI 資源             → pnpm run c:ai-sync --all → 保持所有工具最新
 查 Claude Code 快捷鍵        → 開啟 https://alvinbian.github.io/ab-tao/
+管理配置與記憶               → pnpm run cs:open → 開啟 Web 控制台
 ```
 
 ## 核心優勢
@@ -52,13 +54,15 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 | 角色差異化配置 | ✗                | ✓ main / temp / tool 三層自動分級            |
 | 安全驗證       | ✗                | ✓ 危險模式攔截 + SHA256                      |
 | 斷點續裝       | ✗                | ✓ 偵測未完成狀態，支援逐項恢復               |
+| Web 控制台     | ✗                | ✓ Vue 3 GUI — 配置 / 記憶 / 資源 / 動作      |
 
 ## 架構
 
 ```
 ab-tao/
 ├── apps/
-│   └── dotfiles/          @ab-tao/dotfiles — 智能篩選、互動安裝、動態配置
+│   ├── dotfiles/          @ab-tao/dotfiles — 智能篩選、互動安裝、動態配置
+│   └── console/           @ab-tao/console  — Vue 3 後台控制台（GUI 管理）
 └── packages/
     ├── commons/           @ab-tao/commons  — 純資源池：同步、驗證、提供 API
     └── share/             @ab-tao/share    — 共用工具庫（utils/libs）
@@ -73,6 +77,13 @@ ab-tao/
 - **ZSH 模組化環境** — 7 個模組（aliases, git, fzf, nvm, completion...）
 - **Claude Code 配置生成** — commands + agents + rules + hooks
 
+### apps/console
+
+- **資訊架構（6 區）** — Dashboard / Resources / Integrations / Configuration / Actions / About
+- **可視化管理** — 配置編輯、記憶體瀏覽、AI 資源狀態、Hook 管理
+- **執行動作** — Setup / Scan / Sync / Restore 的 GUI 觸發介面
+- **離線模式** — `cs:open` 以 `file://` 靜態開啟，無需 dev server
+
 ### packages/commons — AI 資源來源
 
 | 來源                    | 說明                                                 |
@@ -81,6 +92,8 @@ ab-tao/
 | **anthropic**           | Anthropic 官方 Skills                                |
 | **superpowers**         | Claude Superpowers — 進階 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 優化/壓縮/評估） |
+| **skills-mp**           | Skills Marketplace — 社群精選技能包                  |
+| **openskills**          | OpenSkills — 開源技能集合                            |
 
 ## 技術棧
 
@@ -88,6 +101,8 @@ ab-tao/
 - **Turborepo** — 任務編排與快取
 - **Biome** — 格式化與 lint
 - **Changesets** — 版本管理
+- **Vue 3 + Vite** — console 前端框架
+- **Element Plus** — console UI 組件庫
 
 ## 快速開始
 
@@ -102,7 +117,7 @@ pnpm run help              # 查看所有指令
 
 ## 指令
 
-> 簡稱規則：`d:` = dotfiles · `c:` = commons
+> 簡稱規則：`d:` = dotfiles · `c:` = commons · `cs:` = console
 
 ### 全局
 
@@ -117,17 +132,26 @@ pnpm run help              # 查看所有指令
 
 ### d: dotfiles（互動式，需 TTY）
 
-| 指令                   | 說明                            |
-| ---------------------- | ------------------------------- |
+| 指令                        | 說明                            |
+| --------------------------- | ------------------------------- |
 | `pnpm run d:setup`          | 互動式環境部署 + 第三方工具推薦 |
 | `pnpm run d:scan`           | 技術棧掃描 + 技能庫生成         |
 | `pnpm run d:setup --doctor` | 環境診斷（setup Phase 1）       |
 | `pnpm run d:status`         | 配置狀態儀表板                  |
-| `pnpm run cs:open`          | Web 後台控制台（HTML Dashboard 已取代）|
 | `pnpm run d:restore`        | 還原備份                        |
 | `pnpm run d:hooks`          | Hook 管理                       |
 | `pnpm run d:prefs-sync`     | iCloud 偏好檔同步               |
+| `pnpm run d:chrome`         | Chrome 書籤 / 設定同步          |
 | `pnpm run d:uninstall`      | 移除 ab-tao                     |
+
+### cs: console（Web 後台控制台）
+
+| 指令                  | 說明                              |
+| --------------------- | --------------------------------- |
+| `pnpm run cs:dev`     | Vite + API dev server（開發模式） |
+| `pnpm run cs:build`   | 構建 SPA                          |
+| `pnpm run cs:open`    | 構建後以 file:// 開啟（離線模式） |
+| `pnpm run cs:serve`   | 僅啟動 API server                 |
 
 ### c: commons（AI 資源同步）
 
@@ -137,8 +161,8 @@ pnpm run help              # 查看所有指令
 | `pnpm run c:ai-sync --select` | 互動式選擇同步                         |
 | `pnpm run c:ai-sync --all`    | 同步全部來源                           |
 | `pnpm run c:skills`           | Claude Skills 管理（list/install/diff）|
-| `pnpm run c:translate`        | 多語系翻譯生成                         |
 | `pnpm run c:validate`         | 驗證資源結構 + 安全檢查                |
+| `pnpm run c:translate`        | 多語系翻譯生成                         |
 
 指定同步：`pnpm run c:ai-sync -- --pick ecc,superpowers`
 
@@ -158,6 +182,7 @@ pnpm run release          # 構建 + 發布
 | -------------------------------------------------------- | ------------------------------------------------------ |
 | [CLAUDE.md](CLAUDE.md)                                   | 專案指令、架構說明、開發規範                           |
 | [apps/dotfiles/README.md](apps/dotfiles/README.md)       | dotfiles 子包說明 — 安裝精靈、指令、目錄結構、版本記錄 |
+| [apps/console/README.md](apps/console/README.md)         | console 子包說明 — 6 區 IA、圖表、API server           |
 | [packages/commons/README.md](packages/commons/README.md) | commons 子包說明 — AI 資源來源、安全驗證、指令         |
 
 ### Claude Code 參考

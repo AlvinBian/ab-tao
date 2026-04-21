@@ -14,6 +14,7 @@ Turborepo monorepo — 开发环境统一管理 + 共用资源库。
 - **技术栈感知** — 扫描你的 GitHub repos，用 AI 分类技术栈，只安装匹配的工具与配置
 - **AI 资源池** — 整合社区与官方 AI 来源，版本追踪 + 安全验证，一条命令同步到最新
 - **快速参考表** — Claude Code 繁体中文版，每日自动同步，部署到 GitHub Pages
+- **Web 控制台** — Vue 3 后台 GUI，可视化管理配置、记忆、资源、执行动作
 
 典型使用场景：
 
@@ -21,6 +22,7 @@ Turborepo monorepo — 开发环境统一管理 + 共用资源库。
 新机器 / 换工作 / 帮朋友设置 → pnpm run d:setup → 10 分钟搞定全套开发环境
 定期更新 AI 资源             → pnpm run c:ai-sync --all → 保持所有工具最新
 查 Claude Code 快捷键        → 打开 https://alvinbian.github.io/ab-tao/
+管理配置与记忆               → pnpm run cs:open → 打开 Web 控制台
 ```
 
 ## 核心优势
@@ -52,13 +54,15 @@ Turborepo monorepo — 开发环境统一管理 + 共用资源库。
 | 角色差异化配置 | ✗                | ✓ main / temp / tool 三层自动分级            |
 | 安全验证       | ✗                | ✓ 危险模式拦截 + SHA256                      |
 | 断点续装       | ✗                | ✓ 检测未完成状态，支持逐项恢复               |
+| Web 控制台     | ✗                | ✓ Vue 3 GUI — 配置 / 记忆 / 资源 / 动作      |
 
 ## 架构
 
 ```
 ab-tao/
 ├── apps/
-│   └── dotfiles/          @ab-tao/dotfiles — 智能筛选、交互安装、动态配置
+│   ├── dotfiles/          @ab-tao/dotfiles — 智能筛选、交互安装、动态配置
+│   └── console/           @ab-tao/console  — Vue 3 后台控制台（GUI 管理）
 └── packages/
     ├── commons/           @ab-tao/commons  — 纯资源池：同步、验证、提供 API
     └── share/             @ab-tao/share    — 共用工具库（utils/libs）
@@ -73,6 +77,13 @@ ab-tao/
 - **ZSH 模块化环境** — 7 个模块（aliases, git, fzf, nvm, completion...）
 - **Claude Code 配置生成** — commands + agents + rules + hooks
 
+### apps/console
+
+- **信息架构（6 区）** — Dashboard / Resources / Integrations / Configuration / Actions / About
+- **可视化管理** — 配置编辑、记忆浏览、AI 资源状态、Hook 管理
+- **执行动作** — Setup / Scan / Sync / Restore 的 GUI 触发界面
+- **离线模式** — `cs:open` 以 `file://` 静态打开，无需 dev server
+
 ### packages/commons — AI 资源来源
 
 | 来源                    | 说明                                                 |
@@ -81,6 +92,8 @@ ab-tao/
 | **anthropic**           | Anthropic 官方 Skills                                |
 | **superpowers**         | Claude Superpowers — 高级 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 优化/压缩/评估） |
+| **skills-mp**           | Skills Marketplace — 社区精选技能包                  |
+| **openskills**          | OpenSkills — 开源技能集合                            |
 
 ## 技术栈
 
@@ -88,6 +101,8 @@ ab-tao/
 - **Turborepo** — 任务编排与缓存
 - **Biome** — 格式化与 lint
 - **Changesets** — 版本管理
+- **Vue 3 + Vite** — console 前端框架
+- **Element Plus** — console UI 组件库
 
 ## 快速开始
 
@@ -102,7 +117,7 @@ pnpm run help              # 查看所有命令
 
 ## 命令
 
-> 简称规则：`d:` = dotfiles · `c:` = commons
+> 简称规则：`d:` = dotfiles · `c:` = commons · `cs:` = console
 
 ### 全局
 
@@ -117,17 +132,26 @@ pnpm run help              # 查看所有命令
 
 ### d: dotfiles（交互式，需 TTY）
 
-| 命令                   | 说明                            |
-| ---------------------- | ------------------------------- |
-| `pnpm run d:setup`     | 交互式环境部署 + 第三方工具推荐 |
-| `pnpm run d:scan`      | 技术栈扫描 + 技能库生成         |
-| `pnpm run d:setup --doctor` | 环境诊断                   |
-| `pnpm run d:status`    | 配置状态仪表板                  |
-| `pnpm run cs:open`     | Web 後台控制台（已取代 HTML Dashboard）|
-| `pnpm run d:restore`   | 还原备份                        |
-| `pnpm run d:hooks`      | Hook 管理                      |
-| `pnpm run d:prefs-sync` | iCloud 偏好档同步              |
-| `pnpm run d:uninstall`  | 移除 ab-tao                    |
+| 命令                        | 说明                            |
+| --------------------------- | ------------------------------- |
+| `pnpm run d:setup`          | 交互式环境部署 + 第三方工具推荐 |
+| `pnpm run d:scan`           | 技术栈扫描 + 技能库生成         |
+| `pnpm run d:setup --doctor` | 环境诊断（setup Phase 1）       |
+| `pnpm run d:status`         | 配置状态仪表板                  |
+| `pnpm run d:restore`        | 还原备份                        |
+| `pnpm run d:hooks`          | Hook 管理                       |
+| `pnpm run d:prefs-sync`     | iCloud 偏好档同步               |
+| `pnpm run d:chrome`         | Chrome 书签 / 设置同步          |
+| `pnpm run d:uninstall`      | 移除 ab-tao                     |
+
+### cs: console（Web 后台控制台）
+
+| 命令                  | 说明                              |
+| --------------------- | --------------------------------- |
+| `pnpm run cs:dev`     | Vite + API dev server（开发模式） |
+| `pnpm run cs:build`   | 构建 SPA                          |
+| `pnpm run cs:open`    | 构建后以 file:// 打开（离线模式） |
+| `pnpm run cs:serve`   | 仅启动 API server                 |
 
 ### c: commons（AI 资源同步）
 
@@ -136,7 +160,7 @@ pnpm run help              # 查看所有命令
 | `pnpm run c:ai-sync`          | 列出 AI 来源与状态（默认不同步）    |
 | `pnpm run c:ai-sync --select` | 交互式选择同步                      |
 | `pnpm run c:ai-sync --all`    | 同步全部来源                        |
-| `pnpm run c:skills`           | Claude Skills 管理（--list / --install / --find） |
+| `pnpm run c:skills`           | Claude Skills 管理（list/install/diff） |
 | `pnpm run c:validate`         | 验证资源结构 + 安全检查             |
 | `pnpm run c:translate`        | 多语系翻译生成                      |
 
@@ -158,6 +182,7 @@ pnpm run release          # 构建 + 发布
 | -------------------------------------------------------- | ------------------------------------------------------ |
 | [CLAUDE.md](CLAUDE.md)                                   | 项目命令、架构说明、开发规范                           |
 | [apps/dotfiles/README.md](apps/dotfiles/README.md)       | dotfiles 子包说明 — 安装向导、命令、目录结构、版本记录 |
+| [apps/console/README.md](apps/console/README.md)         | console 子包说明 — 6 区 IA、图表、API server           |
 | [packages/commons/README.md](packages/commons/README.md) | commons 子包说明 — AI 资源来源、安全验证、命令         |
 
 ### Claude Code 参考
@@ -172,6 +197,26 @@ pnpm run release          # 构建 + 发布
 | 文档                                                    | 说明                       |
 | ------------------------------------------------------- | -------------------------- |
 | [gmail-filters.md](apps/dotfiles/docs/gmail-filters.md) | Gmail 自动分类规则配置指南 |
+
+### 流程图（Mermaid）
+
+位于 [`apps/dotfiles/docs/flows/`](apps/dotfiles/docs/flows/)：
+
+| 流程图                                                                  | 说明                  |
+| ----------------------------------------------------------------------- | --------------------- |
+| [setup-main.mmd](apps/dotfiles/docs/flows/setup-main.mmd)               | 安装向导主流程        |
+| [phase-plan.mmd](apps/dotfiles/docs/flows/phase-plan.mmd)               | 规划阶段流程          |
+| [phase-execute.mmd](apps/dotfiles/docs/flows/phase-execute.mmd)         | 执行阶段流程          |
+| [ecc-pipeline.mmd](apps/dotfiles/docs/flows/ecc-pipeline.mmd)           | ECC 资源同步 Pipeline |
+| [env-check.mmd](apps/dotfiles/docs/flows/env-check.mmd)                 | 环境检查流程          |
+| [feature-map.mmd](apps/dotfiles/docs/flows/feature-map.mmd)             | 功能全景图            |
+| [role-system.mmd](apps/dotfiles/docs/flows/role-system.mmd)             | 角色与权限系统        |
+| [session-lifecycle.mmd](apps/dotfiles/docs/flows/session-lifecycle.mmd) | 会话生命周期          |
+| [repo-select.mmd](apps/dotfiles/docs/flows/repo-select.mmd)             | 仓库选择流程          |
+| [config-protection.mmd](apps/dotfiles/docs/flows/config-protection.mmd) | 设置保护机制          |
+| [setup-status.mmd](apps/dotfiles/docs/flows/setup-status.mmd)           | 安装状态追踪          |
+| [slack-setup.mmd](apps/dotfiles/docs/flows/slack-setup.mmd)             | Slack 集成设置        |
+| [upgrade-legacy.mmd](apps/dotfiles/docs/flows/upgrade-legacy.mmd)       | 旧版升级流程          |
 
 ## 推荐的第三方工具
 
@@ -236,11 +281,11 @@ git checkout main && git checkout -b hotfix/xxx
 
 | Workflow       | 触发                  | 说明                                             |
 | -------------- | --------------------- | ------------------------------------------------ |
-| **CI**        | push → main           | lint + build + test + 资源同步验证             |
-| **Git Flow**  | PR + push + tag       | 分支校验 + PR 来源校验 + commit 校验 + Release |
-| **Release**   | push → main           | Version PR 自动建立 + changeset tag + Release  |
-| **Translate** | README.md 变更 → main | 自动翻译 zh-CN + EN（需要 `GH_PAT` secret）    |
-| **Sync**      | 每周一 03:00 UTC      | 自动同步外部 AI 资源                            |
+| **CI**        | push → main           | lint + build + test + 资源同步验证               |
+| **Git Flow**  | PR + push + tag       | 分支校验 + PR 来源校验 + commit 校验 + Release   |
+| **Release**   | push → main           | Version PR 自动建立 + changeset tag + Release    |
+| **Translate** | README.md 变更 → main | 自动翻译 zh-CN + EN（需要 `GH_PAT` secret）      |
+| **Sync**      | 每周一 03:00 UTC      | 自动同步外部 AI 资源                             |
 
 ### 必要 Secrets 设置
 
