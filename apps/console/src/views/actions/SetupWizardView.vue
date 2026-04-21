@@ -229,7 +229,7 @@ async function clearProgress() {
           並行執行
         </span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px">
-          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:#b8c0cc"/>
+          <span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:var(--el-fill-color-darker)"/>
           可選
         </span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px">
