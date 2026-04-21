@@ -11,10 +11,8 @@ export const SETTINGS_PRESERVE_PATHS = [
 	"statusLine",
 	"statusLine.command",
 	"mcpServers",
-	"extraKnownMarketplaces",
 	"env",
 	"permissions.allow",
-	"permissions.deny",
 	"model",
 	"autoMemoryEnabled",
 	"enabledPlugins",
@@ -48,9 +46,7 @@ export const FORBIDDEN_DIRS = [
  *   local-wins — 本地陣列完全勝出
  */
 export const SETTINGS_ARRAY_MERGE = {
-	"permissions.allow": "union",
 	"permissions.deny": "union",
-	extraKnownMarketplaces: "union",
 };
 
 /**
