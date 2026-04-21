@@ -36,6 +36,7 @@ import { runTarget } from "../../install/index.mjs";
 import { applyMcpServers } from "../../install/mcp-manager.mjs";
 import { t } from "../../ui/theme.mjs";
 import { withSpinner } from "../../ui/with-spinner.mjs";
+import { snapshotHashes, writeReloadMarker } from "./reload-marker.mjs";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Hooks 三元組 dedup：(matcher, command) 相同時保留 id 版本
@@ -156,6 +157,7 @@ export async function deployGlobalConfig(opts) {
 		preferences = null,
 	} = opts;
 
+	const preHashes = snapshotHashes();
 	const installSelections = {};
 
 	// ── 階段 0：CCometixLine 安裝檢驗 + my-ccline.sh 部署 ──
@@ -245,6 +247,13 @@ export async function deployGlobalConfig(opts) {
 			});
 			// 用戶選擇的 model 總是優先（若有傳入）
 			if (model) merged.model = model;
+			// Strip empty extraKnownMarketplaces（Claude Code 不需要此空陣列）
+			if (
+				Array.isArray(merged.extraKnownMarketplaces) &&
+				merged.extraKnownMarketplaces.length === 0
+			) {
+				delete merged.extraKnownMarketplaces;
+			}
 			const mergedJson = `${JSON.stringify(merged, null, 2)}\n`;
 			let shouldWriteSettings = true;
 			if (fs.existsSync(localSettingsPath)) {
@@ -407,6 +416,7 @@ export async function deployGlobalConfig(opts) {
 		if (logger) logger(t.warn(`清理步驟失敗：${cleanErr.message}`));
 	}
 
+	writeReloadMarker({ preHashes });
 	return { ...installSelections, cclineInstalled };
 }
 
