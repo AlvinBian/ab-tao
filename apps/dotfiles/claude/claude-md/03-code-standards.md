@@ -56,25 +56,100 @@
 ### 分支命名
 - trunk：`feat/<TICKET>-<slug>/main`（例：`feat/VM-1482-m-new-order-detail/main`）
 - leaves：`feat/<TICKET>/{N}-<slug>`（例：`feat/VM-1482/1-bff-base`）
-- backup：`backup/<original-branch>`（rebase / restack 前必建）
+- backup：`backup/<original-branch>`（force push / rebase 前必建）
 
 | 工具 | leaves 自動命名 | trunk 處理 |
 |---|---|---|
 | git-spice (gs) | 沿用 `feat/<TICKET>/{N}-<slug>` | 需手動 `gs branch create` |
 | gh-stack | `<user>/<TICKET>-pr-{N}` | trunk = main，無需自建 |
 
-### 工作流（三步走）
-1. **init**：`pr-stack-init` — 在當前 trunk 上建立 PR-N leaf 分支
-2. **sync**：`pr-stack-sync` — 上游 PR 有變更後，cascade restack 下游所有 leaf
-3. **land**：`pr-stack-land` — 審核通過後推上線（仍需人工逐 PR 點擊 merge）
+### 強制規則（違反即破壞 stack）
 
-### 禁止事項
-- ❌ `gh pr merge` 批次合併 stack 中任一 PR（破壞下游 base）
-- ❌ force push 跳過 `backup/<branch>` 備份
-- ❌ 在 stack 中段直接 `git rebase main`（必走 `pr-stack-sync`）
+❌ 禁止 `gh pr merge`（任何 PR、任何情境）
+❌ 禁止開啟 GitHub auto-merge
+❌ 禁止在 stack 中段直接 `git rebase main`（必走 `git-spice repo sync`）
+❌ 禁止 force push 前未建 `backup/<branch>`
+
+✅ PR merge 唯一方式：在 GitHub UI 手動點擊（PR-N merge 後才能 merge PR-N+1）
+✅ 每次 merge 後立即執行 `git-spice repo sync` 同步下游
+
+### git-spice 日常指令
+
+```bash
+# 查看 stack 狀態
+git-spice log short
+
+# 建立新 leaf 分支（自動 base 在當前分支）
+git-spice branch create feat/<TICKET>/{N}-{slug}
+
+# 開發完，建立 PR（自動設定 base + 更新 spice metadata）
+git-spice branch submit
+
+# 上游 PR merge 後，cascade rebase 所有下游分支
+git-spice repo sync
+
+# 推送整個 stack 所有分支的 PR
+git-spice branch submit --stack
+```
+
+### PR merge 後標準動作
+
+```bash
+# 1. 在 GitHub UI 手動 merge PR-N
+# 2. 同步 stack（cascade rebase 下游）
+git-spice repo sync
+# 3. 確認下游分支 base 已更新
+git-spice log short
+```
+
+### 誤 merge 救援程序
+
+當 PR-N+1 被意外 merge 進 PR-N 的 base branch 時：
+
+```bash
+# Step 1：建備份（必做）
+git branch backup/{base-branch}-post-merge origin/{base-branch}
+
+# Step 2：找回 pre-merge commit hash
+git log --oneline -20 origin/{base-branch}
+
+# Step 3：reset + force push（需 ! 前綴繞過 hook 攔截）
+git checkout {base-branch}
+git reset --hard {pre-merge-hash}
+! git push --force origin {base-branch}
+
+# Step 4：重推 head branch（若被刪除）
+git push origin {head-branch}
+
+# Step 5：修復 git-spice metadata（清除舊 PR 綁定）
+# 移除 refs/spice/data 中的 change.github.pr 欄位後重建
+git push origin refs/spice/data
+
+# Step 6：重建 PR
+git-spice branch submit
+```
+
+### git-spice metadata 驗證
+
+```bash
+# 確認分支綁定了正確的 PR number
+git show refs/spice/data:branches/feat/<TICKET>/{N}-{slug}
+# 應包含："pr": { "number": XXXXX }
+
+# 若用 gh pr create 建 PR（非 git-spice branch submit）
+# → 需手動把新 PR number 寫入 refs/spice/data 再 push
+```
+
+### Claude Code 操作限制
+
+| 操作 | 限制 | 解法 |
+|---|---|---|
+| `git push --force` | pre-tool-bash.sh hook 攔截 | 對話框輸入 `! git push --force ...` |
+| `git reset --hard` | Claude Code 確認框 | 彈出確認框時點「允許」 |
+| `gh pr merge` | 強制規則禁止 | 永遠不執行 |
 
 ### 失敗回復
-- stack 衝突 → `pr-stack-sync`（upstack restack）+ 從 `backup/<branch>` 救援
+- stack 衝突 → `git-spice repo sync`（cascade rebase）+ 從 `backup/<branch>` 救援
 - pre-push 測試 fail → 修復後再 push；`--no-verify` 僅限 hotfix，常態必過
 
 ### 堆疊 PR 工具（優先級 + 自動 dispatch）
