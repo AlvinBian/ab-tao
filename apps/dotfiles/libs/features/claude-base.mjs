@@ -214,6 +214,28 @@ export default {
 			selectedCategories = selectedCats;
 		}
 
+		// Slack 通知設定（在 spinner 啟動前詢問，避免 UX 混亂）
+		let slackEnv = null;
+		if (selectedCategories.includes("settings")) {
+			try {
+				const { setupSlackNotify } = await import("../install/slack-setup.mjs");
+				// 讀取現有 settings.json env 作為初始值
+				let existingEnv = {};
+				try {
+					const settingsPath = path.join(CLAUDE_DIR, "settings.json");
+					if (fs.existsSync(settingsPath)) {
+						const s = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+						existingEnv = s.env ?? {};
+					}
+				} catch {
+					/* 讀取失敗使用空物件 */
+				}
+				slackEnv = await setupSlackNotify(existingEnv);
+			} catch {
+				/* 非阻塞，Slack 設定失敗不影響主流程 */
+			}
+		}
+
 		return {
 			global: {
 				commands: selectedCategories.includes("commands") ? ALL_COMMANDS : [],
@@ -231,6 +253,7 @@ export default {
 			model,
 			claudeMdAction,
 			selectedCategories,
+			slackEnv,
 		};
 	},
 
@@ -251,6 +274,7 @@ export default {
 				"settings",
 				"claude-md",
 			],
+			slackEnv: config.slackEnv ?? null,
 			features: ["claude-base"],
 			targets: ["claude-dev"],
 		};
@@ -295,6 +319,7 @@ export default {
 			isManual: ctx.flags?.manual || false,
 			targetKeys: plan.targets || [],
 			preferences: ctx.preferences ?? null,
+			slackEnv: plan.slackEnv ?? null,
 		});
 
 		// ── CLAUDE.md 處理 ──
