@@ -53,9 +53,12 @@ describe("version-tracker", () => {
 		assert.notEqual(versions.ecc.sha, "new-sha");
 	});
 
-	it("未知來源應拋出錯誤", async () => {
-		const { recordSync } = await loadTracker();
-		assert.throws(() => recordSync("unknown-source", "sha"), /未知的來源/);
+	it("未知來源應自動建立條目（支援新來源動態加入）", async () => {
+		const { recordSync, readVersions } = await loadTracker();
+		const result = recordSync("unknown-source", "new-sha");
+		assert.equal(result, true);
+		const versions = readVersions();
+		assert.equal(versions["unknown-source"].sha, "new-sha");
 	});
 
 	it("應偵測是否需要同步", async () => {
