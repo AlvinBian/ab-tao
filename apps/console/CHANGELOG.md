@@ -1,5 +1,45 @@
 # @ab-tao/console
 
+## 0.3.0
+
+### Minor Changes
+
+- Console Wave 1–7 全面升級 + SSE 穩定化
+
+  **UI 修復（Wave 1）**
+
+  - SettingRow grid layout 修正 + Preferences 寬度撐滿
+
+  **Resources 補強（Wave 2）**
+
+  - 表格新增說明欄（frontmatter description 解析 + 搜尋）
+
+  **Repos（Wave 3）**
+
+  - 掃描/開啟修復（open API + 掃描跳轉 Actions/Scan + 預填提示）
+
+  **Hooks UI（Wave 4）**
+
+  - toggle 啟停 / 新增 / 刪除 / redeploy 按鈕
+
+  **Actions（Wave 5）**
+
+  - SSE 還原、dryRun 全面實作、TTY fallback
+
+  **ECharts（Wave 6）**
+
+  - 子流程節點補強 + 移除 docs/flows 目錄
+
+  **About 頁（Wave 7）**
+
+  - 6 大區塊全面補強
+
+  **基礎建設**
+
+  - SSE 重構：server-sent events 穩定化
+  - Actions server routes 穩定化
+  - About 保護策略展開
+
 ## 0.2.0
 
 ### Minor Changes

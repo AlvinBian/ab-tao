@@ -1,5 +1,43 @@
 # @ab-tao/dotfiles
 
+## 1.2.0
+
+### Minor Changes
+
+- v1.2.0：Setup UX 全面修復 + Doctor CLI + Memory Index
+
+  **Setup 互動流程修復**
+
+  - Slack 通知設定移至 configure() 階段，在 spinner 啟動前完成詢問，修復 UX 倒序問題
+  - 移除 Slack User ID 配置（DM 發送改由 Slack MCP 自動獲取使用者）
+  - 修復 d:setup lock spam（80+ 鎖逾時警告）：updateStateJson 改批次寫入 + fast-fail flag
+  - 修復 d:doctor 未在 root package.json 註冊（ERR_PNPM_NO_SCRIPT）
+  - 修復 pua plugin 安裝名稱錯誤（marketplace: pua vs installName: pua-skills）
+
+  **Doctor CLI**
+
+  - `pnpm run d:doctor`：ghost entries / drift SHA / dead sync paths 診斷
+  - `--fix` 旗標：自動清除 state.json ghost 條目與失效 sync 路徑
+
+  **Memory Index**
+
+  - memory-index.mjs 部署至 ~/.claude/.ab-tao/bin/
+  - SessionStart hook 自動重建 MEMORY.md 索引
+
+  **Plan 歸位**
+
+  - SessionEnd hook 自動將 plan 依 frontmatter ticket/topic 歸位至正確路徑
+
+  **資源命名標準化**
+
+  - 所有 ab-tao 自管資源統一加上 ab- 前綴（commands/agents/rules/skills）
+  - ab-slack command：分離模板庫至 slack-templates.md + 強制發送確認流程
+
+### Patch Changes
+
+- Updated dependencies
+  - @ab-tao/commons@1.0.2
+
 ## 1.1.0
 
 ### Minor Changes
