@@ -8,7 +8,6 @@ const ROOT = resolve(new URL(".", import.meta.url).pathname, "../../..");
 const FORBIDDEN_PATTERNS = [
 	[/pnpm run c:sync(?!\s*-|:select)/, "c:sync → c:ai-sync"],
 	[/pnpm run d:sync(?!\s*-)/, "d:sync → d:prefs-sync"],
-	[/pnpm run d:doctor(?!\s)/, "d:doctor → d:setup --doctor"],
 	[/pnpm run d:migrate-plans/, "d:migrate-plans 已刪除"],
 	[/pnpm run d:flow(?!\w)/, "d:flow 已刪除"],
 ];

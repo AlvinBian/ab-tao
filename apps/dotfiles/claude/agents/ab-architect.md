@@ -1,5 +1,5 @@
 ---
-name: architect
+name: ab-architect
 description: >
   架構設計 + 審查 — ADR 產出、5 維度評分、架構債識別。唯讀。
 

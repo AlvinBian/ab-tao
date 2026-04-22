@@ -35,8 +35,8 @@
 
 | phase 類型 | 建議 subagent_type |
 |---|---|
-| 架構/設計評估 | `architect` |
-| 除錯 / build 修復 | `debugger` |
+| 架構/設計評估 | `ab-architect` |
+| 除錯 / build 修復 | `ab-debugger` |
 | 程式碼審查 | `code-reviewer` |
 | 探索/分析 | `Explore` / `general-purpose` |
 | 規劃 | `/plan` mode / `Plan` subagent |

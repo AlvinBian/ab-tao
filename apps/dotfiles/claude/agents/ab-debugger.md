@@ -1,5 +1,5 @@
 ---
-name: debugger
+name: ab-debugger
 description: >
   除錯 + Build 修復 — 根因定位、最小 diff 修復、不重構。可寫檔案。
 

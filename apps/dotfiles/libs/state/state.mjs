@@ -73,6 +73,7 @@ export function stateRead() {
  */
 export function stateWrite(updater) {
 	const lockFd = _acquireLock();
+	if (lockFd === null) return; // 鎖逾時 → 唯讀模式，跳過寫入
 	try {
 		const state = stateRead();
 		updater(state);

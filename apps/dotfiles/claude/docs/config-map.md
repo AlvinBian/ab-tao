@@ -36,8 +36,8 @@
 │   └── config-map.md            本文件
 │
 ├── agents/                      # 2 focused agents
-│   ├── architect.md             架構設計 + 5 維審查
-│   └── debugger.md              根因定位 + 最小 diff
+│   ├── ab-architect.md          架構設計 + 5 維審查
+│   └── ab-debugger.md           根因定位 + 最小 diff
 │
 ├── commands/                    # 5 unique commands（ab- prefix = ab-tao managed）
 │   ├── ab-check.md
