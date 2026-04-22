@@ -27,6 +27,7 @@
 		"d:restore": "pnpm -C apps/dotfiles run restore",
 		"d:scan": "pnpm -C apps/dotfiles run scan",
 		"d:chrome": "pnpm -C apps/dotfiles run chrome",
+		"d:doctor": "pnpm -C apps/dotfiles run doctor",
 		"c:ai-sync": "pnpm -C packages/commons run ai-sync",
 		"c:skills": "pnpm -C packages/commons run skills",
 		"c:validate": "pnpm -C packages/commons run validate",

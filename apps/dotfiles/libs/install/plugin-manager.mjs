@@ -122,9 +122,10 @@ export function syncPlugins({ dryRun = false, profile } = {}) {
 			console.log(`[dry-run] 將安裝：${key}`);
 		} else {
 			try {
+				const installName = cfg.installName ?? name;
 				execFileSync(
 					"claude",
-					["plugin", "install", name, "--marketplace", marketplace],
+					["plugin", "install", installName, "--marketplace", marketplace],
 					{
 						stdio: "inherit",
 					},

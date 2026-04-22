@@ -73,6 +73,7 @@ plugins:
   pua:
     enabled: false
     marketplace: tanweai/pua
+    installName: pua-skills
     description: "PUA 高能動性（17 commands / 11 skills / 3 agents / 9 hooks，opt-in）"
     config:
       sideEffects:
