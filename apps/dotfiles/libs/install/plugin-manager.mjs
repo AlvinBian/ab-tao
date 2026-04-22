@@ -72,13 +72,37 @@ export function listPlugins() {
 }
 
 /**
+ * 預先登錄所有宣告的 marketplace（包含 enabled:false 的 plugin），
+ * 讓使用者之後可一鍵 enable 而不需另行 add marketplace
+ */
+function installMarketplaces(pluginsData) {
+	const ids = new Set();
+	for (const m of pluginsData.marketplaces ?? []) {
+		if (m.id && m.id !== "claude-plugins-official") ids.add(m.id);
+	}
+	for (const id of ids) {
+		try {
+			execFileSync("claude", ["plugin", "marketplace", "add", id], {
+				stdio: "pipe",
+			});
+		} catch {
+			// 已存在或 CLI 不可用時靜默忽略（idempotent）
+		}
+	}
+}
+
+/**
  * 同步 plugins：安裝缺失的（dry-run 模式僅印出）
  * @param {{ dryRun?: boolean, profile?: string }} opts
  */
 export function syncPlugins({ dryRun = false, profile } = {}) {
-	const { plugins, profile_overrides } = loadPluginsYml();
+	const pluginsData = loadPluginsYml();
+	const { plugins, profile_overrides } = pluginsData;
 	const overrides = profile ? profile_overrides?.[profile] : undefined;
 	const results = { installed: [], skipped: [] };
+
+	// 預先登錄所有 marketplace（包含 enabled:false 的 plugin）
+	if (!dryRun) installMarketplaces(pluginsData);
 
 	for (const [name, cfg] of Object.entries(plugins)) {
 		const marketplace = cfg.marketplace ?? "claude-plugins-official";
@@ -106,6 +130,16 @@ export function syncPlugins({ dryRun = false, profile } = {}) {
 					},
 				);
 				results.installed.push(key);
+				// mandatorySetup：安裝後執行必要初始化（如 always_on: false）
+				for (const cmd of cfg.config?.mandatorySetup ?? []) {
+					try {
+						execFileSync(process.env.SHELL ?? "/bin/sh", ["-c", cmd], {
+							stdio: "pipe",
+						});
+					} catch {
+						console.warn(`[ab-tao] mandatorySetup 失敗（可手動執行）: ${cmd}`);
+					}
+				}
 			} catch (err) {
 				console.error(`安裝失敗：${key}`, err.message);
 			}

@@ -255,6 +255,16 @@ async function main() {
 
 	p.log.success(`已移除 ${removed} 個檔案`);
 
+	// pua plugin 清理提示（由 claude CLI 管理，不在 ab-tao 管轄範圍）
+	const puaInstalled = fs.existsSync(path.join(CLAUDE_DIR, "plugins", "pua"));
+	if (puaInstalled) {
+		p.log.warn(
+			"pua plugin 由 claude CLI 管理，需額外清理：\n" +
+				"   claude plugin uninstall pua\n" +
+				"   rm -rf ~/.pua ~/.claude/pua",
+		);
+	}
+
 	// 可選：清除 iCloud 同步
 	try {
 		const { getSyncStatus, clearSync } = await import(

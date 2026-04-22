@@ -60,19 +60,26 @@ fi
 STATE_FILE="$AB_TAO_DIR/state.json"
 if [ -f "$STATE_FILE" ]; then
 	drift_count=0
+	ghost_count=0
 	while IFS= read -r rel_path; do
 		[ -z "$rel_path" ] && continue
 		full_path="$CLAUDE_DIR/$rel_path"
 		expected_sha=$(jq -r --arg p "$rel_path" '.managed[$p].sha256 // empty' "$STATE_FILE" 2>/dev/null)
 		[ -z "$expected_sha" ] && continue
-		[ ! -f "$full_path" ] && continue
-		actual_sha=$(shasum -a 256 "$full_path" 2>/dev/null | cut -c1-12)
+		if [ ! -f "$full_path" ]; then
+			ghost_count=$((ghost_count + 1))
+			[ "$ghost_count" -le 5 ] && printf '[冷啟動] 👻 ghost: %s\n' "$rel_path" >&2
+			continue
+		fi
+		actual_sha=$(shasum -a 256 "$full_path" 2>/dev/null | awk '{print $1}')
 		if [ -n "$actual_sha" ] && [ "$actual_sha" != "$expected_sha" ]; then
 			drift_count=$((drift_count + 1))
 			printf '[冷啟動] ⚠️  drift: %s\n' "$rel_path" >&2
 		fi
-	done < <(jq -r '.managed | keys[]' "$STATE_FILE" 2>/dev/null | head -20)
+	done < <(jq -r '.managed | keys[]' "$STATE_FILE" 2>/dev/null | head -50)
 
+	[ "$ghost_count" -gt 5 ] && \
+		printf '[冷啟動] 👻 ghost: ...（共 %d 個，執行 d:doctor 清理）\n' "$ghost_count" >&2
 	[ "$drift_count" -gt 0 ] && \
 		printf '[冷啟動] ⚠️  %d 個 managed 檔案有 drift，執行 d:status 檢視詳情\n' "$drift_count" >&2
 fi

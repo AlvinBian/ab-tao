@@ -30,6 +30,7 @@
 		"prefs-sync": "node bin/prefs-sync.mjs",
 		"restore": "node bin/restore.mjs",
 		"scan": "node bin/scan.mjs",
-		"chrome": "node bin/chrome.mjs"
+		"chrome": "node bin/chrome.mjs",
+		"doctor": "node bin/doctor.mjs"
 	}
 }

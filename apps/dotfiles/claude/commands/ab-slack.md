@@ -685,7 +685,7 @@ cc <!channel> 所有工程師請注意
 
 | 用戶說 | 發送目標 | 環境變數 |
 |--------|---------|---------|
-| 「發到頻道」「通知頻道」 | 指定頻道 | `$SLACK_NOTIFY_CHANNEL` |
+| 「發到頻道」「通知頻道」「發我頻道」「我的頻道」| 指定頻道 | `$SLACK_NOTIFY_CHANNEL` |
 | 「發給我」「DM 我」「傳給我」 | 私訊用戶 | `$SLACK_NOTIFY_USER_ID` |
 | 未指定 | 指定頻道（預設） | `$SLACK_NOTIFY_CHANNEL` |
 

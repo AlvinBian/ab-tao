@@ -10,6 +10,10 @@ marketplaces:
     source:
       type: github
       repo: anthropics/claude-plugins-official
+  - id: tanweai/pua
+    source:
+      type: github
+      repo: tanweai/pua
 
 plugins:
   # ── 不可取代（核心工作流）────────────────────────────────────
@@ -64,6 +68,21 @@ plugins:
     enabled: true
     marketplace: claude-plugins-official
     description: "官方 GitHub MCP server"
+
+  # ── 第三方 opt-in ─────────────────────────────────────────────
+  pua:
+    enabled: false
+    marketplace: tanweai/pua
+    description: "PUA 高能動性（17 commands / 11 skills / 3 agents / 9 hooks，opt-in）"
+    config:
+      sideEffects:
+        - "寫入 ~/.pua/builder-journal.md"
+        - "寫入 ~/.claude/pua/loop-*.md"
+      conflicts:
+        - "PreCompact / SessionStart / Stop / SubagentStop event 與 ab-tao 並列執行"
+        - "UserPromptSubmit 中文 keyword 高頻誤觸（加油/再試試/換個方法）"
+      mandatorySetup:
+        - "mkdir -p ~/.pua && echo '{\"always_on\": false}' > ~/.pua/config.json"
 
 # Phase 11′：profile_overrides（切換 profile 時自動套用）
 profile_overrides:

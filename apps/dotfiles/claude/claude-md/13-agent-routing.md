@@ -6,7 +6,7 @@
 |---|---|
 | 架構設計 / 審查 | `architect` agent |
 | 除錯 / 修復 | `debugger` agent |
-| 複雜計畫 | `ab-writing-plans` skill 或 `Plan` subagent |
+| 複雜計畫 | `/plan` mode 或 `Plan` subagent |
 | 程式碼審查 | `code-review` plugin |
 | Feature 實作 | `feature-dev` plugin |
 | 代碼簡化 | `code-simplifier` plugin |

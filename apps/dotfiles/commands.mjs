@@ -18,6 +18,7 @@ export const commands = {
 	report: "生成 HTML Dashboard 並在瀏覽器開啟",
 	uninstall: "移除 ab-tao",
 	"prefs-sync": "iCloud 偏好檔同步",
+	doctor: "State 健康診斷（--fix 自動修復 ghost / dead sync.included）",
 };
 
 export const aliases = {};

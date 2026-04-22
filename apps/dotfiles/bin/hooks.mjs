@@ -18,6 +18,36 @@ const DEFS_DIR = path.join(
 	"defs",
 );
 
+// pua-loop-hook.sh 無 timeout，Stop event 可能被延遲
+const NO_TIMEOUT_HOOKS = new Set(["pua-loop-hook.sh"]);
+
+function loadPluginHooks() {
+	const pluginsDir = path.join(path.dirname(P.settings), "plugins");
+	const hooks = [];
+	if (!fs.existsSync(pluginsDir)) return hooks;
+	for (const pluginName of fs.readdirSync(pluginsDir)) {
+		const hooksJson = path.join(pluginsDir, pluginName, "hooks", "hooks.json");
+		if (!fs.existsSync(hooksJson)) continue;
+		let data;
+		try {
+			data = JSON.parse(fs.readFileSync(hooksJson, "utf8"));
+		} catch {
+			continue;
+		}
+		const hooksMap = data.hooks ?? data;
+		if (typeof hooksMap !== "object" || Array.isArray(hooksMap)) continue;
+		for (const [event, handlers] of Object.entries(hooksMap)) {
+			for (const h of Array.isArray(handlers) ? handlers : [handlers]) {
+				const script = path.basename(
+					h.command ?? h.run ?? h.script ?? "(prompt)",
+				);
+				hooks.push({ source: pluginName, event, script });
+			}
+		}
+	}
+	return hooks;
+}
+
 function loadCanonicalDefs() {
 	if (!fs.existsSync(DEFS_DIR)) return [];
 	const defs = [];
@@ -79,6 +109,17 @@ async function main() {
 		)
 		.join("\n");
 	p.log.info(`ab-tao hooks（${defs.length} 個）：\n${statusLines}`);
+
+	const pluginHooks = loadPluginHooks();
+	if (pluginHooks.length > 0) {
+		const pluginLines = pluginHooks
+			.map((h) => {
+				const warn = NO_TIMEOUT_HOOKS.has(h.script) ? " ⚠️ no timeout" : "";
+				return `  📦 [${h.source}] ${h.event}：${h.script}${warn}`;
+			})
+			.join("\n");
+		p.log.info(`plugin hooks（${pluginHooks.length} 個）：\n${pluginLines}`);
+	}
 
 	// 選擇操作
 	const action = await p.select({

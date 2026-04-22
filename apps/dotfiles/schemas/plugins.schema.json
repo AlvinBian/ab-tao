@@ -32,7 +32,22 @@
 							},
 							"config": {
 								"type": "object",
-								"description": "Plugin-specific config overrides"
+								"description": "Plugin-specific config overrides",
+								"properties": {
+									"sideEffects": {
+										"type": "array",
+										"items": { "type": "string" }
+									},
+									"conflicts": {
+										"type": "array",
+										"items": { "type": "string" }
+									},
+									"mandatorySetup": {
+										"type": "array",
+										"items": { "type": "string" }
+									}
+								},
+								"additionalProperties": true
 							}
 						}
 					}

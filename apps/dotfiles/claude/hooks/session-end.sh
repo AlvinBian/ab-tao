@@ -90,7 +90,15 @@ PLANS_DIR="$HOME/.claude/plans"
 PROJECTS_DIR="$HOME/.claude/projects"
 RELOCATED_MARKER="$HOME/.claude/.plans-relocated"
 
-if [ -n "$CWD" ] && [ -d "$PLANS_DIR" ] && [ -d "$CWD/.git" ]; then
+# 解析 frontmatter 欄位（bash + sed，無 yq 依賴）
+parse_frontmatter() {
+	local file=$1 key=$2
+	sed -n "/^---$/,/^---$/p" "$file" 2>/dev/null | \
+		sed -n "s/^${key}:[[:space:]]*//p" | head -1
+}
+
+# 移除 [ -d "$CWD/.git" ] 守門：非 git 目錄也要歸位
+if [ -n "$CWD" ] && [ -d "$PLANS_DIR" ]; then
 	ENCODED=$(printf '%s' "$CWD" | sed 's|/|-|g')
 	TARGET_PLANS_DIR="$PROJECTS_DIR/$ENCODED/plans"
 
@@ -99,24 +107,57 @@ if [ -n "$CWD" ] && [ -d "$PLANS_DIR" ] && [ -d "$CWD/.git" ]; then
 
 	for plan_file in "$PLANS_DIR"/*.md; do
 		[ -f "$plan_file" ] || continue
-		slug=$(basename "$plan_file")
-		[ "$slug" = "README.md" ] && continue
-		printf '%s\n' "$relocated_slugs" | grep -qxF "$slug" && continue
+		orig_slug=$(basename "$plan_file")
+		[ "$orig_slug" = "README.md" ] && continue
+		printf '%s\n' "$relocated_slugs" | grep -qxF "$orig_slug" && continue
+
+		# 解析 frontmatter 命名規則
+		ticket=$(parse_frontmatter "$plan_file" "ticket")
+		topic=$(parse_frontmatter "$plan_file" "topic")
+
+		if [ -n "$ticket" ] && [ -n "$topic" ]; then
+			new_slug="${ticket}-${topic}.md"
+		elif [ -n "$topic" ]; then
+			new_slug="${topic}.md"
+		elif [ -n "$ticket" ]; then
+			new_slug="${ticket}.md"
+		else
+			new_slug="$orig_slug"
+		fi
 
 		mkdir -p "$TARGET_PLANS_DIR"
-		if cp "$plan_file" "$TARGET_PLANS_DIR/$slug" 2>/dev/null; then
-			rm -f "$plan_file"
+
+		# 衝突處理：append -2, -3 ...
+		target_file="$TARGET_PLANS_DIR/$new_slug"
+		if [ -f "$target_file" ]; then
+			base="${new_slug%.md}"
+			n=2
+			while [ -f "$TARGET_PLANS_DIR/${base}-${n}.md" ]; do
+				n=$(( n + 1 ))
+			done
+			new_slug="${base}-${n}.md"
+			target_file="$TARGET_PLANS_DIR/$new_slug"
+		fi
+
+		# mv 優先（同 fs），跨 fs fallback cp+rm
+		if mv "$plan_file" "$target_file" 2>/dev/null || \
+		   (cp "$plan_file" "$target_file" 2>/dev/null && rm -f "$plan_file"); then
 			index_file="$TARGET_PLANS_DIR/index.md"
-			entry="- [$slug](./$slug)"
+			entry="- [$new_slug](./$new_slug)"
 			if [ ! -f "$index_file" ]; then
-				printf '# Plans\n\n%s\n' "$entry" > "$index_file"
-			elif ! grep -qF "./$slug" "$index_file" 2>/dev/null; then
-				printf '\n%s\n' "$entry" >> "$index_file"
+				printf '# Plans\n\n<!-- auto-appended below -->\n%s\n' "$entry" > "$index_file"
+			elif ! grep -qF "./$new_slug" "$index_file" 2>/dev/null; then
+				# 保護手寫內容：僅在 sentinel 下方 append，不重建整個 index
+				if grep -q '<!-- auto-appended below -->' "$index_file" 2>/dev/null; then
+					printf '%s\n' "$entry" >> "$index_file"
+				else
+					printf '\n<!-- auto-appended below -->\n%s\n' "$entry" >> "$index_file"
+				fi
 			fi
-			printf '%s\n' "$slug" >> "$RELOCATED_MARKER"
+			printf '%s\n' "$orig_slug" >> "$RELOCATED_MARKER"
 			relocated_slugs="$relocated_slugs
-$slug"
-			printf '[session-end] 計畫已歸位：%s → %s\n' "$slug" "$TARGET_PLANS_DIR" >&2
+$orig_slug"
+			printf '[session-end] 計畫已歸位：%s → %s/%s\n' "$orig_slug" "$TARGET_PLANS_DIR" "$new_slug" >&2
 		fi
 	done
 fi

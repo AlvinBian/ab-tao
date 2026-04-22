@@ -10,6 +10,7 @@
  * 並發鎖：flock 2s timeout（多 Claude Code session 同時寫入防護）
  */
 
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { P } from "../core/paths.mjs";
@@ -118,6 +119,65 @@ export function stateResetChoices() {
 			entry.userOverride = false;
 		}
 	});
+}
+
+/**
+ * 純讀審查：回傳 managed 的健康狀況（不寫入，無需鎖）
+ * @returns {{ ghost: string[], driftSha: string[], deadIncluded: string[], orphans: string[] }}
+ */
+export function verifyManaged() {
+	const state = stateRead();
+	// ~/.claude 路徑：state.json 位於 ~/.claude/.ab-tao/state.json，往上兩層
+	const claudeBase = path.resolve(STATE_PATH, "../..");
+	const ghost = [];
+	const driftSha = [];
+	const deadIncluded = [];
+	const orphans = [];
+
+	for (const [relPath, entry] of Object.entries(state.managed)) {
+		const fullPath = path.join(claudeBase, relPath);
+		if (!fs.existsSync(fullPath)) {
+			ghost.push(
+				entry.userOverride === true ? `${relPath} [kept-by-user]` : relPath,
+			);
+		} else if (entry.sha256) {
+			const actual = createHash("sha256")
+				.update(fs.readFileSync(fullPath))
+				.digest("hex");
+			if (actual !== entry.sha256) driftSha.push(relPath);
+		}
+	}
+
+	const managedKeys = new Set(Object.keys(state.managed));
+	for (const includedPath of state.sync?.included ?? []) {
+		const fullIncludedPath = path.join(claudeBase, includedPath);
+		if (!fs.existsSync(fullIncludedPath)) {
+			deadIncluded.push(includedPath);
+			continue;
+		}
+		let stat;
+		try {
+			stat = fs.statSync(fullIncludedPath);
+		} catch {
+			continue;
+		}
+		if (!stat.isDirectory()) continue;
+		let entries;
+		try {
+			entries = fs.readdirSync(fullIncludedPath, { withFileTypes: true });
+		} catch {
+			continue;
+		}
+		for (const dirent of entries) {
+			if (!dirent.isFile() || !dirent.name.endsWith(".md")) continue;
+			const fileRelPath = path
+				.join(includedPath, dirent.name)
+				.replace(/\\/g, "/");
+			if (!managedKeys.has(fileRelPath)) orphans.push(fileRelPath);
+		}
+	}
+
+	return { ghost, driftSha, deadIncluded, orphans };
 }
 
 // ── 私有：簡易檔案鎖 ────────────────────────────────────────

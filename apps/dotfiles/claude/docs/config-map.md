@@ -39,8 +39,7 @@
 │   ├── architect.md             架構設計 + 5 維審查
 │   └── debugger.md              根因定位 + 最小 diff
 │
-├── commands/                    # 6 unique commands（ab- prefix = ab-tao managed）
-│   ├── ab-aside.md
+├── commands/                    # 5 unique commands（ab- prefix = ab-tao managed）
 │   ├── ab-check.md
 │   ├── ab-db-migration.md
 │   ├── ab-pr-stack.md

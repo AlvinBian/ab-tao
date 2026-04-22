@@ -30,6 +30,11 @@ export async function mergeHooksWithExisting(newHooks, settingsPath) {
 
 	if (!existing.hooks || isEmpty(existing.hooks)) return newHooks;
 
+	// NOTE: 此 dedup 僅針對寫入 ~/.claude/settings.json 的 hooks（ab-tao managed）。
+	// Plugin 安裝的 hooks 寫在 ~/.claude/plugins/{name}/hooks/hooks.json，
+	// 由 Claude Code plugin loader 直接載入，不經本函式 → 不會被 dedup 也不會被誤刪。
+	// 若 ab-tao hooks 需與 plugin hooks 協作，請在 docs/plugin-coexistence.md 文件化。
+
 	// 找出衝突：相同 event + matcher
 	const conflicts = [];
 	for (const [event, matchers] of Object.entries(newHooks.hooks || {})) {

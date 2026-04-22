@@ -8,6 +8,7 @@
  *   4. 非 manual 模式時執行安裝腳本，將檔案部署到 ~/.claude/
  */
 
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { isEmpty, sumBy } from "lodash-es";
@@ -18,6 +19,8 @@ import { stageClaudePreview } from "../cli/preview.mjs";
 import { runWithProgress } from "../cli/progress.mjs";
 import { BACK, smartSelect } from "../cli/prompts.mjs";
 import { getDescription } from "../config/descriptions.mjs";
+import { P } from "../core/paths.mjs";
+import { stateSetManaged } from "../state/state.mjs";
 import { buildCmdArgs, selectItems } from "./common.mjs";
 
 /**
@@ -308,4 +311,28 @@ export async function handleInstallClaude(
 				)
 			: [],
 	};
+}
+
+/**
+ * 部署 memory-index.mjs 至 ~/.claude/.ab-tao/bin/
+ * 並將其登錄至 state.managed（sha256 + source + installedAt）
+ *
+ * @param {string} repoDir - @ab-tao/dotfiles 根目錄
+ * @param {Object} [logger] - Logger 介面
+ */
+export async function deployAbTaoBin(repoDir, logger = CLACK_LOGGER) {
+	const srcPath = path.join(repoDir, "libs", "memory", "index-builder.mjs");
+	const destDir = path.join(path.dirname(P.state), "bin");
+	const destPath = path.join(destDir, "memory-index.mjs");
+	const srcContent = fs.readFileSync(srcPath, "utf8");
+	fs.mkdirSync(destDir, { recursive: true });
+	fs.writeFileSync(destPath, srcContent, "utf8");
+	fs.chmodSync(destPath, 0o755);
+	const sha256 = createHash("sha256").update(srcContent).digest("hex");
+	stateSetManaged("bin/memory-index.mjs", {
+		sha256,
+		source: "libs/memory/index-builder.mjs",
+		installedAt: new Date().toISOString(),
+	});
+	logger?.success("已部署 bin/memory-index.mjs");
 }

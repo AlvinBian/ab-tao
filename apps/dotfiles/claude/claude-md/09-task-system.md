@@ -38,4 +38,23 @@ plan-mode 新產生的 `.md` 由 SessionEnd hook 自動歸位至上述路徑。
 - `~/.claude/plans/`：原生 plansDirectory（Feb 2026+）
 - ab-tao SessionEnd hook 負責 plan 歸位，不需手動操作
 
+## Plan Frontmatter Convention
+
+Plan 文件首部可加入 frontmatter 以控制歸位命名：
+
+```yaml
+---
+ticket: VM-1482
+topic: pr-stack
+status: draft
+created: 2026-04-22
+---
+```
+
+命名規則（優先級高到低）：
+- `ticket + topic` → `{ticket}-{topic}.md`
+- 僅 `topic` → `{topic}.md`
+- 僅 `ticket` → `{ticket}.md`
+- 全無 → 保留原隨機 slug（不加 timestamp 前綴）
+
 </task_system>
