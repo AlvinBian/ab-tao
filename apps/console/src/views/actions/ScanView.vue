@@ -41,7 +41,6 @@ const scanOptions = ref({
 	skills: "",
 });
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const dryRun = ref(false);
 
 // 狀態機
