@@ -89,6 +89,11 @@ const totalHooks = computed(() =>
 const togglingKey = ref<string | null>(null);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
+function hookRowClass({ row }: { row: HookRow }) {
+	return row.enabled ? "" : "hook-row--disabled";
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function toggleHook(row: HookRow, enabled: boolean) {
 	const key = `${row.event}:${row.idx}:${row.id}`;
 	togglingKey.value = key;
@@ -97,7 +102,7 @@ async function toggleHook(row: HookRow, enabled: boolean) {
 			await store.patchHook(row.event, row.idx, { enabled: false });
 			ElMessage.success(`已停用 ${row.id}`);
 		} else {
-			await store.patchHook(row.event, 0, { enabled: true });
+			await store.patchHook(row.event, row.idx, { enabled: true });
 			ElMessage.success(`已啟用 ${row.id}`);
 		}
 	} catch (e) {
@@ -260,7 +265,7 @@ async function redeployAll() {
         :data="groupedHooks.get(event) ?? []"
         size="small"
         style="width:100%"
-        :row-class-name="(({ row }: { row: HookRow }) => row.enabled ? '' : 'hook-row--disabled')"
+        :row-class-name="hookRowClass"
       >
         <el-table-column label="啟用" width="70" align="center">
           <template #default="{ row }">

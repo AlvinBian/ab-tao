@@ -112,7 +112,10 @@ export function readSyncMeta() {
 		if (raw.version === 2) return raw;
 		// v1 → v2 自動遷移（讀取時轉換，下次 push/pull 時持久化）
 		return migrateToV2(raw);
-	} catch {
+	} catch (e) {
+		console.warn(
+			`[ab-async] .ab-sync.json 解析失敗，重置 metadata：${e.message}`,
+		);
 		return null;
 	}
 }
@@ -120,8 +123,14 @@ export function readSyncMeta() {
 /** 寫入同步 metadata（始終寫入 v2 格式） */
 function writeSyncMeta(data) {
 	const dir = path.dirname(SYNC_META_FILE);
-	fs.mkdirSync(dir, { recursive: true });
-	fs.writeFileSync(SYNC_META_FILE, JSON.stringify(data, null, 2));
+	try {
+		fs.mkdirSync(dir, { recursive: true });
+		fs.writeFileSync(SYNC_META_FILE, JSON.stringify(data, null, 2));
+	} catch (e) {
+		console.warn(
+			`[ab-async] 寫入 metadata 失敗（檔案操作已完成）：${e.message}`,
+		);
+	}
 }
 
 /** 從 v2 metadata 計算最新 lastPush / lastPull */
@@ -329,8 +338,8 @@ export async function pullPrefs({
 				({ validateFileContent: validateFn } = await import(
 					"@ab-tao/commons/security"
 				));
-			} catch {
-				/* commons 不可用時跳過 */
+			} catch (e) {
+				console.warn(`[ab-async] 安全驗證器無法載入，跳過驗證：${e.message}`);
 			}
 			if (validateFn) {
 				const { errors: secErrors } = validateFn(remote, remoteContent, {

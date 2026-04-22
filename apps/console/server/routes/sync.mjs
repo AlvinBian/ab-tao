@@ -58,6 +58,7 @@ export async function syncRouter(req, res, url, json) {
 			sseSend(res, { type: "done", success: true, result });
 		} catch (e) {
 			sseSend(res, { type: "error", message: e.message });
+			sseSend(res, { type: "done", success: false });
 		} finally {
 			runningTasks.delete("sync-push");
 			res.end();
@@ -93,6 +94,7 @@ export async function syncRouter(req, res, url, json) {
 			sseSend(res, { type: "done", success: true, result });
 		} catch (e) {
 			sseSend(res, { type: "error", message: e.message });
+			sseSend(res, { type: "done", success: false });
 		} finally {
 			runningTasks.delete("sync-pull");
 			res.end();

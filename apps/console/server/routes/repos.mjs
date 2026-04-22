@@ -108,10 +108,12 @@ export async function reposRouter(req, res, url, json) {
 	// ── POST /api/repos/open ──
 	if (req.method === "POST" && url.pathname === "/api/repos/open") {
 		const repoPath = req._body?.path;
+		const HOME = process.env.HOME ?? "";
 		if (
 			typeof repoPath !== "string" ||
 			!path.isAbsolute(repoPath) ||
-			!existsSync(repoPath)
+			!existsSync(repoPath) ||
+			(!repoPath.startsWith(HOME + path.sep) && repoPath !== HOME)
 		) {
 			json(res, 400, "path 無效或不存在", null, 400);
 			return true;
