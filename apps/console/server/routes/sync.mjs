@@ -43,7 +43,12 @@ export async function syncRouter(req, res, url, json) {
 		try {
 			const { pushPrefs } = await getAbAsync();
 			sseSend(res, { type: "log", message: "推送偏好設定至 iCloud…" });
-			const result = pushPrefs({ sync99Local: req._body?.sync99Local });
+			const result = pushPrefs({
+				sync99Local: req._body?.sync99Local,
+				dryRun: req._body?.dryRun,
+			});
+			for (const f of result.dry ?? [])
+				sseSend(res, { type: "log", message: `[DRY-RUN] 將推送：${f}` });
 			for (const f of result.pushed ?? [])
 				sseSend(res, { type: "log", message: `✓ 推送：${f}` });
 			for (const f of result.skipped ?? [])
@@ -77,7 +82,10 @@ export async function syncRouter(req, res, url, json) {
 			const result = await pullPrefs({
 				force: req._body?.force,
 				sync99Local: req._body?.sync99Local,
+				dryRun: req._body?.dryRun,
 			});
+			for (const f of result.dry ?? [])
+				sseSend(res, { type: "log", message: `[DRY-RUN] 將拉取：${f}` });
 			for (const f of result.pulled ?? [])
 				sseSend(res, { type: "log", message: `✓ 拉取：${f}` });
 			for (const f of result.skipped ?? [])

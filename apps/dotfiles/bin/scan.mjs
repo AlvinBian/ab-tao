@@ -68,6 +68,9 @@ const onlySkills = flagSkills
 	? (args[args.indexOf("--skills") + 1] || "").split(",").filter(Boolean)
 	: null;
 
+// --dry-run：不寫入 stacks/，只列出將執行的分析結果
+const flagDryRun = args.includes("--dry-run");
+
 // ── getRepos：讀取要掃描的 repo 清單 ────────────────────────────
 /**
  * 取得要掃描的 repo 列表
@@ -151,6 +154,10 @@ async function main() {
 	const repos = needsRepos ? getRepos() : [];
 	const repoList = top > 0 ? repos.slice(0, top) : repos;
 
+	if (flagDryRun) {
+		console.log("  [DRY-RUN] 模式：僅列出分析結果，不寫入 stacks/\n");
+	}
+
 	if (needsRepos) {
 		console.log(
 			`\n🔍 掃描 ${orgName || "config.json"} 中的 ${repoList.length} 個 repos...\n`,
@@ -158,11 +165,13 @@ async function main() {
 	}
 
 	// --init：清空舊的 stacks/ 目錄
-	if (flagInit && fs.existsSync(STACKS_DIR)) {
-		fs.rmSync(STACKS_DIR, { recursive: true });
-		console.log("  🗑 已清空 stacks/\n");
+	if (!flagDryRun) {
+		if (flagInit && fs.existsSync(STACKS_DIR)) {
+			fs.rmSync(STACKS_DIR, { recursive: true });
+			console.log("  🗑 已清空 stacks/\n");
+		}
+		fs.mkdirSync(STACKS_DIR, { recursive: true });
 	}
-	fs.mkdirSync(STACKS_DIR, { recursive: true });
 
 	// ── 階段 1：並行分析所有 repos（GitHub API + 多生態 API）──────
 	console.log(`  ⚡ 並行分析 ${repoList.length} 個 repos...\n`);
@@ -239,31 +248,42 @@ async function main() {
 		kept = 0,
 		aiGen = 0;
 
-	// 並行度限制為 3（避免同時太多 AI API 請求）
-	const CONCURRENCY = 3;
-	const entries = [...filteredTechs].sort((a, b) => a[0].localeCompare(b[0]));
-	for (let i = 0; i < entries.length; i += CONCURRENCY) {
-		const batch = entries.slice(i, i + CONCURRENCY);
-		const batchResults = await Promise.allSettled(
-			batch.map(([id, meta]) => ensureStack(id, meta, canUseAI)),
-		);
-		for (let j = 0; j < batch.length; j++) {
-			const [id] = batch[j];
-			const status =
-				batchResults[j].status === "fulfilled"
-					? batchResults[j].value
-					: "error";
-			if (status === "ai-generated") {
-				aiGen++;
-				console.log(`  🤖 ${id.padEnd(20)} (AI 生成)`);
-			} else if (status === "created") {
-				created++;
-				console.log(`  🆕 ${id.padEnd(20)} (模板)`);
-			} else if (status === "kept") {
-				kept++;
-				console.log(`  ✔  ${id.padEnd(20)} (保留)`);
-			} else {
-				console.log(`  ⚠  ${id.padEnd(20)} (失敗)`);
+	if (flagDryRun) {
+		for (const [id] of [...filteredTechs].sort((a, b) =>
+			a[0].localeCompare(b[0]),
+		)) {
+			const exists = fs.existsSync(path.join(STACKS_DIR, id));
+			console.log(
+				`  [DRY-RUN] ${id.padEnd(20)} ${exists ? "(已存在，將保留)" : "(將新建)"}`,
+			);
+		}
+	} else {
+		// 並行度限制為 3（避免同時太多 AI API 請求）
+		const CONCURRENCY = 3;
+		const entries = [...filteredTechs].sort((a, b) => a[0].localeCompare(b[0]));
+		for (let i = 0; i < entries.length; i += CONCURRENCY) {
+			const batch = entries.slice(i, i + CONCURRENCY);
+			const batchResults = await Promise.allSettled(
+				batch.map(([id, meta]) => ensureStack(id, meta, canUseAI)),
+			);
+			for (let j = 0; j < batch.length; j++) {
+				const [id] = batch[j];
+				const status =
+					batchResults[j].status === "fulfilled"
+						? batchResults[j].value
+						: "error";
+				if (status === "ai-generated") {
+					aiGen++;
+					console.log(`  🤖 ${id.padEnd(20)} (AI 生成)`);
+				} else if (status === "created") {
+					created++;
+					console.log(`  🆕 ${id.padEnd(20)} (模板)`);
+				} else if (status === "kept") {
+					kept++;
+					console.log(`  ✔  ${id.padEnd(20)} (保留)`);
+				} else {
+					console.log(`  ⚠  ${id.padEnd(20)} (失敗)`);
+				}
 			}
 		}
 	}

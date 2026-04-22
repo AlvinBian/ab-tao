@@ -219,19 +219,21 @@ export function getSyncStatus(opts = {}) {
 
 /**
  * 推送本地偏好 → iCloud
- * @param {{ sync99Local?: boolean }} opts
- * @returns {{ pushed: string[], skipped: string[], errors: string[] }}
+ * @param {{ sync99Local?: boolean, dryRun?: boolean }} opts
+ * @returns {{ pushed: string[], skipped: string[], errors: string[], dry?: string[] }}
  */
 export function pushPrefs(opts = {}) {
+	const { dryRun = false } = opts;
 	if (!isICloudAvailable()) {
 		throw new Error("iCloud Drive 不可用（未登入或系統不支援）");
 	}
 
-	fs.mkdirSync(ICLOUD_SYNC_DIR, { recursive: true });
+	if (!dryRun) fs.mkdirSync(ICLOUD_SYNC_DIR, { recursive: true });
 
 	const pushed = [];
 	const skipped = [];
 	const errors = [];
+	const dry = [];
 	const now = new Date().toISOString();
 
 	// 讀取現有 metadata，確保保留 pull 時間戳
@@ -245,6 +247,10 @@ export function pushPrefs(opts = {}) {
 	for (const { local, remote, label } of getSyncFiles(opts)) {
 		if (!fs.existsSync(local)) {
 			skipped.push(label);
+			continue;
+		}
+		if (dryRun) {
+			dry.push(label);
 			continue;
 		}
 		try {
@@ -262,19 +268,25 @@ export function pushPrefs(opts = {}) {
 		}
 	}
 
-	meta.device = os.hostname();
-	meta.version = 2;
-	writeSyncMeta(meta);
+	if (!dryRun) {
+		meta.device = os.hostname();
+		meta.version = 2;
+		writeSyncMeta(meta);
+	}
 
-	return { pushed, skipped, errors };
+	return { pushed, skipped, errors, ...(dryRun ? { dry } : {}) };
 }
 
 /**
  * 從 iCloud 拉取偏好 → 本地
- * @param {{ force?: boolean, sync99Local?: boolean }} opts - force=true 跳過衝突確認
- * @returns {{ pulled: string[], skipped: string[], errors: string[] }}
+ * @param {{ force?: boolean, sync99Local?: boolean, dryRun?: boolean }} opts - force=true 跳過衝突確認
+ * @returns {{ pulled: string[], skipped: string[], errors: string[], dry?: string[] }}
  */
-export async function pullPrefs({ force = false, sync99Local = false } = {}) {
+export async function pullPrefs({
+	force = false,
+	sync99Local = false,
+	dryRun = false,
+} = {}) {
 	if (!isICloudAvailable()) {
 		throw new Error("iCloud Drive 不可用（未登入或系統不支援）");
 	}
@@ -282,6 +294,7 @@ export async function pullPrefs({ force = false, sync99Local = false } = {}) {
 	const pulled = [];
 	const skipped = [];
 	const errors = [];
+	const dry = [];
 	const now = new Date().toISOString();
 
 	const meta = readSyncMeta() ?? {
@@ -295,6 +308,10 @@ export async function pullPrefs({ force = false, sync99Local = false } = {}) {
 		const remotePath = path.join(ICLOUD_SYNC_DIR, remote);
 		if (!fs.existsSync(remotePath)) {
 			skipped.push(label);
+			continue;
+		}
+		if (dryRun) {
+			dry.push(label);
 			continue;
 		}
 		try {
@@ -346,11 +363,13 @@ export async function pullPrefs({ force = false, sync99Local = false } = {}) {
 		}
 	}
 
-	meta.device = os.hostname();
-	meta.version = 2;
-	writeSyncMeta(meta);
+	if (!dryRun) {
+		meta.device = os.hostname();
+		meta.version = 2;
+		writeSyncMeta(meta);
+	}
 
-	return { pulled, skipped, errors };
+	return { pulled, skipped, errors, ...(dryRun ? { dry } : {}) };
 }
 
 /**

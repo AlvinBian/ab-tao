@@ -123,6 +123,13 @@ async function main() {
 	let flagQuick = args.includes("--quick");
 	const flagFromIcloud = args.includes("--from-icloud");
 	const flagDryRun = args.includes("--dry-run");
+
+	// 非 TTY 環境（console 呼叫）：強制使用 Quick 模式，避免互動式 prompt 掛死
+	if (!process.stdin.isTTY && !flagQuick && !flagAll && !flagFromIcloud) {
+		p.log.warn("⚠️ 非 TTY 環境：自動使用 Quick 模式");
+		flagQuick = true;
+	}
+
 	let prev = loadSession();
 	let projectFolders = loadProjectFolders(config, prev);
 	const selectedAiSources = prev?.selectedAiSources || [];

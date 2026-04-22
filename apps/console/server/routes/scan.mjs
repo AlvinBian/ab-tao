@@ -82,13 +82,21 @@ export async function scanRouter(req, res, url, json) {
 			return true;
 		}
 
-		const { init = false, noAi = false, org, top, skills } = req._body ?? {};
+		const {
+			init = false,
+			noAi = false,
+			org,
+			top,
+			skills,
+			dryRun = false,
+		} = req._body ?? {};
 		const args = [path.join(DOTFILES_BIN, "scan.mjs")];
 		if (init) args.push("--init");
 		if (noAi) args.push("--no-ai");
 		if (org) args.push("--org", String(org));
 		if (top) args.push("--top", String(top));
 		if (skills) args.push("--skills", String(skills));
+		if (dryRun) args.push("--dry-run");
 
 		spawnSse(res, "scan", process.execPath, args, {
 			cwd: path.resolve(DOTFILES_BIN, ".."),

@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DOTFILES_BIN } from "../sse.mjs";
+import { DOTFILES_BIN, runningTasks, sseHeaders, sseSend } from "../sse.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOTFILES_ROOT = path.resolve(DOTFILES_BIN, "..");
@@ -76,9 +76,9 @@ export async function restoreRouter(req, res, url, json) {
 		return true;
 	}
 
-	// ── POST /api/restore/execute ──
+	// ── POST /api/restore/execute ── SSE 串流還原
 	if (req.method === "POST" && url.pathname === "/api/restore/execute") {
-		const { backupId } = req._body ?? {};
+		const { backupId, dryRun = false } = req._body ?? {};
 		if (!backupId) {
 			json(res, 400, "backupId 必填", null, 400);
 			return true;
@@ -100,13 +100,17 @@ export async function restoreRouter(req, res, url, json) {
 			json(res, 404, `備份不存在：${backupId}`, null, 404);
 			return true;
 		}
+
+		sseHeaders(res);
+		runningTasks.set("restore", true);
 		try {
 			const contents = fs.readdirSync(backupDir);
-			const restored = [];
+			sseSend(res, {
+				type: "log",
+				message: `${dryRun ? "[DRY-RUN] " : ""}開始還原備份 ${backupId}（${contents.length} 項）`,
+			});
 			for (const item of contents) {
-				if (path.basename(item) !== item) {
-					continue; // 跳過含路徑分隔符的 item
-				}
+				if (path.basename(item) !== item) continue;
 				const src = path.join(backupDir, item);
 				let dest;
 				if (item === "zshrc") dest = path.join(HOME, ".zshrc");
@@ -114,14 +118,25 @@ export async function restoreRouter(req, res, url, json) {
 				else if (item === "claude") dest = path.join(HOME, ".claude");
 				else dest = path.join(HOME, `.${item}`);
 
-				const stat = fs.statSync(src);
-				if (stat.isDirectory()) cpDir(src, dest);
-				else fs.copyFileSync(src, dest);
-				restored.push({ item, dest });
+				if (dryRun) {
+					sseSend(res, {
+						type: "log",
+						message: `[DRY-RUN] 將還原：${item} → ${dest}`,
+					});
+				} else {
+					const stat = fs.statSync(src);
+					if (stat.isDirectory()) cpDir(src, dest);
+					else fs.copyFileSync(src, dest);
+					sseSend(res, { type: "log", message: `✓ 還原：${item} → ${dest}` });
+				}
 			}
-			json(res, 0, `已還原備份 ${backupId}`, { backupId, restored });
+			sseSend(res, { type: "done", success: true, dryRun });
 		} catch (e) {
-			json(res, 500, e.message, null, 500);
+			sseSend(res, { type: "error", message: e.message });
+			sseSend(res, { type: "done", success: false });
+		} finally {
+			runningTasks.delete("restore");
+			res.end();
 		}
 		return true;
 	}
