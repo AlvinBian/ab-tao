@@ -39,7 +39,7 @@
 | 除錯 / build 修復 | `debugger` |
 | 程式碼審查 | `code-reviewer` |
 | 探索/分析 | `Explore` / `general-purpose` |
-| 規劃 | `writing-plans` skill / `Plan` subagent |
+| 規劃 | `ab-writing-plans` skill / `Plan` subagent |
 | 重構/簡化 | `code-simplifier` |
 
 </dag_parallel_execution>

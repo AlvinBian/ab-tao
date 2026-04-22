@@ -24,11 +24,11 @@
 │   └── 14-dag-parallel-execution.md  DAG 並行執行規則（尾錨定前）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）
-│   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
-│   ├── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
-│   ├── typescript.md            paths: *.ts *.tsx
-│   ├── testing.md               paths: *.test.* *.spec.* __tests__/
-│   └── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   ├── ab-api-and-data.md       paths: src/api/ routes/ *.sql migrations/
+│   ├── ab-vue-nuxt.md           paths: *.vue nuxt.config.* composables/
+│   ├── ab-typescript.md         paths: *.ts *.tsx
+│   ├── ab-testing.md            paths: *.test.* *.spec.* __tests__/
+│   └── ab-migrations.md         paths: migrations/ *.sql prisma/ drizzle/
 │
 ├── docs/                        # 參考文件（可 @import，非規則）
 │   ├── rtk.md                   RTK 工具 + token 預算影響
@@ -39,12 +39,13 @@
 │   ├── architect.md             架構設計 + 5 維審查
 │   └── debugger.md              根因定位 + 最小 diff
 │
-├── commands/                    # 5 unique commands
-│   ├── aside.md
-│   ├── check.md
-│   ├── db-migration.md
-│   ├── slack.md
-│   └── test.md
+├── commands/                    # 6 unique commands（ab- prefix = ab-tao managed）
+│   ├── ab-aside.md
+│   ├── ab-check.md
+│   ├── ab-db-migration.md
+│   ├── ab-pr-stack.md
+│   ├── ab-slack.md
+│   └── ab-test.md
 │
 ├── skills/                      # 23 skills（按需載入）
 │
