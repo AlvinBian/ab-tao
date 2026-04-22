@@ -20,6 +20,7 @@ const LOCK_PATH = P.stateLock;
 const TMP_PATH = `${STATE_PATH}.tmp`;
 
 let _lockWarnPrinted = false;
+let _lockGloballyFailed = false;
 
 const EMPTY_STATE = {
 	$schema: "./state.schema.json",
@@ -185,6 +186,9 @@ export function verifyManaged() {
 // ── 私有：簡易檔案鎖 ────────────────────────────────────────
 
 function _acquireLock(timeoutMs = 2000) {
+	// 同一 process 內鎖已知失敗 → 立刻 fast-fail，不再 spin
+	if (_lockGloballyFailed) return null;
+
 	fs.mkdirSync(path.dirname(LOCK_PATH), { recursive: true });
 	const start = Date.now();
 	while (true) {
@@ -194,6 +198,7 @@ function _acquireLock(timeoutMs = 2000) {
 		} catch (e) {
 			if (e.code !== "EEXIST") throw e;
 			if (Date.now() - start >= timeoutMs) {
+				_lockGloballyFailed = true;
 				if (!_lockWarnPrinted) {
 					console.warn(
 						"[ab-tao] state.json 鎖逾時（另一 Claude Code session 進行中），以唯讀模式繼續",
