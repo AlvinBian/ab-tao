@@ -84,7 +84,7 @@ metadata:
 
 確認發送嗎？
   [y]   發送到預設頻道（$SLACK_NOTIFY_CHANNEL）
-  [dm]  私訊給我（$SLACK_NOTIFY_USER_ID）
+  [dm]  私訊給我（透過 Slack MCP 自動獲取使用者）
   [#ID] 指定頻道（貼上 Channel ID 或 https://xxx.slack.com/archives/CXXXXXXXX）
   [n]   不發送，只保留草稿
 ```
@@ -92,8 +92,7 @@ metadata:
 3. 等待使用者明確回覆後，才呼叫 `mcp__claude_ai_Slack__slack_send_message`
 4. 發送成功後回報：`✅ 已發送到 <頻道名或 ID>`
 
-若 `$SLACK_NOTIFY_CHANNEL` 未設定 → 詢問用戶提供頻道 ID；
-若 `$SLACK_NOTIFY_USER_ID` 未設定且選 [dm] → 提示在 `settings.json` env 加上。
+若 `$SLACK_NOTIFY_CHANNEL` 未設定 → 詢問用戶提供頻道 ID。
 
 ---
 
