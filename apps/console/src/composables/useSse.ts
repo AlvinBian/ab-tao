@@ -1,7 +1,7 @@
 import { onUnmounted, ref } from "vue";
 
 export interface SseEvent {
-	type: "log" | "progress" | "done" | "error";
+	type: "log" | "progress" | "done" | "error" | "meta";
 	message?: string;
 	level?: "info" | "warn" | "error";
 	step?: number;
@@ -9,6 +9,7 @@ export interface SseEvent {
 	stage?: string;
 	code?: number;
 	success?: boolean;
+	traceId?: string;
 	[key: string]: unknown;
 }
 
@@ -29,6 +30,7 @@ export function useSse(options: UseSseOptions = {}) {
 	const progress = ref(0);
 	const stage = ref("");
 	const errorMsg = ref("");
+	const traceId = ref("");
 
 	let abortCtrl: AbortController | null = null;
 
@@ -40,6 +42,7 @@ export function useSse(options: UseSseOptions = {}) {
 		progress.value = 0;
 		stage.value = "";
 		errorMsg.value = "";
+		traceId.value = "";
 	}
 
 	function start(url: string, body?: Record<string, unknown>) {
@@ -75,16 +78,19 @@ export function useSse(options: UseSseOptions = {}) {
 					if (streamDone) break;
 
 					buffer += decoder.decode(value, { stream: true });
-					const parts = buffer.split("\n\n");
+					// SSE events are separated by blank lines; handle both LF and CRLF
+					const parts = buffer.split(/\r?\n\r?\n/);
 					buffer = parts.pop() ?? "";
 
 					for (const part of parts) {
-						const dataLine = part
-							.split("\n")
-							.find((l) => l.startsWith("data:"));
-						if (!dataLine) continue;
+						// Collect all data: lines (SSE spec allows multiple per event)
+						const dataLines = part
+							.split(/\r?\n/)
+							.filter((l) => l.startsWith("data:"))
+							.map((l) => l.replace(/^data:\s?/, ""));
+						if (dataLines.length === 0) continue;
 						try {
-							const event: SseEvent = JSON.parse(dataLine.slice(5).trim());
+							const event: SseEvent = JSON.parse(dataLines.join("\n"));
 							handleEvent(event);
 						} catch {
 							// 忽略非 JSON 行
@@ -99,7 +105,10 @@ export function useSse(options: UseSseOptions = {}) {
 			} catch (err: unknown) {
 				if ((err as Error)?.name === "AbortError") return;
 				running.value = false;
+				done.value = true;
+				success.value = false;
 				errorMsg.value = (err as Error)?.message ?? "連線失敗";
+				options.onError?.({ type: "error", message: errorMsg.value });
 			}
 		})();
 	}
@@ -107,7 +116,9 @@ export function useSse(options: UseSseOptions = {}) {
 	function handleEvent(event: SseEvent) {
 		options.onEvent?.(event);
 
-		if (event.type === "log") {
+		if (event.type === "meta") {
+			if (event.traceId) traceId.value = event.traceId;
+		} else if (event.type === "log") {
 			const entry = {
 				level: event.level ?? "info",
 				message: event.message ?? "",
@@ -125,6 +136,8 @@ export function useSse(options: UseSseOptions = {}) {
 				logs.value.push({ level: "info", message: event.message });
 			}
 		} else if (event.type === "done") {
+			// 冪等保護：多次 done 只處理第一次
+			if (done.value) return;
 			running.value = false;
 			done.value = true;
 			success.value = event.success ?? true;
@@ -154,6 +167,7 @@ export function useSse(options: UseSseOptions = {}) {
 		progress,
 		stage,
 		errorMsg,
+		traceId,
 		start,
 		stop,
 		reset,

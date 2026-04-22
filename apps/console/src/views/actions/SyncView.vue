@@ -1,17 +1,8 @@
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useActionState } from "@/composables/useActionState";
 import { useSse } from "@/composables/useSse";
-
-type ActionState =
-	| "idle"
-	| "running"
-	| "success"
-	| "failed"
-	| "retrying"
-	| "retry-failed";
-
-const MAX_RETRIES = 3;
 
 interface SyncDiff {
 	label: string;
@@ -39,45 +30,39 @@ const loadingStatus = ref(false);
 const dryRun = ref(false);
 
 // ── Push 狀態機 ──
-const pushState = ref<ActionState>("idle");
-const pushRetryCount = ref(0);
-const pushTraceId = ref("");
+const pushAction = useActionState();
 const pushLogLines = ref<string[]>([]);
 const pushLogContainer = ref<HTMLElement | null>(null);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushSuccessCount = computed(
-	() => pushLogLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
+	() =>
+		pushLogLines.value.filter((l) =>
+			/(^|[\s[(])(✓|success|PASS)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushWarnCount = computed(
-	() => pushLogLines.value.filter((l) => /⚠|warn/i.test(l)).length,
+	() =>
+		pushLogLines.value.filter((l) => /(^|[\s[(])(⚠|warn)([\s:.\])]|$)/i.test(l))
+			.length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pushErrorCount = computed(
-	() => pushLogLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
+	() =>
+		pushLogLines.value.filter((l) =>
+			/(^|[\s[(])(✗|error|FAIL)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 
 const pushSse = useSse({
 	onDone: (e) => {
+		pushAction.settle(e.success ?? false);
 		if (e.success) {
-			pushState.value = "success";
 			ElMessage.success("推送完成");
 			fetchStatus();
 		} else {
-			pushState.value = pushRetryCount.value > 0 ? "retry-failed" : "failed";
 			ElMessage.error("推送失敗");
-		}
-	},
-	onEvent: (e) => {
-		if (e.type === "log" && e.message) {
-			pushLogLines.value.push(e.message);
-			nextTick(() => {
-				if (pushLogContainer.value) {
-					pushLogContainer.value.scrollTop =
-						pushLogContainer.value.scrollHeight;
-				}
-			});
 		}
 	},
 });
@@ -86,49 +71,48 @@ watch(
 	() => pushSse.logs.value.length,
 	() => {
 		pushLogLines.value = pushSse.logs.value.map((l) => l.message);
+		nextTick(() => {
+			if (pushLogContainer.value) {
+				pushLogContainer.value.scrollTop = pushLogContainer.value.scrollHeight;
+			}
+		});
 	},
 );
 
 // ── Pull 狀態機 ──
-const pullState = ref<ActionState>("idle");
-const pullRetryCount = ref(0);
-const pullTraceId = ref("");
+const pullAction = useActionState();
 const pullLogLines = ref<string[]>([]);
 const pullLogContainer = ref<HTMLElement | null>(null);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullSuccessCount = computed(
-	() => pullLogLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
+	() =>
+		pullLogLines.value.filter((l) =>
+			/(^|[\s[(])(✓|success|PASS)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullWarnCount = computed(
-	() => pullLogLines.value.filter((l) => /⚠|warn/i.test(l)).length,
+	() =>
+		pullLogLines.value.filter((l) => /(^|[\s[(])(⚠|warn)([\s:.\])]|$)/i.test(l))
+			.length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const pullErrorCount = computed(
-	() => pullLogLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
+	() =>
+		pullLogLines.value.filter((l) =>
+			/(^|[\s[(])(✗|error|FAIL)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 
 const pullSse = useSse({
 	onDone: (e) => {
+		pullAction.settle(e.success ?? false);
 		if (e.success) {
-			pullState.value = "success";
 			ElMessage.success("拉取完成");
 			fetchStatus();
 		} else {
-			pullState.value = pullRetryCount.value > 0 ? "retry-failed" : "failed";
 			ElMessage.error("拉取失敗");
-		}
-	},
-	onEvent: (e) => {
-		if (e.type === "log" && e.message) {
-			pullLogLines.value.push(e.message);
-			nextTick(() => {
-				if (pullLogContainer.value) {
-					pullLogContainer.value.scrollTop =
-						pullLogContainer.value.scrollHeight;
-				}
-			});
 		}
 	},
 });
@@ -137,6 +121,11 @@ watch(
 	() => pullSse.logs.value.length,
 	() => {
 		pullLogLines.value = pullSse.logs.value.map((l) => l.message);
+		nextTick(() => {
+			if (pullLogContainer.value) {
+				pullLogContainer.value.scrollTop = pullLogContainer.value.scrollHeight;
+			}
+		});
 	},
 );
 
@@ -144,7 +133,8 @@ watch(
 async function fetchStatus() {
 	loadingStatus.value = true;
 	try {
-		const r = await fetch("/api/sync/status");
+		const sync99Local = false; // TODO: 可從設定讀取
+		const r = await fetch(`/api/sync/status?sync99Local=${sync99Local}`);
 		const { code, message, data } = await r.json();
 		if (code !== 0) {
 			ElMessage.error(message ?? "無法載入同步狀態");
@@ -162,26 +152,29 @@ onMounted(fetchStatus);
 
 // ── Push 操作 ──
 function runPush() {
-	pushTraceId.value = Date.now().toString(36);
 	pushLogLines.value = [];
-	pushSse.reset();
 	const url = dryRun.value ? "/api/sync/push?dryRun=true" : "/api/sync/push";
 	pushSse.start(url, dryRun.value ? { dryRun: true } : {});
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function push() {
-	pushRetryCount.value = 0;
-	pushState.value = "running";
+	pushAction.start();
 	runPush();
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function retryPush() {
-	if (pushRetryCount.value >= MAX_RETRIES) return;
-	pushRetryCount.value += 1;
-	pushState.value = "retrying";
+	if (!pushAction.retry()) return;
 	runPush();
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+async function cancelPush() {
+	pushSse.stop();
+	await fetch("/api/sync", { method: "DELETE" });
+	pushAction.reset();
+	ElMessage.info("已發送取消訊號");
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -192,32 +185,35 @@ async function copyPushLog() {
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 async function copyPushTraceId() {
-	await navigator.clipboard.writeText(pushTraceId.value);
+	await navigator.clipboard.writeText(pushAction.traceId.value);
 	ElMessage.success("已複製 traceId");
 }
 
 // ── Pull 操作 ──
 function runPull() {
-	pullTraceId.value = Date.now().toString(36);
 	pullLogLines.value = [];
-	pullSse.reset();
 	const url = dryRun.value ? "/api/sync/pull?dryRun=true" : "/api/sync/pull";
 	pullSse.start(url, dryRun.value ? { dryRun: true } : {});
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function pull() {
-	pullRetryCount.value = 0;
-	pullState.value = "running";
+	pullAction.start();
 	runPull();
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function retryPull() {
-	if (pullRetryCount.value >= MAX_RETRIES) return;
-	pullRetryCount.value += 1;
-	pullState.value = "retrying";
+	if (!pullAction.retry()) return;
 	runPull();
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+async function cancelPull() {
+	pullSse.stop();
+	await fetch("/api/sync", { method: "DELETE" });
+	pullAction.reset();
+	ElMessage.info("已發送取消訊號");
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -228,32 +224,25 @@ async function copyPullLog() {
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 async function copyPullTraceId() {
-	await navigator.clipboard.writeText(pullTraceId.value);
+	await navigator.clipboard.writeText(pullAction.traceId.value);
 	ElMessage.success("已複製 traceId");
 }
 
 // ── Computed helpers ──
 // biome-ignore lint/correctness/noUnusedVariables: used in template
-const isPushRunning = computed(
-	() => pushState.value === "running" || pushState.value === "retrying",
-);
+const {
+	isRunning: isPushRunning,
+	isFailed: isPushFailed,
+	retryExhausted: pushRetryExhausted,
+	MAX_RETRIES: PUSH_MAX,
+} = pushAction;
 // biome-ignore lint/correctness/noUnusedVariables: used in template
-const isPushFailed = computed(
-	() => pushState.value === "failed" || pushState.value === "retry-failed",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const pushRetryExhausted = computed(() => pushRetryCount.value >= MAX_RETRIES);
-
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isPullRunning = computed(
-	() => pullState.value === "running" || pullState.value === "retrying",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isPullFailed = computed(
-	() => pullState.value === "failed" || pullState.value === "retry-failed",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const pullRetryExhausted = computed(() => pullRetryCount.value >= MAX_RETRIES);
+const {
+	isRunning: isPullRunning,
+	isFailed: isPullFailed,
+	retryExhausted: pullRetryExhausted,
+	MAX_RETRIES: PULL_MAX,
+} = pullAction;
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const STATUS_MAP: Record<
@@ -306,7 +295,7 @@ function lineColor(line: string): string {
       <template #header><span>操作設定</span></template>
       <el-form label-width="80px" label-position="left" size="small">
         <el-form-item label="Dry-run">
-          <el-switch v-model="dryRun" active-text="Dry-run 預覽" />
+          <el-switch v-model="dryRun" active-text="Dry-run 預覽" :disabled="isPushRunning || isPullRunning" />
         </el-form-item>
       </el-form>
     </el-card>
@@ -379,7 +368,7 @@ function lineColor(line: string): string {
         <!-- 操作按鈕 -->
         <div style="display:flex; gap:10px; flex-wrap:wrap">
           <!-- Push 按鈕組 -->
-          <template v-if="!isPushRunning && pushState === 'idle'">
+          <template v-if="!isPushRunning && pushAction.state.value === 'idle'">
             <el-button
               type="primary"
               :disabled="!syncStatus.available"
@@ -389,7 +378,7 @@ function lineColor(line: string): string {
             </el-button>
           </template>
           <template v-else-if="isPushRunning">
-            <el-button type="primary" loading disabled>推送中…</el-button>
+            <el-button type="danger" :disabled="!syncStatus.available" @click="cancelPush">取消推送</el-button>
           </template>
           <template v-else-if="isPushFailed">
             <el-button
@@ -398,17 +387,17 @@ function lineColor(line: string): string {
               :disabled="!syncStatus.available"
               @click="retryPush"
             >
-              重試推送（{{ pushRetryCount }}/{{ 3 }}）
+              重試推送（{{ pushAction.retryCount.value }}/{{ PUSH_MAX }}）
             </el-button>
             <el-button v-else disabled>推送已達重試上限</el-button>
             <el-button type="primary" :disabled="!syncStatus.available" @click="push">重新推送</el-button>
           </template>
-          <template v-else-if="pushState === 'success'">
+          <template v-else-if="pushAction.state.value === 'success'">
             <el-button type="primary" :disabled="!syncStatus.available" @click="push">再次推送</el-button>
           </template>
 
           <!-- Pull 按鈕組 -->
-          <template v-if="!isPullRunning && pullState === 'idle'">
+          <template v-if="!isPullRunning && pullAction.state.value === 'idle'">
             <el-button
               :disabled="!syncStatus.available"
               @click="pull"
@@ -417,7 +406,7 @@ function lineColor(line: string): string {
             </el-button>
           </template>
           <template v-else-if="isPullRunning">
-            <el-button loading disabled>拉取中…</el-button>
+            <el-button type="danger" :disabled="!syncStatus.available" @click="cancelPull">取消拉取</el-button>
           </template>
           <template v-else-if="isPullFailed">
             <el-button
@@ -426,12 +415,12 @@ function lineColor(line: string): string {
               :disabled="!syncStatus.available"
               @click="retryPull"
             >
-              重試拉取（{{ pullRetryCount }}/{{ 3 }}）
+              重試拉取（{{ pullAction.retryCount.value }}/{{ PULL_MAX }}）
             </el-button>
             <el-button v-else disabled>拉取已達重試上限</el-button>
             <el-button :disabled="!syncStatus.available" @click="pull">重新拉取</el-button>
           </template>
-          <template v-else-if="pullState === 'success'">
+          <template v-else-if="pullAction.state.value === 'success'">
             <el-button :disabled="!syncStatus.available" @click="pull">再次拉取</el-button>
           </template>
         </div>
@@ -446,9 +435,9 @@ function lineColor(line: string): string {
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px">
           <span>推送輸出</span>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
-            <template v-if="pushTraceId">
-              <span style="font-size:12px; color:#909399">traceId: {{ pushTraceId }}</span>
-              <span style="font-size:12px; color:#909399">重試: {{ pushRetryCount }}/{{ 3 }}</span>
+            <template v-if="pushAction.traceId.value">
+              <span style="font-size:12px; color:#909399">traceId: {{ pushAction.traceId.value }}</span>
+              <span style="font-size:12px; color:#909399">重試: {{ pushAction.retryCount.value }}/{{ PUSH_MAX }}</span>
               <el-button size="small" @click="copyPushTraceId">複製 traceId</el-button>
             </template>
             <el-button v-if="pushLogLines.length > 0" size="small" @click="copyPushLog">複製完整記錄</el-button>
@@ -497,9 +486,9 @@ function lineColor(line: string): string {
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px">
           <span>拉取輸出</span>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
-            <template v-if="pullTraceId">
-              <span style="font-size:12px; color:#909399">traceId: {{ pullTraceId }}</span>
-              <span style="font-size:12px; color:#909399">重試: {{ pullRetryCount }}/{{ 3 }}</span>
+            <template v-if="pullAction.traceId.value">
+              <span style="font-size:12px; color:#909399">traceId: {{ pullAction.traceId.value }}</span>
+              <span style="font-size:12px; color:#909399">重試: {{ pullAction.retryCount.value }}/{{ PULL_MAX }}</span>
               <el-button size="small" @click="copyPullTraceId">複製 traceId</el-button>
             </template>
             <el-button v-if="pullLogLines.length > 0" size="small" @click="copyPullLog">複製完整記錄</el-button>

@@ -1,17 +1,10 @@
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+// biome-ignore lint/correctness/noUnusedImports: used in template
+import SettingRow from "@/components/SettingRow.vue";
+import { useActionState } from "@/composables/useActionState";
 import { useSse } from "@/composables/useSse";
-
-type ActionState =
-	| "idle"
-	| "running"
-	| "success"
-	| "failed"
-	| "retrying"
-	| "retry-failed";
-
-const MAX_RETRIES = 3;
 
 interface BackupItem {
 	id: string;
@@ -26,11 +19,10 @@ const loading = ref(false);
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const dryRun = ref(false);
 
-// 狀態機
-const actionState = ref<ActionState>("idle");
-const retryCount = ref(0);
-const traceId = ref("");
 const currentBackupId = ref<string | null>(null);
+const action = useActionState();
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const { isRunning, isFailed, retryExhausted, MAX_RETRIES } = action;
 
 // 記錄
 const logLines = ref<string[]>([]);
@@ -38,35 +30,32 @@ const logContainer = ref<HTMLElement | null>(null);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const successCount = computed(
-	() => logLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) =>
+			/(^|[\s[(])(✓|success|PASS)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const warnCount = computed(
-	() => logLines.value.filter((l) => /⚠|warn/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) => /(^|[\s[(])(⚠|warn)([\s:.\])]|$)/i.test(l))
+			.length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const errorCount = computed(
-	() => logLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) =>
+			/(^|[\s[(])(✗|error|FAIL)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 
 const sse = useSse({
 	onDone: (e) => {
+		action.settle(e.success ?? false);
 		if (e.success) {
-			actionState.value = "success";
 			ElMessage.success("還原完成");
 		} else {
-			actionState.value = retryCount.value > 0 ? "retry-failed" : "failed";
 			ElMessage.error("還原失敗");
-		}
-	},
-	onEvent: (e) => {
-		if (e.type === "log" && e.message) {
-			logLines.value.push(e.message);
-			nextTick(() => {
-				if (logContainer.value) {
-					logContainer.value.scrollTop = logContainer.value.scrollHeight;
-				}
-			});
 		}
 	},
 });
@@ -75,6 +64,11 @@ watch(
 	() => sse.logs.value.length,
 	() => {
 		logLines.value = sse.logs.value.map((l) => l.message);
+		nextTick(() => {
+			if (logContainer.value) {
+				logContainer.value.scrollTop = logContainer.value.scrollHeight;
+			}
+		});
 	},
 );
 
@@ -96,31 +90,40 @@ async function fetchBackups() {
 }
 
 function runRestore(backupId: string) {
-	traceId.value = Date.now().toString(36);
 	logLines.value = [];
-	sse.reset();
-	const body: Record<string, unknown> = { backupId };
-	if (dryRun.value) body.dryRun = true;
-	const url = dryRun.value
-		? "/api/restore/execute?dryRun=true"
-		: "/api/restore/execute";
-	sse.start(url, body);
+	sse.start("/api/restore/execute", {
+		backupId,
+		...(dryRun.value ? { dryRun: true } : {}),
+	});
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function restore(backupId: string) {
 	currentBackupId.value = backupId;
-	retryCount.value = 0;
-	actionState.value = "running";
+	action.start();
 	runRestore(backupId);
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function retryRestore() {
-	if (retryCount.value >= MAX_RETRIES || !currentBackupId.value) return;
-	retryCount.value += 1;
-	actionState.value = "retrying";
+	if (!action.retry() || !currentBackupId.value) return;
 	runRestore(currentBackupId.value);
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+function resetRestore() {
+	sse.stop();
+	action.reset();
+	currentBackupId.value = null;
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+async function cancelRestore() {
+	sse.stop();
+	await fetch("/api/restore", { method: "DELETE" });
+	action.reset();
+	currentBackupId.value = null;
+	ElMessage.info("已發送取消訊號");
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -131,20 +134,9 @@ async function copyLog() {
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 async function copyTraceId() {
-	await navigator.clipboard.writeText(traceId.value);
+	await navigator.clipboard.writeText(action.traceId.value);
 	ElMessage.success("已複製 traceId");
 }
-
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isRunning = computed(
-	() => actionState.value === "running" || actionState.value === "retrying",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isFailed = computed(
-	() => actionState.value === "failed" || actionState.value === "retry-failed",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
 
 onMounted(fetchBackups);
 </script>
@@ -161,13 +153,13 @@ onMounted(fetchBackups);
       style="margin-bottom:16px"
     />
 
-    <!-- Dry-run 切換 -->
+    <!-- 操作設定 -->
     <el-card shadow="never" style="margin-bottom:16px">
       <template #header><span>操作設定</span></template>
       <el-form label-width="80px" label-position="left" size="small">
-        <el-form-item label="Dry-run">
-          <el-switch v-model="dryRun" active-text="Dry-run 預覽" />
-        </el-form-item>
+        <SettingRow label="Dry-run" description="只預覽變更，不實際寫入；確認無誤後再正式執行。">
+          <el-switch v-model="dryRun" active-text="Dry-run 預覽" :disabled="isRunning" />
+        </SettingRow>
       </el-form>
     </el-card>
 
@@ -179,6 +171,7 @@ onMounted(fetchBackups);
       />
     </el-card>
 
+    <!-- 備份列表 -->
     <el-card shadow="never" style="margin-bottom:16px">
       <template #header>
         <span>備份列表</span>
@@ -216,7 +209,7 @@ onMounted(fetchBackups);
                   type="danger"
                   plain
                   :loading="isRunning && currentBackupId === row.id"
-                  :disabled="isRunning && currentBackupId !== row.id"
+                  :disabled="(isRunning || isFailed) && currentBackupId !== row.id"
                 >
                   還原
                 </el-button>
@@ -239,11 +232,12 @@ onMounted(fetchBackups);
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px">
           <span>還原輸出{{ currentBackupId ? ` — ${currentBackupId}` : '' }}</span>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
-            <template v-if="traceId">
-              <span style="font-size:12px; color:#909399">traceId: {{ traceId }}</span>
-              <span style="font-size:12px; color:#909399">重試: {{ retryCount }}/{{ 3 }}</span>
+            <template v-if="action.traceId.value">
+              <span style="font-size:12px; color:#909399">traceId: {{ action.traceId.value }}</span>
+              <span style="font-size:12px; color:#909399">重試: {{ action.retryCount.value }}/{{ MAX_RETRIES }}</span>
               <el-button size="small" @click="copyTraceId">複製 traceId</el-button>
             </template>
+            <el-button v-if="isRunning" size="small" type="danger" @click="cancelRestore">取消還原</el-button>
             <el-button v-if="logLines.length > 0" size="small" @click="copyLog">複製完整記錄</el-button>
           </div>
         </div>
@@ -293,15 +287,17 @@ onMounted(fetchBackups);
     <!-- 重試控制 -->
     <el-card v-if="isFailed" shadow="never" style="margin-bottom:16px">
       <template #header><span>重試控制</span></template>
-      <div style="display:flex; gap:8px; align-items:center">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
         <el-button
           v-if="!retryExhausted"
           type="warning"
           @click="retryRestore"
         >
-          重試還原（{{ retryCount }}/{{ 3 }}）
+          重試還原（{{ action.retryCount.value }}/{{ MAX_RETRIES }}）
         </el-button>
+        <el-button v-if="retryExhausted" type="primary" @click="resetRestore">重新開始</el-button>
         <el-button v-else disabled>已達重試上限</el-button>
+        <el-button @click="resetRestore">換一個備份</el-button>
       </div>
     </el-card>
 

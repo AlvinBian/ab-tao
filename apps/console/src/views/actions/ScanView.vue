@@ -4,18 +4,9 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import SettingRow from "@/components/SettingRow.vue";
+import { useActionState } from "@/composables/useActionState";
 import { useSse } from "@/composables/useSse";
 import { useStatusStore } from "@/stores/status";
-
-type ActionState =
-	| "idle"
-	| "running"
-	| "success"
-	| "failed"
-	| "retrying"
-	| "retry-failed";
-
-const MAX_RETRIES = 3;
 
 const route = useRoute();
 const selectedRepo = ref<string | null>(null);
@@ -43,35 +34,41 @@ const scanOptions = ref({
 
 const dryRun = ref(false);
 
-// 狀態機
-const actionState = ref<ActionState>("idle");
-const retryCount = ref(0);
-const traceId = ref("");
+const action = useActionState();
+// biome-ignore lint/correctness/noUnusedVariables: used in template
+const { isRunning, isFailed, retryExhausted, MAX_RETRIES } = action;
 
-// 記錄分類
+// 記錄
 const logLines = ref<string[]>([]);
 const logContainer = ref<HTMLElement | null>(null);
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const successCount = computed(
-	() => logLines.value.filter((l) => /✓|success|PASS/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) =>
+			/(^|[\s[(])(✓|success|PASS)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const warnCount = computed(
-	() => logLines.value.filter((l) => /⚠|warn/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) => /(^|[\s[(])(⚠|warn)([\s:.\])]|$)/i.test(l))
+			.length,
 );
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 const errorCount = computed(
-	() => logLines.value.filter((l) => /✗|error|FAIL/i.test(l)).length,
+	() =>
+		logLines.value.filter((l) =>
+			/(^|[\s[(])(✗|error|FAIL)([\s:.\])]|$)/i.test(l),
+		).length,
 );
 
 const sse = useSse({
 	onDone: (e) => {
+		action.settle(e.success ?? false);
 		if (e.success) {
-			actionState.value = "success";
 			ElMessage.success("掃描完成");
 		} else {
-			actionState.value = retryCount.value > 0 ? "retry-failed" : "failed";
 			ElMessage.error("掃描失敗");
 		}
 	},
@@ -96,29 +93,25 @@ function buildBody() {
 	if (!body.skills) delete body.skills;
 	if (body.top) body.top = Number(body.top);
 	if (dryRun.value) body.dryRun = true;
+	if (selectedRepo.value) body.repo = selectedRepo.value;
 	return body;
 }
 
 function runScan() {
-	traceId.value = Date.now().toString(36);
 	logLines.value = [];
-	sse.reset();
 	const url = dryRun.value ? "/api/scan?dryRun=true" : "/api/scan";
 	sse.start(url, buildBody());
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function startScan() {
-	retryCount.value = 0;
-	actionState.value = "running";
+	action.start();
 	runScan();
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 function retryScan() {
-	if (retryCount.value >= MAX_RETRIES) return;
-	retryCount.value += 1;
-	actionState.value = "retrying";
+	if (!action.retry()) return;
 	runScan();
 }
 
@@ -126,7 +119,7 @@ function retryScan() {
 async function cancelScan() {
 	sse.stop();
 	await fetch("/api/scan", { method: "DELETE" });
-	actionState.value = "idle";
+	action.reset();
 	ElMessage.info("已發送取消訊號");
 }
 
@@ -138,20 +131,9 @@ async function copyLog() {
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 async function copyTraceId() {
-	await navigator.clipboard.writeText(traceId.value);
+	await navigator.clipboard.writeText(action.traceId.value);
 	ElMessage.success("已複製 traceId");
 }
-
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isRunning = computed(
-	() => actionState.value === "running" || actionState.value === "retrying",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isFailed = computed(
-	() => actionState.value === "failed" || actionState.value === "retry-failed",
-);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
 </script>
 
 <template>
@@ -159,7 +141,7 @@ const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
     <!-- 從 Repos 頁面跳轉預填 -->
     <el-alert
       v-if="selectedRepo"
-      :title="`從 Repos 頁面跳轉：準備掃描 ${selectedRepo}`"
+      :title="`將限定掃描：${selectedRepo}`"
       type="info"
       show-icon
       :closable="true"
@@ -182,29 +164,29 @@ const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
       <template #header><span>掃描選項</span></template>
       <el-form label-width="120px" label-position="left" size="small" style="max-width:540px">
         <SettingRow label="重建模式" description="--init：清空 stacks/ 後重新生成，適合首次掃描或資料不一致時使用。">
-          <el-switch v-model="scanOptions.init" />
+          <el-switch v-model="scanOptions.init" :disabled="isRunning" />
         </SettingRow>
         <SettingRow label="停用 AI 生成" description="跳過 AI 摘要生成步驟，僅做靜態分析；大型 repo 可先用此模式快速預覽結果。">
-          <el-switch v-model="scanOptions.noAi" />
+          <el-switch v-model="scanOptions.noAi" :disabled="isRunning" />
         </SettingRow>
         <SettingRow label="GitHub Org" description="指定 GitHub 組織名稱，掃描 org 下的 repos（需有相應存取權限）。">
-          <el-input v-model="scanOptions.org" placeholder="--org（選填）" clearable />
+          <el-input v-model="scanOptions.org" placeholder="--org（選填）" clearable :disabled="isRunning" />
         </SettingRow>
         <SettingRow label="掃描數量" description="限制掃描的 repo 數量，測試用；留空則掃描全部。">
-          <el-input v-model="scanOptions.top" placeholder="--top N（選填）" clearable />
+          <el-input v-model="scanOptions.top" placeholder="--top N（選填）" clearable :disabled="isRunning" />
         </SettingRow>
         <SettingRow label="指定技術棧" description="指定要分析的技術棧（逗號分隔）；留空則自動偵測所有技術棧。">
-          <el-input v-model="scanOptions.skills" placeholder="typescript,vue（選填，逗號分隔）" clearable />
+          <el-input v-model="scanOptions.skills" placeholder="typescript,vue（選填，逗號分隔）" clearable :disabled="isRunning" />
         </SettingRow>
 
         <!-- Dry-run 切換 -->
         <el-form-item label="Dry-run">
-          <el-switch v-model="dryRun" active-text="Dry-run 預覽" />
+          <el-switch v-model="dryRun" active-text="Dry-run 預覽" :disabled="isRunning" />
         </el-form-item>
 
         <el-form-item>
           <el-button
-            v-if="!isRunning && actionState === 'idle'"
+            v-if="!isRunning && action.state.value === 'idle'"
             type="primary"
             @click="startScan"
           >
@@ -223,13 +205,13 @@ const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
               type="warning"
               @click="retryScan"
             >
-              重試（{{ retryCount }}/{{ 3 }}）
+              重試（{{ action.retryCount.value }}/{{ MAX_RETRIES }}）
             </el-button>
             <el-button v-else disabled>已達重試上限</el-button>
             <el-button type="primary" @click="startScan">重新開始</el-button>
           </template>
           <el-button
-            v-else-if="actionState === 'success'"
+            v-else-if="action.state.value === 'success'"
             type="primary"
             @click="startScan"
           >
@@ -240,15 +222,15 @@ const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
     </el-card>
 
     <!-- 執行進度 -->
-    <el-card shadow="never" style="margin-bottom:16px">
+    <el-card v-if="action.state.value !== 'idle' || logLines.length > 0" shadow="never" style="margin-bottom:16px">
       <template #header>
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px">
           <span>掃描輸出</span>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
             <!-- traceId -->
-            <template v-if="traceId">
-              <span style="font-size:12px; color:#909399">traceId: {{ traceId }}</span>
-              <span style="font-size:12px; color:#909399">重試: {{ retryCount }}/{{ 3 }}</span>
+            <template v-if="action.traceId.value">
+              <span style="font-size:12px; color:#909399">traceId: {{ action.traceId.value }}</span>
+              <span style="font-size:12px; color:#909399">重試: {{ action.retryCount.value }}/{{ MAX_RETRIES }}</span>
               <el-button size="small" @click="copyTraceId">複製 traceId</el-button>
             </template>
             <el-button

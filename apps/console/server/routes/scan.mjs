@@ -71,7 +71,9 @@ export async function scanRouter(req, res, url, json) {
 		const child = runningTasks.get("scan");
 		if (child) {
 			child.kill("SIGTERM");
-			runningTasks.delete("scan");
+			setTimeout(() => {
+				if (!child.killed) child.kill("SIGKILL");
+			}, 3000);
 			json(res, 0, "掃描已取消", null);
 		} else {
 			json(res, 404, "無正在執行的掃描任務", null, 404);
@@ -87,6 +89,7 @@ export async function scanRouter(req, res, url, json) {
 				type: "error",
 				message: "掃描任務正在執行中，請稍後再試",
 			});
+			sseSend(res, { type: "done", success: false });
 			res.end();
 			return true;
 		}
@@ -107,7 +110,7 @@ export async function scanRouter(req, res, url, json) {
 		if (skills) args.push("--skills", String(skills));
 		if (dryRun) args.push("--dry-run");
 
-		spawnSse(res, "scan", process.execPath, args, {
+		spawnSse(res, req, "scan", process.execPath, args, {
 			cwd: path.resolve(DOTFILES_BIN, ".."),
 		});
 		return true;

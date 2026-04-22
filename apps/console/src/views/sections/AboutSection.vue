@@ -176,18 +176,16 @@ const protectionItems = [
     <!-- 5. 配置保護策略 -->
     <el-card shadow="never" style="margin-bottom: 16px">
       <template #header><span style="font-weight: 600">配置保護策略</span></template>
-      <el-collapse accordion>
-        <el-collapse-item
+      <el-descriptions :column="1" border>
+        <el-descriptions-item
           v-for="item in protectionItems"
           :key="item.title"
-          :title="item.title"
-          :name="item.title"
+          :label="item.title"
+          label-class-name="protection-label"
         >
-          <p style="margin: 0; font-size: 13px; line-height: 1.7; color: var(--el-text-color-regular)">
-            {{ item.content }}
-          </p>
-        </el-collapse-item>
-      </el-collapse>
+          <span style="font-size: 13px; color: var(--el-text-color-regular)">{{ item.content }}</span>
+        </el-descriptions-item>
+      </el-descriptions>
     </el-card>
 
     <!-- 6. 連結 / 聯絡 -->

@@ -69,7 +69,9 @@ export async function setupRouter(req, res, url, json) {
 		const child = runningTasks.get("setup");
 		if (child) {
 			child.kill("SIGTERM");
-			runningTasks.delete("setup");
+			setTimeout(() => {
+				if (!child.killed) child.kill("SIGKILL");
+			}, 3000);
 			json(res, 0, "任務已取消", null);
 		} else {
 			json(res, 404, "無正在執行的 setup 任務", null, 404);
@@ -85,6 +87,7 @@ export async function setupRouter(req, res, url, json) {
 				type: "error",
 				message: "setup 任務正在執行中，請稍後再試",
 			});
+			sseSend(res, { type: "done", success: false });
 			res.end();
 			return true;
 		}
@@ -111,6 +114,7 @@ export async function setupRouter(req, res, url, json) {
 
 		spawnSse(
 			res,
+			req,
 			"setup",
 			process.execPath,
 			[path.join(DOTFILES_BIN, "setup.mjs"), ...extraFlags],

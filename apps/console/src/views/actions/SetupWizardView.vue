@@ -10,6 +10,7 @@ const loadingSession = ref(false);
 const dryRun = ref(false);
 const mode = ref<"quick" | "manual" | "all">("quick");
 const fromIcloud = ref(false);
+const cancelling = ref(false);
 const selectedStep = ref(0);
 const userInteracted = ref(false);
 
@@ -89,14 +90,19 @@ async function execute() {
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
 async function cancel() {
+	cancelling.value = true;
 	sse.stop();
-	const r = await fetch("/api/setup/execute", { method: "DELETE" });
-	const { code, message } = await r.json();
-	if (code !== 0) {
-		ElMessage.error(message ?? "取消失敗");
-		return;
+	try {
+		const r = await fetch("/api/setup/execute", { method: "DELETE" });
+		const { code, message } = await r.json();
+		if (code !== 0) {
+			ElMessage.error(message ?? "取消失敗");
+			return;
+		}
+		ElMessage.info("已發送取消訊號");
+	} finally {
+		cancelling.value = false;
 	}
-	ElMessage.info("已發送取消訊號");
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -249,17 +255,17 @@ async function clearProgress() {
           label="模式"
           description="Quick = 自動套用推薦設定；Manual = 逐步確認每個選項；All = 安裝全部可用功能。"
         >
-          <el-radio-group v-model="mode">
+          <el-radio-group v-model="mode" :disabled="sse.running.value" style="display:flex; flex-wrap:nowrap; white-space:nowrap">
             <el-radio-button value="quick">Quick（快速）</el-radio-button>
             <el-radio-button value="manual">Manual（逐步確認）</el-radio-button>
             <el-radio-button value="all">All（全量）</el-radio-button>
           </el-radio-group>
         </SettingRow>
         <SettingRow label="Dry-run" description="只預覽變更，不實際寫入；確認無誤後再正式執行。">
-          <el-switch v-model="dryRun" />
+          <el-switch v-model="dryRun" :disabled="sse.running.value" />
         </SettingRow>
         <SettingRow label="從 iCloud" description="從 iCloud 快速重建配置，適合換機或重裝後恢復個人設定。">
-          <el-switch v-model="fromIcloud" />
+          <el-switch v-model="fromIcloud" :disabled="sse.running.value" />
         </SettingRow>
       </el-form>
     </el-card>
@@ -276,7 +282,7 @@ async function clearProgress() {
         <span>執行輸出</span>
         <span style="margin-left:8px">
           <el-button
-            v-if="!sse.running.value"
+            v-if="!sse.running.value && !cancelling"
             type="primary"
             size="small"
             :loading="loadingSession"
@@ -288,9 +294,10 @@ async function clearProgress() {
             v-else
             type="danger"
             size="small"
+            :loading="cancelling"
             @click="cancel"
           >
-            取消
+            {{ cancelling ? '取消中…' : '取消' }}
           </el-button>
         </span>
       </template>

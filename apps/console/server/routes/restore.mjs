@@ -3,6 +3,7 @@
  */
 
 import fs from "node:fs";
+import { copyFile, cp, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DOTFILES_BIN, runningTasks, sseHeaders, sseSend } from "../sse.mjs";
@@ -41,10 +42,6 @@ function countDir(dir) {
 	return { fileCount, size };
 }
 
-function cpDir(src, dest) {
-	fs.cpSync(src, dest, { recursive: true, force: true });
-}
-
 function getBackups() {
 	if (!fs.existsSync(BACKUP_BASE)) return [];
 	return fs
@@ -76,8 +73,32 @@ export async function restoreRouter(req, res, url, json) {
 		return true;
 	}
 
+	// ── DELETE /api/restore ── 取消正在執行的還原
+	if (req.method === "DELETE" && url.pathname === "/api/restore") {
+		const controller = runningTasks.get("restore");
+		if (controller && typeof controller.abort === "function") {
+			controller.abort();
+			json(res, 0, "還原已取消", null);
+		} else {
+			json(res, 404, "無正在執行的還原任務", null, 404);
+		}
+		return true;
+	}
+
 	// ── POST /api/restore/execute ── SSE 串流還原
 	if (req.method === "POST" && url.pathname === "/api/restore/execute") {
+		// 併發鎖：防止兩個請求同時還原導致 HOME 目錄競態
+		if (runningTasks.has("restore")) {
+			sseHeaders(res);
+			sseSend(res, {
+				type: "error",
+				message: "還原任務正在執行中，請稍後再試",
+			});
+			sseSend(res, { type: "done", success: false });
+			res.end();
+			return true;
+		}
+
 		const { backupId, dryRun = false } = req._body ?? {};
 		if (!backupId) {
 			json(res, 400, "backupId 必填", null, 400);
@@ -101,15 +122,31 @@ export async function restoreRouter(req, res, url, json) {
 			return true;
 		}
 
+		const controller = new AbortController();
+		const { signal } = controller;
+
 		sseHeaders(res);
-		runningTasks.set("restore", true); // boolean sentinel（restore 無 cancel 端點，不需 kill handle）
+		runningTasks.set("restore", controller);
+
+		// 客戶端斷線時中止還原
+		req.on("close", () => {
+			if (!signal.aborted) controller.abort();
+			runningTasks.delete("restore");
+		});
+
+		const restored = [];
+		const failed = [];
+
 		try {
-			const contents = fs.readdirSync(backupDir);
-			sseSend(res, {
-				type: "log",
-				message: `${dryRun ? "[DRY-RUN] " : ""}開始還原備份 ${backupId}（${contents.length} 項）`,
-			});
+			const contents = await readdir(backupDir);
+			if (!res.writableEnded) {
+				sseSend(res, {
+					type: "log",
+					message: `${dryRun ? "[DRY-RUN] " : ""}開始還原備份 ${backupId}（${contents.length} 項）`,
+				});
+			}
 			for (const item of contents) {
+				if (signal.aborted) break;
 				if (path.basename(item) !== item) continue;
 				const src = path.join(backupDir, item);
 				let dest;
@@ -119,24 +156,72 @@ export async function restoreRouter(req, res, url, json) {
 				else dest = path.join(HOME, `.${item}`);
 
 				if (dryRun) {
-					sseSend(res, {
-						type: "log",
-						message: `[DRY-RUN] 將還原：${item} → ${dest}`,
-					});
+					if (!res.writableEnded) {
+						sseSend(res, {
+							type: "log",
+							message: `[DRY-RUN] 將還原：${item} → ${dest}`,
+						});
+					}
 				} else {
-					const stat = fs.statSync(src);
-					if (stat.isDirectory()) cpDir(src, dest);
-					else fs.copyFileSync(src, dest);
-					sseSend(res, { type: "log", message: `✓ 還原：${item} → ${dest}` });
+					try {
+						const srcStat = await stat(src);
+						if (srcStat.isDirectory()) {
+							await cp(src, dest, { recursive: true, force: true });
+						} else {
+							await copyFile(src, dest);
+						}
+						restored.push(item);
+						if (!res.writableEnded) {
+							sseSend(res, {
+								type: "log",
+								message: `✓ 還原：${item} → ${dest}`,
+							});
+						}
+					} catch (itemErr) {
+						failed.push({ item, error: itemErr.message });
+						if (!res.writableEnded) {
+							sseSend(res, {
+								type: "log",
+								level: "warn",
+								message: `✗ 還原失敗：${item} — ${itemErr.message}`,
+							});
+						}
+					}
 				}
 			}
-			sseSend(res, { type: "done", success: true, dryRun });
+
+			if (signal.aborted) {
+				if (!res.writableEnded) {
+					sseSend(res, { type: "error", message: "還原已取消" });
+					sseSend(res, {
+						type: "done",
+						success: false,
+						partial: { restored, failed },
+					});
+				}
+			} else {
+				const success = failed.length === 0;
+				if (!res.writableEnded) {
+					sseSend(res, {
+						type: "done",
+						success,
+						dryRun,
+						partial: { restored, failed },
+					});
+				}
+			}
 		} catch (e) {
-			sseSend(res, { type: "error", message: e.message });
-			sseSend(res, { type: "done", success: false });
+			if (!res.writableEnded) {
+				sseSend(res, { type: "error", message: e.message });
+				sseSend(res, {
+					type: "done",
+					success: false,
+					partial: { restored, failed },
+				});
+			}
 		} finally {
 			runningTasks.delete("restore");
-			res.end();
+			if (!res.writableEnded) res.end();
 		}
 		return true;
 	}
