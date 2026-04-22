@@ -19,6 +19,8 @@ const STATE_PATH = P.state;
 const LOCK_PATH = P.stateLock;
 const TMP_PATH = `${STATE_PATH}.tmp`;
 
+let _lockWarnPrinted = false;
+
 const EMPTY_STATE = {
 	$schema: "./state.schema.json",
 	version: "1.0.0",
@@ -192,9 +194,12 @@ function _acquireLock(timeoutMs = 2000) {
 		} catch (e) {
 			if (e.code !== "EEXIST") throw e;
 			if (Date.now() - start >= timeoutMs) {
-				console.warn(
-					"[ab-tao] state.json 鎖逾時（另一 Claude Code session 進行中），以唯讀模式繼續",
-				);
+				if (!_lockWarnPrinted) {
+					console.warn(
+						"[ab-tao] state.json 鎖逾時（另一 Claude Code session 進行中），以唯讀模式繼續",
+					);
+					_lockWarnPrinted = true;
+				}
 				return null;
 			}
 			// 短暫等待後重試（同步 spin，最多 2s）

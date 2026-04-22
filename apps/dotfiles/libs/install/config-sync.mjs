@@ -19,7 +19,7 @@ import path from "node:path";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { APP_VERSION } from "../core/constants.mjs";
-import { stateRead, stateSetManaged, stateWrite } from "../state/state.mjs";
+import { stateRead, stateWrite } from "../state/state.mjs";
 import { showFirstRunNotice } from "../ui/first-run-notice.mjs";
 import { renderPlanSummary } from "../ui/plan-summary.mjs";
 import { mergeConfig } from "./config-merge.mjs";
@@ -481,30 +481,28 @@ function _archiveFile(srcPath, relPath, archiveBase) {
 export async function updateStateJson(plan) {
 	const now = new Date().toISOString();
 
-	for (const item of plan) {
-		if (
-			item.action === "forbiddenSkip" ||
-			item.action === "noChange" ||
-			item.action === "additiveKeep" ||
-			item.action === "lockedKeep" ||
-			item._skip
-		) {
-			continue;
+	stateWrite((s) => {
+		for (const item of plan) {
+			if (
+				item.action === "forbiddenSkip" ||
+				item.action === "noChange" ||
+				item.action === "additiveKeep" ||
+				item.action === "lockedKeep" ||
+				item._skip
+			) {
+				continue;
+			}
+
+			if (!fs.existsSync(item.destPath)) continue;
+
+			s.managed[item.relPath] = {
+				sha256: _sha256(item.destPath),
+				source: `ab-tao:${item.srcPath}`,
+				installedAt: now,
+				userOverride: false,
+			};
 		}
 
-		if (!fs.existsSync(item.destPath)) continue;
-
-		const sha256 = _sha256(item.destPath);
-		stateSetManaged(item.relPath, {
-			sha256,
-			source: `ab-tao:${item.srcPath}`,
-			installedAt: now,
-			userOverride: false,
-		});
-	}
-
-	// 更新安裝時間與版本
-	stateWrite((s) => {
 		s.installedAt = now;
 		s.abTaoVersion = APP_VERSION;
 	});
