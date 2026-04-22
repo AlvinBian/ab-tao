@@ -76,23 +76,17 @@ const sse = useSse({
 			ElMessage.error("掃描失敗");
 		}
 	},
-	onEvent: (e) => {
-		if (e.type === "log" && e.message) {
-			logLines.value.push(e.message);
-			nextTick(() => {
-				if (logContainer.value) {
-					logContainer.value.scrollTop = logContainer.value.scrollHeight;
-				}
-			});
-		}
-	},
 });
 
-// 同步 sse.logs → logLines（確保進度事件訊息也被收錄）
 watch(
 	() => sse.logs.value.length,
 	() => {
 		logLines.value = sse.logs.value.map((l) => l.message);
+		nextTick(() => {
+			if (logContainer.value) {
+				logContainer.value.scrollTop = logContainer.value.scrollHeight;
+			}
+		});
 	},
 );
 

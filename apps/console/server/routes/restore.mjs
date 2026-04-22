@@ -102,7 +102,7 @@ export async function restoreRouter(req, res, url, json) {
 		}
 
 		sseHeaders(res);
-		runningTasks.set("restore", true);
+		runningTasks.set("restore", true); // boolean sentinel（restore 無 cancel 端點，不需 kill handle）
 		try {
 			const contents = fs.readdirSync(backupDir);
 			sseSend(res, {

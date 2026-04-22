@@ -31,7 +31,8 @@ export async function scanRouter(req, res, url, json) {
 			const P = await getP();
 			const { readFile } = await import("node:fs/promises");
 			const raw = await readFile(P.cachedRepos, "utf8").catch(() => "[]");
-			json(res, 0, "ok", JSON.parse(raw));
+			const parsed = JSON.parse(raw);
+			json(res, 0, "ok", Array.isArray(parsed) ? parsed : []);
 		} catch (e) {
 			json(res, 500, e.message, null, 500);
 		}
@@ -44,7 +45,15 @@ export async function scanRouter(req, res, url, json) {
 			const P = await getP();
 			const { readFile } = await import("node:fs/promises");
 			const raw = await readFile(P.cachedTechStacks, "utf8").catch(() => "{}");
-			json(res, 0, "ok", JSON.parse(raw));
+			const parsed = JSON.parse(raw);
+			json(
+				res,
+				0,
+				"ok",
+				parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+					? parsed
+					: {},
+			);
 		} catch (e) {
 			json(res, 500, e.message, null, 500);
 		}

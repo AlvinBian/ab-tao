@@ -119,6 +119,7 @@ export async function reposRouter(req, res, url, json) {
 			return true;
 		}
 		execFile("open", [repoPath], (err) => {
+			if (res.writableEnded) return;
 			if (err) {
 				json(res, 500, `無法開啟：${err.message}`, null, 500);
 			} else {

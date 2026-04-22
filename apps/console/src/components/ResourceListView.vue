@@ -3,14 +3,7 @@
 import { Search } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, ref } from "vue";
-
-interface ResourceEntry {
-	name: string;
-	enabled: boolean;
-	source?: string;
-	path?: string;
-	description?: string;
-}
+import type { ResourceEntry } from "@/types/resources";
 
 interface ResourceStore {
 	items: ResourceEntry[];
