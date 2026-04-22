@@ -493,6 +493,25 @@ export function scanSkills(skillsDir) {
 		}
 	}
 
+	function parseFrontmatterDesc(filePath) {
+		try {
+			const head = fs.readFileSync(filePath, "utf8").slice(0, 1024);
+			const fmMatch = head.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+			if (!fmMatch) return undefined;
+			const fm = fmMatch[1];
+			const m = fm.match(/^description:\s*(.+)$/m);
+			if (!m) return undefined;
+			const val = m[1].trim();
+			if (/^[>|][-+]?$/.test(val)) {
+				const blockM = fm.match(/^description:\s*[>|][-+]?\r?\n[ \t]+(.+)/m);
+				return blockM?.[1].trim();
+			}
+			return val.replace(/^["']|["']$/g, "");
+		} catch {
+			return undefined;
+		}
+	}
+
 	function walk(dir, depth) {
 		if (depth > 3) return;
 		let entries;
@@ -513,11 +532,13 @@ export function scanSkills(skillsDir) {
 			if (hasSkill || hasDisabled) {
 				const markerFile = hasSkill ? skillMd : skillMdDisabled;
 				const source = parseSource(markerFile);
+				const description = parseFrontmatterDesc(markerFile);
 				skills.push({
 					name: entry.name,
 					source,
 					enabled: hasSkill,
 					path: path.relative(skillsDir, sub),
+					description,
 				});
 			} else {
 				walk(sub, depth + 1);

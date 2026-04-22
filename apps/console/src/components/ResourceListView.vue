@@ -9,6 +9,7 @@ interface ResourceEntry {
 	enabled: boolean;
 	source?: string;
 	path?: string;
+	description?: string;
 }
 
 interface ResourceStore {
@@ -33,7 +34,11 @@ const searchQuery = ref("");
 const filteredItems = computed(() => {
 	const q = searchQuery.value.toLowerCase();
 	if (!q) return props.store.items;
-	return props.store.items.filter((s) => s.name.toLowerCase().includes(q));
+	return props.store.items.filter(
+		(s) =>
+			s.name.toLowerCase().includes(q) ||
+			s.description?.toLowerCase().includes(q),
+	);
 });
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -110,7 +115,12 @@ async function onToggle(name: string, enabled: boolean) {
 
     <el-card shadow="never">
       <el-table :data="filteredItems" stripe size="small" style="width:100%">
-        <el-table-column prop="name" label="名稱" min-width="180" sortable show-overflow-tooltip />
+        <el-table-column prop="name" label="名稱" min-width="160" sortable show-overflow-tooltip />
+        <el-table-column prop="description" label="說明" min-width="260" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span style="color:var(--el-text-color-regular); font-size:12px">{{ row.description ?? '—' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column v-if="showSourceColumn" label="來源" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="sourceTagType(row.source)" size="small">{{ row.source ?? "—" }}</el-tag>

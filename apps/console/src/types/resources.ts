@@ -5,4 +5,5 @@ export interface ResourceEntry {
 	enabled: boolean;
 	source?: string;
 	path?: string;
+	description?: string;
 }

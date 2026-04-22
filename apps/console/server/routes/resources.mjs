@@ -5,7 +5,7 @@
  * 切換透過 fs.rename 實作（不走 child process）；所有 mutation 前先備份。
  */
 
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { copyFile, readdir, rename } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,26 @@ async function getScanSkills() {
 	return _scanSkills;
 }
 
+/** 從 YAML frontmatter 提取 description 欄位 */
+function parseFrontmatterDescription(filePath) {
+	try {
+		const head = readFileSync(filePath, "utf8").slice(0, 1024);
+		const fmMatch = head.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+		if (!fmMatch) return undefined;
+		const fm = fmMatch[1];
+		const m = fm.match(/^description:\s*(.+)$/m);
+		if (!m) return undefined;
+		const val = m[1].trim();
+		if (/^[>|][-+]?$/.test(val)) {
+			const blockM = fm.match(/^description:\s*[>|][-+]?\r?\n[ \t]+(.+)/m);
+			return blockM?.[1].trim();
+		}
+		return val.replace(/^["']|["']$/g, "");
+	} catch {
+		return undefined;
+	}
+}
+
 /** 讀取 .md / .md.disabled 通用掃描（commands / agents / rules） */
 async function scanFlatResources(dir) {
 	if (!existsSync(dir)) return [];
@@ -50,7 +70,8 @@ async function scanFlatResources(dir) {
 		const filePath = path.join(dir, entry);
 		// 呼叫共用分類器，修復「所有資源顯示為 custom」的 bug
 		const source = parseSource(filePath);
-		items.push({ name, enabled, source });
+		const description = parseFrontmatterDescription(filePath);
+		items.push({ name, enabled, source, description });
 	}
 	return items;
 }
