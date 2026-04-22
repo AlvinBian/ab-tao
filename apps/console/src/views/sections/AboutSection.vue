@@ -38,6 +38,7 @@ const techGroups = [
 	{ label: "CLI 工具", items: cliTechs, tagType: "warning" as const },
 ];
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const archText = `apps/console/   — Vue 3 後台控制台（GUI 管理）
 apps/dotfiles/  — CLI 工具（d:setup / d:scan / d:status 等）
 packages/commons/ — AI 資源池（同步、驗證、提供 API）
@@ -55,6 +56,7 @@ const commands = [
 	{ cmd: "pnpm run cs:open", desc: "構建後以 file:// 開啟（離線）" },
 ];
 
+// biome-ignore lint/correctness/noUnusedVariables: used in template
 const protectionItems = [
 	{
 		title: "permissions.allow（preserve）",
