@@ -5,6 +5,8 @@
  * POST /api/repos/:name/scan — 觸發單一 repo 重新掃描（stub）
  */
 
+import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -103,12 +105,24 @@ export async function reposRouter(req, res, url, json) {
 		return true;
 	}
 
-	// ── POST /api/repos/:name/scan ──
-	const scanMatch = url.pathname.match(/^\/api\/repos\/([^/]+)\/scan$/);
-	if (req.method === "POST" && scanMatch) {
-		const name = decodeURIComponent(scanMatch[1]);
-		// stub：實際掃描邏輯可後續接入 scan.mjs 的 spawnSse 機制
-		json(res, 0, `scan triggered for ${name}`, { name });
+	// ── POST /api/repos/open ──
+	if (req.method === "POST" && url.pathname === "/api/repos/open") {
+		const repoPath = req._body?.path;
+		if (
+			typeof repoPath !== "string" ||
+			!path.isAbsolute(repoPath) ||
+			!existsSync(repoPath)
+		) {
+			json(res, 400, "path 無效或不存在", null, 400);
+			return true;
+		}
+		execFile("open", [repoPath], (err) => {
+			if (err) {
+				json(res, 500, `無法開啟：${err.message}`, null, 500);
+			} else {
+				json(res, 0, "已在 Finder 開啟", { path: repoPath });
+			}
+		});
 		return true;
 	}
 

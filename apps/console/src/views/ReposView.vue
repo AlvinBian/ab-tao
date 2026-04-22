@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { formatRelative } from "@/composables/useFormatRelative";
 
 // ── 型別 ──────────────────────────────────────────────────────────────
@@ -22,12 +23,12 @@ const isEmpty = (d: unknown): boolean =>
 		Object.keys(d as object).length === 0);
 
 // ── 狀態 ──────────────────────────────────────────────────────────────
+const router = useRouter();
 const repos = ref<EnrichedRepo[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const timestamp = ref<string | null>(null);
 const searchQuery = ref("");
-const scanningRepos = ref<Set<string>>(new Set());
 
 // ── 資料擷取 ──────────────────────────────────────────────────────────
 async function fetchRepos(): Promise<void> {
@@ -93,18 +94,8 @@ const activeCollapse = ref<string[]>(["main"]);
 
 // ── 動作 ──────────────────────────────────────────────────────────────
 // biome-ignore lint/correctness/noUnusedVariables: used in template
-async function scanRepo(name: string): Promise<void> {
-	if (scanningRepos.value.has(name)) return;
-	scanningRepos.value = new Set([...scanningRepos.value, name]);
-	try {
-		await fetch(`/api/repos/${encodeURIComponent(name)}/scan`, {
-			method: "POST",
-		});
-	} finally {
-		const next = new Set(scanningRepos.value);
-		next.delete(name);
-		scanningRepos.value = next;
-	}
+function scanRepo(name: string): void {
+	router.push({ path: "/actions", query: { tab: "scan", repo: name } });
 }
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -237,7 +228,6 @@ function roleTagType(
                 <div style="display:flex; gap:8px; margin-top:8px">
                   <el-button
                     size="small"
-                    :loading="scanningRepos.has(repo.name)"
                     @click="scanRepo(repo.name)"
                   >掃描</el-button>
                   <el-button

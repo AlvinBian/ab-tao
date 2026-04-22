@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 // biome-ignore lint/correctness/noUnusedImports: used in template
 import SettingRow from "@/components/SettingRow.vue";
 import { useSse } from "@/composables/useSse";
@@ -16,8 +17,17 @@ type ActionState =
 
 const MAX_RETRIES = 3;
 
+const route = useRoute();
+const selectedRepo = ref<string | null>(null);
+
 const statusStore = useStatusStore();
-onMounted(() => statusStore.fetchData());
+onMounted(() => {
+	statusStore.fetchData();
+	const repoParam = route.query.repo;
+	if (typeof repoParam === "string" && repoParam) {
+		selectedRepo.value = repoParam;
+	}
+});
 
 const cachedStacks = computed(() => statusStore.data?.cachedTechStacks ?? {});
 // biome-ignore lint/correctness/noUnusedVariables: used in template
@@ -153,6 +163,17 @@ const retryExhausted = computed(() => retryCount.value >= MAX_RETRIES);
 
 <template>
   <div>
+    <!-- 從 Repos 頁面跳轉預填 -->
+    <el-alert
+      v-if="selectedRepo"
+      :title="`從 Repos 頁面跳轉：準備掃描 ${selectedRepo}`"
+      type="info"
+      show-icon
+      :closable="true"
+      style="margin-bottom:16px"
+      @close="selectedRepo = null"
+    />
+
     <!-- Dry-run 警告橫幅 -->
     <el-alert
       v-if="dryRun"
