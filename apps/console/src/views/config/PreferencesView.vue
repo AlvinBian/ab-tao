@@ -63,7 +63,7 @@ function getDefault(key: string): unknown {
       style="margin-bottom:16px"
     />
 
-    <el-card shadow="never" style="max-width:700px">
+    <el-card shadow="never">
       <template #header><span>Preferences 設定</span></template>
 
       <el-form v-if="store.prefs" label-width="180px" label-position="left">

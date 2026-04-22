@@ -85,7 +85,7 @@ function reset() {
           label="預設模型"
           description="全 session 預設呼叫模型；可被個別 agent frontmatter 的 model: 欄位覆蓋。"
         >
-          <el-select v-model="model" placeholder="選擇模型" clearable @change="onChange">
+          <el-select v-model="model" placeholder="選擇模型" clearable @change="onChange" style="width:240px">
             <el-option
               v-for="opt in MODEL_OPTIONS"
               :key="opt.value"
