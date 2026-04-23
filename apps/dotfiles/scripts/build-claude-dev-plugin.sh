@@ -290,7 +290,7 @@ cat > "$BUILD_DIR/.claude-plugin/plugin.json" << JSON_EOF
   "version": "$PLUGIN_VERSION",
   "description": "Claude Code 配置包 — skills / agents / hooks / rules${REPOS_NOTE}",
   "author": "ab-tao",
-  "keywords": ["claude-code", "check", "slack", "test", "db-migration", "ab-architect", "ab-debugger", "vue", "typescript", "php"]
+  "keywords": ["claude-code", "check", "slack", "test", "db-migration", "architect", "debugger", "vue", "typescript", "php"]
 }
 JSON_EOF
 

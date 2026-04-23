@@ -17,7 +17,7 @@ const CLAUDE_DIR = path.resolve(__dirname, "..", "..", "claude");
 
 const FALLBACK_COMMANDS = ["check", "slack", "test", "db-migration"];
 
-const FALLBACK_AGENTS = ["ab-architect", "ab-debugger"];
+const FALLBACK_AGENTS = ["architect", "debugger"];
 
 const FALLBACK_RULES = ["api-and-data"];
 

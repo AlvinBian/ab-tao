@@ -8,11 +8,11 @@ const RULES_DIR = resolve(
 	"../claude/rules",
 );
 const EXPECTED = [
-	"ab-api-and-data",
-	"ab-migrations",
-	"ab-testing",
-	"ab-typescript",
-	"ab-vue-nuxt",
+	"api-and-data",
+	"migrations",
+	"testing",
+	"typescript",
+	"vue-nuxt",
 ].sort();
 
 test("rules/ 只含預期的 5 個規則檔", () => {

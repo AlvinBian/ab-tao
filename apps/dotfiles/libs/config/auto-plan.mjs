@@ -165,7 +165,7 @@ export function generateMinimalPlan(fullPlan) {
 		installMode: "minimal",
 		global: {
 			commands: ["check", "test"],
-			agents: ["ab-debugger"],
+			agents: ["debugger"],
 			rules: ["api-and-data"],
 			hooks: [
 				"PostToolUse:Edit|Write (prettier)",
