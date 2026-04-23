@@ -26,6 +26,53 @@ export function getEnabledPlugins() {
 }
 
 /**
+ * 讀取 installed_plugins.json → Record<key, [{installPath, version, ...}]>
+ * @returns {Record<string, Array<{installPath: string, version: string, scope: string}>>}
+ */
+function getInstalledPluginPaths() {
+	try {
+		const raw = fs.readFileSync(P.pluginsInstalledJson, "utf8");
+		return JSON.parse(raw).plugins ?? {};
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * 判斷 plugin 是否健康（installPath 存在且版本非 unknown）
+ * @param {string} key  e.g. "hookify@claude-plugins-official"
+ * @param {Record<string, Array<{installPath: string, version: string}>>} installedPlugins
+ * @returns {boolean}
+ */
+function isPluginHealthy(key, installedPlugins) {
+	const entries = installedPlugins[key];
+	if (!entries || entries.length === 0) return false;
+	const entry = entries.find((e) => e.scope === "user") ?? entries[0];
+	if (!entry?.installPath || entry.version === "unknown") return false;
+	return fs.existsSync(entry.installPath);
+}
+
+/**
+ * 驗證所有 enabledPlugins 的 cache 路徑健康（非 unknown、目錄存在）
+ * @returns {{ broken: string[], ok: string[] }}
+ */
+export function verifyPluginCachePaths() {
+	const enabled = getEnabledPlugins();
+	const installed = getInstalledPluginPaths();
+	const broken = [];
+	const ok = [];
+	for (const [key, isEnabled] of Object.entries(enabled)) {
+		if (!isEnabled) continue;
+		if (isPluginHealthy(key, installed)) {
+			ok.push(key);
+		} else {
+			broken.push(key);
+		}
+	}
+	return { broken, ok };
+}
+
+/**
  * 驗證 enabledPlugins 無 phantom（enabled=true 但 plugins.yml 中無宣告）
  * @returns {{ phantoms: string[], valid: string[] }}
  */
@@ -104,6 +151,9 @@ export function syncPlugins({ dryRun = false, profile } = {}) {
 	// 預先登錄所有 marketplace（包含 enabled:false 的 plugin）
 	if (!dryRun) installMarketplaces(pluginsData);
 
+	const enabledPlugins = getEnabledPlugins();
+	const installedPlugins = getInstalledPluginPaths();
+
 	for (const [name, cfg] of Object.entries(plugins)) {
 		const marketplace = cfg.marketplace ?? "claude-plugins-official";
 		let shouldEnable = cfg.enabled !== false;
@@ -114,9 +164,11 @@ export function syncPlugins({ dryRun = false, profile } = {}) {
 		if (!shouldEnable) continue;
 
 		const key = `${name}@${marketplace}`;
-		const installed = key in getEnabledPlugins();
+		// 已啟用且 cache 路徑健康 → 跳過；cache 路徑損壞（unknown / 不存在）→ 重安裝
+		const alreadyHealthy =
+			key in enabledPlugins && isPluginHealthy(key, installedPlugins);
 
-		if (installed) {
+		if (alreadyHealthy) {
 			results.skipped.push(key);
 		} else if (dryRun) {
 			console.log(`[dry-run] 將安裝：${key}`);

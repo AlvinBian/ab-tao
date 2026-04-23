@@ -2,25 +2,28 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { UnifiedReportData } from "@/types/status";
 
-export interface AiUsageEntry {
-	toolName?: string;
-	model?: string;
-	day?: string;
-	count: number;
-	totalDurationMs?: number;
+export interface ModelUsage {
+	model: string;
+	inputTokens: number;
+	outputTokens: number;
+	cacheReadTokens: number;
+	requests: number;
+}
+
+export interface DayUsage {
+	day: string;
+	models: Record<string, Omit<ModelUsage, "model">>;
 }
 
 export interface AiUsageData {
-	byModel: AiUsageEntry[];
-	byTool: AiUsageEntry[];
-	byDay: AiUsageEntry[];
+	byDay: DayUsage[];
+	byModel: ModelUsage[];
+	allModels: string[];
 	meta: {
-		source: "absent" | "partial" | "ok";
-		parseErrors: number;
-		totalLines: number;
-		tailed: boolean;
-		rangeFrom: string;
-		rangeTo: string;
+		source: "absent" | "empty" | "ok";
+		range: string;
+		fileCount: number;
+		totalRequests: number;
 	};
 }
 
@@ -58,7 +61,7 @@ export const useStatusStore = defineStore("status", () => {
 		}
 	}
 
-	async function loadAiUsage(range: "24h" | "7d" | "30d" = "7d") {
+	async function loadAiUsage(range: "7d" | "30d" | "all" = "7d") {
 		aiUsageLoading.value = true;
 		aiUsageError.value = null;
 		try {

@@ -1,10 +1,10 @@
 /**
  * ai-usage.mjs — /api/status/ai-usage 路由
  *
- * 讀取 ~/.claude/.ab-tao/metrics.jsonl，aggregate 並回傳 AI 使用統計。
- * 支援 range 參數：24h | 7d | 30d（預設 7d）
+ * 讀取 ~/.claude/projects/**\/<uuid>.jsonl，aggregate assistant 訊息的 token 用量。
+ * 支援 range 參數：7d | 30d | all（預設 7d）
  */
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -12,45 +12,95 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOTFILES_LIB = path.resolve(__dirname, "../../../dotfiles/libs");
 
-const METRICS_MAX_LINES = 50_000;
-const METRICS_WARN_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_FILES = 200;
+const MAX_LINES_PER_FILE = 20_000;
+const UUID_RE =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jsonl$/i;
 
 async function getP() {
 	const { P } = await import(path.join(DOTFILES_LIB, "core/paths.mjs"));
 	return P;
 }
 
-function rangeMs(range) {
-	const map = { "24h": 86400000, "7d": 604800000, "30d": 2592000000 };
-	return map[range] ?? map["7d"];
+function rangeCutoff(range) {
+	if (range === "all") return 0;
+	const map = { "7d": 7, "30d": 30 };
+	const days = map[range] ?? 7;
+	return Date.now() - days * 86400000;
 }
 
-/**
- * 尾部讀取 JSONL 檔（最後 maxLines 行）並解析
- * @returns {{ lines: object[], parseErrors: number, tailed: boolean }}
- */
-async function tailJsonl(filePath, maxLines) {
-	let parseErrors = 0;
+/** 收集所有 session JSONL 路徑（各專案目錄下的 uuid.jsonl），按 mtime DESC 排序 */
+function collectSessionFiles(projectsDir, cutoffMs) {
+	const files = [];
+	let projectDirs;
+	try {
+		projectDirs = readdirSync(projectsDir, { withFileTypes: true });
+	} catch {
+		return files;
+	}
+
+	for (const projEnt of projectDirs) {
+		if (!projEnt.isDirectory()) continue;
+		const projPath = path.join(projectsDir, projEnt.name);
+		let entries;
+		try {
+			entries = readdirSync(projPath, { withFileTypes: true });
+		} catch {
+			continue;
+		}
+		for (const ent of entries) {
+			if (!ent.isFile() || !UUID_RE.test(ent.name)) continue;
+			const filePath = path.join(projPath, ent.name);
+			let mtime = 0;
+			try {
+				mtime = statSync(filePath).mtimeMs;
+			} catch {
+				continue;
+			}
+			// 跳過整個檔案（mtime 早於 cutoff 且 range 非 all）
+			if (cutoffMs > 0 && mtime < cutoffMs) continue;
+			files.push({ filePath, mtime });
+		}
+	}
+
+	files.sort((a, b) => b.mtime - a.mtime);
+	return files.slice(0, MAX_FILES);
+}
+
+/** 讀取單個 JSONL 檔，提取 assistant 訊息的 usage 資料 */
+async function extractUsageFromFile(filePath, cutoffMs) {
+	const results = [];
 	const rl = createInterface({
 		input: createReadStream(filePath, { encoding: "utf8" }),
 		crlfDelay: Infinity,
 	});
-	const allLines = [];
+	let lineCount = 0;
 	for await (const line of rl) {
-		if (line.trim()) allLines.push(line);
-	}
-	const totalLines = allLines.length;
-	const slice = allLines.slice(-maxLines);
-	const tailed = totalLines > maxLines;
-	const lines = [];
-	for (const line of slice) {
+		if (++lineCount > MAX_LINES_PER_FILE) break;
+		if (!line.trim()) continue;
+		let obj;
 		try {
-			lines.push(JSON.parse(line));
+			obj = JSON.parse(line);
 		} catch {
-			parseErrors++;
+			continue;
 		}
+		if (obj.type !== "assistant" || !obj.message?.usage || !obj.timestamp)
+			continue;
+		// 排除 synthetic / 工具回應假模型
+		if (!obj.message.model || obj.message.model.startsWith("<")) continue;
+		const ts = new Date(obj.timestamp).getTime();
+		if (isNaN(ts) || (cutoffMs > 0 && ts < cutoffMs)) continue;
+		const { model } = obj.message;
+		const u = obj.message.usage;
+		results.push({
+			day: obj.timestamp.slice(0, 10),
+			model: model ?? "unknown",
+			inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
+			outputTokens: u.output_tokens ?? 0,
+			cacheReadTokens: u.cache_read_input_tokens ?? 0,
+		});
 	}
-	return { lines, parseErrors, tailed, totalLines };
+	return results;
 }
 
 export async function aiUsageRouter(req, res, url, json) {
@@ -58,7 +108,7 @@ export async function aiUsageRouter(req, res, url, json) {
 		return false;
 
 	const range = url.searchParams.get("range") ?? "7d";
-	const cutoff = Date.now() - rangeMs(range);
+	const cutoffMs = rangeCutoff(range);
 
 	let P;
 	try {
@@ -68,116 +118,86 @@ export async function aiUsageRouter(req, res, url, json) {
 		return true;
 	}
 
-	const metricsPath = path.join(P.abTaoDir, "metrics.jsonl");
-
-	// 檔案不存在 → 200 + source: absent
-	if (!existsSync(metricsPath)) {
+	if (!existsSync(P.projects)) {
 		json(res, 0, "ok", {
-			byModel: [],
-			byTool: [],
 			byDay: [],
-			meta: {
-				source: "absent",
-				parseErrors: 0,
-				totalLines: 0,
-				tailed: false,
-				range,
-			},
+			byModel: [],
+			allModels: [],
+			meta: { source: "absent", range, fileCount: 0, totalRequests: 0 },
 		});
 		return true;
 	}
 
-	// IO 統計
-	let fileSize = 0;
-	try {
-		fileSize = statSync(metricsPath).size;
-	} catch (e) {
-		json(
-			res,
-			500,
-			"metrics.jsonl 讀取失敗",
-			{ code: "METRICS_READ_FAILED", cause: e.message },
-			500,
-		);
-		return true;
-	}
+	const sessionFiles = collectSessionFiles(P.projects, cutoffMs);
 
-	const sizeWarn = fileSize > METRICS_WARN_BYTES;
-
-	let parsed, parseErrors, tailed, totalLines;
-	try {
-		({
-			lines: parsed,
-			parseErrors,
-			tailed,
-			totalLines,
-		} = await tailJsonl(metricsPath, METRICS_MAX_LINES));
-	} catch (e) {
-		json(
-			res,
-			500,
-			"metrics.jsonl 讀取失敗",
-			{ code: "METRICS_READ_FAILED", cause: e.message },
-			500,
-		);
-		return true;
-	}
-
-	// filter by time range
-	const inRange = parsed.filter((r) => {
-		if (!r.ts) return false;
-		return new Date(r.ts).getTime() >= cutoff;
-	});
-
-	// aggregate by model / tool / day
-	const modelMap = {};
-	const toolMap = {};
-	const dayMap = {};
-
-	for (const r of inRange) {
-		const day = r.ts?.slice(0, 10) ?? "unknown";
-		dayMap[day] = (dayMap[day] ?? 0) + 1;
-
-		if (r.event === "model_request" && r.model) {
-			if (!modelMap[r.model]) {
-				modelMap[r.model] = {
-					model: r.model,
-					requests: 0,
-					inputTokens: 0,
-					outputTokens: 0,
-					cacheReadTokens: 0,
-				};
-			}
-			modelMap[r.model].requests++;
-			modelMap[r.model].inputTokens += r.inputTokens ?? 0;
-			modelMap[r.model].outputTokens += r.outputTokens ?? 0;
-			modelMap[r.model].cacheReadTokens += r.cacheReadTokens ?? 0;
-		}
-
-		if (r.event === "tool_use" && r.toolName) {
-			if (!toolMap[r.toolName]) {
-				toolMap[r.toolName] = {
-					toolName: r.toolName,
-					calls: 0,
-					errors: 0,
-					totalMs: 0,
-				};
-			}
-			toolMap[r.toolName].calls++;
-			if (!r.ok) toolMap[r.toolName].errors++;
-			toolMap[r.toolName].totalMs += r.durationMs ?? 0;
+	// 讀取所有檔案（sequential — 避免大量並行 I/O）
+	const allUsage = [];
+	for (const { filePath } of sessionFiles) {
+		try {
+			const entries = await extractUsageFromFile(filePath, cutoffMs);
+			allUsage.push(...entries);
+		} catch {
+			// 損壞的 JSONL 直接跳過
 		}
 	}
 
-	const source = parseErrors > 0 && inRange.length === 0 ? "partial" : "ok";
+	// aggregate by day + model
+	/** @type {Record<string, Record<string, {inputTokens:number,outputTokens:number,cacheReadTokens:number,requests:number}>>} */
+	const dayModelMap = {};
+	const modelTotals = {};
+
+	for (const entry of allUsage) {
+		if (!dayModelMap[entry.day]) dayModelMap[entry.day] = {};
+		if (!dayModelMap[entry.day][entry.model]) {
+			dayModelMap[entry.day][entry.model] = {
+				inputTokens: 0,
+				outputTokens: 0,
+				cacheReadTokens: 0,
+				requests: 0,
+			};
+		}
+		const slot = dayModelMap[entry.day][entry.model];
+		slot.inputTokens += entry.inputTokens;
+		slot.outputTokens += entry.outputTokens;
+		slot.cacheReadTokens += entry.cacheReadTokens;
+		slot.requests++;
+
+		if (!modelTotals[entry.model]) {
+			modelTotals[entry.model] = {
+				model: entry.model,
+				inputTokens: 0,
+				outputTokens: 0,
+				cacheReadTokens: 0,
+				requests: 0,
+			};
+		}
+		const mt = modelTotals[entry.model];
+		mt.inputTokens += entry.inputTokens;
+		mt.outputTokens += entry.outputTokens;
+		mt.cacheReadTokens += entry.cacheReadTokens;
+		mt.requests++;
+	}
+
+	const byDay = Object.entries(dayModelMap)
+		.map(([day, models]) => ({ day, models }))
+		.sort((a, b) => a.day.localeCompare(b.day));
+
+	const byModel = Object.values(modelTotals).sort(
+		(a, b) => b.requests - a.requests,
+	);
+	const allModels = byModel.map((m) => m.model);
+	const totalRequests = allUsage.length;
 
 	json(res, 0, "ok", {
-		byModel: Object.values(modelMap),
-		byTool: Object.values(toolMap),
-		byDay: Object.entries(dayMap)
-			.map(([day, count]) => ({ day, count }))
-			.sort((a, b) => a.day.localeCompare(b.day)),
-		meta: { source, parseErrors, totalLines, tailed, sizeWarn, range },
+		byDay,
+		byModel,
+		allModels,
+		meta: {
+			source: totalRequests > 0 ? "ok" : "empty",
+			range,
+			fileCount: sessionFiles.length,
+			totalRequests,
+		},
 	});
 	return true;
 }

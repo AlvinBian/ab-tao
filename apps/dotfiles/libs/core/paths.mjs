@@ -38,6 +38,7 @@ export const P = {
 	stateLock: path.join(CLAUDE, ".ab-tao", "state.lock"),
 	configChoices: path.join(CLAUDE, ".ab-tao", "state.json"), // choices 現在在 state.json 內
 	pluginsLock: path.join(CLAUDE, ".ab-tao", "plugins.lock"),
+	pluginsInstalledJson: path.join(CLAUDE, "plugins", "installed_plugins.json"),
 	metrics: path.join(CLAUDE, ".ab-tao", "metrics.jsonl"),
 	cclineDir: path.join(CLAUDE, "ccline"),
 	ccline: path.join(CLAUDE, "ccline", "my-ccline.sh"),
