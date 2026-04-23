@@ -89,7 +89,7 @@ async function extractUsageFromFile(filePath, cutoffMs) {
 		// 排除 synthetic / 工具回應假模型
 		if (!obj.message.model || obj.message.model.startsWith("<")) continue;
 		const ts = new Date(obj.timestamp).getTime();
-		if (isNaN(ts) || (cutoffMs > 0 && ts < cutoffMs)) continue;
+		if (Number.isNaN(ts) || (cutoffMs > 0 && ts < cutoffMs)) continue;
 		const { model } = obj.message;
 		const u = obj.message.usage;
 		results.push({
