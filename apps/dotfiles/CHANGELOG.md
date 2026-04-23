@@ -1,5 +1,37 @@
 # @ab-tao/dotfiles
 
+## 1.3.0
+
+### Minor Changes
+
+- v1.3.0 — Slack audience-aware 輸出 + claude-md 精簡 + Slack 全鏈路加固
+
+  新增：
+
+  - Slack audience-aware 輸出：根據對象（rd / pm / mkt / qa / ops / exec / mixed）動態調整訊息詳細度、用詞、強調點
+  - Slack 自主判斷四維度：audience / channel / type / thread_ts 自動推斷 + 信心分級（high/medium/low）
+  - Thread reply 自動識別：使用者貼 Slack permalink → 自動切 thread reply 模式
+  - 新增 `docs/slack-audience-profiles.md`（7 profile + channel mapping + Channel ID 前綴對照）
+  - 新增 `claude-md/15-self-correction.md`（8 條自我糾正規則）
+  - commands/slack.md Step A1.5（4 維度識別）+ A2.5（套用 profile）+ A4.0（信心閘門）+ 升級 A4.2 UI
+  - docs/slack-templates.md 25 個模板各加 audience 變體 footer
+
+  修改：
+
+  - claude-md 03/07/09/10/13 精簡（去除冗餘，保留核心紅線）
+  - 04-verification：新增「何時不需要 web search」
+  - 05-security：新增 bypassPermissions 風險揭露
+  - commands/slack.md：廢棄 ab-slack，新命名 v4.0.0 + Step A2 強制 Read
+  - docs/audit-checklists.md：補全 Slack / docs / claude-md 16 個 section 等檢查項；4 → 5 個 docs；G+H 系列 audience 檢查項
+  - docs/config-map.md：更新至 v1.3.0 結構
+  - scripts/build-claude-dev-plugin.sh：新增 docs/\* glob 部署
+  - mcp.yml：新增 @modelcontextprotocol/server-slack
+
+  移除：
+
+  - docs/pua-opt-in.md（Pua plugin 殘留）
+  - docs/project-tags.md（Pua 殘留）
+
 ## 1.2.1
 
 ### Patch Changes
