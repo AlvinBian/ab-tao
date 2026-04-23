@@ -12,4 +12,4 @@ description: 顯示當前堆疊 PR 狀態並提示下一動作
    - 在 leaf 上且 parent 已過時 → 建議執行 `pr-stack-sync`
    - 在 leaf 上且 ready to merge → 建議執行 `pr-stack-land`
 4. 如有 PR 尚未開啟 → 列出待開 PR 清單與對應 base branch
-5. 對照 `docs/audit-checklists.md` 【審查 PR】checklist 逐項提示狀態
+5. 對照 `~/.claude/docs/audit-checklists.md` 【審查 PR】checklist 逐項提示狀態

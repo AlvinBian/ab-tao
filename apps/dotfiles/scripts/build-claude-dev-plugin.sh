@@ -87,7 +87,8 @@ mkdir -p "$BUILD_DIR/.claude-plugin" \
          "$BUILD_DIR/skills" \
          "$BUILD_DIR/agents" \
          "$BUILD_DIR/hooks" \
-         "$BUILD_DIR/rules"
+         "$BUILD_DIR/rules" \
+         "$BUILD_DIR/docs"
 
 # ── Skills（全部 commands）───────────────────────────────────────
 step "📦 Skills"
@@ -153,6 +154,17 @@ for f in "$HOME/.claude/rules/"*.md; do
   fi
 done
 echo -e "   ${CYAN}→ $RULE_COUNT rules${NC}"
+
+# ── Docs ──────────────────────────────────────────────────────────
+step "📚 Docs"
+DOC_COUNT=0
+for f in "$REPO_DIR/claude/docs/"*.md; do
+  [[ -f "$f" ]] || continue
+  cp "$f" "$BUILD_DIR/docs/$(basename "$f")"
+  echo -e "   ${GREEN}✔${NC} $(basename "$f")"
+  DOC_COUNT=$((DOC_COUNT + 1))
+done
+echo -e "   ${CYAN}→ $DOC_COUNT docs${NC}"
 
 # ── Repos 上下文（選用，需要 gh CLI + config.json）────────────
 step "🔗 Repos 上下文"
@@ -288,7 +300,7 @@ cat > "$BUILD_DIR/.claude-plugin/plugin.json" << JSON_EOF
 {
   "name": "ab-claude-dev",
   "version": "$PLUGIN_VERSION",
-  "description": "Claude Code 配置包 — skills / agents / hooks / rules${REPOS_NOTE}",
+  "description": "Claude Code 配置包 — skills / agents / hooks / rules / docs${REPOS_NOTE}",
   "author": "ab-tao",
   "keywords": ["claude-code", "check", "slack", "test", "db-migration", "architect", "debugger", "vue", "typescript", "php"]
 }
@@ -308,7 +320,7 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║   ✅ ab-claude-dev.plugin 打包完成           ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
 echo -e "  ${BOLD}版    本：${NC} $PLUGIN_VERSION"
-echo -e "  ${BOLD}內    容：${NC} $SKILL_COUNT skills · $AGENT_COUNT agents · hooks · $RULE_COUNT rules"
+echo -e "  ${BOLD}內    容：${NC} $SKILL_COUNT skills · $AGENT_COUNT agents · hooks · $RULE_COUNT rules · $DOC_COUNT docs"
 [[ "$REPOS_CONTEXT" == "true" ]] && echo -e "  ${BOLD}Repos：  ${NC} $REPO_BUILT repos 上下文已整合"
 echo -e "  ${BOLD}輸出路徑：${NC} $OUTPUT（$FILE_SIZE）"
 echo ""

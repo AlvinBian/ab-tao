@@ -41,7 +41,6 @@
 ### PR Title 命名
 - 標準格式：`[TICKET][PROJECT] 主PR描述`
   - `TICKET`：票號（VM-1482 / KKDAY-1234）
-  - `PROJECT`：專案 tag（→ 完整對照見 docs/project-tags.md）
   - 範例：`[VM-1482][M] 新訂單明細頁`
 
 ### 堆疊 PR（Stacked PR）
@@ -73,92 +72,9 @@
 ✅ PR merge 唯一方式：在 GitHub UI 手動點擊（PR-N merge 後才能 merge PR-N+1）
 ✅ 每次 merge 後立即執行 `git-spice repo sync` 同步下游
 
-### git-spice 日常指令
+### Stack PR 細節
 
-```bash
-# 查看 stack 狀態
-git-spice log short
-
-# 建立新 leaf 分支（自動 base 在當前分支）
-git-spice branch create feat/<TICKET>/{N}-{slug}
-
-# 開發完，建立 PR（自動設定 base + 更新 spice metadata）
-git-spice branch submit
-
-# 上游 PR merge 後，cascade rebase 所有下游分支
-git-spice repo sync
-
-# 推送整個 stack 所有分支的 PR
-git-spice branch submit --stack
-```
-
-### PR merge 後標準動作
-
-```bash
-# 1. 在 GitHub UI 手動 merge PR-N
-# 2. 同步 stack（cascade rebase 下游）
-git-spice repo sync
-# 3. 確認下游分支 base 已更新
-git-spice log short
-```
-
-### 誤 merge 救援程序
-
-當 PR-N+1 被意外 merge 進 PR-N 的 base branch 時：
-
-```bash
-# Step 1：建備份（必做）
-git branch backup/{base-branch}-post-merge origin/{base-branch}
-
-# Step 2：找回 pre-merge commit hash
-git log --oneline -20 origin/{base-branch}
-
-# Step 3：reset + force push（需 ! 前綴繞過 hook 攔截）
-git checkout {base-branch}
-git reset --hard {pre-merge-hash}
-! git push --force origin {base-branch}
-
-# Step 4：重推 head branch（若被刪除）
-git push origin {head-branch}
-
-# Step 5：修復 git-spice metadata（清除舊 PR 綁定）
-# 移除 refs/spice/data 中的 change.github.pr 欄位後重建
-git push origin refs/spice/data
-
-# Step 6：重建 PR
-git-spice branch submit
-```
-
-### git-spice metadata 驗證
-
-```bash
-# 確認分支綁定了正確的 PR number
-git show refs/spice/data:branches/feat/<TICKET>/{N}-{slug}
-# 應包含："pr": { "number": XXXXX }
-
-# 若用 gh pr create 建 PR（非 git-spice branch submit）
-# → 需手動把新 PR number 寫入 refs/spice/data 再 push
-```
-
-### Claude Code 操作限制
-
-| 操作 | 限制 | 解法 |
-|---|---|---|
-| `git push --force` | pre-tool-bash.sh hook 攔截 | 對話框輸入 `! git push --force ...` |
-| `git reset --hard` | Claude Code 確認框 | 彈出確認框時點「允許」 |
-| `gh pr merge` | 強制規則禁止 | 永遠不執行 |
-
-### 失敗回復
-- stack 衝突 → `git-spice repo sync`（cascade rebase）+ 從 `backup/<branch>` 救援
-- pre-push 測試 fail → 修復後再 push；`--no-verify` 僅限 hotfix，常態必過
-
-### 堆疊 PR 工具（優先級 + 自動 dispatch）
-
-優先級（Claude 與開發者皆遵守）：
-1. gh-stack（若 PATH 命中，即組織已授權安裝）
-2. git-spice (gs)（預設備援，OSS 無授權限制）
-3. ghstack + token shim（偏好 commit-based metadata 才用）
-
-統一入口 `pr-stack` 由 ab-tao 部署至 `~/.zshrc.d/conf/40-git.zsh`，自動 dispatch。
+git-spice / gh-stack 完整指令、誤 merge 救援、metadata 驗證 → 跑 `/pr-stack` command。
+本檔只記紅線：禁 `gh pr merge`、禁 GitHub auto-merge、force push 前先 `backup/<branch>`。
 
 </code_standards>

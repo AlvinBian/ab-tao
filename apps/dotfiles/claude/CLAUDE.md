@@ -1,4 +1,4 @@
-# Claude 全域個人規則 v1.0.0
+# Claude 全域個人規則 v1.3.0
 
 <!-- 載入順序：首尾權重最高（identity + agent-routing），中段可被 /compact 犧牲 -->
 <!-- 來源管理：apps/dotfiles/claude/ 為 source of truth，由 ab-tao d:setup 部署 -->
@@ -28,10 +28,11 @@
 @claude-md/11-audit-system.md
 @claude-md/12-exceptions.md
 
-## 尾錨定：Agent 調度（最高權重）
+## 尾錨定：Agent 調度 + 自我糾正（最高權重）
 
 @claude-md/13-agent-routing.md
 @claude-md/14-dag-parallel-execution.md
+@claude-md/15-self-correction.md
 
 ## 參考資源（按需載入）
 

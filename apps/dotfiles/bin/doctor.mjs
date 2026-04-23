@@ -83,77 +83,11 @@ async function runStateSection() {
 	);
 }
 
-function runPluginSection() {
-	let hasIssue = false;
-
-	// pua loop state files 殘留偵測（>1h 提示清理）
-	const puaLoopDir = path.join(CLAUDE_BASE, "pua");
-	if (fs.existsSync(puaLoopDir)) {
-		const now = Date.now();
-		const loopIssues = [];
-		for (const f of fs.readdirSync(puaLoopDir)) {
-			if (!f.startsWith("loop-") || !f.endsWith(".md")) continue;
-			const fp = path.join(puaLoopDir, f);
-			const stat = fs.statSync(fp);
-			const ageH = (now - stat.mtimeMs) / 3_600_000;
-			if (ageH > 1) loopIssues.push(`${f}（${Math.floor(ageH)}h 前）`);
-		}
-		if (loopIssues.length > 0) {
-			p.log.warn(
-				`pua 殘留 loop state（建議清理）：\n  ${loopIssues.join("\n  ")}\n  清理：find ~/.claude/pua -name "loop-*.md" -mmin +60 -delete`,
-			);
-			hasIssue = true;
-		}
-	}
-
-	// pua config.json kill switch 檢查
-	const puaConfigPath = path.join(
-		process.env.HOME ?? path.resolve(CLAUDE_BASE, ".."),
-		".pua",
-		"config.json",
-	);
-	const puaPluginDir = path.join(CLAUDE_BASE, "plugins", "pua");
-	const puaInstalled = fs.existsSync(puaPluginDir);
-
-	if (puaInstalled) {
-		if (!fs.existsSync(puaConfigPath)) {
-			p.log.warn(
-				"pua 已安裝但缺少 ~/.pua/config.json\n  修復：mkdir -p ~/.pua && echo '{\"always_on\": false}' > ~/.pua/config.json",
-			);
-			hasIssue = true;
-		} else {
-			let cfg;
-			try {
-				cfg = JSON.parse(fs.readFileSync(puaConfigPath, "utf8"));
-			} catch {
-				p.log.warn("~/.pua/config.json 格式錯誤");
-				hasIssue = true;
-				cfg = null;
-			}
-			if (cfg !== null && cfg.always_on !== false) {
-				p.log.warn(
-					"~/.pua/config.json always_on 不為 false → frustration-trigger 會自動觸發",
-				);
-				hasIssue = true;
-			} else if (cfg !== null) {
-				p.log.success("pua：config.json 正常（always_on: false）");
-			}
-		}
-	}
-
-	if (!hasIssue && !puaInstalled) {
-		p.log.success("Plugins：無問題");
-	}
-}
-
 async function main() {
 	p.intro(" d:doctor — State 健康診斷 ");
 
 	p.log.info("── State ──────────────────────────────────────────");
 	await runStateSection();
-
-	p.log.info("── Plugins ────────────────────────────────────────");
-	runPluginSection();
 
 	if (!FIX) {
 		p.log.info("提示：加 --fix 自動修復 ghost 與 dead sync.included");

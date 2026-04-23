@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.1.0)
+# ~/.claude/ 結構全圖 (v1.3.0)
 
 ```
 ~/.claude/
@@ -12,7 +12,7 @@
 │   ├── 02-response-format.md
 │   ├── 03-code-standards.md     技術傾向 + 版本管理 + 程式碼規範
 │   ├── 04-verification.md
-│   ├── 05-security.md           含 bypassPermissions 警示
+│   ├── 05-security.md           安全規範 + bypassPermissions 風險揭露
 │   ├── 06-quality-targets.md
 │   ├── 07-context-hygiene.md    降噪四層策略
 │   ├── 08-memory-system.md      Memory 生命週期 + 三溫層
@@ -21,7 +21,8 @@
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
 │   ├── 13-agent-routing.md      尾錨定（資源速查 + 調度規則）
-│   └── 14-dag-parallel-execution.md  DAG 並行執行規則（尾錨定前）
+│   ├── 14-dag-parallel-execution.md  DAG 並行執行規則（尾錨定前）
+│   └── 15-self-correction.md    尾錨群（8 條自我糾正規則）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
@@ -33,6 +34,8 @@
 ├── docs/                        # 參考文件（可 @import，非規則）
 │   ├── rtk.md                   RTK 工具 + token 預算影響
 │   ├── audit-checklists.md      三模式 checklist 完整版
+│   ├── slack-templates.md       Slack 視覺元素 + 20 個場景模板（commands/slack.md 動態載入）
+│   ├── slack-audience-profiles.md   7 種 audience profile + channel mapping（commands/slack.md 動態載入）
 │   └── config-map.md            本文件
 │
 ├── agents/                      # 2 focused agents

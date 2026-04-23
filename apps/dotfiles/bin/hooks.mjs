@@ -18,9 +18,6 @@ const DEFS_DIR = path.join(
 	"defs",
 );
 
-// pua-loop-hook.sh 無 timeout，Stop event 可能被延遲
-const NO_TIMEOUT_HOOKS = new Set(["pua-loop-hook.sh"]);
-
 function loadPluginHooks() {
 	const pluginsDir = path.join(path.dirname(P.settings), "plugins");
 	const hooks = [];
@@ -114,7 +111,7 @@ async function main() {
 	if (pluginHooks.length > 0) {
 		const pluginLines = pluginHooks
 			.map((h) => {
-				const warn = NO_TIMEOUT_HOOKS.has(h.script) ? " ⚠️ no timeout" : "";
+				const warn = "";
 				return `  📦 [${h.source}] ${h.event}：${h.script}${warn}`;
 			})
 			.join("\n");

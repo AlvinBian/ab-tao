@@ -64,7 +64,7 @@
 影響範圍表：
 ```
 🎯 *影響範圍*
-  | 服務/模組 | 影響程度 | 負責人 | ETA |
+  • {服務/模組} — {影響程度}｜{負責人}（ETA：{日期}）
 ```
 
 處理進度（事件用）：
@@ -112,6 +112,8 @@
 🚀 已部署 🧪 staging｜預計明日 10:00 上 🌐 prod
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【開發日常】PR / Code Review 請求
 
 ```
@@ -135,6 +137,8 @@
 👤 *Reviewer：* <@U12345678> <@U87654321>
 ⏰ *希望：* 今日 18:00 前
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【開發日常】Bug 修復 / Hotfix 通報
 
@@ -160,7 +164,9 @@
 🚀 已部署 🌐 prod｜驗證：✅ iOS 15 / 16 / 17 均正常
 ```
 
-### 【開發日常】技術分享 / TIL
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
+### 【開發日常】技術分享 / TIL·
 
 ```
 💡 *TIL：Vue `defineModel` 可雙向省掉 defineProps + defineEmits*
@@ -187,6 +193,8 @@
 🔗 <https://vuejs.org/api/sfc-script-setup.html#definemodel|官方文件>
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【開發日常】請求協助 / Blocked
 
 ```
@@ -208,6 +216,8 @@
 *聯絡：* <@U12345678>（支付組）
 *截止：* 明日 EOD（影響 sprint 交付）
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【進度管理】Sprint 進度更新
 
@@ -236,6 +246,8 @@
 📊 Sprint 完成率：5/9（56%）｜預計達標：7/9（78%）
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【進度管理】阻塞升級 / Escalation
 
 ```
@@ -261,6 +273,8 @@
 *若無回應：* 明日晨會升級至 EPD Lead
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【發布管理】部署通知
 
 ```
@@ -283,6 +297,8 @@
 🔗 <https://grafana.internal/d/member|Grafana Dashboard> · <https://github.com/org/repo/releases/tag/v2.3.1|Release Notes>
 👤 *部署人：* <@U12345678>｜*OnCall：* <@U87654321>
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【發布管理】版本發布 Release Notes
 
@@ -311,6 +327,8 @@
 🔗 <https://github.com/org/repo/releases/tag/v3.0.0|GitHub Release> · <https://jira.kkday.com/changelogs/member|Changelog>
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【發布管理】回滾通知
 
 ```
@@ -335,6 +353,8 @@
 👤 *負責：* <@U12345678>　*PostMortem：* 明日 10:00 <#C08NJ2GL204|#incident>
 🔗 <https://grafana.internal/d/member|Grafana Dashboard>
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【事件管理】Incident 通報
 
@@ -364,6 +384,8 @@
 ⏰ *下次更新：* 15 分鐘後或有重大進展時
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【事件管理】Incident 更新
 
 ```
@@ -388,6 +410,8 @@
 👤 *On-call：* <@U12345678>　⏰ *下次更新：* 30 分鐘後
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【事件管理】Postmortem 摘要
 
 ```
@@ -409,14 +433,15 @@
   > payment-service 級聯超時。 根本問題：缺乏 webhook 積壓時的 circuit breaker。
 
 ✅ *改善行動項*
-  | # | 行動 | 負責人 | ETA |
-  | 1 | 新增 Adyen webhook 積壓監控告警 | <@U_DevOps> | 2026-04-25 |
-  | 2 | 實作 circuit breaker（payment-service） | <@U_Backend> | 2026-05-02 |
-  | 3 | 建立備援支付 gateway 切換 runbook | <@U_TechLead> | 2026-04-30 |
-  | 4 | DB pool 動態擴容策略 | <@U_DBA> | 2026-05-09 |
+  • #1 新增 Adyen webhook 積壓監控告警 — <@U_DevOps>（ETA：2026-04-25）
+  • #2 實作 circuit breaker（payment-service）— <@U_Backend>（ETA：2026-05-02）
+  • #3 建立備援支付 gateway 切換 runbook — <@U_TechLead>（ETA：2026-04-30）
+  • #4 DB pool 動態擴容策略 — <@U_DBA>（ETA：2026-05-09）
 
 🔗 <https://confluence.example.com/postmortem/2026-04-22|完整 Postmortem 文件>
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【決策治理】架構決策 / ADR
 
@@ -431,11 +456,10 @@
   • 過渡期：雙模式並存 2026-05-01 ~ 2026-06-01
 
 🎯 *影響範圍與排期*
-  | 服務 | 影響程度 | 負責人 | ETA |
-  | Member API | 🔴 高 | <@U_Backend> | 2026-05-05 |
-  | Order API  | 🟡 中 | <@U_Order>   | 2026-05-12 |
-  | Admin UI   | 🟢 低 | <@U_Frontend> | 2026-05-20 |
-  | Mobile App | 🟡 中 | <@U_Mobile>  | 2026-05-19 |
+  • Member API — 🔴 高｜<@U_Backend>（ETA：2026-05-05）
+  • Order API — 🟡 中｜<@U_Order>（ETA：2026-05-12）
+  • Admin UI — 🟢 低｜<@U_Frontend>（ETA：2026-05-20）
+  • Mobile App — 🟡 中｜<@U_Mobile>（ETA：2026-05-19）
 
 ⚠️ *注意事項*
   • CORS 需加 `Access-Control-Allow-Credentials: true`
@@ -444,6 +468,8 @@
 🔗 <https://confluence.example.com/adr-042|ADR-042 完整文件> · <https://github.com/org/repo/issues/789|Issue #789>
 cc <!here> 各 team lead 請確認影響評估，回覆截止 *2026-04-25*
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【決策治理】技術債 / 重構計畫
 
@@ -459,11 +485,13 @@ cc <!here> 各 team lead 請確認影響評估，回覆截止 *2026-04-25*
   • 0% 測試覆蓋率（遺留代碼）
 
 🎯 *重構目標*
-  | 指標 | 現狀 | 目標 |
-  | 單一檔案行數 | 1,200 行 | < 200 行 |
-  | 測試覆蓋率 | 0% | ≥ 80% |
-  | `GET /orders` P99 | 2,100ms | < 500ms |
-  | Cyclomatic Complexity | 45 | < 10 |
+  ```
+  指標                    現狀       目標
+  單一檔案行數            1,200 行   < 200 行
+  測試覆蓋率              0%         ≥ 80%
+  GET /orders P99         2,100ms    < 500ms
+  Cyclomatic Complexity   45         < 10
+  ```
 
 📋 *排期（4 Sprint）*
   • S23：拆分 OrderService → 4 個 domain service
@@ -474,6 +502,8 @@ cc <!here> 各 team lead 請確認影響評估，回覆截止 *2026-04-25*
 *需要：* Tech Lead 批准排期，<@U_TechLead> 請於週五前確認
 🔗 <https://jira.kkday.com/TECH-DEBT-ORDER|技術債 Epic>
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【跨團隊】跨團隊協作請求
 
@@ -499,6 +529,8 @@ cc <!here> 各 team lead 請確認影響評估，回覆截止 *2026-04-25*
 cc <@Data_Lead> <@Data_Backend>
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【跨團隊】安全漏洞通報
 
 ```
@@ -511,10 +543,9 @@ cc <@Data_Lead> <@Data_Backend>
   > 以低權限帳號取得高權限 token（需已有效 session）。
 
 🎯 *影響範圍*
-  | 服務 | 現用版本 | 狀態 |
-  | member-service | devise-jwt 0.11.0 | 🔴 受影響 |
-  | admin-service  | devise-jwt 0.10.2 | 🔴 受影響 |
-  | order-service  | devise-jwt 0.12.1 | ✅ 安全   |
+  • member-service — devise-jwt 0.11.0 🔴 受影響
+  • admin-service — devise-jwt 0.10.2 🔴 受影響
+  • order-service — devise-jwt 0.12.1 ✅ 安全
 
 🛠️ *修補方式*
   ```
@@ -524,14 +555,15 @@ cc <@Data_Lead> <@Data_Backend>
   升級後需重新產生所有 JWT secret（見 migration 文件）
 
 📋 *行動項*
-  | 動作 | 負責人 | 截止 |
-  | member-service 升級 + 測試 | <@U_Backend> | 2026-04-24 EOD |
-  | admin-service 升級 + 測試  | <@U_Admin>   | 2026-04-24 EOD |
-  | 生產環境部署                | <@U_DevOps>  | 2026-04-25 10:00 |
+  • member-service 升級 + 測試 — <@U_Backend>（截止：2026-04-24 EOD）
+  • admin-service 升級 + 測試 — <@U_Admin>（截止：2026-04-24 EOD）
+  • 生產環境部署 — <@U_DevOps>（截止：2026-04-25 10:00）
 
 🔗 <https://nvd.nist.gov/vuln/detail/CVE-2025-12345|CVE 詳情> · <https://confluence.example.com/security/cve-2025-12345|內部處理文件>
 cc <!channel> 安全相關，所有 team lead 必讀
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【跨團隊】會議召集
 
@@ -561,6 +593,8 @@ cc <!channel> 安全相關，所有 team lead 必讀
 *請於 2026-04-23 17:00 前確認出席（:white_check_mark: 或 :x:）*
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 【文化氛圍】感謝 / 表揚
 
 ```
@@ -578,6 +612,8 @@ cc <!channel> 安全相關，所有 team lead 必讀
 
 cc <@Manager_UID> 紀錄一下這次的出色表現 :clap:
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ### 【文化氛圍】公告 / 重要提醒
 
@@ -605,6 +641,8 @@ cc <@Manager_UID> 紀錄一下這次的出色表現 :clap:
 cc <!channel> 所有工程師請注意
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ---
 
 ## 指南速查模板
@@ -623,6 +661,8 @@ cc <!channel> 所有工程師請注意
 *截止：* {日期}　cc <!here>
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### Sprint 進度（精簡）
 
 ```
@@ -634,6 +674,8 @@ cc <!channel> 所有工程師請注意
 ⚠️ 風險：{說明}
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### Incident 通報（精簡）
 
 ```
@@ -644,6 +686,8 @@ cc <!channel> 所有工程師請注意
 *更新：* N 分鐘後
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### PR Review（精簡）
 
 ```
@@ -653,6 +697,8 @@ cc <!channel> 所有工程師請注意
 👤 <@REVIEWER>　⏰ {截止}
 ```
 
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+
 ### 感謝（精簡）
 
 ```
@@ -660,6 +706,8 @@ cc <!channel> 所有工程師請注意
 {具體事蹟一句話}
 cc <@Manager>
 ```
+
+> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
 
 ---
 

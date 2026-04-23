@@ -52,6 +52,18 @@ servers:
     enabled_in_profiles: []   # 空 = 全 profile 均啟用
     description: "Chrome DevTools MCP（Lighthouse · 記憶體洩漏偵測 · 無障礙除錯）"
 
+  # ── 通訊協作 ──────────────────────────────────────────────────────
+  slack:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-slack"
+    env_ref:
+      SLACK_BOT_TOKEN: SLACK_BOT_TOKEN
+      SLACK_TEAM_ID: SLACK_TEAM_ID
+    enabled_in_profiles: []   # 空 = 全 profile 均啟用
+    description: "Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）"
+
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:
     command: npx

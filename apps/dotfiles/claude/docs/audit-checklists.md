@@ -13,10 +13,15 @@
 - [ ] `settings.json` 無 phantom plugin（enabled 但未安裝）
 - [ ] `settings.json` hooks 區段所有 script 存在且有執行權限（hooks 由 settings.json 管理，源自 hooks/defs/*.json）
 - [ ] `memory/MEMORY.md` ≤ 200 行 / 25KB
-- [ ] `claude-md/` 15 個 section 檔全部存在（00–14）
+- [ ] `claude-md/` 16 個 section 檔全部存在（00–15）
 - [ ] `rules/` 5 個條件規則檔有正確 `paths:` frontmatter
-- [ ] `docs/` 3 個參考文件存在
+- [ ] `docs/` 5 個參考文件存在（rtk / audit-checklists / config-map / slack-templates / slack-audience-profiles）
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
+- [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
+- [ ] `slack-templates.md` 無 markdown table（grep `\|.*\|.*\|` 應為 0）
+- [ ] `commands/slack.md` Step A2 含「強制」字樣（禁止條件性載入模板）
+- [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / exec / mixed）+ channel mapping + Channel ID 前綴對照
+- [ ] `commands/slack.md` 含 Step A1.5（4 維度識別）+ A2.5（套用 profile）+ A4.0（信心閘門）+ A4.2 audience 選單
 
 ---
 
@@ -83,7 +88,6 @@
 
 ### 標題與描述
 - [ ] PR title 符合 `[TICKET][PROJECT] 主描述 - PR-N 子描述`
-- [ ] PROJECT tag 屬於 `docs/project-tags.md` canonical 列表
 - [ ] PR description 列出依賴 `#PR-N` 與合併順序
 - [ ] 含 DB migration 已標註（filename + 順序）
 

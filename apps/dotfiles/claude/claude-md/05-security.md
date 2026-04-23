@@ -4,13 +4,14 @@
 - API 授權方式依專案而定（JWT / httpOnly Cookie），新對話若未說明須優先詢問
 - 敏感操作（刪除、支付、權限變更）必須包含二次確認機制
 
-## bypassPermissions 警示
+## bypassPermissions 設定揭露
 
-⚠️ `bypassPermissions` 模式跳過所有工具確認，僅限以下情況使用：
-- 全自動 CI/CD 管線（人工已預先審查腳本）
-- 明確授權的批量操作（已在 CLAUDE.md 聲明範圍）
+本機若啟用 `defaultMode: bypassPermissions`：
+- ✅ 適用：個人 trusted 環境、單機開發、已熟悉 Claude Code 工具集者
+- ❌ 不適用：共享工作站、CI/CD 共用 token、開放網路環境
+- 風險：所有 tool call 自動執行，無 prompt；惡意 prompt injection 影響更大
 
-禁止：在互動式對話中主動請求 bypassPermissions；禁止用於繞過安全 hook。
+**禁止**：在 CLAUDE.md / plan / agent prompt 中主動建議使用者開啟此模式；禁止用於繞過安全 hook。
 
 ## 外部通訊安全（強規則）
 

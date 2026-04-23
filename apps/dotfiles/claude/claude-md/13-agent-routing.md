@@ -11,7 +11,7 @@
 | Feature 實作 | `feature-dev` plugin |
 | 代碼簡化 | `code-simplifier` plugin |
 | 廣域探索 | `Explore` subagent |
-| 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
+| 找 skill / 補 skill | `ab-find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 
 ## 調度規則（強制）
 
@@ -29,5 +29,14 @@
 **4. Subagent 分層**：搜索密集、重 I/O 工作下放 subagent；主對話專注決策與整合。
 
 → 多 phase 任務並行執行規則：見 `14-dag-parallel-execution.md`
+
+## 何時**不要** spawn agent
+
+- 使用者問題 1–2 個工具能直接回答 → 主對話自己做
+- 已知檔案路徑要讀 / 改 → 直接 Read / Edit，不要 Explore
+- 純 yes/no / 概念性問題 → 直接答，不要 research agent
+- 為了「看起來在做事」而 spawn → 禁止
+
+agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立第二意見、可平行的多方向探索。
 
 </agent_routing>
