@@ -1,4 +1,4 @@
-# Slack Audience Profiles
+# Slack Audience Profiles v1.3.1
 
 按需載入（`commands/slack.md` Step A1.5 + A2.5 使用）。
 
@@ -9,6 +9,22 @@
 audience 是「投影」——同一場景模板透過 profile transformation 輸出不同版本，不另建獨立模板。
 
 禁止憑記憶套用 profile，必須每次 Read 本文件（內容可能更新）。
+
+---
+
+## 7 個 Profile 總覽
+
+| ID | 對象 | 詳細度 | 說明 |
+|---|---|---|---|
+| `rd` | RD / 技術人員 | 完整 | 保留所有技術細節 |
+| `pm` | PM / PO | 中 | 業務影響優先，技術壓縮 |
+| `mkt` | Marketing / CS / Sales | 白話 | 完全去除技術術語 |
+| `qa` | QA / SDET | 聚焦可重現性 | Reproduce 步驟 + 回歸建議 |
+| `ops` | DevOps / SRE / OnCall | 聚焦運維操作 | 監控指標 + 操作命令 |
+| `ued` | UI/UX Designer | 聚焦 UI 表現 | 設計修正 + 體驗破口 |
+| `multi` | ≥2 個 audience 組合 | 區塊化合併 | 組合輸出格式（見專節） |
+
+`mixed` 為相容別名，等同 `multi`（跨部門頻道預設）。
 
 ---
 
@@ -193,74 +209,128 @@ heap 在 14:10 突破 512MB limit，k8s OOMKill x3 pod。
 
 ---
 
-### Audience: exec（C-level / 主管）
+### Audience: ued（UI/UX Designer）
 
-**對象**：CEO、CTO、VP、Director、主管
-**詳細度**：1-2 句高層次
+**對象**：UI/UX Designer、Product Designer、Visual Designer
+**詳細度**：聚焦「使用者實際看到什麼 + 需要設計修正什麼」
 
 | 規則 | 適用段落 |
 |---|---|
-| 完全保留 | 商業影響金額（如可估算）、受影響用戶數、修復狀態、是否需主管決策 |
-| 壓縮為 1 句 | — |
-| 完全移除 | 所有技術內容（OOM、k8s、commit、API、程式碼）|
-| 強調點（*bold*） | KPI 影響、需要主管做的事 |
+| 完全保留 | 故障期間 UI 表現、error state 截圖、fallback 設計建議、usability 影響、設計稿連結 |
+| 壓縮為 1 句 | 技術根因 |
+| 完全移除 | code、stack trace、k8s/pod、SQL、API endpoint |
+| 強調點（*bold*） | *使用者體驗破口*、`需補設計` 區塊、設計時程 |
 
-**格式**：總長 ≤ 5 行。若無需決策，結尾加 `不需主管行動，僅通報。`
+**必含段落**（每條訊息）：
+- `🎨 *UI 表現*`：故障期間使用者看到什麼
+- `💡 *設計修正建議*`：需要新增 / 修改的 UI（fallback、error state、引導文案）
+- `📅 *設計時程*`：何時需要 review / deliver
 
 **範例（同一事件）**：
 
 ```
-📊 *結帳服務中斷通報*（今日 14:12 ~ 14:48，已恢復）
-*影響*：~8,500 筆結帳受阻，預估損失約 NT$XXX 萬（待確認）
-*目前狀態*：✅ 完全恢復，工程已上線修復版本
-*後續*：改善監控預防重複發生，PostMortem 明日完成
-不需主管行動，僅通報。
+🟠 *結帳流程出現空白 loading — 需設計補強*
+
+🎨 *UI 表現*（14:12 ~ 14:48 期間）
+  • 使用者點「確認訂單」後，頁面進入無限 loading 狀態
+  • 約 30 秒後出現通用錯誤頁「系統繁忙，請稍後再試」
+  • *體驗破口*：無進度反饋、無引導下一步、無友善文案
+
+💡 *設計修正建議*
+  `需補設計`
+  1. 結帳 timeout error state — 明確告知「訂單未成立」+ CTA「重新嘗試」
+  2. loading skeleton 加上逾時上限提示（建議 > 10s 顯示「處理中，請稍等」）
+  3. 通用錯誤頁文案改善：區分「系統錯誤」vs「暫時不可用」語境
+
+📅 *設計時程*
+  • error state 設計稿：本週五 EOD 前需 review（配合 v2.3.2 排期）
+  • 設計稿放 Figma：https://figma.com/... （待補）
 ```
 
 ---
 
-### Audience: mixed（跨部門混合）
+### Audience: multi（區塊化合併輸出）
 
-**對象**：跨部門頻道、全員頻道、週報頻道
-**詳細度**：兩段式分層輸出
+**觸發條件**：使用者明確指定 ≥2 audience（如「給 pm + rd + qa」、「pm, ued」、「rd 和 qa」）
+**注意**：`multi` 不是獨立 audience，而是「組合輸出格式」。
 
-| 規則 | 說明 |
+`mixed` 為 `multi` 的相容別名（跨部門 / 全員頻道預設行為等同 `multi` 選取 rd + pm）。
+
+#### 格式規則（嚴格按此拼裝）
+
+```
+{🔴/🟠/🟡/🟢/✅ status icon} *{結論行 — 1 句涵蓋所有 audience}*
+
+📊 *TL;DR*（universal，所有人都該看）
+> {1-2 句概括，不分工種}
+
+═══════════════════════
+{audience_block_icon} *{AUDIENCE 名稱} 區塊*
+{該 audience profile 內容，套 4 層結構：結論 → 原因 → 表現 → 方案}
+
+═══════════════════════
+{下一個 audience block}
+...
+```
+
+#### Audience block icons
+
+| Audience | Icon |
 |---|---|
-| 主訊息（業務白話）| 3-5 行，任何角色都能看懂，無技術術語 |
-| Thread reply 技術段 | 標 `[thread]`，技術細節完整，供 RD / Ops 參考 |
+| RD | 📌 |
+| Ops | 🛠️ |
+| QA | 🐛 |
+| UED | 🎨 |
+| PM | 🎯 |
+| Mkt | 📣 |
 
-**格式**：
-```
-[主訊息]
-{業務白話段落}
+#### 區塊順序與上限
 
-→ 技術細節請見 thread 👇
+**固定順序**：rd → ops → qa → ued → pm → mkt（technical → design → business）
+**區塊上限**：≤ 4 個。≥ 5 個 audience 時拆 2 條訊息，避免單訊息過長。
 
-[thread]
-{技術完整段落（rd 詳細度）}
-```
-
-**範例（同一事件）**：
+**範例（rd + pm + qa 三個 audience）**：
 
 ```
-[主訊息]
-⚠️ *今日下午結帳服務短暫異常，已完全恢復*
-時間：14:12 ~ 14:48（36 分鐘）
-約 8,500 位用戶受影響，系統已於 14:52 恢復並驗證正常。
-後續改善措施已安排，詳情見 thread。
+🔴 *[P1 Incident] order-service 故障 — 已修復，各角色請確認後續事項*
 
-→ 技術細節請見 thread 👇
+📊 *TL;DR*
+> 今日 14:12 ~ 14:48 訂單結帳服務故障，~8,500 筆受影響，14:52 已完全恢復。
 
-[thread]
-🔴 *[P1] order-service OOMKill — 技術細節*
-根因：`CartService.calculatePromotion()` 遞迴無終止條件（combo > 12 件）
-修法：加 maxDepth guard + unit test。PR #1234 已部署 prod 14:52
-監控：已新增 heap > 400MB 告警，PostMortem 明日 10:00
+═══════════════════════
+📌 *RD 區塊*
+根因：`CartService.calculatePromotion()` 遞迴無終止條件（combo > 12 件），heap OOMKill x3。
+修法：加 `maxDepth=10` guard，PR #1234 已部署 prod 14:52。
+🔗 <https://github.com/org/repo/pull/1234|PR #1234>
+
+═══════════════════════
+🎯 *PM 區塊*
+影響：*~8,500 筆*結帳失敗，已完全恢復。
+*待確認*：是否需要對外發客服公告？請今日 16:00 前回覆。
+受影響訂單 2h 內自動重試通知；PostMortem 明日有結論再同步。
+
+═══════════════════════
+🐛 *QA 區塊*
+版本：v2.3.1（含修復）已部署。
+🔁 Reproduce：combo 訂單 ≥13 件 → 結帳 → 無限 loading（v2.3.0 可重現）。
+🧪 回歸：邊界值 1/5/10/12/13/20 件 + fallback UI + unit test PR #1234。
 ```
 
 ---
 
-## Channel → Audience 推斷對照
+## Channel → Audience 推斷規則
+
+### 推斷邏輯（v1.3.1 起改為「建議」而非「自動套用」）
+
+audience 選擇流程：
+1. 使用者明確指定 audience → 直接套用，不詢問
+2. 使用者未指定 → 依 channel name 推測，**顯示提示讓使用者確認**：
+   > 「根據 #channel-name 推測 [audience]，要套用嗎？[y/改]」
+3. 無法推測（DM / 無規律名稱）→ 強制進入 A4.2 audience 選單
+
+禁止不告知使用者即靜默套用 channel 推測結果。
+
+### Channel 名稱推測對照表
 
 ```
 #dev-* / #eng-* / #backend / #frontend / #sre / #infra / #architecture   → rd
@@ -268,8 +338,8 @@ heap 在 14:10 突破 512MB limit，k8s OOMKill x3 pod。
 #marketing / #mkt-* / #growth / #sales / #cs / #customer-service          → mkt
 #qa / #test / #qa-* / #testing                                            → qa
 #oncall / #alerts / #incidents / #monitoring / #ops-*                     → ops（incident 場景優先）
-#all-hands / #leadership / #exec / #c-level / #vip                       → exec
-#cross-team / #release-notes / #weekly / #general / #announce              → mixed
+#design / #ued / #ux / #ui-* / #product-design                           → ued
+#cross-team / #release-notes / #weekly / #general / #announce              → multi（rd + pm 預設組合）
 DM（D 開頭 channel ID）/ 私訊 / 其他無前綴                                 → ask（強制 A4.2）
 ```
 
@@ -279,10 +349,10 @@ DM（D 開頭 channel ID）/ 私訊 / 其他無前綴                           
 
 | 前綴 | 類型 | 預設 audience | 說明 |
 |---|---|---|---|
-| `C` | Public channel | 依 channel name（見上方對照）| 標準頻道 |
+| `C` | Public channel | 依 channel name（見上方對照）| 標準頻道，推測後確認 |
 | `G` | Private channel | 依 channel name | 私有頻道，同 C 邏輯 |
-| `D` | DM（1:1）| `ask`（無法從 ID 推斷角色）| 收件人角色未知 |
-| `mpdm-` | Multi-party DM | `mixed`（多人，語言需通用）| 群組私訊 |
+| `D` | DM（1:1）| `ask`（無法從 ID 推斷角色）| 收件人角色未知，強制詢問 |
+| `mpdm-` | Multi-party DM | `multi`（多人，語言需通用）| 群組私訊 |
 
 ---
 

@@ -1,7 +1,7 @@
 {
 	"name": "@ab-tao/share",
 	"version": "1.0.0",
-	"description": "共用工具庫 — utils/libs",
+	"description": "共用工具庫 — paths、log、shell exec、JSON utils",
 	"type": "module",
 	"engines": {
 		"node": ">=18",

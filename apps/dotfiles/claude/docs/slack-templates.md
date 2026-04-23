@@ -1,725 +1,532 @@
-# Slack 訊息模板庫
+# Slack Templates
 
-按需載入（ab-slack 指令的 A2 視覺元素 + A3 場景模板 + C 指南）。
-
----
-
-## 視覺元素庫
-
-### 分隔線
-
-```
-════════════════════════════   ← 重要分節（事件/架構）
-────────────────────────────   ← 一般分節（進度/PR）
-```
-
-### 狀態 Badge
-
-```
-🟢 正常   🔴 中斷   🟡 降級   🔵 維護中   ⚫ 取消
-✅ 完成   🔄 進行中  ⏳ 待處理  ❌ 失敗    ⚠️ 風險
-🚀 已部署  🔒 回滾中  🧪 測試中  📋 待 Review
-```
-
-### 嚴重度 / 優先度
-
-```
-🔴 P0 — 全站中斷，需立即響應
-🟠 P1 — 核心功能異常，1h 內響應
-🟡 P2 — 部分功能降級，當日響應
-🟢 P3 — 輕微問題，正常排期
-```
-
-### 環境 Badge
-
-```
-🌐 prod   🧪 staging   🔧 dev
-```
-
-### 區塊模組（按需組合）
-
-標題行（必用）：
-```
-{emoji} *{一句話結論或標題}*
-```
-
-背景/原因（選用）：
-```
-> {為什麼、背景脈絡}
-```
-
-數據對比（效能/結果用）：
-```
-📊 *數據*
-  • Before：{X}　→　After：{Y}　（{改善幅度}）
-```
-
-結構化清單：
-```
-📌 *{分類標題}*
-  • {要點 1}
-  • {要點 2}
-```
-
-影響範圍表：
-```
-🎯 *影響範圍*
-  • {服務/模組} — {影響程度}｜{負責人}（ETA：{日期}）
-```
-
-處理進度（事件用）：
-```
-🛠️ *處理進度*
-  ✅ {已完成步驟}
-  🔄 {進行中步驟}
-  ⏳ {下一步}
-```
-
-行動呼籲：
-```
-*需要：* {具體要求}
-*負責：* <@USERID>
-*截止：* {日期時間}
-```
-
-連結組（選用）：
-```
-🔗 <url|{名稱}> · <url|{名稱}> · <url|{名稱}>
-```
+按需載入（`commands/slack.md` 的 A2 強制查場景關鍵字、A3 套用模板）。
 
 ---
 
-## 場景模板庫
-
-### 【開發日常】技術改進 / 效能優化
-
-```
-⚡ *搜尋 API 延遲：2s → 200ms（-90%）*
-────────────────────────────────
-> Elasticsearch query 未命中 index，補 composite aggregation 後解決。
-
-📊 *效能數據*
-  • P50：1,800ms → 95ms
-  • P99：3,200ms → 210ms
-  • 壓測：staging 48h，穩定無 error
-
-📌 *改動摘要*
-  • 範圍：全站搜尋（Product / Article / Blog）
-  • 修法：`search_service.rb:L234` 新增 `filter_cache: true`
-  • Side effect：Redis 用量 +12MB（可接受）
-
-🔗 <https://github.com/org/repo/pull/456|PR #456> · <https://jira.kkday.com/GT-5678|GT-5678>
-🚀 已部署 🧪 staging｜預計明日 10:00 上 🌐 prod
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【開發日常】PR / Code Review 請求
-
-```
-🔍 *PR Review 請求 — <https://github.com/org/repo/pull/456|[VM-1482] 新訂單明細頁 PR-2>*
-────────────────────────────────
-📋 *變更摘要*
-  • 新增 `/order/:id` 路由 + Vue 頁面骨架
-  • 接入 BFF `/api/v1/order/{id}` 端點
-  • i18n key 前綴：`order.detail.*`（14 個 key）
-
-⚠️ *重點審查項目*
-  • `OrderDetailView.vue:L89` — SSR data-fetch，請確認 `useAsyncData` 用法正確
-  • `order.ts:L45` — `OrderStatus` enum 需與後端 schema 對齊
-  • `__tests__/order.test.ts` — 空訂單邊界條件覆蓋是否足夠
-
-📌 *Stack PR 順序*
-  ✅ PR-1：BFF base（已 merge）
-  📋 PR-2：前端骨架（本 PR，待 review）
-  ⏳ PR-3：業務邏輯（待 PR-2 merge）
-
-👤 *Reviewer：* <@U12345678> <@U87654321>
-⏰ *希望：* 今日 18:00 前
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【開發日常】Bug 修復 / Hotfix 通報
-
-```
-🐛 *[Hotfix] 訂單頁面空白 — 已修復*
-════════════════════════════
-*狀態：* ✅ 已修復｜*嚴重度：* 🟠 P1
-
-📊 *問題摘要*
-  • 現象：進入 `/order/:id` 頁面顯示空白
-  • 影響：約 2,300 個活躍訂單頁（iOS 15 Safari 100%）
-  • 發現：2026-04-22 09:15，持續 ~40 分鐘
-
-🔍 *根因*
-  > `useAsyncData` 在 iOS 15 的 `Promise.allSettled` polyfill 缺失，
-  > 導致 hydration 失敗後 Vue 渲染靜默中斷。
-
-🛠️ *修法*
-  • 補 `core-js/proposals/promise-all-settled` polyfill
-  • 加 `onErrorCaptured` 顯示 fallback UI
-
-🔗 <https://github.com/org/repo/pull/789|PR #789（Hotfix）> · <https://jira.kkday.com/VM-9988|VM-9988>
-🚀 已部署 🌐 prod｜驗證：✅ iOS 15 / 16 / 17 均正常
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【開發日常】技術分享 / TIL·
-
-```
-💡 *TIL：Vue `defineModel` 可雙向省掉 defineProps + defineEmits*
-────────────────────────────────
-> Vue 3.4+ 的 `defineModel()` 讓 v-model 元件寫法簡潔 50%。
-
-📌 *Before vs After*
-  _Before（4.3 以下）_
-  ```ts
-  const props = defineProps<{ modelValue: string }>();
-  const emit = defineEmits<{ 'update:modelValue': [string] }>();
-  ```
-  _After（4.4+）_
-  ```ts
-  const model = defineModel<string>();
-  ```
-
-🎯 *適用場景*
-  • 所有自定義 v-model 元件（表單、選擇器）
-  • 多個 v-model binding（`defineModel('title')` / `defineModel('content')`）
-
-⚠️ *注意*：`defineModel` 預設 `required: false`，需要必填請加 `{ required: true }`
-
-🔗 <https://vuejs.org/api/sfc-script-setup.html#definemodel|官方文件>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【開發日常】請求協助 / Blocked
-
-```
-🆘 *Blocked：Adyen webhook 測試環境 403，需協助*
-────────────────────────────────
-> 已卡 2 天，影響 VM-1234 訂單支付模組進度。
-
-📌 *問題描述*
-  • 現象：`POST /api/payment/webhook` 在 staging 回 403
-  • 已確認：API key 正確、IP whitelist 已加、Content-Type 正確
-  • 疑點：Adyen sandbox 的 HMAC signature 驗證邏輯可能與 prod 不同
-
-🔍 *已嘗試*
-  ✅ 重新產生 sandbox API key
-  ✅ 用 Postman 直打，同樣 403
-  ❌ 查 Adyen 文件無法確認 sandbox/prod HMAC 差異
-
-*需要：* 有 Adyen 整合經驗的人協助確認 HMAC 計算邏輯
-*聯絡：* <@U12345678>（支付組）
-*截止：* 明日 EOD（影響 sprint 交付）
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【進度管理】Sprint 進度更新
-
-```
-📦 *Sprint 22 進度更新*
-🗓️ 2026-04-14 ~ 2026-04-25（第 2 週）
-════════════════════════════
-
-✅ *已完成（本週）*
-  • 訂單明細頁 PR-1 BFF base merge ✦ <https://jira.kkday.com/VM-1482|VM-1482>
-  • 搜尋 API 效能優化上線（P99 -90%）
-  • iOS 15 hydration hotfix
-
-🔄 *進行中*
-  • [75%] 訂單明細頁 PR-2 前端骨架 — 預計週五 EOD
-  • [40%] 多語系 i18n 框架 — 等待設計稿最終版
-
-⏳ *待開始 / 未開始*
-  • 購物車重構 <https://jira.kkday.com/VM-1500|VM-1500> — 預計下週一
-
-⚠️ *風險 / 阻塞*
-  • ⚠️ 設計稿延遲可能影響 i18n 完工，PM 請確認 ETA
-  • 🔴 Adyen webhook 測試卡 2 天（見上方 Blocked 訊息）
-
-────────────────────────────────
-📊 Sprint 完成率：5/9（56%）｜預計達標：7/9（78%）
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【進度管理】阻塞升級 / Escalation
-
-```
-🚨 *[Escalation] VM-1234 已阻塞 5 天，需決策*
-════════════════════════════
-> 技術方向需 PM + Tech Lead 拍板，否則無法繼續開發。
-
-📌 *阻塞事實*
-  • 票號：<https://jira.kkday.com/VM-1234|VM-1234> 訂單退款流程
-  • 阻塞原因：退款邏輯是否走「即時退款」vs「T+1 批次」尚未確認
-  • 卡關時間：2026-04-17（5 天）
-  • 阻塞方：前端 + 後端，共 3 人 idle
-
-📊 *影響評估*
-  • Sprint 22 本票佔 3 SP，若不決策本 sprint 必延
-  • 下游依賴：退款通知 Email、對帳報表（各 2SP）
-
-🎯 *需要決策*
-  1. 退款模式：即時 vs T+1 批次？
-  2. 例外處理：部分退款規則由誰定義？
-
-*需要：* <@PM_UID> <@TechLead_UID> 今日 17:00 前給出決定
-*若無回應：* 明日晨會升級至 EPD Lead
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【發布管理】部署通知
-
-```
-🚀 *[部署] member-service v2.3.1 → 🌐 prod*
-════════════════════════════
-*狀態：* 🔄 部署中｜*環境：* 🌐 prod｜*預計完成：* 14:30
-
-📋 *本次變更（v2.3.1）*
-  • [feat] 新增 Google 第三方登入 <https://github.com/org/repo/pull/501|PR #501>
-  • [fix] 修復 session 在 Safari 16 過期問題 <https://github.com/org/repo/pull/498|PR #498>
-  • [chore] 升級 devise-jwt 0.11 → 0.12（安全修補）
-
-📌 *部署計畫*
-  ✅ staging 驗證通過（14:00）
-  🔄 prod k8s rolling update（14:15 開始，~15 分鐘）
-  ⏳ 煙霧測試：登入流程 + JWT refresh
-  ⏳ 監控觀察 30 分鐘
-
-🔍 *回滾條件*：error rate > 0.5% 或 P99 > 3s
-🔗 <https://grafana.internal/d/member|Grafana Dashboard> · <https://github.com/org/repo/releases/tag/v2.3.1|Release Notes>
-👤 *部署人：* <@U12345678>｜*OnCall：* <@U87654321>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【發布管理】版本發布 Release Notes
-
-```
-🎉 *member-service v3.0.0 正式發布*
-════════════════════════════
-> 重大版本：Auth 架構全面遷移至 httpOnly Cookie，效能提升 40%。
-
-✨ *亮點功能*
-  🔐 Auth 升級：Token → httpOnly Cookie（OWASP Top 10 合規）
-  ⚡ 登入 API 延遲：450ms → 120ms（-73%）
-  🌐 新增 Google / Apple 第三方登入
-
-💥 *Breaking Changes*
-  • `Authorization: Bearer` header 不再支援（請改用 Cookie）
-  • `GET /api/v1/me` 回傳欄位新增 `auth_provider`（非 nullable）
-  • Session TTL 從 7 天改為 30 天（需清除舊 cookie）
-
-🔧 *Migration 指南*
-  1. 前端移除所有 `localStorage.getItem('token')` 呼叫
-  2. API client 加上 `credentials: 'include'`
-  3. 參考：<https://confluence.example.com/auth-v3-migration|Migration 文件>
-
-📊 *相容性*：所有現有 session 在 2026-05-01 強制過期並導向重新登入
-
-🔗 <https://github.com/org/repo/releases/tag/v3.0.0|GitHub Release> · <https://jira.kkday.com/changelogs/member|Changelog>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【發布管理】回滾通知
-
-```
-⏪ *[回滾] member-service v3.0.0 → v2.9.1*
-════════════════════════════
-*狀態：* 🔒 回滾中｜*開始：* 15:42｜*預計完成：* 15:55
-
-⚠️ *回滾原因*
-  > v3.0.0 上線後 10 分鐘，error rate 飆升至 8.3%（閾值 0.5%）。
-  > 根因：k8s secret 中 JWT_SECRET 未更新，舊 token 驗證全失敗。
-
-📊 *影響統計*
-  • 影響時間：15:30 ~ 15:42（12 分鐘）
-  • 影響用戶：~4,200 筆（需重新登入）
-  • 主要現象：`401 Unauthorized` 全面出現
-
-🛠️ *緊急動作*
-  ✅ 回滾至 v2.9.1（Rolling restart）
-  🔄 通知受影響用戶重新登入
-  ⏳ 修復 secret 配置，預計 v3.0.1 明日重新上線
-
-👤 *負責：* <@U12345678>　*PostMortem：* 明日 10:00 <#C08NJ2GL204|#incident>
-🔗 <https://grafana.internal/d/member|Grafana Dashboard>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【事件管理】Incident 通報
-
-```
-🔴 *[P0 Incident] 付款服務中斷*
-════════════════════════════
-*狀態：* 🔴 發生中　*開始：* 2026-04-22 14:30 UTC+8　*持續：* ~8 分鐘
-
-📊 *影響範圍*
-  • 🌐 全區域：無法完成結帳（影響 ~15% 流量）
-  • 受影響：Checkout API、Adyen webhook、Order write
-
-🔍 *目前發現*
-  • Adyen webhook P99 > 45s（正常 < 3s）
-  • DB connection pool 耗盡（active=100/100）
-  • Error log：`ECONNREFUSED` 大量出現於 payment-service
-
-🛠️ *已採取行動*
-  ✅ 重啟 payment-service pod（x3）
-  🔄 調高 DB pool 上限：100 → 200
-  🔄 聯繫 Adyen support（ticket #98765，10 分鐘前送出）
-  ⏳ 評估啟用備援支付 gateway
-
-👤 *On-call：* <@U12345678>
-📡 *狀態頁：* <https://status.kkday.com|status.kkday.com>
-🔗 <https://grafana.internal/d/payment|Grafana Dashboard>
-⏰ *下次更新：* 15 分鐘後或有重大進展時
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【事件管理】Incident 更新
-
-```
-🟡 *[P0 → P1 降級] 付款服務更新 #3*
-────────────────────────────────
-*狀態：* 🟡 部分恢復　*更新時間：* 15:02
-
-📈 *進展*
-  ✅ Adyen webhook P99 降回 2.8s（正常範圍）
-  ✅ DB connection pool 壓力解除（active=45/200）
-  🔄 仍有約 2% 錯誤率，持續監控中
-
-🔍 *新發現*
-  > Adyen 端確認：其 webhook queue 在 14:28 有 ~4 分鐘積壓，
-  > 原因是 Adyen SG region 機房網路抖動（非我方問題）。
-
-⏳ *下一步*
-  • 繼續觀察 30 分鐘確認穩定
-  • 補發失敗的 webhook（預估 ~230 筆）
-  • 用戶影響評估完成後發客服通知
-
-👤 *On-call：* <@U12345678>　⏰ *下次更新：* 30 分鐘後
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【事件管理】Postmortem 摘要
-
-```
-📋 *Postmortem：付款服務中斷（2026-04-22）*
-════════════════════════════
-*嚴重度：* 🟠 P1（降級後）　*持續：* 14:30 ~ 15:10（40 分鐘）
-*影響用戶：* ~8,500 筆結帳失敗
-
-⏱️ *事件時間軸*
-  14:28　Adyen SG 機房網路抖動開始
-  14:30　payment-service error rate 突破 5%，告警觸發
-  14:35　On-call 上線，確認影響範圍
-  14:42　重啟 pod + 調高 DB pool
-  14:55　Adyen 確認其端問題，webhook 開始清空
-  15:10　error rate 回歸 0.1%，宣告恢復
-
-🔍 *根因分析*
-  > Adyen SG 機房短暫抖動 → webhook 積壓 → DB connection 耗盡 →
-  > payment-service 級聯超時。 根本問題：缺乏 webhook 積壓時的 circuit breaker。
-
-✅ *改善行動項*
-  • #1 新增 Adyen webhook 積壓監控告警 — <@U_DevOps>（ETA：2026-04-25）
-  • #2 實作 circuit breaker（payment-service）— <@U_Backend>（ETA：2026-05-02）
-  • #3 建立備援支付 gateway 切換 runbook — <@U_TechLead>（ETA：2026-04-30）
-  • #4 DB pool 動態擴容策略 — <@U_DBA>（ETA：2026-05-09）
-
-🔗 <https://confluence.example.com/postmortem/2026-04-22|完整 Postmortem 文件>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【決策治理】架構決策 / ADR
-
-```
-🏗️ *[ADR-042] Auth 遷移至 httpOnly Cookie — 決策通知*
-════════════════════════════
-> 原 localStorage JWT 不符合新安全合規，決定自 *2026-05-01* 起全面遷移。
-
-📐 *決策內容*
-  • 廢棄：`Authorization: Bearer <token>` header 模式
-  • 採用：`Set-Cookie: sid=...; HttpOnly; Secure; SameSite=Strict`
-  • 過渡期：雙模式並存 2026-05-01 ~ 2026-06-01
-
-🎯 *影響範圍與排期*
-  • Member API — 🔴 高｜<@U_Backend>（ETA：2026-05-05）
-  • Order API — 🟡 中｜<@U_Order>（ETA：2026-05-12）
-  • Admin UI — 🟢 低｜<@U_Frontend>（ETA：2026-05-20）
-  • Mobile App — 🟡 中｜<@U_Mobile>（ETA：2026-05-19）
-
-⚠️ *注意事項*
-  • CORS 需加 `Access-Control-Allow-Credentials: true`
-  • React Native / WebView 需特別處理 cookie jar
-
-🔗 <https://confluence.example.com/adr-042|ADR-042 完整文件> · <https://github.com/org/repo/issues/789|Issue #789>
-cc <!here> 各 team lead 請確認影響評估，回覆截止 *2026-04-25*
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【決策治理】技術債 / 重構計畫
-
-```
-🧹 *技術債清理計畫：訂單模組重構*
-────────────────────────────────
-> 訂單模組累積 18 個月技術債，影響開發速度 -40%，計畫 Q2 集中清理。
-
-📊 *現狀痛點*
-  • 1,200 行 God Object（`OrderService`），無法單元測試
-  • 巢狀回調深度 5 層，業務邏輯難以追蹤
-  • 資料庫 N+1 查詢，`GET /orders` P99 > 2s
-  • 0% 測試覆蓋率（遺留代碼）
-
-🎯 *重構目標*
-  ```
-  指標                    現狀       目標
-  單一檔案行數            1,200 行   < 200 行
-  測試覆蓋率              0%         ≥ 80%
-  GET /orders P99         2,100ms    < 500ms
-  Cyclomatic Complexity   45         < 10
-  ```
-
-📋 *排期（4 Sprint）*
-  • S23：拆分 OrderService → 4 個 domain service
-  • S24：補單元測試 + 解 N+1
-  • S25：API 層重構 + E2E 測試
-  • S26：效能驗證 + 文件補齊
-
-*需要：* Tech Lead 批准排期，<@U_TechLead> 請於週五前確認
-🔗 <https://jira.kkday.com/TECH-DEBT-ORDER|技術債 Epic>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【跨團隊】跨團隊協作請求
-
-```
-🤝 *[協作請求] 需要 Data 團隊支援 API 新增欄位*
-────────────────────────────────
-> 訂單明細頁需展示用戶購買歷史分析，需 Data 提供新端點。
-
-📌 *需求說明*
-  • 需要：`GET /api/data/user/{id}/purchase-summary`
-  • 回傳欄位：`total_orders`、`total_spent`、`avg_order_value`、`favorite_category`
-  • 效能要求：P99 < 300ms（前端直接呼叫）
-
-📊 *背景 / 優先度*
-  • 所屬 Sprint：S22（截止 2026-04-25）
-  • 業務影響：新版訂單頁 Q2 OKR 指標
-  • Jira：<https://jira.kkday.com/VM-1482|VM-1482>（下游依賴此 API）
-
-*需要：* Data 團隊確認可行性 + 預計交付時間
-*聯絡我：* <@U_Frontend>（前端負責人）
-*截止確認：* 2026-04-23 12:00（否則需調整 scope）
-
-cc <@Data_Lead> <@Data_Backend>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【跨團隊】安全漏洞通報
-
-```
-🔐 *[安全通報] CVE-2025-12345 影響 devise-jwt < 0.12*
-════════════════════════════
-*嚴重度：* 🔴 高（CVSS 8.1）　*修補截止：* 2026-04-25（72h 內）
-
-⚠️ *漏洞描述*
-  > JWT refresh token 驗證邏輯缺陷，攻擊者可偽造 refresh token
-  > 以低權限帳號取得高權限 token（需已有效 session）。
-
-🎯 *影響範圍*
-  • member-service — devise-jwt 0.11.0 🔴 受影響
-  • admin-service — devise-jwt 0.10.2 🔴 受影響
-  • order-service — devise-jwt 0.12.1 ✅ 安全
-
-🛠️ *修補方式*
-  ```
-  # Gemfile
-  gem 'devise-jwt', '>= 0.12.1'
-  ```
-  升級後需重新產生所有 JWT secret（見 migration 文件）
-
-📋 *行動項*
-  • member-service 升級 + 測試 — <@U_Backend>（截止：2026-04-24 EOD）
-  • admin-service 升級 + 測試 — <@U_Admin>（截止：2026-04-24 EOD）
-  • 生產環境部署 — <@U_DevOps>（截止：2026-04-25 10:00）
-
-🔗 <https://nvd.nist.gov/vuln/detail/CVE-2025-12345|CVE 詳情> · <https://confluence.example.com/security/cve-2025-12345|內部處理文件>
-cc <!channel> 安全相關，所有 team lead 必讀
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【跨團隊】會議召集
-
-```
-📅 *[會議召集] 訂單重構技術討論 — 需確認出席*
-────────────────────────────────
-📌 *會議目的*
-  確認訂單模組重構範圍、分工、排期，此決定影響 Q2 後三個 Sprint。
-
-🗓️ *時間*：2026-04-24（週四）14:00 ~ 15:00 UTC+8
-📍 *地點*：Google Meet <https://meet.google.com/xxx|join link> / 台北辦公室 3F 會議室
-
-📋 *議程（60 分鐘）*
-  1. [15 min] 現狀分析：技術債量化數據
-  2. [20 min] 方案討論：漸進式 vs Big Bang 重構
-  3. [15 min] 分工與排期確認
-  4. [10 min] Q&A + 行動項確認
-
-👥 *必要出席*
-  • <@U_TechLead>（拍板）
-  • <@U_Backend>（訂單服務 owner）
-  • <@U_Frontend>（前端影響評估）
-
-👥 *選擇出席*（有相關性歡迎旁聽）
-  • <@U_PM>、<@U_QA>
-
-*請於 2026-04-23 17:00 前確認出席（:white_check_mark: 或 :x:）*
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【文化氛圍】感謝 / 表揚
-
-```
-🌟 *感謝 <@U12345678> — 深夜緊急救場*
-────────────────────────────────
-> 昨晚 23:30 付款服務告警，<@U12345678> 立刻上線，
-> 在 40 分鐘內定位根因並完成回滾，避免了更大範圍的用戶影響。
-
-🎯 *具體貢獻*
-  • 快速縮小範圍：5 分鐘確認是 Adyen 端問題
-  • 決策果斷：主動決定回滾而非繼續嘗試修復
-  • 溝通清晰：全程在頻道同步進度，讓 PM 和 CS 即時掌握
-
-💪 這種對系統的熟悉度和在壓力下的冷靜判斷力，值得大家學習！
-
-cc <@Manager_UID> 紀錄一下這次的出色表現 :clap:
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 【文化氛圍】公告 / 重要提醒
-
-```
-📣 *[公告] Code Freeze — 2026-04-25 18:00 起*
-════════════════════════════
-> Mobile 團隊 2026-04-27 切 release branch，凍結期間請勿 merge 至 `main`。
-
-📌 *凍結規則*
-  • 凍結範圍：`main` / `release/*` branch
-  • 凍結期間：2026-04-25 18:00 ~ 2026-04-28 10:00
-  • 例外：P0/P1 hotfix 需 Tech Lead 審核後才可 merge
-
-📋 *凍結前 Checklist（請於今日 17:00 前完成）*
-  ☐ 確認所有 in-progress PR 已 merge 或標記為下 sprint
-  ☐ `npm audit` / `bundle audit` 無高危漏洞
-  ☐ staging 環境最新版本驗證通過
-  ☐ 告知 QA 當前待測範圍
-
-⏰ *時間軸*
-  今日 17:00　PR merge 截止
-  今日 18:00　Code freeze 開始
-  2026-04-28 10:00　解凍
-
-cc <!channel> 所有工程師請注意
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+## ⚠️ 強制規則（所有模板共用）
+
+### 1. 結論先行（首行強制）
+所有訊息第一行必為「結論行」+ status icon：
+- 🔴 *[P1] {service} {一句話狀態}* — incident
+- 🟢 *PR Review 請求：{title}* — PR
+- 🚀 *Release {version} 已上線* — release
+- 📊 *週報 {date range}* — 週報
+- 🎨 *設計 review：{設計稿名稱}* — design review
+- ⚠️ *{service} 預警：{指標} 超標* — warning
+
+### 2. 4 層通用結構
+所有 ≥3 行訊息必含（缺則警告）：
+1. *結論* — 1 句，加 status icon
+2. *原因* — 為什麼發生 / 為什麼做
+3. *表現* — 影響 / 數字 / 觀察
+4. *方案* — 修法 / 後續 / 行動項
+
+### 3. 區塊分隔規則
+- 4 層 section 之間：1 空行
+- multi audience 區塊之間：`═══════════════════════` 分隔線 + 1 空行
+- 行動項之間：1 空行（避免 wall of text）
+- 段落內不要空行
+
+### 4. 強調規則
+- `*bold*` — 業務關鍵字、數字、時間（`*8,500 筆*`、`*14:12*`、`*3 分鐘*`）
+- `` `code` `` — 技術術語、檔案路徑、命令、API endpoint（`` `getOrder` ``、`` `/api/v2/orders` ``）
+- `> quote` — 引用客訴原文、根因摘要、stakeholder 原話
+- ❌ 禁止 `_italic_`（mrkdwn 渲染不一致）
+- ❌ 禁止 markdown table（mrkdwn 不支援，改用 `•` bullet）
+- ❌ 禁止一段裡超過 3 個 bold（視覺噪音）
+
+### 5. Icon Palette（嚴格沿用，不自創）
+
+*嚴重度 / 狀態*：
+- 🔴 P1 critical    🟠 P2 major    🟡 P3 minor    🟢 P4 / 已修復
+- ✅ done / 成功     ⏳ in-progress  ❌ failed     🔄 retrying / rollback
+- ⚠️ warning        💡 suggestion   📌 note       🚫 blocked
+
+*Audience block icons*（multi 模式專用）：
+- 📌 RD   🎯 PM   🐛 QA   🎨 UED   🛠️ Ops   📊 Data / 通用   📣 Mkt
+
+*動作 / 內容類型*：
+- 🚀 deploy / release    🔗 link    📡 monitor    💬 customer / 客訴
+- 🔁 reproduce           🧪 test     📅 schedule   👤 owner    ⏰ deadline
+- 📝 PR / doc            🎨 design   🔧 fix        📈 metric
+
+### 6. Mention 規則
+- `@here` — 僅 incident 類，發到特定頻道，需要在線人員立即注意
+- `@channel` — 僅 P1 全員告警（謹慎）
+- `<@U_USER_ID>` — 指名 owner / reviewer
+- 一般通知不加 mention，靠頻道訂閱
+
+### 7. URL 處理
+- 必用 `<URL|短標題>` 格式，禁裸 URL
+- PR 用：`<https://github.com/.../pull/1234|#1234 PR title>`
+- 例：`<https://github.com/org/repo/pull/1234|#1234 加 maxDepth guard>`
+
+### 8. 文字長度建議
+- Incident < 300 字（含所有區塊）
+- PR review < 200 字
+- Release notes < 400 字
+- 週報 < 600 字
+- 跨工種 multi 模式 < 800 字（≥800 提示拆 2 條）
 
 ---
 
-## 指南速查模板
+## 場景關鍵字 → 模板 ID 對照（A1 強制查）
 
-### 技術公告（精簡）
+以下任一關鍵字命中 → 直接套對應模板，跳過猜測：
 
-```
-🔔 *【標題】*
-════════════════════════════
-> 背景說明
-
-📌 *要點*
-  • 要點 1
-  • 要點 2
-
-*截止：* {日期}　cc <!here>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### Sprint 進度（精簡）
-
-```
-📦 *本週進度*
-
-✅ 已完成：{清單}
-🔄 進行中：{清單}
-⏳ 待開始：{清單}
-⚠️ 風險：{說明}
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### Incident 通報（精簡）
-
-```
-🔴 *[P{N}] {標題}*
-*狀態：* 發生中　*開始：* {時間}
-*影響：* {描述}
-*處理：* <@USERID>
-*更新：* N 分鐘後
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### PR Review（精簡）
-
-```
-🔍 *PR Review — <url|{PR 標題}>*
-📋 {一句摘要}
-⚠️ 重點：{要特別注意的}
-👤 <@REVIEWER>　⏰ {截止}
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
-
-### 感謝（精簡）
-
-```
-🌟 感謝 <@UID>！
-{具體事蹟一句話}
-cc <@Manager>
-```
-
-> 💡 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd 完整｜pm 業務｜mkt 白話｜qa reproduce｜ops 運維｜exec 高層｜mixed 兩段）
+• incident、故障、OOM、SLA breach、P1/P2、停機、服務不可用 → `T01-incident`
+• PR review、code review、CR 請求、求審、review 這個 → `T02-pr-review`
+• release、上線、deploy、發版、版本發布、hotfix 上線 → `T03-release`
+• migration、DB migration、schema 變更、resql → `T04-migration`
+• 週報、weekly、雙週報、月報、week review → `T05-weekly`
+• 設計改版、UED review、UI 改版、設計稿 review、figma → `T06-design-review`
+• tech debt、技術債、refactor 立案、重構提案 → `T07-tech-debt`
+• 跨工種、跨團隊同步、cross-team、multi-audience → `T08-cross-team`
+• 上下游、依賴變動、API change、breaking change 通知 → `T09-dependency-change`
+• 客戶問題、客訴、CS escalation、user complaint → `T10-customer-issue`
+• oncall handoff、值班交接、on-call → `T11-oncall-handoff`
+• 預警、threshold breach、容量警告、alert → `T12-warning`
+• RFC、設計提案、架構評估、proposal → `T13-rfc`
+• 簡單通知、status update、update → `T14-simple-update`
+• incident + 跨工種、多 audience incident → `T15-multi-audience-incident`
 
 ---
 
-## Emoji 語義對照
+## ❌ Anti-Patterns（禁止寫法）
 
-| Emoji | 語義 |
-|-------|------|
-| 🔴 / 🟠 / 🟡 / 🟢 | 嚴重度 P0/P1/P2/P3 |
-| ✅ 🔄 ⏳ ❌ | 完成 / 進行中 / 待處理 / 失敗 |
-| 🚀 🔒 🧪 | 已部署 / 回滾中 / 測試中 |
-| ⚡ 🐛 🔐 🧹 | 效能 / Bug / 安全 / 清理 |
-| 📦 📋 🔍 💡 | 進度 / 清單 / 審查 / 分享 |
-| 🏗️ 🎯 📐 | 架構 / 目標 / 設計 |
-| 🤝 🚨 📅 📣 | 協作 / 升級 / 會議 / 公告 |
-| 🌟 🎉 💪 | 表揚 / 發布 / 鼓勵 |
+❌ `markdown table：| Col1 | Col2 |`
+✅ `bullet list：• Col1：value1`
+
+❌ `無結論行：直接從細節開始`
+✅ `首行結論 + status icon`
+
+❌ `裸 URL：https://github.com/...`
+✅ `<https://github.com/...|#1234 PR title>`
+
+❌ `wall of text：所有內容擠成一段，無空行分隔`
+✅ `4 層分段，層間 1 空行`
+
+❌ `_italic_：_重要內容_`
+✅ `*bold*：*重要內容*`
+
+❌ `全部加粗：*所有重要的*、*任何關鍵字*、*全段加粗*`
+✅ `只加粗 1-3 個最重要的關鍵字 / 數字`
+
+❌ `不標 audience 直接 multi 輸出`
+✅ `先確認 audience list，再拼裝 multi 區塊`
+
+---
+
+## T01-incident：Incident 通報
+
+```
+🔴 *[P{level}] {service} — {一句話狀態}*
+
+*原因*：{目前已知的觸發原因，未知則寫「調查中」}
+
+*表現*：
+• 影響範圍：{受影響功能 / 用戶 / 流量百分比}
+• 開始時間：*{HH:MM}*，持續 *{N 分鐘}*
+• 觀察：{error rate / log 摘要}
+
+*方案*：
+✅ {已完成動作}
+🔄 {進行中動作}
+⏳ {下一步}
+
+👤 On-call：<@{U_ONCALL_ID}>
+📡 狀態頁：<https://status.example.com|status.example.com>
+⏰ 下次更新：*{N}* 分鐘後或有重大進展時
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + qa」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T02-pr-review：PR Review 請求
+
+```
+🟢 *PR Review 請求：<{pr_url}|{PR title}>*
+
+*原因*：{本 PR 解決了什麼問題 / 屬於哪個功能}
+
+*表現*：
+• 變更摘要：{1-3 個核心改動點}
+• 重點審查項：{需要 reviewer 特別注意的地方}
+
+*方案*：
+• Stack 順序：{PR-1 已 merge / 本 PR 為 PR-N}
+• Reviewer：<@{U_REVIEWER_ID}>
+• 希望完成：⏰ *{截止時間}*
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + qa」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T03-release：版本發布 Release Notes
+
+```
+🚀 *Release {version} 已上線 — {service}*
+
+*原因*：{此版本解決的核心問題 / 業務目標}
+
+*表現*：
+• 亮點功能：{feature 1}、{feature 2}
+• Breaking Changes：{若有，列具體變更；無則寫「無」}
+• 相容性說明：{何時強制過期 / 需要 client 更新}
+
+*方案*：
+• Migration 步驟：{若有，列 1-2 個關鍵步驟；無則省略}
+• 回滾條件：error rate > {N}% 或 P99 > {Ns}
+• 部署人：<@{U_DEPLOYER_ID}>
+
+🔗 <{github_release_url}|GitHub Release> · <{changelog_url}|Changelog>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + qa」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T04-migration：DB Migration 通知
+
+```
+⚠️ *DB Migration 通知：{service} — {migration 名稱}*
+
+*原因*：{為什麼需要這次 migration，schema 變更背景}
+
+*表現*：
+• 變更內容：{具體 schema 改動，含 before → after}
+• 影響表格：{table / collection 名稱}
+• 預計執行時間：*{HH:MM}*，預估耗時 *{N 分鐘}*
+
+*方案*：
+• 執行順序：{若有依賴，列 migration 順序}
+• 停機需求：{需要 / 不需要停機；需要則列時間窗口}
+• 回滾方案：{rollback migration 指令 / 步驟}
+• Owner：<@{U_OWNER_ID}>
+
+🔗 <{migration_pr_url}|Migration PR> · <{runbook_url}|Runbook>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + qa」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T05-weekly：週報
+
+```
+📊 *週報 {YYYY-MM-DD} ~ {YYYY-MM-DD}*
+
+*原因*：{本週聚焦方向 / Sprint 目標}
+
+*表現*：
+✅ 已完成：
+• {項目 1} — <{jira_url}|{ticket}>
+• {項目 2}
+
+🔄 進行中：
+• [{進度%}] {項目 3} — 預計 {日期} 完成
+• [{進度%}] {項目 4} — {阻塞說明（若有）}
+
+⏳ 下週計畫：
+• {項目 5}
+• {項目 6}
+
+*方案*：
+⚠️ 風險 / 阻塞：{說明，無則省略}
+• Sprint 完成率：{N}/{M}（{%}）
+
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + qa」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T06-design-review：設計稿 Review 請求
+
+```
+🎨 *設計 review 請求：{設計稿名稱}*
+
+*原因*：{此設計稿對應的需求背景 / 用戶痛點}
+
+*表現*：
+• 待 review 點：
+  • {設計修改點 1}
+  • {設計修改點 2}
+• 設計稿連結：<{figma_url}|{設計稿名稱}>
+
+*方案*：
+• 截止時間：📅 *{deadline}*
+• Review 人：<@{U_DESIGNER_ID}>
+• 反饋方式：{留 Figma comment / 回覆此 Slack thread}
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + ued」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T07-tech-debt：Tech Debt 立案
+
+```
+⚠️ *Tech Debt 立案：{模組名稱} — {問題一句話}*
+
+*原因*：{為什麼需要處理，包含 cost / risk，如：開發速度 -40%、無法單元測試}
+
+*表現*：
+• 現有問題：{具體症狀，如：God Object 1,200 行、N+1 查詢}
+• 影響範圍：{哪些功能 / 服務受影響}
+• 量化指標：{P99 延遲 / 測試覆蓋率 / Cyclomatic Complexity 現狀}
+
+*方案*：
+• Proposed fix：{解法概述}
+• 預估工時：{工時} / {Sprint 數}
+• 優先級：{P1/P2/P3}
+• Owner：<@{U_OWNER_ID}>
+• 排期：{預計 Sprint 或季度}
+
+🔗 <{jira_epic_url}|技術債 Epic>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T08-cross-team：跨工種同步
+
+```
+📊 *跨工種同步：{主題}*
+
+📊 *TL;DR*
+> {1-2 句所有人都該知道的結論：發生了什麼、各方需要做什麼}
+
+═══════════════════════
+📌 *RD 區塊*
+*結論*：{rd 視角一句話}
+*原因*：{技術背景}
+*表現*：{技術影響 / 觀察數據}
+*方案*：{技術行動項，含 ETA}
+
+═══════════════════════
+🎯 *PM 區塊*
+*結論*：{pm 視角一句話}
+*原因*：{業務背景}
+*表現*：{業務影響 / 用戶影響}
+*方案*：{業務行動項，含 ETA}
+
+（以此類推，按 rd → ops → qa → ued → pm → mkt 順序，僅列需要行動的 audience）
+```
+
+> 💡 此模板自動觸發 multi 模式，請在 A1.5 指定目標 audience 組合
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T09-dependency-change：API / 上下游依賴變動通知
+
+```
+⚠️ *API Change 通知：{service} {版本 / 端點}*
+
+*原因*：{為什麼需要這次變更，技術 / 業務背景}
+
+*表現*：
+• 變更內容：{具體變更點，含 before → after}
+• Breaking：{是 / 否}
+• 預計生效時間：*{日期}*
+• 上游服務：{受影響的 service list}
+
+*方案*：
+• {受影響方 1}：{需要做什麼}，截止 ⏰ *{deadline}*
+• {受影響方 2}：{需要做什麼}，截止 ⏰ *{deadline}*
+• Owner：<@{U_OWNER_ID}>
+
+🔗 <{pr_or_doc_url}|變更文件 / PR>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T10-customer-issue：客訴 / CS Escalation
+
+```
+💬 *客訴 Escalation：{問題一句話}*
+
+*原因*：{問題觸發的技術或業務根因，調查中則寫「調查中」}
+
+*表現*：
+• 客訴原文：> {客服轉來的原文或摘要}
+• 影響用戶：*{N}* 筆 / {用戶特徵}
+• 發現時間：*{HH:MM}*
+• 復現路徑：🔁 {步驟 1} → {步驟 2}
+
+*方案*：
+• 緊急處理：{客服口徑 / 補償方案}
+• 技術修復：{修法概述}，Owner：<@{U_DEV_ID}>，ETA：*{日期}*
+• 對外說法：> {統一口徑，避免各自表述}
+
+🔗 <{ticket_url}|CS Ticket> · <{jira_url}|Jira Issue>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience（如「pm + rd + ops」）→ 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T11-oncall-handoff：OnCall 值班交接
+
+```
+🛠️ *OnCall 交接：{日期} {交接班次}*
+
+*原因*：{值班時段說明，何時開始 / 結束}
+
+*表現*：
+• 當前狀態：{服務整體健康狀態 🟢 / 🟡 / 🔴}
+• 進行中 incident：{若有，列 incident 名稱 + 目前狀態；無則寫「無」}
+• 需持續觀察項：{異常指標 / 近期風險點}
+
+*方案*：
+• 待處理行動項：
+  • {行動項 1}，優先級 {P1/P2}
+  • {行動項 2}
+• Runbook 連結：🔗 <{runbook_url}|{服務} Runbook>
+• 接班人：<@{U_NEXT_ONCALL_ID}>
+• 交班人：<@{U_PREV_ONCALL_ID}>
+
+📡 監控：<{grafana_url}|Grafana Dashboard>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T12-warning：預警 / Threshold Breach
+
+```
+⚠️ *{service} 預警：{指標} 超標*
+
+*原因*：{為什麼此指標超標，已知觸發原因或推測}
+
+*表現*：
+• 當前值：*{current_value}*（閾值：{threshold}）
+• 超標時間：*{HH:MM}*，持續 *{N 分鐘}*
+• 趨勢：{上升中 / 波動 / 持平}
+
+*方案*：
+• 短期：{立即可採取的緩解動作}
+• 觀察：{需要持續盯的指標 / Dashboard}
+• 升級條件：{若 {N} 分鐘內未改善 → 升 incident}
+• On-call：<@{U_ONCALL_ID}>
+
+📡 <{grafana_url}|Grafana Dashboard>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T13-rfc：RFC / 架構設計提案
+
+```
+📝 *RFC 提案：{ADR 編號} {提案標題}*
+
+*原因*：{為什麼需要這個架構決策，現狀痛點或新需求}
+
+*表現*：
+• 現狀：{目前架構 / 方案}
+• 問題：{現狀造成的具體問題}
+• 方案 A（推薦）：{方案概述}
+• 方案 B（替代）：{方案概述}
+• 主要權衡：{各方案的 tradeoff}
+
+*方案*：
+• 推薦採用：{方案 A / B}，原因：{1 句話}
+• 影響範圍：{受影響的 service / team}
+• 決策截止：📅 *{deadline}*
+• 需要：{各 team lead 請確認影響評估，回覆截止 {日期}}
+
+🔗 <{adr_doc_url}|RFC 完整文件> · <{issue_url}|Issue>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T14-simple-update：簡單通知 / Status Update
+
+```
+{icon} *{標題 — 一句話結論}*
+
+*原因*：{背景說明，1 句}
+
+*表現*：
+• {要點 1}
+• {要點 2}
+
+*方案*：
+• {行動項，若有}
+• 截止：{日期，若有}
+
+cc <!here>
+```
+
+> 💡 多 audience 模式：指定 ≥2 audience → 自動切 multi 區塊化輸出
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）
+
+---
+
+## T15-multi-audience-incident：跨工種 Incident（rd + qa + ued + pm 四區塊）
+
+```
+🔴 *[P{level}] {service} — {一句話狀態}*
+
+📊 *TL;DR*
+> {1-2 句跨工種共通結論：什麼壞了、影響多少人、目前狀態}
+
+═══════════════════════
+📌 *RD 區塊*
+*結論*：`{service}` {技術一句話}
+*原因*：{技術根因}
+*表現*：{技術觀察，含 error rate / log 摘要}
+*方案*：{修法} + ETA *{HH:MM}*
+
+═══════════════════════
+🐛 *QA 區塊*
+*結論*：{影響功能一句話}
+*復現路徑*：
+🔁 {步驟 1}
+🔁 {步驟 2}
+*已確認*：{已驗証的 bug}
+*待驗証*：{尚未確認的邊界}
+
+═══════════════════════
+🎨 *UED 區塊*
+*UI 表現*：{故障期間使用者看到什麼畫面 / 錯誤訊息}
+*設計修正建議*：{需要補充的 fallback UI / error state}
+*設計時程*：📅 {何時需要 review}
+
+═══════════════════════
+🎯 *PM 區塊*
+*結論*：{業務影響一句話}
+*影響*：*{受影響用戶數}* 筆 / *{訂單損失}*
+*對外說法*：> {統一客服口徑}
+*行動項*：
+• {PM 行動 1}，截止 ⏰ *{deadline}*
+• {PM 行動 2}
+```
+
+> 💡 此為 multi-audience incident 模板（rd + qa + ued + pm 四區塊）
+> 💡 其他組合：在 A2.5 指定 audience list 重新拼裝
+> 💡 單 audience 變體：套用 `~/.claude/docs/slack-audience-profiles.md` 對應 profile（rd / pm / mkt / qa / ops / ued / mixed）

@@ -20,8 +20,15 @@
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
 - [ ] `slack-templates.md` 無 markdown table（grep `\|.*\|.*\|` 應為 0）
 - [ ] `commands/slack.md` Step A2 含「強制」字樣（禁止條件性載入模板）
-- [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / exec / mixed）+ channel mapping + Channel ID 前綴對照
-- [ ] `commands/slack.md` 含 Step A1.5（4 維度識別）+ A2.5（套用 profile）+ A4.0（信心閘門）+ A4.2 audience 選單
+- [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / ued / multi），無 `exec`
+- [ ] `slack-audience-profiles.md` 含 multi 區塊化模式定義 + 區塊順序規則（rd → ops → qa → ued → pm → mkt）
+- [ ] `slack-templates.md` 開頭含 8 條強制規則（結論先行 / 4 層 / 區塊分隔 / 強調 / Icon Palette / Mention / URL / 長度）
+- [ ] `slack-templates.md` 含「場景關鍵字 → 模板 ID」對照表
+- [ ] `slack-templates.md` 含 Anti-Patterns section
+- [ ] `commands/slack.md` Step A1.5 為 audience-first 4 優先（顯式 → 推斷 → channel hint → ask）
+- [ ] `commands/slack.md` Step A2.5 含 multi 模式區塊拼裝邏輯
+- [ ] `commands/slack.md` Step A4.2 為 [d]/[m]/[c:]/[t:] 4 選一，無 [y] 預設
+- [ ] 全 repo 無 `exec` audience 殘留（grep 應為 0）
 
 ---
 

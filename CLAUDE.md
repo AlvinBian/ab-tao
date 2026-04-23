@@ -71,6 +71,16 @@ pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
   監控與診斷            — CCometixLine ccline（自動部署）· doctor（環境診斷）
 ```
 
+## v1.3.x 智能能力
+
+- **Slack 區塊化輸出**：指定 ≥2 audience（pm + rd + qa）→ 自動拼裝為單一訊息含多區塊（每 audience 一區塊 + 統一 TL;DR）
+- **Audience-first 識別**：顯式 audience 永遠優先，channel 名只當建議（不自動套）
+- **統一發送目標確認**：所有 Slack 訊息呈現 [d]/[m]/[c:]/[t:] 4 選一，無預設防誤發
+- **4 維度自主判斷**：audience / channel / type / thread_ts 自動推斷 + high/medium/low 信心分級
+- **Thread permalink 自動識別**：貼 Slack thread URL → 自動切 thread reply 模式
+- **結構強化**：所有訊息強制 4 層結構（結論 → 原因 → 表現 → 方案）+ 區塊分隔 + Icon Palette
+- **7 個 audience profile**：rd / pm / mkt / qa / ops / ued / multi
+
 ## 開發規範
 
 - **Commit** — Conventional Commits（繁體中文）

@@ -1,5 +1,43 @@
 # @ab-tao/dotfiles
 
+## 1.3.1
+
+### Patch Changes
+
+- v1.3.1 — Slack 區塊化輸出 + 結構強化 + Description 深化
+
+  ### 新增
+
+  - Multi-audience 區塊化輸出：指定 ≥2 audience → 自動拼裝為單一訊息（每區塊各一 audience + 統一 TL;DR）
+  - `ued` audience profile：UI/UX Designer 專用視角（UI 表現、fallback 設計、設計時程）
+  - 統一發送目標確認：所有訊息呈現 [d]/[m]/[c:]/[t:] 4 選一，無預設
+  - 結論先行強制：所有模板首行必為「結論行」+ status icon
+  - 4 層通用結構：結論 → 原因 → 表現 → 方案
+  - Icon Palette：嚴重度 / 狀態 / audience / 動作統一 icon
+  - 8 強制規則 section（結論先行 / 4 層 / 區塊分隔 / 強調 / Icon / Mention / URL / 長度）
+  - 5 個新場景模板（design review、tech debt、cross-team、dependency change、multi-audience incident）
+  - 場景關鍵字 → 模板 ID 對照表（A1 場景判斷強制查）
+  - Anti-Patterns section（常見錯誤示範）
+
+  ### 變更
+
+  - 移除 `exec` audience（使用者組織不存在）
+  - Channel 推斷從「自動套用」降為「提示確認」（顯式 audience 永遠優先）
+  - Audience-first 識別：context 推斷 > channel hint
+
+  ### Description 深化
+
+  - root `package.json` description 更新（提及 Slack / Hooks / Skills / AI 資源）
+  - `apps/dotfiles/package.json` description 更新（提及 Slack audience 區塊化）
+  - `packages/share/package.json` description 補完
+  - `CLAUDE.md` 新增「v1.3.x 智能能力」section
+
+  ### 部署
+
+  ```bash
+  pnpm run d:setup
+  ```
+
 ## 1.3.0
 
 ### Minor Changes

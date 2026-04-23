@@ -1,13 +1,15 @@
 ---
 name: slack
 description: >
-  Slack 訊息助手：草稿生成 + 格式審查 + 指南。
+  Slack 訊息助手：草稿生成 + 區塊化輸出 + 目標確認。
   Use when: "幫我寫 Slack", "發 Slack", "Slack 訊息", "Slack 草稿", "通知頻道",
   "發我頻道", "DM 我", "告警", "部署通知", "PR review request",
   "incident", "postmortem", "release notes", "跨團隊協作",
   "Slack 格式", "mrkdwn 格式", "審查格式", "檢查 Slack",
   "給 PM 看", "PM 版本", "給市場", "白話一點", "跨部門",
-  "給主管", "audience=", "rd 版本", "ops 格式", "技術版本".
+  "給主管", "audience=", "rd 版本", "ops 格式", "技術版本",
+  "pm + rd", "給 pm, qa, ued", "區塊化", "分區塊",
+  "ued 看", "設計師看", "跨工種", "多身份", "各自區塊".
 metadata:
   version: 4.0.0
 ---
@@ -56,21 +58,29 @@ metadata:
 | **文化氛圍** | 公告 / 提醒 | 公告、通知、提醒、FYI | 標題 → 內容 → 時間 → 行動 |
 | **自由** | 自由格式 | 其他 | 按內容自行組裝 |
 
-### Step A1.5 — 四維度識別（強制）
+### Step A1.5 — Audience-first 識別（強制）
 
 識別以下 4 個維度，合併輸出統一 metadata（供 A2.5 和 A4.2 使用）：
 
-**Dimension 1 — Audience**（判斷優先級高 → 低）：
-1. 使用者明確指定：「給 PM」「用市場語言」「audience=rd」「白話一點」「給主管看」「跨部門」「rd 版本」「技術版本」
-2. Channel 推斷：Read `~/.claude/docs/slack-audience-profiles.md` → channel mapping → 比對 channel name
-3. Channel ID 前綴：`D` = DM → ask；`mpdm-` → mixed
-4. 無法推斷 → ask（強制 A4.2）
+**Dimension 1 — Audience**（嚴格按順序）：
+1. **顯式指定**（最優先）
+   - 單一：「給 PM」「audience=rd」「白話一點」「技術版本」「rd 版本」「ued 看」「設計師」
+   - 多 audience：「pm + rd」「給 pm, qa, ued」「rd 和 qa」「跨工種」「分區塊」「各自區塊」
+   - 偵測到逗號 / 加號 / 「和」/「跟」分隔的 ≥2 個 audience → 切 multi 模式
+   - 直接採用，跳過後續 audience 推斷
+2. **隱式推斷**（次優先）
+   - 從 user prompt 上下文推斷（剛剛在做 PR review → rd；正在問業務 KPI → pm；設計稿相關 → ued）
+   - 命中 → 標 `// audience: <id>（推斷自上下文，信心 medium）`
+3. **Channel hint**（最低優先，僅作建議）
+   - 比對 channel name → 顯示建議：「根據 #channel-name 推測 [audience]，要套用嗎？[y/改]」
+   - **不自動套用**，必須使用者確認後才進入 A2.5
+4. **無依據** → audience = `ask`（強制 A4.2 詢問）
 
 **Dimension 2 — 目標頻道**（判斷優先級高 → 低）：
 1. 使用者貼出 Channel ID（`CXXXXXXXX`）或連結（`<#CXXX|name>`）
 2. 使用者提及 `#channel-name`
 3. 動作語義：「發我頻道」「default」→ `$DEFAULT_CHANNEL`；「DM 我」「私訊」→ dm
-4. 無指定 → ask
+4. 無指定 → ask（A4.2 [d]/[m]/[c:]/[t:] 選一）
 
 **Dimension 3 — 目標類型**（channel / DM / thread）：
 1. Channel ID 前綴：`C`/`G` = channel；`D` = DM；`mpdm-` = 群組 DM
@@ -83,13 +93,13 @@ metadata:
 3. 否則 → 新訊息（無 thread_ts）
 
 **信心分級**（決定 A4.2 行為）：
-- **high**：4 維度均有顯式或強推斷 → A4.2 預設 `[y]`
-- **medium**：1-2 維度為推斷 → A4.2 標 `⚠️ 推斷項` + 預設 `[n]`
-- **low**：任一維度無依據或有矛盾 → A4.2 強制選擇
+- **high**：audience 顯式指定，其他維度均有依據
+- **medium**：audience 為隱式推斷，或 1-2 維度無依據
+- **low**：任一維度無依據或有矛盾
 
 輸出統一 metadata（用於後續步驟）：
 ```
-// audience: <id>（信心: high/medium/low｜來源: 顯式/channel推斷/ID前綴）
+// audiences: <id 或 id1,id2,...>（single/multi 模式｜信心: high/medium/low｜來源: 顯式/推斷/hint）
 // channel: <ID or $DEFAULT_CHANNEL or dm or ask>
 // type: channel / DM / thread
 // thread_ts: <ts or —>
@@ -112,27 +122,39 @@ metadata:
 
 **核心原則**：結論先行 → 可掃描 → 層次分明 → 行動明確 → 長度適中（日常 4-10 行）
 
-### Step A2.5 — 套用 Audience Profile（強制）
+### Step A2.5 — 套用 Profile / 區塊化拼裝（強制）
 
 1. `Read ~/.claude/docs/slack-audience-profiles.md`（無例外，禁止憑記憶套）
-2. 找到 A1.5 識別的 audience profile
-3. 對 A2 載入的場景模板套用 transformation：
-   - 完全保留：列出的段落原樣輸出
-   - 壓縮為 1 句：列出的段落改寫成單句
-   - 完全移除：列出的段落直接刪除
-   - 強調點：用 `*bold*` 標出
+2. 分流：
+   - **單 audience** → 找對應 profile，套 transformation：
+     - 完全保留：列出的段落原樣輸出
+     - 壓縮為 1 句：列出的段落改寫成單句
+     - 完全移除：列出的段落直接刪除
+     - 強調點：用 `*bold*` 標出
+   - **多 audience（multi 模式）** → 區塊化拼裝：
+     a. 生成 universal TL;DR（1-2 句跨工種共通結論）
+     b. 依固定順序（rd → ops → qa → ued → pm → mkt）逐一拼接被指定的 audience 區塊
+     c. 區塊間插 `═══════════════════════` 分隔線 + 1 空行
+     d. 每區塊套對應 profile transformation，加 4 層結構（結論 → 原因 → 表現 → 方案）
+     e. 首行加 status icon（🔴/🟠/🟡/🟢/✅）+ 1 句涵蓋所有 audience 的結論行
+3. 強制檢查：
+   - 首行含 status icon
+   - 每區塊含 4 層結構（缺則在草稿末警告）
+   - 區塊數 ≤ 4（超出提示「建議拆 2 條訊息」）
 4. 更新草稿 metadata 標註：
    ```
-   // audience: <id>
-   // template: <場景名稱>
-   // transformations: 移除 N 段 / 壓縮 M 段
+   // mode: single / multi
+   // audiences: <list>
+   // template: <場景 ID>
+   // blocks: N（<list>）
+   // structure: 結論 ✓ 原因 ✓ 表現 ✓ 方案 ✓
    ```
 
 特殊情況：
-- `mixed` audience → 輸出兩段：①主訊息（業務白話，≤5 行）② thread reply 草稿（技術詳細，標 `[thread]`）
+- `mixed` audience → 相容舊行為：輸出兩段：①主訊息（業務白話，≤5 行）② thread reply 草稿（技術詳細，標 `[thread]`）
 - `ask` audience → 跳過此步，先用 rd 詳細度起草，等 A4.2 詢問後重套 profile
 
-禁止：audience = ask 時直接套任何 profile；audience 確定後憑記憶改寫。
+禁止：audience = ask 時直接套任何 profile；audience 確定後憑記憶改寫；multi 模式跳過 TL;DR。
 
 ### Step A3 — 格式檢查
 
@@ -175,11 +197,11 @@ FAIL → 必須修復後重 lint，禁止帶 FAIL 進入 A4。
 
 | 信心 | A4.2 行為 |
 |---|---|
-| **high** | 顯示 metadata + 草稿，預設 `[y]`，使用者可直接 enter 發送 |
-| **medium** | 顯示 metadata + 草稿 + `⚠️ 推斷項` 警示，預設 `[n]`，必須手動確認 |
-| **low** | 顯示 metadata + 草稿，不預設任何選項，強制使用者明確選擇 |
+| **high** | 顯示 metadata + 草稿，呈現 [d]/[m]/[c:]/[t:] 4 選一 |
+| **medium** | 顯示 metadata + 草稿 + `⚠️ 推斷項` 警示，呈現 [d]/[m]/[c:]/[t:] 4 選一 |
+| **low** | 顯示 metadata + 草稿 + 推斷警示，呈現 [d]/[m]/[c:]/[t:] 4 選一，強制明確選擇 |
 
-禁止跳過 A4.2（即使 high confidence），符合 `claude-md/05-security.md` 安全紅線。
+任何信心等級均無 `[y]` 預設。禁止跳過 A4.2，符合 `claude-md/05-security.md` 安全紅線。
 
 ### Step A4 — 確認發送（**必做**，禁止跳過）
 
@@ -203,24 +225,28 @@ FAIL → 必須修復後重 lint，禁止帶 FAIL 進入 A4。
    - ❌ `$DEFAULT_CHANNEL` 已設且使用者語意 = default 時，仍二次詢問
    - ❌ `$DEFAULT_CHANNEL = "dm"` sentinel 時，default 才走 DM
 
-#### A4.2 確認流程（**必做**，禁止跳過）
+#### A4.2 確認流程（**必做**，禁止跳過，無預設）
 
 ```
-草稿（信心: $LEVEL｜audience: $A｜channel: $C｜type: $T｜thread: $TS）：
+草稿（信心: $L｜模式: $MODE｜audiences: $A｜結構: 4 層 ✓）：
 ```<草稿全文>```
 
 ⚠️ 推斷項（medium / low 才顯示）：
-  - audience：依 channel name `#xxx` 推斷為 $A
-  - thread_ts：上下文未明確，預設新訊息
+  - {列出各維度推斷依據}
 
-  [y]                              依上述設定發送  ← high confidence 預設
-  [t]                              切換為 thread reply
-  [c:#name|ID]                     改頻道（貼 channel name 或 ID）
-  [a:rd|pm|mkt|qa|ops|exec|mixed]  改 audience 重新 generate
-  [n]                              不發送  ← medium / low confidence 預設
+📤 發送目標（請選一，無預設）：
+  [d]                                    發送到默認頻道（$DEFAULT_CHANNEL）
+  [m]                                    DM 給我（$MY_USER_ID）
+  [c:#name|ID]                           指定頻道（貼 channel name 或 ID）
+  [t:URL]                                回覆 thread（貼 Slack permalink）
+  [a:rd|pm|mkt|qa|ops|ued|multi:list]    改 audience 重生成
+  [n]                                    不發送
 ```
 
 選 `a:<new>` → 跳回 A2.5 重套 profile → 重新呈現 A4.2。
+選 `a:multi:pm,rd,qa` → 切換 multi 模式，audiences = pm, rd, qa → 跳回 A2.5 區塊化拼裝。
+
+無 `[y]` 預設，必須手動選 [d]/[m]/[c:]/[t:] 之一。
 
 #### A4.3 發送 + 回報
 

@@ -34,8 +34,8 @@
 ├── docs/                        # 參考文件（可 @import，非規則）
 │   ├── rtk.md                   RTK 工具 + token 預算影響
 │   ├── audit-checklists.md      三模式 checklist 完整版
-│   ├── slack-templates.md       Slack 視覺元素 + 20 個場景模板（commands/slack.md 動態載入）
-│   ├── slack-audience-profiles.md   7 種 audience profile + channel mapping（commands/slack.md 動態載入）
+│   ├── slack-templates.md       8 強制規則 + 15 場景模板 + Icon Palette + Anti-patterns（commands/slack.md 動態載入）
+│   ├── slack-audience-profiles.md   7 種 audience（含 ued + multi 區塊化）+ channel 建議 + permalink 解析
 │   └── config-map.md            本文件
 │
 ├── agents/                      # 2 focused agents
