@@ -108,17 +108,17 @@ metadata:
 
 禁止：未輸出 metadata 就進入 A2。
 
-### Step A2 — 載入模板庫（**強制**，禁止跳過）
+### Step A2 — 載入規範庫（**強制**，禁止跳過）
 
 開始草擬前**必須**執行：
 
-1. `Read ~/.claude/docs/slack-templates.md`（無例外）
-2. 識別當前場景對應的模板編號（14 個場景之一 / 5 個簡化版 / 自訂）
-3. 模板不存在 → 在草稿開頭補註 `⚠️ 自訂格式，無模板對照`
+1. `Read ~/.claude/docs/slack-principles.md`（無例外）
+2. 按 Slack 語法紅線 + Icon 語義字典 + 4 層骨架自主組裝訊息
+3. 場景超出典型範圍 → 套 4 層骨架最小化版本，metadata 標 `// custom: 自訂場景`
 
-若 `~/.claude/docs/slack-templates.md` 不存在（plugin-only 安裝），請跑 `pnpm run d:setup` 取得完整模板庫。
+若 `~/.claude/docs/slack-principles.md` 不存在（plugin-only 安裝），請跑 `pnpm run d:setup` 取得完整規範庫。
 
-禁止：未讀模板就開始起草、憑記憶套模板（模板字串可能過時）。
+禁止：未讀規範就開始起草、憑記憶套用（規範可能更新）。
 
 **核心原則**：結論先行 → 可掃描 → 層次分明 → 行動明確 → 長度適中（日常 4-10 行）
 
@@ -126,11 +126,10 @@ metadata:
 
 1. `Read ~/.claude/docs/slack-audience-profiles.md`（無例外，禁止憑記憶套）
 2. 分流：
-   - **單 audience** → 找對應 profile，套 transformation：
-     - 完全保留：列出的段落原樣輸出
-     - 壓縮為 1 句：列出的段落改寫成單句
-     - 完全移除：列出的段落直接刪除
-     - 強調點：用 `*bold*` 標出
+   - **單 audience** → 找對應 profile，按 reader mental model + 3 條決策原則自主判斷：
+     - 保留：符合讀者關注焦點的段落原樣輸出
+     - 壓縮：技術 / 業務細節依讀者需求改寫成單句
+     - 移除：讀者不需要 / 可能造成困惑的段落直接刪除
    - **多 audience（multi 模式）** → 區塊化拼裝：
      a. 生成 universal TL;DR（1-2 句跨工種共通結論）
      b. 依固定順序（rd → ops → qa → ued → pm → mkt）逐一拼接被指定的 audience 區塊
@@ -301,9 +300,9 @@ FAIL → 必須修復後重 lint，禁止帶 FAIL 進入 A4。
 
 ## 模式 C — 指南
 
-> 若 `~/.claude/docs/slack-templates.md` 不存在（plugin-only 安裝），請跑 `pnpm run d:setup`。
+> 若 `~/.claude/docs/slack-principles.md` 不存在（plugin-only 安裝），請跑 `pnpm run d:setup`。
 
-精簡速查模板 + Emoji 對照 → Read `~/.claude/docs/slack-templates.md`
+Slack 規範速查 + Icon 語義字典 → Read `~/.claude/docs/slack-principles.md`
 
 ### 發送前 Checklist
 

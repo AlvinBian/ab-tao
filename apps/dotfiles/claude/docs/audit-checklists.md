@@ -15,19 +15,20 @@
 - [ ] `memory/MEMORY.md` ≤ 200 行 / 25KB
 - [ ] `claude-md/` 16 個 section 檔全部存在（00–15）
 - [ ] `rules/` 5 個條件規則檔有正確 `paths:` frontmatter
-- [ ] `docs/` 5 個參考文件存在（rtk / audit-checklists / config-map / slack-templates / slack-audience-profiles）
+- [ ] `docs/` 5 個參考文件存在（rtk / audit-checklists / config-map / slack-principles / slack-audience-profiles）
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
-- [ ] `slack-templates.md` 無 markdown table（grep `\|.*\|.*\|` 應為 0）
-- [ ] `commands/slack.md` Step A2 含「強制」字樣（禁止條件性載入模板）
-- [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / ued / multi），無 `exec`
-- [ ] `slack-audience-profiles.md` 含 multi 區塊化模式定義 + 區塊順序規則（rd → ops → qa → ued → pm → mkt）
-- [ ] `slack-templates.md` 開頭含 8 條強制規則（結論先行 / 4 層 / 區塊分隔 / 強調 / Icon Palette / Mention / URL / 長度）
-- [ ] `slack-templates.md` 含「場景關鍵字 → 模板 ID」對照表
-- [ ] `slack-templates.md` 含 Anti-Patterns section
+- [ ] `slack-principles.md` 含 6 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns）
+- [ ] `slack-principles.md` Icon 語義字典含 3 組（嚴重度 · 動作 · Audience 區塊）
+- [ ] `slack-principles.md` 無殘留 T01~T15 模板（grep `T0[1-9]\|T1[0-5]` 應為 0）
+- [ ] `slack-principles.md` 含 Anti-Patterns section
+- [ ] `commands/slack.md` Step A2 含「強制」字樣（禁止條件性載入規範）
 - [ ] `commands/slack.md` Step A1.5 為 audience-first 4 優先（顯式 → 推斷 → channel hint → ask）
 - [ ] `commands/slack.md` Step A2.5 含 multi 模式區塊拼裝邏輯
 - [ ] `commands/slack.md` Step A4.2 為 [d]/[m]/[c:]/[t:] 4 選一，無 [y] 預設
+- [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / ued / multi），無 `exec`
+- [ ] `slack-audience-profiles.md` 7 個 profile 均含 reader mental model + 決策原則 3 條上限
+- [ ] `slack-audience-profiles.md` 無「完全保留 / 壓縮為 1 句 / 完全移除」舊表格（grep 應為 0）
 - [ ] 全 repo 無 `exec` audience 殘留（grep 應為 0）
 
 ---

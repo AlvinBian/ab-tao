@@ -1,5 +1,35 @@
 # @ab-tao/dotfiles
 
+## 1.4.0
+
+### Minor Changes
+
+- v1.4.0 — Slack 規範庫符號學化重構 + Icon 體系強化
+
+  ### Breaking Changes
+
+  - **`slack-templates.md` 廢棄並改名為 `slack-principles.md`**：15 個硬編碼場景模板（T01~T15）全部移除，改為符號學式規範（Slack 語法紅線 + Icon 語義字典 + 4 層骨架），讓 Claude 自主組裝而非填空。若有外部工具硬編碼 `slack-templates.md` 路徑，需同步更新至 `slack-principles.md`。
+
+  ### 新增
+
+  - `slack-principles.md` Section 7 **視覺節奏**：`>` quote 與 code block 使用時機、5 層視覺強度層次、排版節奏硬規則
+  - `slack-principles.md` Section 8 **場景 Icon 快查**：4 大類 11 個場景的 icon 組合起點（事件管理 / 開發日常 / 進度管理 / 架構與決策）
+  - Icon 語義字典擴充 16 → 29 個（新增 🔍 ⚡ 🔐 📦 🗂️ 🏷️ ✨ 🧹 🌐 💥 🔑 📉 等）
+  - 4 層骨架各層標題加對應 icon（📌 💡 📊 🔧）
+  - Icon 使用密度原則：目標每條訊息 5-10 個 icon，明確首行 / 層標題 / 關鍵 bullet 三級規則
+
+  ### 變更
+
+  - `slack-audience-profiles.md` 重寫 v2.0.0：廢除 7 張「完全保留 / 壓縮 / 移除」表格，改為 reader mental model + 3 條決策原則，讓 Claude 自主判斷
+  - `commands/slack.md` A2 / A2.5 指引更新（載入規範庫 → 自主組裝）
+  - `audit-checklists.md` + `config-map.md` 同步更新
+
+  ### 部署
+
+  ```bash
+  pnpm run d:setup
+  ```
+
 ## 1.3.2
 
 ### Patch Changes
