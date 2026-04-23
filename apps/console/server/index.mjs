@@ -22,6 +22,7 @@ import { settingsRouter } from "./routes/settings.mjs";
 import { setupRouter } from "./routes/setup.mjs";
 import { statusRouter } from "./routes/status.mjs";
 import { syncRouter } from "./routes/sync.mjs";
+import { worklogRouter } from "./routes/worklog.mjs";
 
 const PORT = Number(process.env.PORT) || 5478;
 
@@ -147,6 +148,9 @@ const server = createServer(async (req, res) => {
 			const handled = await reposRouter(req, res, url, json);
 			if (handled) return;
 		}
+
+		// /api/worklog/* — Worklog 草稿管理
+		if (await worklogRouter(req, res, url, json)) return;
 
 		// 未匹配路由
 		json(res, 404, "Not Found", null, 404);

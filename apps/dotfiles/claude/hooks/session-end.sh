@@ -214,4 +214,61 @@ find "$HOME/.claude" -maxdepth 1 -name "*.bak.*" 2>/dev/null | while IFS= read -
 	fi
 done
 
+# ── Part 5: Worklog draft 寫入 ──────────────────────────────────
+WL_STATE="$HOME/.claude/.ab-tao/session-state.json"
+WL_DRAFTS="$HOME/.claude/.ab-tao/worklog-drafts.jsonl"
+
+if [ -f "$WL_STATE" ] && command -v jq &>/dev/null; then
+	WL_STARTED=$(jq -r '.startedAt // empty' "$WL_STATE" 2>/dev/null)
+	WL_CWD=$(jq -r '.cwd // empty' "$WL_STATE" 2>/dev/null)
+	WL_BRANCH=$(jq -r '.branch // empty' "$WL_STATE" 2>/dev/null)
+	WL_SESSION_ID=$(jq -r '.sessionId // empty' "$WL_STATE" 2>/dev/null)
+
+	if [ -n "$WL_STARTED" ] && [ -n "$WL_CWD" ]; then
+		WL_ENDED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+		WL_END_EPOCH=$(date -u +%s)
+		WL_START_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$WL_STARTED" +%s 2>/dev/null || echo 0)
+		WL_DURATION=$(( WL_END_EPOCH - WL_START_EPOCH ))
+
+		if [ "$WL_DURATION" -ge 60 ]; then
+			WL_TICKET=$(printf '%s' "$WL_BRANCH" | grep -oE '[A-Z]+-[0-9]+' | head -1)
+			WL_TICKET=${WL_TICKET:-unknown}
+			WL_PROJECT=$(basename "${WL_CWD%/}" 2>/dev/null || echo "unknown")
+
+			WL_COMMITS_JSON="[]"
+			if [ -d "$WL_CWD/.git" ]; then
+				_commits=$(cd "$WL_CWD" 2>/dev/null && \
+					git log --since="$WL_STARTED" --pretty=format:'{"sha":"%h","subject":"%s"}' --no-merges 2>/dev/null)
+				if [ -n "$_commits" ]; then
+					WL_COMMITS_JSON="[$(printf '%s' "$_commits" | paste -sd ',')]"
+				fi
+			fi
+
+			WL_COMMENT='""'
+			if [ -d "$WL_CWD/.git" ]; then
+				_subjects=$(cd "$WL_CWD" 2>/dev/null && \
+					git log --since="$WL_STARTED" --pretty=format:'%s' --no-merges 2>/dev/null | head -10)
+				[ -n "$_subjects" ] && \
+					WL_COMMENT=$(printf '%s' "$_subjects" | jq -Rs '.' 2>/dev/null || printf '""')
+			fi
+
+			WL_ID="wl_${WL_SESSION_ID:0:8}_${WL_END_EPOCH}"
+			mkdir -p "$(dirname "$WL_DRAFTS")"
+
+			jq -nc \
+				--arg id "$WL_ID" --arg createdAt "$WL_ENDED" --arg sessionId "$WL_SESSION_ID" \
+				--arg project "$WL_PROJECT" --arg branch "$WL_BRANCH" --arg ticketKey "$WL_TICKET" \
+				--arg startedAt "$WL_STARTED" --arg endedAt "$WL_ENDED" \
+				--argjson durationSec "$WL_DURATION" \
+				--argjson commits "$WL_COMMITS_JSON" \
+				--argjson comment "$WL_COMMENT" \
+				'{id:$id,createdAt:$createdAt,sessionId:$sessionId,project:$project,
+				  branch:$branch,ticketKey:$ticketKey,startedAt:$startedAt,endedAt:$endedAt,
+				  durationSec:$durationSec,commits:$commits,comment:$comment}' \
+				>> "$WL_DRAFTS" 2>/dev/null || true
+		fi
+	fi
+	rm -f "$WL_STATE"
+fi
+
 exit 0

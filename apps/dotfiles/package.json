@@ -1,6 +1,6 @@
 {
 	"name": "@ab-tao/dotfiles",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"description": "Claude Code 智能環境管理 — 配置部署、Slack audience 區塊化輸出、Skills 庫、Hooks 系統、ZSH 模組",
 	"license": "MIT",
 	"private": true,

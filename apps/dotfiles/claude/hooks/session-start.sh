@@ -94,4 +94,22 @@ fi
 printf '{"event":"session_start","ts":"%s","cwd":"%s","profile":"%s"}\n' \
 	"$SESSION_TS" "$CWD" "$PROFILE" >> "$METRICS_FILE" 2>/dev/null
 
+# ── Part 5: Worklog session-state 記錄 ──────────────────────────
+TRANSCRIPT=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+WL_SESSION_ID=""
+if [ -n "$TRANSCRIPT" ]; then
+	WL_SESSION_ID=$(basename "$TRANSCRIPT" .jsonl 2>/dev/null)
+fi
+[ -z "$WL_SESSION_ID" ] && WL_SESSION_ID=$(uuidgen 2>/dev/null || printf '%s-%s' "$SESSION_TS" "$$")
+
+WL_BRANCH=$(cd "$CWD" 2>/dev/null && git rev-parse --abbrev-ref HEAD 2>/dev/null || printf '')
+WL_HEAD_SHA=$(cd "$CWD" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || printf '')
+
+SESSION_STATE_FILE="$AB_TAO_DIR/session-state.json"
+jq -nc \
+	--arg sessionId "$WL_SESSION_ID" --arg startedAt "$SESSION_TS" \
+	--arg cwd "$CWD" --arg branch "$WL_BRANCH" --arg headSha "$WL_HEAD_SHA" \
+	'{sessionId:$sessionId,startedAt:$startedAt,cwd:$cwd,branch:$branch,headSha:$headSha}' \
+	> "$SESSION_STATE_FILE" 2>/dev/null || true
+
 exit 0

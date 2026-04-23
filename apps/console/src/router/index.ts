@@ -11,6 +11,8 @@ const REDIRECT_MAP: Record<string, { path: string; tab: string }> = {
 	"/environment": { path: "/dashboard", tab: "environment" },
 	"/stats": { path: "/dashboard", tab: "stats" },
 	"/token-stats": { path: "/dashboard", tab: "stats" },
+	"/worklog": { path: "/dashboard", tab: "worklog" },
+	"/worklog-drafts": { path: "/dashboard", tab: "worklog" },
 	"/memory": { path: "/resources", tab: "memory" },
 	"/resources/skills": { path: "/resources", tab: "skills" },
 	"/resources/commands": { path: "/resources", tab: "commands" },

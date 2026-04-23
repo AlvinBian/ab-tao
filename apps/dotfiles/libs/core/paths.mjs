@@ -40,6 +40,8 @@ export const P = {
 	pluginsLock: path.join(CLAUDE, ".ab-tao", "plugins.lock"),
 	pluginsInstalledJson: path.join(CLAUDE, "plugins", "installed_plugins.json"),
 	metrics: path.join(CLAUDE, ".ab-tao", "metrics.jsonl"),
+	sessionState: path.join(CLAUDE, ".ab-tao", "session-state.json"),
+	worklogDrafts: path.join(CLAUDE, ".ab-tao", "worklog-drafts.jsonl"),
 	cclineDir: path.join(CLAUDE, "ccline"),
 	ccline: path.join(CLAUDE, "ccline", "my-ccline.sh"),
 	agentsMd: path.join(CLAUDE, "AGENTS.md"),

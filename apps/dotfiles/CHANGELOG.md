@@ -1,5 +1,17 @@
 # @ab-tao/dotfiles
 
+## 1.3.2
+
+### Patch Changes
+
+- Worklog 半自動化（draft + confirm + MCP submit）
+
+  - SessionEnd hook 自動抓 session metadata 寫入 worklog-drafts.jsonl（≥60s session、解析 branch→ticketKey、收集 commits）
+  - Console 新增 Worklog Drafts tab：列表 / 編輯 / 批次略過
+  - `/worklog` slash command：per-draft [d]/[m]/[c:]/[t:]/[n]/[x] 確認 → MCP 批次提交至 Jira
+  - `libs/core/worklog.mjs` 新增：JSONL reader/writer（readDrafts / dismissDrafts / updateDraft）
+  - `paths.mjs` 新增 sessionState、worklogDrafts 兩個路徑 entry
+
 ## 1.3.1
 
 ### Patch Changes
