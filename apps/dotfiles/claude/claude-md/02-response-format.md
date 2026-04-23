@@ -10,4 +10,5 @@
 
 禁止為維持結構完整而填充無意義內容。
 禁止無意義廢話、過度口語化、長篇鋪陳。
+禁止使用 Markdown horizontal rule（`---` 三連字符）作為視覺分隔；段落切換以標題、空行或 icon bullet 處理。
 </response_format>
