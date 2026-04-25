@@ -300,8 +300,7 @@ export async function interactiveRepoSelect(session = null) {
 		if (preCount > 0)
 			actionOpts.push({
 				value: "accept",
-				label: `✅ 確認預選 (${preCount})`,
-				hint: "推薦",
+				label: `✅ 確認預選 (${preCount})（推薦）`,
 			});
 		actionOpts.push({
 			value: "edit",

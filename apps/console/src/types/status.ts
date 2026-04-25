@@ -126,7 +126,7 @@ export interface ExtendedSummary {
 	state: StateData;
 	drift: DriftItem[];
 	memory: MemoryLayers;
-	ccline: CclineStatus;
+	claudeHud: ClaudeHudStatus;
 	mcp: McpConfig;
 }
 
@@ -195,11 +195,12 @@ export interface ProjectMemoryLayer extends MemoryLayer {
 	encoded: string;
 }
 
-export interface CclineStatus {
-	installed: boolean;
+export interface ClaudeHudStatus {
+	wrapperDeployed: boolean;
+	pluginInstalled: boolean;
+	pluginVersion: string | null;
 	statusLineConfigured: boolean;
 	command: string | null;
-	themes: string[];
 }
 
 export interface McpConfig {

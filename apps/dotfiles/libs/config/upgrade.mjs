@@ -266,14 +266,13 @@ export async function runUpgrade(legacyInfo) {
 			options: [
 				{
 					value: "upgrade",
-					label: "✨ 清除殘留配置（推薦）",
-					hint: "備份 → 清理舊配置 → 更新 settings/hooks",
+					label:
+						"✨ 清除殘留配置（推薦） — 備份 → 清理舊配置 → 更新 settings/hooks",
 				},
-				{ value: "keep", label: "📌 保留不動", hint: "跳過，可能有重複配置" },
+				{ value: "keep", label: "📌 保留不動 跳過，可能有重複配置" },
 				{
 					value: "clean",
-					label: "🗑️ 全部清除，重新安裝",
-					hint: "備份 → 清空 ~/.claude/ → 從零開始",
+					label: "🗑️ 全部清除，重新安裝 備份 → 清空 ~/.claude/ → 從零開始",
 				},
 			],
 		}),

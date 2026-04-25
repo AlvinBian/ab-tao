@@ -30,8 +30,8 @@ export async function setupSlackNotify(existingEnv = {}) {
 	const mode = await p.select({
 		message: "Slack 通知模式",
 		options: [
-			{ value: "channel", label: "Channel — 指定頻道（推薦）" },
-			{ value: "dm", label: "DM — 私發給自己" },
+			{ value: "channel", label: "Channel 指定頻道（推薦）" },
+			{ value: "dm", label: "DM 私發給自己" },
 			{ value: "off", label: "關閉（清除設定）" },
 			{ value: "skip", label: "稍後手動設定" },
 		],

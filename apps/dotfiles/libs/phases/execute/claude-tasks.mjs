@@ -161,31 +161,32 @@ export async function deployGlobalConfig(opts) {
 	const preHashes = snapshotHashes();
 	const installSelections = {};
 
-	// ── 階段 0：CCometixLine 安裝檢驗 + my-ccline.sh 部署 ──
-	const { checkAndInstallCcline, deployCclineScript } = await import(
-		"../../external/ccline.mjs"
+	// ── 階段 0：claude-hud wrapper 部署 ──
+	const {
+		deployClaudeHudWrapper,
+		deployClaudeHudConfig,
+		isClaudeHudPluginInstalled,
+	} = await import("../../external/claude-hud.mjs");
+	const hudSpinner = p.spinner();
+	hudSpinner.start("部署 claude-hud wrapper...");
+	const { deployed: claudeHudWrapperDeployed } =
+		deployClaudeHudWrapper(repoDir);
+	deployClaudeHudConfig(repoDir);
+	const claudeHudPluginInstalled = isClaudeHudPluginInstalled();
+	hudSpinner.stop(
+		claudeHudWrapperDeployed
+			? "claude-hud wrapper 已部署"
+			: "claude-hud wrapper 部署失敗（來源不存在）",
 	);
-	const cclineSpinner = p.spinner();
-	cclineSpinner.start("安裝 ccline...");
-	const { installed: cclineInstalled, alreadyInstalled } =
-		checkAndInstallCcline();
-	cclineSpinner.stop(
-		cclineInstalled ? "ccline 已安裝" : "ccline 安裝失敗，跳過 statusLine 配置",
-	);
-	if (!alreadyInstalled && logger) {
-		logger(
-			cclineInstalled
-				? "✅ @cometix/ccline 安裝成功"
-				: "⚠️ @cometix/ccline 安裝失敗，跳過 statusLine 配置",
-		);
-	}
-	if (cclineInstalled) {
-		const { deployed } = deployCclineScript(repoDir);
-		if (logger) {
+	if (logger) {
+		if (claudeHudWrapperDeployed) {
 			logger(
-				deployed
-					? "✅ my-ccline.sh 已部署 → ~/.claude/ccline/my-ccline.sh"
-					: "⚠️ my-ccline.sh 來源不存在，跳過部署",
+				"✅ hud-wrapper.sh 已部署 → ~/.claude/plugins/claude-hud/hud-wrapper.sh",
+			);
+		}
+		if (!claudeHudPluginInstalled) {
+			logger(
+				"ℹ️ claude-hud plugin 尚未安裝，重啟 Claude Code 後將自動拉取（已注入 marketplace + enabledPlugins）",
 			);
 		}
 	}
@@ -402,7 +403,7 @@ export async function deployGlobalConfig(opts) {
 			"chezmoi-ignore",
 			"ab-tao-template-origin.json",
 		];
-		const STALE_DIRS = ["profiles", "memory-templates"];
+		const STALE_DIRS = ["profiles", "memory-templates", "ccline"];
 		for (const f of STALE_FILES) {
 			const fp = path.join(claudeHome, f);
 			if (fs.existsSync(fp)) {
@@ -422,7 +423,11 @@ export async function deployGlobalConfig(opts) {
 	}
 
 	writeReloadMarker({ preHashes });
-	return { ...installSelections, cclineInstalled };
+	return {
+		...installSelections,
+		claudeHudWrapperDeployed,
+		claudeHudPluginInstalled,
+	};
 }
 
 /**

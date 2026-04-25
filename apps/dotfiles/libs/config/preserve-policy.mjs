@@ -31,7 +31,6 @@ export const ADDITIVE_DIRS = ["commands", "agents", "skills", "hooks"];
  */
 export const FORBIDDEN_DIRS = [
 	"projects",
-	"ccline",
 	"sessions",
 	"session-env",
 	"file-history",

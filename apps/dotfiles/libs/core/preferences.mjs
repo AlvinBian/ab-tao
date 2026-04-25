@@ -219,17 +219,16 @@ export async function collectPreferences(prevPrefs) {
 			options: [
 				{
 					value: "default",
-					label: "default — 完整（語言版本 + git 狀態）",
-					hint: "推薦",
+					label: "default 完整（語言版本 + git 狀態）（推薦）",
 				},
 				{
 					value: "minimal",
-					label: "minimal — 精簡（目錄 + git branch + 字元）",
+					label: "minimal 精簡（目錄 + git branch + 字元）",
 				},
-				{ value: "full", label: "full — 詳細（含所有語言圖示）" },
+				{ value: "full", label: "full 詳細（含所有語言圖示）" },
 				{
 					value: "catppuccin",
-					label: "catppuccin — Mocha 分段式 powerline（需 Nerd Font）",
+					label: "catppuccin Mocha 分段式 powerline（需 Nerd Font）",
 				},
 			],
 			initialValue: current.starshipPreset,
@@ -243,13 +242,12 @@ export async function collectPreferences(prevPrefs) {
 			options: [
 				{
 					value: "TwoDark",
-					label: "TwoDark — 深色雙色調（預設）",
-					hint: "推薦",
+					label: "TwoDark 深色雙色調（預設 · 推薦）",
 				},
-				{ value: "Dracula", label: "Dracula — 深紫科幻風" },
-				{ value: "Nord", label: "Nord — 冷藍極簡風" },
-				{ value: "Monokai Extended", label: "Monokai Extended — 經典暖色" },
-				{ value: "GitHub", label: "GitHub — 淺色（日間模式）" },
+				{ value: "Dracula", label: "Dracula 深紫科幻風" },
+				{ value: "Nord", label: "Nord 冷藍極簡風" },
+				{ value: "Monokai Extended", label: "Monokai Extended 經典暖色" },
+				{ value: "GitHub", label: "GitHub 淺色（日間模式）" },
 			],
 			initialValue: current.batTheme ?? "TwoDark",
 		}),

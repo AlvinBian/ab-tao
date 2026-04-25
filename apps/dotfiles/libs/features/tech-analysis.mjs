@@ -207,13 +207,12 @@ export default {
 					await p.select({
 						message: "如何繼續？",
 						options: [
-							{ value: "retry", label: "🔄 重試", hint: "重新執行分析" },
+							{ value: "retry", label: "🔄 重試 重新執行分析" },
 							{
 								value: "skip",
-								label: "⏭️ 跳過",
-								hint: "跳過 AI 分析，使用空結果",
+								label: "⏭️ 跳過 跳過 AI 分析，使用空結果",
 							},
-							{ value: "back", label: "← 上一步", hint: "返回上一步" },
+							{ value: "back", label: "← 上一步 返回上一步" },
 						],
 					}),
 				);

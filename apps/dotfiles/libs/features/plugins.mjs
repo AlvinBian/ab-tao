@@ -115,8 +115,7 @@ export default {
 				message: `推薦 Plugins（${missing.length} 個未安裝）`,
 				options: missing.map((pl) => ({
 					value: pl.name,
-					label: pl.name,
-					hint: pl.desc,
+					label: pl.desc ? `${pl.name} ${pl.desc}` : pl.name,
 				})),
 				initialValues: missing.map((pl) => pl.name),
 				required: false,

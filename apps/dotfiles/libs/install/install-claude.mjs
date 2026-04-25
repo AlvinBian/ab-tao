@@ -55,13 +55,12 @@ async function selectHooks(repoDir, stepLabel, flagAll, session) {
 						? `${event} (${key.split(":")[1] || "*"})`
 						: key;
 				const descText = getDescription(descKey) || getDescription(key);
-				const desc = descText
-					? { label: descText, hint: `${event} [${m.matcher || "*"}]` }
-					: { label: `${event} [${m.matcher || "*"}]`, hint: "" };
+				const label = descText
+					? `${descText}  ${event} [${m.matcher || "*"}]`
+					: `${event} [${m.matcher || "*"}]`;
 				hookItems.push({
 					value: key,
-					label: desc.label,
-					hint: desc.hint,
+					label,
 					event,
 					matcher: m.matcher,
 				});

@@ -6,7 +6,7 @@
  *   readStateJson()      → State Tab
  *   detectDrift()        → State Tab（drift 清單）
  *   scanMemoryLayers()   → Memory & Plans Tab
- *   checkCclineStatus()  → Overview 擴充
+ *   checkClaudeHudStatus()  → Overview 擴充
  *   readMcpConfig()      → MCP & Plugins Tab
  *   collectExtendedData()→ 整合呼叫，回傳全部 extended 資料
  */
@@ -15,6 +15,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { CLAUDE, P } from "../core/paths.mjs";
+import {
+	getClaudeHudPluginVersion,
+	isClaudeHudPluginInstalled,
+} from "../external/claude-hud.mjs";
 
 // ── Hooks ────────────────────────────────────────────────────────
 
@@ -284,65 +288,52 @@ export function scanMemoryLayers() {
 	};
 }
 
-// ── CCline ───────────────────────────────────────────────────────
+// ── claude-hud ───────────────────────────────────────────────────
 
 /**
- * 偵測 ccline 狀態
+ * 偵測 claude-hud 狀態
  *
  * @returns {{
- *   installed: boolean,
+ *   wrapperDeployed: boolean,
+ *   pluginInstalled: boolean,
+ *   pluginVersion: string|null,
  *   statusLineConfigured: boolean,
- *   command: string|null,
- *   themes: string[]
+ *   command: string|null
  * }}
  */
-export function checkCclineStatus() {
-	// cclineScript：ccline 腳本的絕對路徑（由 paths.mjs P.ccline 提供）
-	const cclineScript = P.ccline;
-	// installed：腳本檔案是否存在於磁碟
-	const installed = fs.existsSync(cclineScript);
+export function checkClaudeHudStatus() {
+	const wrapperDeployed = fs.existsSync(P.claudeHudWrapper);
+	const pluginInstalled = isClaudeHudPluginInstalled();
+	const pluginVersion = pluginInstalled ? getClaudeHudPluginVersion() : null;
 
-	// themes 目錄與腳本同層，收集所有 .toml / .sh 主題檔
-	const themesDir = path.join(path.dirname(cclineScript), "themes");
-	let themes = [];
-	try {
-		themes = fs
-			.readdirSync(themesDir)
-			.filter((f) => f.endsWith(".toml") || f.endsWith(".sh"))
-			.sort();
-	} catch {
-		// themes 目錄不存在時略過，themes 保持空陣列
-	}
-
-	// 從 ~/.claude/settings.json 讀取 statusLineTool（或舊欄位名 statusLine）
 	let statusLineConfigured = false;
 	let command = null;
 	try {
 		const settings = JSON.parse(fs.readFileSync(P.settings, "utf8"));
-		// 優先使用新欄位名 statusLineTool，向下相容舊欄位名 statusLine
 		const statusLine = settings.statusLineTool || settings.statusLine;
 		if (statusLine) {
 			statusLineConfigured = true;
-			// statusLine 有兩種格式：
-			//   1. 純字串：直接為命令路徑（舊版 Claude Code settings）
-			//   2. 物件：{ type: "command", command: "...", padding: 0 }（新版格式）
 			if (typeof statusLine === "string") {
 				command = statusLine;
 			} else if (statusLine && typeof statusLine.command === "string") {
 				command = statusLine.command;
 			}
-			// 若格式不符（如 boolean），command 保持 null，避免渲染 [object Object]
 		}
 	} catch {
 		// settings.json 不存在或 JSON 格式錯誤，狀態保持預設值
 	}
 
-	// Fallback：settings 中未配置時，若腳本存在則直接用腳本路徑作為 command 顯示
-	if (!command && installed) {
-		command = cclineScript;
+	if (!command && wrapperDeployed) {
+		command = P.claudeHudWrapper;
 	}
 
-	return { installed, statusLineConfigured, command, themes };
+	return {
+		wrapperDeployed,
+		pluginInstalled,
+		pluginVersion,
+		statusLineConfigured,
+		command,
+	};
 }
 
 // ── MCP ─────────────────────────────────────────────────────────
@@ -401,7 +392,7 @@ export function readMcpConfig() {
  *   state: ReturnType<typeof readStateJson>,
  *   drift: ReturnType<typeof detectDrift>,
  *   memory: ReturnType<typeof scanMemoryLayers>,
- *   ccline: ReturnType<typeof checkCclineStatus>,
+ *   claudeHud: ReturnType<typeof checkClaudeHudStatus>,
  *   mcp: ReturnType<typeof readMcpConfig>
  * }}
  */
@@ -411,7 +402,7 @@ export function collectExtendedData() {
 		state: readStateJson(),
 		drift: detectDrift(),
 		memory: scanMemoryLayers(),
-		ccline: checkCclineStatus(),
+		claudeHud: checkClaudeHudStatus(),
 		mcp: readMcpConfig(),
 	};
 }

@@ -100,10 +100,10 @@ export default {
 
 		const items = selectableModules.map((name) => {
 			const shortName = name.replace(/^\d+-/, "");
+			const desc = MODULE_DESCRIPTIONS[shortName];
 			return {
 				value: name,
-				label: shortName,
-				hint: MODULE_DESCRIPTIONS[shortName] || shortName,
+				label: desc ? `${shortName} ${desc}` : shortName,
 			};
 		});
 

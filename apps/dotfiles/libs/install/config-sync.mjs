@@ -269,14 +269,13 @@ export async function confirmPlan(plan) {
 				`🔀 偵測到 ${pc.bold(String(driftItems.length))} 個檔案有 drift：`,
 			].join(""),
 			options: [
-				{ value: "I", label: "逐檔互動（預設）", hint: "I" },
+				{ value: "I", label: "逐檔互動 逐一決定每個 drift 檔案（預設）" },
 				{
 					value: "A",
-					label: "全部用 ab-tao template（自動 _archive/ 備份）",
-					hint: "A",
+					label: "全部套用 ab-tao template 自動備份至 _archive/",
 				},
-				{ value: "K", label: "全部保留本地（標記 userOverride）", hint: "K" },
-				{ value: "S", label: "全部跳過", hint: "S" },
+				{ value: "K", label: "全部保留本地 標記 userOverride 跳過更新" },
+				{ value: "S", label: "全部跳過 本次不處理 drift" },
 			],
 		});
 

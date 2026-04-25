@@ -79,7 +79,11 @@ test("mergeArray：local 非陣列時 fallback 到 template", () => {
 
 test("mergeConfig：preserve path pin — local statusLine 不被 template 蓋", () => {
 	const template = {
-		statusLine: { type: "command", command: "ccline", enabled: true },
+		statusLine: {
+			type: "command",
+			command: "~/.claude/plugins/claude-hud/hud-wrapper.sh",
+			enabled: true,
+		},
 		model: "haiku",
 	};
 	const local = {
@@ -214,5 +218,41 @@ test("mergeConfig：_abTao 命名空間（template 無此 key）→ local 完整
 	assert.ok(
 		Array.isArray(result._abTao.disabledHooks.PreToolUse),
 		"disabledHooks.PreToolUse 應為陣列",
+	);
+});
+
+test("mergeConfig：extraKnownMarketplaces 深層合併 — 新增 claude-hud 不覆蓋現有 marketplace", () => {
+	const template = {
+		extraKnownMarketplaces: {
+			"claude-hud": {
+				source: { source: "github", repo: "jarrodwatts/claude-hud" },
+			},
+		},
+	};
+	const local = {
+		extraKnownMarketplaces: {
+			"my-custom-mkt": {
+				source: { source: "github", repo: "example/custom" },
+			},
+		},
+	};
+
+	const result = mergeConfig(template, local, {
+		preservePaths: [],
+		arrayMerge: {},
+	});
+	// template 補入 claude-hud
+	assert.ok(
+		Object.hasOwn(result.extraKnownMarketplaces, "claude-hud"),
+		"claude-hud marketplace 應存在",
+	);
+	// local 的自定義 marketplace 應保留
+	assert.ok(
+		Object.hasOwn(result.extraKnownMarketplaces, "my-custom-mkt"),
+		"既有自定義 marketplace 應保留",
+	);
+	assert.equal(
+		result.extraKnownMarketplaces["claude-hud"].source.repo,
+		"jarrodwatts/claude-hud",
 	);
 });

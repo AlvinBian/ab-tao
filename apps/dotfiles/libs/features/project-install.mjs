@@ -172,7 +172,7 @@ export default {
 
 		// ── Step 3: 星級閾值選擇 ──
 		const thresholdOptions = [
-			{ value: 5, label: "★★★★★ 只選最高品質", hint: "推薦" },
+			{ value: 5, label: "★★★★★ 只選最高品質（推薦）" },
 			{ value: 4, label: "★★★★☆ 四星以上" },
 			{ value: 3, label: "★★★☆☆ 三星以上" },
 			{ value: 2, label: "★★☆☆☆ 二星以上" },
@@ -311,13 +311,11 @@ export default {
 				options: [
 					{
 						value: "confirm",
-						label: "確認安裝預選項目",
-						hint: "推薦",
+						label: "確認安裝預選項目（推薦）",
 					},
 					{
 						value: "adjust",
-						label: "調整選擇",
-						hint: "按分類微調",
+						label: "調整選擇 按分類微調",
 					},
 					{
 						value: "skip",
@@ -405,8 +403,9 @@ export default {
 				const categorySelected = selected[categoryToAdjust];
 				const items = categoryItems.map((item) => ({
 					value: item.name,
-					label: item.name,
-					hint: item.desc ? item.desc.slice(0, 40) : "",
+					label: item.desc
+						? `${item.name} — ${item.desc.slice(0, 40)}`
+						: item.name,
 				}));
 
 				const preselected = Array.from(categorySelected);

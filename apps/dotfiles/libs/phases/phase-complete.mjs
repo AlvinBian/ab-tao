@@ -326,8 +326,7 @@ export async function phaseComplete(
 							"🚀 選擇要安裝的增強工具  Space 選擇 · Enter 確認（直接 Enter 跳過）",
 						options: missingEnhancers.map((e) => ({
 							value: e.name,
-							label: e.name,
-							hint: e.desc,
+							label: e.desc ? `${e.name} ${e.desc}` : e.name,
 						})),
 						required: false,
 						initialValues: [],

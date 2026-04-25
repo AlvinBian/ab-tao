@@ -151,17 +151,15 @@ export async function selectTechStacks(
 		await p.select({
 			message: "🧬 技術棧操作",
 			options: [
-				{ value: "accept", label: `✅ 確認預選 (${preCount})`, hint: "推薦" },
+				{ value: "accept", label: `✅ 確認預選 (${preCount}) 推薦` },
 				{
 					value: "supplement",
-					label: `✅ 確認預選 + 補充`,
-					hint: "預選 + 手動加",
+					label: `✅ 確認預選 + 補充 預選 + 手動加`,
 				},
-				{ value: "custom", label: "✏️ 自訂選擇", hint: "逐分類調整" },
+				{ value: "custom", label: "✏️ 自訂選擇 逐分類調整" },
 				{
 					value: "skip",
-					label: "⏭️ 跳過技術棧",
-					hint: "不分析技術棧，直接下一步",
+					label: "⏭️ 跳過技術棧 不分析技術棧，直接下一步",
 				},
 			],
 		}),

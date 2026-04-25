@@ -69,8 +69,11 @@ test("FORBIDDEN_DIRS 包含 projects", () => {
 	);
 });
 
-test("FORBIDDEN_DIRS 包含 ccline", () => {
-	assert.ok(FORBIDDEN_DIRS.includes("ccline"), "FORBIDDEN_DIRS 應包含 ccline");
+test("FORBIDDEN_DIRS 不包含 ccline（已遷移至 claude-hud）", () => {
+	assert.ok(
+		!FORBIDDEN_DIRS.includes("ccline"),
+		"FORBIDDEN_DIRS 不應包含 ccline",
+	);
 });
 
 test("FORBIDDEN_DIRS 包含 sessions", () => {

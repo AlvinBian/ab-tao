@@ -226,19 +226,21 @@ setup 完成後會推薦安裝以下工具：
 | ---------------- | ------------------------------- | ------------------------------------------------------ |
 | **RTK**          | `brew install rtk`              | Bash 輸出壓縮 -89%，安裝後自動生效                     |
 | **官方 Plugins** | 在 Claude Code 中執行 `/plugin` | code-review · commit-commands · feature-dev · simplify |
-| **CCometixLine** | 自動安裝（setup 時）            | Claude Code statusline — Git 狀態、Context 用量、費用  |
+| **claude-hud** | 自動部署 wrapper + 注入 plugin（setup 時）| Claude Code statusline — Git 狀態、Context 用量、費用  |
 
-### CCometixLine Statusline
+### claude-hud Statusline
 
-[CCometixLine](https://github.com/Haleclipse/CCometixLine) 是一個用 Rust 寫的高效能 Claude Code statusline 工具，在 `pnpm run d:setup` 選擇「🤖 Claude Code 配置」時自動安裝。
+[claude-hud](https://github.com/jarrodwatts/claude-hud) 是 Claude Code 官方 plugin 機制的 statusline 工具，在 `pnpm run d:setup` 選擇「🤖 Claude Code 配置」時自動完成以下部署：
+
+1. 部署 `hud-wrapper.sh` → `~/.claude/plugins/claude-hud/hud-wrapper.sh`
+2. 注入 `extraKnownMarketplaces` + `enabledPlugins` 到 `~/.claude/settings.json`
+3. 首次部署後**重啟 Claude Code** 即自動從 GitHub 拉取 plugin
 
 功能：
 - Git 分支狀態（branch、dirty、ahead/behind）
 - Claude 模型顯示
 - Context window 用量百分比
 - 費用與 session 時長追蹤
-- 互動式 TUI 配置介面（`ccline --config`）
-- 多主題支援（cometix、minimal、gruvbox、nord）
 
 安裝後 `~/.claude/settings.json` 自動寫入：
 
@@ -246,12 +248,12 @@ setup 完成後會推薦安裝以下工具：
 {
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/ccline/my-ccline.sh"
+    "command": "~/.claude/plugins/claude-hud/hud-wrapper.sh"
   }
 }
 ```
 
-`my-ccline.sh` 是包裝腳本，以 `ccline` 為核心輸出，並附加 Node.js / pnpm / Python / Go 版本段。
+`hud-wrapper.sh` 是包裝腳本，以 plugin HUD 為核心輸出，並附加 Node.js / pnpm / Python 版本段。
 
 ## GitFlow
 

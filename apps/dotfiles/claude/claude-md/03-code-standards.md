@@ -37,7 +37,7 @@
 
 ### Commit
 - 採用 Conventional Commits（繁體中文 message）
-
+  
 ### PR Title 命名
 - 標準格式：`[TICKET][PROJECT] 主PR描述`
   - `TICKET`：票號（VM-1482 / KKDAY-1234）

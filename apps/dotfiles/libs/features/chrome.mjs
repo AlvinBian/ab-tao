@@ -120,11 +120,13 @@ export default {
 			return { components }; // fallback 全選
 		}
 
-		const items = components.map((c) => ({
-			value: c,
-			label: c,
-			hint: COMPONENT_DESCRIPTIONS[c] || c,
-		}));
+		const items = components.map((c) => {
+			const desc = COMPONENT_DESCRIPTIONS[c];
+			return {
+				value: c,
+				label: desc ? `${c} ${desc}` : c,
+			};
+		});
 
 		const selected = handleCancel(
 			await p.multiselect({

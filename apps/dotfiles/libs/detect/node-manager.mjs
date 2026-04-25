@@ -105,13 +105,11 @@ export async function resolveNodeManager(justInstalled = new Set()) {
 			options: [
 				{
 					value: "fnm",
-					label: "使用 fnm",
-					hint: migrateHint,
+					label: `使用 fnm ${migrateHint}`,
 				},
 				{
 					value: other,
-					label: `保留 ${other}`,
-					hint: `略過 fnm，ZSH 模組配置 ${other} 自動切換`,
+					label: `保留 ${other} ZSH 模組配置 ${other} 自動切換`,
 				},
 			],
 			initialValue: "fnm",
@@ -147,13 +145,11 @@ export async function resolveNodeManager(justInstalled = new Set()) {
 			options: [
 				{
 					value: "migrate",
-					label: "切換為 fnm",
-					hint: versionHint,
+					label: `切換為 fnm ${versionHint}`,
 				},
 				{
 					value: "keep",
-					label: `保留 ${existing}`,
-					hint: "ZSH 模組自動配置 cd 時讀取 .nvmrc 切換",
+					label: `保留 ${existing} ZSH 模組自動配置 cd 時讀取 .nvmrc 切換`,
 				},
 			],
 			initialValue: "migrate",

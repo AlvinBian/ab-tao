@@ -71,8 +71,10 @@ export default {
 			"../config/auto-plan.mjs"
 		);
 
-		const { isCclineInstalled } = await import("../external/ccline.mjs");
-		const cclineInstalled = isCclineInstalled();
+		const { isClaudeHudPluginInstalled } = await import(
+			"../external/claude-hud.mjs"
+		);
+		const claudeHudPluginInstalled = isClaudeHudPluginInstalled();
 
 		if (ctx.flags?.quick) {
 			// 從 session 重建（使用上次的 model 設定）
@@ -87,10 +89,10 @@ export default {
 						...SETTINGS_PRESETS,
 						model: ctx.prev?.install?.model || "opusplan",
 					},
-					cclineInstalled,
+					claudeHudPluginInstalled,
 				},
 				model: ctx.prev?.install?.model || "opusplan",
-				claudeMdAction: "keep",
+				claudeMdAction: "install",
 				selectedCategories: [
 					"commands",
 					"agents",
@@ -106,12 +108,11 @@ export default {
 		const modelChoices = [
 			{
 				value: "opusplan",
-				label: "opusplan",
-				hint: "Opus 規劃 + Sonnet 執行（推薦）",
+				label: "opusplan Opus 規劃 + Sonnet 執行（推薦）",
 			},
-			{ value: "sonnet", label: "sonnet", hint: "全程 Sonnet" },
-			{ value: "haiku", label: "haiku", hint: "快速低成本" },
-			{ value: "opus", label: "opus", hint: "全程 Opus（最高品質）" },
+			{ value: "sonnet", label: "sonnet 全程 Sonnet" },
+			{ value: "haiku", label: "haiku 快速低成本" },
+			{ value: "opus", label: "opus 全程 Opus（最高品質）" },
 		];
 
 		let model = SETTINGS_PRESETS.model || "opusplan";
@@ -141,7 +142,7 @@ export default {
 
 		// CLAUDE.md 處理方式選擇 + 類別選擇（--all 模式跳過，使用預設值）
 		const claudeMdExists = fs.existsSync(path.join(CLAUDE_DIR, "CLAUDE.md"));
-		let claudeMdAction = claudeMdExists ? "keep" : "install";
+		let claudeMdAction = "install";
 		let selectedCategories = [
 			"commands",
 			"agents",
@@ -158,20 +159,17 @@ export default {
 					options: [
 						{
 							value: "install",
-							label: "install",
-							hint: claudeMdExists
-								? "覆蓋現有 CLAUDE.md（自動備份）"
-								: "安裝 CLAUDE.md",
+							label: claudeMdExists
+								? "install — 覆蓋現有 CLAUDE.md（自動備份）"
+								: "install — 安裝 CLAUDE.md",
 						},
 						{
 							value: "merge",
-							label: "merge",
-							hint: "將缺少的 @import 行追加至現有 CLAUDE.md",
+							label: "merge 將缺少的 @import 行追加至現有 CLAUDE.md",
 						},
 						{
 							value: "keep",
-							label: "keep",
-							hint: "跳過，保留現有 CLAUDE.md 不變",
+							label: "keep 跳過，保留現有 CLAUDE.md 不變",
 						},
 					],
 					initialValue: claudeMdAction,
@@ -186,25 +184,21 @@ export default {
 					options: [
 						{
 							value: "commands",
-							label: "commands",
-							hint: `${ALL_COMMANDS.length} 個`,
+							label: `commands（${ALL_COMMANDS.length} 個）`,
 						},
 						{
 							value: "agents",
-							label: "agents",
-							hint: `${ALL_AGENTS.length} 個`,
+							label: `agents（${ALL_AGENTS.length} 個）`,
 						},
-						{ value: "rules", label: "rules", hint: `${ALL_RULES.length} 個` },
-						{ value: "hooks", label: "hooks", hint: `${ALL_HOOKS.length} 個` },
+						{ value: "rules", label: `rules（${ALL_RULES.length} 個）` },
+						{ value: "hooks", label: `hooks（${ALL_HOOKS.length} 個）` },
 						{
 							value: "settings",
-							label: "settings",
-							hint: "settings.json + permissions",
+							label: "settings settings.json + permissions",
 						},
 						{
 							value: "claude-md",
-							label: "claude-md",
-							hint: "claude-md/ 子目錄模組",
+							label: "claude-md claude-md/ 子目錄模組",
 						},
 					],
 					initialValues: selectedCategories,
@@ -248,7 +242,7 @@ export default {
 				settings: selectedCategories.includes("settings")
 					? { ...SETTINGS_PRESETS, model }
 					: null,
-				cclineInstalled,
+				claudeHudPluginInstalled,
 			},
 			model,
 			claudeMdAction,
@@ -419,16 +413,18 @@ export default {
 		if (results.rules?.length) parts.push(`${results.rules.length} rules`);
 		if (results.hooks?.length) parts.push(`${results.hooks.length} hooks`);
 
-		const cclineLabel = results.cclineInstalled
-			? "CCometixLine + my-ccline.sh ✅"
-			: "CCometixLine ⚠️（安裝失敗，statusLine 未配置）";
+		const wrapperOk = results.claudeHudWrapperDeployed;
+		const pluginOk = results.claudeHudPluginInstalled;
+		const hudLabel = wrapperOk
+			? `claude-hud: wrapper ✅ + plugin ${pluginOk ? "✅" : "⏳ 待 Claude Code 重啟自動安裝"}`
+			: "claude-hud ⚠️（wrapper 部署失敗）";
 
 		const lines = parts.length
 			? [
 					"🤖 Claude 配置",
 					`  已安裝：${parts.join(" · ")}`,
 					`  Model: ${results.model || "opusplan"}`,
-					`  StatusLine: ${cclineLabel}`,
+					`  StatusLine: ${hudLabel}`,
 				]
 			: [];
 
@@ -450,7 +446,8 @@ export default {
 			rules: results?.rules || [],
 			hooks: results?.hooks || [],
 			model: results?.model || "opusplan",
-			cclineInstalled: results?.cclineInstalled ?? false,
+			claudeHudWrapperDeployed: results?.claudeHudWrapperDeployed ?? false,
+			claudeHudPluginInstalled: results?.claudeHudPluginInstalled ?? false,
 		};
 	},
 

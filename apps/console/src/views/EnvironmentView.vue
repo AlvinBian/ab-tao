@@ -9,7 +9,7 @@ onMounted(() => store.fetchData());
 
 const d = computed(() => store.data);
 // biome-ignore lint/correctness/noUnusedVariables: used in template
-const ccline = computed(() => d.value?.extended?.ccline);
+const claudeHud = computed(() => d.value?.extended?.claudeHud);
 
 const zshInstalled = computed(() => d.value?.zsh?.installed ?? []);
 const zshAvailable = computed(() => d.value?.zsh?.available ?? []);
@@ -51,8 +51,8 @@ const pluginFiles = computed(() => d.value?.plugins ?? []);
       <EnvHealthGauge
         :zsh-installed="zshInstalled"
         :zsh-available="zshAvailable"
-        :ccline-installed="ccline?.installed ?? false"
-        :ccline-status-line-configured="ccline?.statusLineConfigured ?? false"
+        :claude-hud-wrapper-deployed="claudeHud?.wrapperDeployed ?? false"
+        :claude-hud-status-line-configured="claudeHud?.statusLineConfigured ?? false"
         :env-missing-count="envHealth?.missing?.length ?? 0"
         :env-empty-count="envHealth?.empty?.length ?? 0"
       />
@@ -101,27 +101,28 @@ const pluginFiles = computed(() => d.value?.plugins ?? []);
     </el-row>
 
     <el-row :gutter="16" style="margin-bottom:16px">
-      <!-- CCLine 狀態 -->
+      <!-- claude-hud 狀態 -->
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header><span>CCLine 狀態</span></template>
+          <template #header><span>claude-hud 狀態</span></template>
           <el-descriptions :column="1" border size="small">
-            <el-descriptions-item label="已安裝">
-              <el-tag :type="ccline?.installed ? 'success' : 'danger'" size="small">
-                {{ ccline?.installed ? "是" : "否" }}
+            <el-descriptions-item label="Wrapper 已部署">
+              <el-tag :type="claudeHud?.wrapperDeployed ? 'success' : 'danger'" size="small">
+                {{ claudeHud?.wrapperDeployed ? "是" : "否" }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="Plugin 已安裝">
+              <el-tag :type="claudeHud?.pluginInstalled ? 'success' : 'warning'" size="small">
+                {{ claudeHud?.pluginInstalled ? `是（v${claudeHud.pluginVersion ?? "?"}）` : "待 Claude Code 重啟" }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="StatusLine 設定">
-              <el-tag :type="ccline?.statusLineConfigured ? 'success' : 'warning'" size="small">
-                {{ ccline?.statusLineConfigured ? "已設定" : "未設定" }}
+              <el-tag :type="claudeHud?.statusLineConfigured ? 'success' : 'warning'" size="small">
+                {{ claudeHud?.statusLineConfigured ? "已設定" : "未設定" }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="指令">
-              <code style="font-size:12px">{{ ccline?.command ?? "—" }}</code>
-            </el-descriptions-item>
-            <el-descriptions-item label="Themes">
-              <el-tag v-for="t in ccline?.themes ?? []" :key="t" size="small" style="margin:2px">{{ t }}</el-tag>
-              <span v-if="!ccline?.themes?.length" style="color:var(--el-text-color-placeholder)">無</span>
+              <code style="font-size:12px">{{ claudeHud?.command ?? "—" }}</code>
             </el-descriptions-item>
           </el-descriptions>
         </el-card>

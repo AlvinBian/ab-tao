@@ -68,7 +68,7 @@ const SOURCES_CONFIG = {
 	openskills: {
 		url: "https://github.com/numman-ali/openskills.git",
 		icon: "🌍",
-		description: "openskills — 社群 skills 集合",
+		description: "openskills 社群 skills 集合",
 		validatePaths: ["skills"],
 		optional: true,
 	},
@@ -281,7 +281,7 @@ function listSources() {
 			: "✗ 尚未同步";
 		const rec = config.recommended ? " 🎯 推薦起點" : "";
 		console.log(
-			`  ${i + 1}. ${config.icon} ${name}${locked}${rec} — ${config.description}`,
+			`  ${i + 1}. ${config.icon} ${name}${locked}${rec} ${config.description}`,
 		);
 		const stats = countResources(name);
 		if (stats) {
@@ -319,7 +319,7 @@ async function interactiveSelect() {
 		const tag = ver?.sha ? `✔ ${ver.date}` : "✗";
 		const rec = config.recommended ? " 🎯" : "";
 		console.log(
-			`  ${i + 1}. ${config.icon} ${name}${rec} — ${config.description} [${tag}]`,
+			`  ${i + 1}. ${config.icon} ${name}${rec} ${config.description} [${tag}]`,
 		);
 	}
 

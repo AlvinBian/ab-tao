@@ -10,8 +10,8 @@ import type { ECOption } from "./types";
 const props = defineProps<{
 	zshInstalled: ReadonlyArray<string>;
 	zshAvailable: ReadonlyArray<string>;
-	cclineInstalled: boolean;
-	cclineStatusLineConfigured: boolean;
+	claudeHudWrapperDeployed: boolean;
+	claudeHudStatusLineConfigured: boolean;
 	envMissingCount: number;
 	envEmptyCount: number;
 	loading?: boolean;
@@ -36,9 +36,10 @@ const zshScore = computed(() => {
 	);
 });
 
-const cclineScore = computed(() => {
-	if (props.cclineInstalled && props.cclineStatusLineConfigured) return 100;
-	if (props.cclineInstalled) return 50;
+const claudeHudScore = computed(() => {
+	if (props.claudeHudWrapperDeployed && props.claudeHudStatusLineConfigured)
+		return 100;
+	if (props.claudeHudWrapperDeployed) return 60;
 	return 0;
 });
 
@@ -95,7 +96,7 @@ function makeGauge(
 const option = computed<ECOption>(() => ({
 	series: [
 		makeGauge(["17%", "55%"], "ZSH 覆蓋率", zshScore.value),
-		makeGauge(["50%", "55%"], "CCLine 健康", cclineScore.value),
+		makeGauge(["50%", "55%"], "claude-hud 健康", claudeHudScore.value),
 		makeGauge(["83%", "55%"], "環境變數", envScore.value),
 	],
 }));

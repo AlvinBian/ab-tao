@@ -111,9 +111,8 @@ export async function multiselectWithAll({
 	// 截斷長 label 防止 terminal wrap 造成渲染錯亂
 	const safeOptions = options.map((o) => {
 		const labelStr = typeof o.label === "string" ? o.label : String(o.label);
-		const hintStr = o.hint || "";
-		if (labelStr.length + hintStr.length > 60) {
-			return { ...o, label: labelStr.slice(0, 30), hint: hintStr.slice(0, 28) };
+		if (labelStr.length > 70) {
+			return { ...o, label: `${labelStr.slice(0, 68)}…` };
 		}
 		return o;
 	});
@@ -213,8 +212,7 @@ export async function smartSelect({
 	if (preCount > 0) {
 		options.push({
 			value: "accept",
-			label: `確認預選 (${preCount})`,
-			hint: "推薦",
+			label: `確認預選 (${preCount})（推薦）`,
 		});
 	}
 	options.push({
@@ -246,7 +244,7 @@ export async function smartSelect({
 
 	// 調整模式 — 用 multiselectWithAll
 	const { sortedOptions, initialValues } = applyPreviousSelection(
-		items.map((i) => ({ value: i.value, label: i.label, hint: i.hint })),
+		items.map((i) => ({ value: i.value, label: i.label })),
 		effectivePreselected,
 	);
 	result = await multiselectWithAll({

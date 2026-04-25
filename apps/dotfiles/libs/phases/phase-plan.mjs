@@ -86,12 +86,11 @@ export async function phasePlan(plan) {
 		await p.select({
 			message: "安裝方式  ↑↓ 選擇 · Enter 確認 · ESC 上一步",
 			options: [
-				{ value: "full", label: "✅ 安裝全部", hint: "推薦" },
-				{ value: "detail", label: "📋 逐項確認", hint: "展開各類別的選擇" },
+				{ value: "full", label: "✅ 安裝全部（推薦）" },
+				{ value: "detail", label: "📋 逐項確認 展開各類別的選擇" },
 				{
 					value: "minimal",
-					label: "⚡ 精簡安裝",
-					hint: "只裝核心必需品（check + test + debugger）",
+					label: "⚡ 精簡安裝 只裝核心必需品（check + test + debugger）",
 				},
 				{ value: "back", label: "← 上一步" },
 			],
@@ -130,15 +129,15 @@ export async function phasePlan(plan) {
 				},
 				{
 					value: "sonnet",
-					label: "sonnet — 均衡（一般開發的預設選擇）",
+					label: "sonnet 均衡（一般開發的預設選擇）",
 				},
 				{
 					value: "haiku",
-					label: "haiku — 速度優先（成本最低，適合簡單任務）",
+					label: "haiku 速度優先（成本最低，適合簡單任務）",
 				},
 				{
 					value: "opus",
-					label: "opus — 最高品質（複雜架構設計、全程 Opus）",
+					label: "opus 最高品質（複雜架構設計、全程 Opus）",
 				},
 				{
 					value: null,
@@ -178,7 +177,7 @@ export async function phasePlan(plan) {
 						"🔌 Anthropic 官方 Plugins  Space 選擇 · Enter 確認（直接 Enter 跳過）",
 					options: missing.map((pl) => ({
 						value: pl.name,
-						label: `${pl.name} — ${pl.desc}`,
+						label: `${pl.name} ${pl.desc}`,
 					})),
 					required: false,
 					initialValues: missing.map((pl) => pl.name),
@@ -216,8 +215,7 @@ async function detailConfirm(originalPlan) {
 	// 1. Repo 角色調整
 	const roleItems = plan.repos.map((r) => ({
 		value: r.fullName,
-		label: `${r.role === "main" ? "⭐" : "🔄"} ${r.fullName.split("/")[1]}`,
-		hint: r.role === "main" ? "主力（完整配置）" : "臨時（精簡配置）",
+		label: `${r.role === "main" ? "⭐" : "🔄"} ${r.fullName.split("/")[1]} ${r.role === "main" ? "主力（完整配置）" : "臨時（精簡配置）"}`,
 	}));
 	const mainRepos = await smartSelect({
 		title: "⭐ 主力 repos（完整配置）",
@@ -252,7 +250,6 @@ async function detailConfirm(originalPlan) {
 		const items = sel.pool.map((name) => ({
 			value: name,
 			label: name,
-			hint: "",
 		}));
 		const selected = await smartSelect({
 			title: sel.title,
@@ -270,7 +267,6 @@ async function detailConfirm(originalPlan) {
 		const aiResItems = plan.aiRes.map((name) => ({
 			value: name,
 			label: name,
-			hint: "",
 		}));
 		const selectedAiRes = await smartSelect({
 			title: "🌐 AI 資源",
@@ -313,8 +309,7 @@ async function detailConfirm(originalPlan) {
 					const key = `${t.key}:${name}`;
 					allItems.push({
 						value: key,
-						label: `${name}`,
-						hint: t.label,
+						label: `[${t.label}] ${name}`,
 					});
 					allPreselected.push(key);
 				}
@@ -347,7 +342,6 @@ async function detailConfirm(originalPlan) {
 		const zshItems = plan.zshModules.map((name) => ({
 			value: name,
 			label: name,
-			hint: "",
 		}));
 		const selectedZsh = await smartSelect({
 			title: "🐚 ZSH 模組",

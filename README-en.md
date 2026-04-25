@@ -226,19 +226,21 @@ After setup completes, the following tools will be recommended:
 | ---------------- | ------------------------------- | -------------------------------------------------------------- |
 | **RTK**          | `brew install rtk`              | Bash output compression -89%, auto-activates after install     |
 | **Official Plugins** | Run `/plugin` in Claude Code | code-review · commit-commands · feature-dev · simplify     |
-| **CCometixLine** | Auto-installed (during setup)   | Claude Code statusline — Git status, Context usage, cost       |
+| **claude-hud** | Auto-deploy wrapper + inject plugin (during setup) | Claude Code statusline — Git status, Context usage, cost |
 
-### CCometixLine Statusline
+### claude-hud Statusline
 
-[CCometixLine](https://github.com/Haleclipse/CCometixLine) is a high-performance Claude Code statusline tool written in Rust, automatically installed when selecting "🤖 Claude Code configuration" during `pnpm run d:setup`.
+[claude-hud](https://github.com/jarrodwatts/claude-hud) is a Claude Code statusline tool using the official plugin mechanism. When selecting "🤖 Claude Code configuration" during `pnpm run d:setup`, the following is automatically deployed:
+
+1. Deploy `hud-wrapper.sh` → `~/.claude/plugins/claude-hud/hud-wrapper.sh`
+2. Inject `extraKnownMarketplaces` + `enabledPlugins` into `~/.claude/settings.json`
+3. **Restart Claude Code** after first deploy — plugin is auto-fetched from GitHub
 
 Features:
 - Git branch status (branch, dirty, ahead/behind)
 - Claude model display
 - Context window usage percentage
 - Cost and session duration tracking
-- Interactive TUI configuration (`ccline --config`)
-- Multiple themes (cometix, minimal, gruvbox, nord)
 
 After installation, `~/.claude/settings.json` is automatically updated:
 
@@ -246,12 +248,12 @@ After installation, `~/.claude/settings.json` is automatically updated:
 {
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/ccline/my-ccline.sh"
+    "command": "~/.claude/plugins/claude-hud/hud-wrapper.sh"
   }
 }
 ```
 
-`my-ccline.sh` is a wrapper script that uses `ccline` as the core output and appends Node.js / pnpm / Python / Go version segments.
+`hud-wrapper.sh` is a wrapper script that uses the plugin HUD as core output and appends Node.js / pnpm / Python version segments.
 
 ## GitFlow
 

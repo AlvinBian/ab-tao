@@ -174,11 +174,11 @@ export function formatGlobalConfig(globalConfig) {
 		`   Permission（${g.permissions?.allow?.length || 0} allow · ${g.permissions?.deny?.length || 0} deny）`,
 	);
 	lines.push(`   Model: ${g.settings.model} · AutoMemory`);
-	const cclineStatus =
-		g.cclineInstalled === true
-			? pc.green("已安裝（部署 my-ccline.sh）")
-			: pc.yellow("未安裝（將自動安裝 @cometix/ccline + 部署 my-ccline.sh）");
-	lines.push(`   StatusLine: CCometixLine ${cclineStatus}`);
+	const hudStatus =
+		g.claudeHudPluginInstalled === true
+			? pc.green("plugin 已安裝 · 部署 hud-wrapper.sh")
+			: pc.yellow("部署 hud-wrapper.sh · plugin 待 Claude Code 重啟自動安裝");
+	lines.push(`   StatusLine: claude-hud ${hudStatus}`);
 
 	return lines;
 }

@@ -558,7 +558,7 @@ export function scanSkills(skillsDir) {
  *   2. cached（快取）— ~/.claude/.cache/last-report-data.json：由 d:setup 完成後寫入，
  *      包含 repos（完整物件含 role/localPath）與 techStacks（技術棧分類或扁平陣列）
  *   3. extended（擴充）— collect-unified.mjs collectExtendedData()：
- *      hooks 詳情、state.json 摘要、drift 檢測、memory 層掃描、ccline 狀態、MCP 配置
+ *      hooks 詳情、state.json 摘要、drift 檢測、memory 層掃描、claude-hud 狀態、MCP 配置
  *
  * @returns {Promise<object>} 完整報告資料物件，供 unified-renderer.mjs generateUnifiedReport() 使用
  */
@@ -606,7 +606,7 @@ export async function collectUnifiedReportData() {
 		cachedTimestamp: cached.timestamp || null,
 		// skills 永遠使用即時掃描結果（覆蓋 live 中的同名欄位）
 		skills: live.skills,
-		// 擴充資料（Wave 3 C2）：hooks/state/drift/memory/ccline/mcp
+		// 擴充資料（Wave 3 C2）：hooks/state/drift/memory/claude-hud/mcp
 		extended,
 	};
 }

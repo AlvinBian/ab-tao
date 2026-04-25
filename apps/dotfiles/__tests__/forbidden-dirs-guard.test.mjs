@@ -27,7 +27,7 @@ function createMockTemplate() {
 	writeFileSync(join(templateRoot, "CLAUDE.md"), "# test");
 
 	// forbidden 目錄（應被 forbiddenSkip）
-	for (const dir of ["projects", "ccline", "sessions", "memory"]) {
+	for (const dir of ["projects", "sessions", "memory"]) {
 		mkdirSync(join(templateRoot, dir), { recursive: true });
 		writeFileSync(
 			join(templateRoot, dir, "some-file.txt"),
@@ -67,15 +67,11 @@ test("buildSyncPlan：FORBIDDEN_DIRS 內的項目回傳 forbiddenSkip", async ()
 		const hasForbiddenProjects = forbiddenRelPaths.some((p) =>
 			p.startsWith("projects"),
 		);
-		const hasForbiddenCcline = forbiddenRelPaths.some((p) =>
-			p.startsWith("ccline"),
-		);
 		const hasForbiddenSessions = forbiddenRelPaths.some((p) =>
 			p.startsWith("sessions"),
 		);
 
 		assert.ok(hasForbiddenProjects, "projects/ 下的檔案應為 forbiddenSkip");
-		assert.ok(hasForbiddenCcline, "ccline/ 下的檔案應為 forbiddenSkip");
 		assert.ok(hasForbiddenSessions, "sessions/ 下的檔案應為 forbiddenSkip");
 	} finally {
 		rmSync(templateRoot, { recursive: true, force: true });

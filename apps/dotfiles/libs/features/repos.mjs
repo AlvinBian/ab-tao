@@ -173,21 +173,18 @@ export default {
 				await p.select({
 					message: "角色分配",
 					options: [
-						{ value: "confirm", label: "✅ 確認", hint: "繼續安裝" },
+						{ value: "confirm", label: "✅ 確認 繼續安裝" },
 						{
 							value: "main",
-							label: "⭐ 調整主力",
-							hint: "完整 CLAUDE.md + AI 生成",
+							label: "⭐ 調整主力 完整 CLAUDE.md + AI 生成",
 						},
 						{
 							value: "temp",
-							label: "🔄 調整臨時",
-							hint: "精簡 CLAUDE.md",
+							label: "🔄 調整臨時 精簡 CLAUDE.md",
 						},
 						{
 							value: "tool",
-							label: "🔧 調整工具",
-							hint: "最小配置",
+							label: "🔧 調整工具 最小配置",
 						},
 						{ value: "back", label: "← 上一步" },
 					],
@@ -207,8 +204,10 @@ export default {
 			const targetRole = action;
 			const items = repos.map((r) => ({
 				value: r.fullName,
-				label: r.fullName.split("/")[1],
-				hint: r.commits > 0 ? `${r.commits} commits` : "",
+				label:
+					r.commits > 0
+						? `${r.fullName.split("/")[1]} — ${r.commits} commits`
+						: r.fullName.split("/")[1],
 			}));
 			const currentInRole = repos
 				.filter((r) => roles[r.fullName] === targetRole)

@@ -42,8 +42,14 @@ export const P = {
 	metrics: path.join(CLAUDE, ".ab-tao", "metrics.jsonl"),
 	sessionState: path.join(CLAUDE, ".ab-tao", "session-state.json"),
 	worklogDrafts: path.join(CLAUDE, ".ab-tao", "worklog-drafts.jsonl"),
-	cclineDir: path.join(CLAUDE, "ccline"),
-	ccline: path.join(CLAUDE, "ccline", "my-ccline.sh"),
+	claudeHudPluginDir: path.join(CLAUDE, "plugins", "claude-hud"),
+	claudeHudWrapper: path.join(
+		CLAUDE,
+		"plugins",
+		"claude-hud",
+		"hud-wrapper.sh",
+	),
+	claudeHudConfig: path.join(CLAUDE, "plugins", "claude-hud", "config.json"),
 	agentsMd: path.join(CLAUDE, "AGENTS.md"),
 };
 
