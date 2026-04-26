@@ -1,0 +1,11 @@
+{
+	"version": "1.6.0",
+	"runtime": {
+		"activeProfile": "work",
+		"lastSwitchedAt": "2026-04-01T09:00:00Z",
+		"lastInstalledAt": "2026-04-01T09:15:00Z",
+		"voiceTrigger": false,
+		"costRouting": "dynamic"
+	},
+	"sync": { "included": ["anthropic", "ecc", "gstack"] }
+}

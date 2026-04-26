@@ -8,6 +8,7 @@ import {
 	MagicStick,
 	Monitor,
 	Setting,
+	TrendCharts,
 	VideoPlay,
 } from "@element-plus/icons-vue";
 import { computed, ref } from "vue";
@@ -29,6 +30,7 @@ const navItems = [
 	{ path: "/actions", label: "Actions", icon: VideoPlay },
 	{ path: "/about", label: "About", icon: InfoFilled },
 	{ path: "/ai-features", label: "AI Features", icon: MagicStick },
+	{ path: "/metrics", label: "Metrics", icon: TrendCharts },
 ] as const;
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template

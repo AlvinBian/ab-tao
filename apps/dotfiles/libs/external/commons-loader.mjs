@@ -19,6 +19,53 @@ const EXCLUDED_FILENAMES = [
 ];
 
 /**
+ * 各來源的安裝模式元資料
+ * 鏡像自 packages/commons/scripts/sync-sources.mjs 的 SOURCES_CONFIG.installMode 欄位。
+ * sync-sources.mjs 包含 CLI 入口點（module-level side effects），無法安全直接 import，
+ * 故在此維護一份僅含 installMode 相關欄位的精簡副本。
+ *
+ * plugin 模式：資源透過 Claude Code 官方 plugin marketplace 安裝
+ * copy 模式：資源直接複製至 ~/.claude/ 目錄
+ */
+const SOURCE_INSTALL_MODES = {
+	ecc: {
+		installMode: "plugin",
+		pluginId: "everything-claude-code",
+		pluginMarketplace: "https://github.com/affaan-m/everything-claude-code",
+	},
+	anthropic: {
+		installMode: "plugin",
+		pluginId: "anthropic-skills",
+		pluginMarketplace: "https://github.com/anthropics/skills",
+	},
+	superpowers: {
+		installMode: "plugin",
+		pluginId: "superpowers",
+		pluginMarketplace: "https://github.com/obra/superpowers",
+	},
+	bmad: {
+		installMode: "plugin",
+		pluginId: "bmad-method",
+		pluginMarketplace: "https://github.com/bmad-code-org/BMAD-METHOD",
+	},
+	"context-engineering": { installMode: "copy" },
+	"skills-mp": { installMode: "copy" },
+	openskills: { installMode: "copy" },
+	gstack: { installMode: "copy" },
+	"spec-kit": { installMode: "copy" },
+	"ai-sdlc": { installMode: "copy" },
+};
+
+/**
+ * 讀取來源的安裝模式資訊
+ * @param {string} sourceName - 來源名稱（如 'ecc', 'anthropic'）
+ * @returns {{ installMode: "plugin" | "copy", pluginId?: string, pluginMarketplace?: string }}
+ */
+export function getSourceInstallMode(sourceName) {
+	return SOURCE_INSTALL_MODES[sourceName] ?? { installMode: "copy" };
+}
+
+/**
  * 讀取 source 目錄內的 _ab-tao-paths.json manifest
  * @param {string} sourceDir - 來源目錄絕對路徑
  * @returns {{ resourcePaths?: Record<string, string | string[]> }}
@@ -52,7 +99,7 @@ function loadMdFiles(dir) {
  * 從單一 source 目錄載入所有資源
  * 優先讀取 _ab-tao-paths.json manifest 中的自訂路徑（resourcePaths）
  * @param {string} sourceName - 來源名稱（如 'ecc', 'anthropic'）
- * @returns {{ name: string, commands: array, agents: array, rules: array, skills: array } | null}
+ * @returns {{ name: string, commands: array, agents: array, rules: array, skills: array, pluginMode?: boolean, pluginId?: string } | null}
  */
 function loadSource(sourceName) {
 	const sourceDir = path.join(RESOURCES_DIR, sourceName);
@@ -79,6 +126,15 @@ function loadSource(sourceName) {
 		rules: loadMdFiles(path.join(sourceDir, customPaths.rules ?? "rules")),
 		skills: [],
 	};
+
+	// 注入 plugin 模式標記（供呼叫端識別 plugin-mode 來源）
+	const installInfo = getSourceInstallMode(sourceName);
+	if (installInfo.installMode === "plugin") {
+		result.pluginMode = true;
+		if (installInfo.pluginId) {
+			result.pluginId = installInfo.pluginId;
+		}
+	}
 
 	// 掃描 skills 目錄（SKILL.md 格式）
 	const skillsDir = path.join(sourceDir, customPaths.skills ?? "skills");

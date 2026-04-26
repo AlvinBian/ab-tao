@@ -1,0 +1,3 @@
+{"ts":"2026-04-20T10:00:00Z","event":"skill_invocation","skill":"runbook","duration_ms":1200}
+{"ts":"2026-04-21T11:30:00Z","event":"command_invocation","command":"/verify","duration_ms":850}
+{"ts":"2026-04-22T09:00:00Z","event":"chain_invocation","chain":"chain-product","steps_completed":3}
