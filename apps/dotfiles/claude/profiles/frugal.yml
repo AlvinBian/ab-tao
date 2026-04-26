@@ -1,0 +1,27 @@
+name: frugal
+description: Solo / Frugal（省錢優先，個人專案）
+
+# 插件覆蓋：只保留最核心的 plugin
+plugins_enabled: []
+plugins_disabled:
+  - code-review
+  - security-guidance
+  - ralph-loop
+  - session-report
+
+# MCP 伺服器覆蓋（空 = 使用 settings.json 預設）
+mcp_overrides: {}
+
+# 記憶範圍
+memory_scope:
+  - ~/.claude/memory/preferences/
+
+# 備註
+notes: |
+  省錢模式：適合個人專案、月 budget 有限情境。
+  建議搭配設定：
+    model: sonnet（純 Sonnet）
+    effortLevel: low
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 65（激進壓縮）
+    CLAUDE_CODE_SUBAGENT_MODEL: haiku（subagent 用 Haiku）
+  代價：複雜任務頻繁失敗，需更多重試；只用 find-skills 一個 skill。

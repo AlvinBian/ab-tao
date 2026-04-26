@@ -1,0 +1,26 @@
+name: production
+description: Production / Critical（準確度優先，上線前 PR）
+
+# 插件覆蓋：啟用所有安全審查 plugin
+plugins_enabled:
+  - code-review
+  - security-guidance
+plugins_disabled: []
+
+# MCP 伺服器覆蓋（空 = 使用 settings.json 預設）
+mcp_overrides: {}
+
+# 記憶範圍
+memory_scope:
+  - ~/.claude/memory/preferences/
+  - ~/.claude/memory/patterns/
+
+# 備註
+notes: |
+  準確度優先模式：適合要上 production 的 PR、重要架構決策、合規需求。
+  建議搭配設定：
+    model: opusplan
+    effortLevel: xhigh（維持最高）
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 85（更晚壓縮，保完整 context）
+  建議流程：/specify → /verify → /check --gates 三步驟強制。
+  代價：日常開發太重，只在關鍵 PR 切換；完成後切回 day-to-day。

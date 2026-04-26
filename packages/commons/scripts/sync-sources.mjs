@@ -72,6 +72,35 @@ const SOURCES_CONFIG = {
 		validatePaths: ["skills"],
 		optional: true,
 	},
+	gstack: {
+		url: "https://github.com/garrytan/gstack.git",
+		icon: "🎯",
+		description: "Garry Tan 23 角色化 slash commands（YC，83.6K stars）",
+		validatePaths: ["skills", "commands"],
+		optional: true,
+	},
+	"spec-kit": {
+		url: "https://github.com/github/spec-kit.git",
+		icon: "📐",
+		description:
+			"GitHub 官方 Spec-Driven Development（跨 30+ AI coding agents）",
+		validatePaths: ["templates", "scripts"],
+		optional: true,
+	},
+	"ai-sdlc": {
+		url: "https://github.com/vakaobr/claude-code-ai-development-workflow.git",
+		icon: "🔄",
+		description: "11 phase 全 SDLC（Deploy / Observe / Retro 補齊）",
+		validatePaths: [".claude/agents", ".claude/commands", ".claude/skills"],
+		optional: true,
+	},
+	bmad: {
+		url: "https://github.com/bmad-code-org/BMAD-METHOD.git",
+		icon: "🏛️",
+		description: "BMAD Quality Gate 機制參考（core 10 agents，不裝整套）",
+		validatePaths: ["agents"],
+		optional: true,
+	},
 };
 
 // ── 工具函式 ─────────────────────────────────────────────────────

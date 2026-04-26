@@ -16,7 +16,15 @@ import { P } from "../core/paths.mjs";
 const PROFILES_DIR = path.join(P.abTaoDir, "profiles");
 const ACTIVE_FILE = path.join(PROFILES_DIR, "active.json");
 
-export const BUILTIN_PROFILES = ["personal", "work", "oss"];
+export const BUILTIN_PROFILES = [
+	"personal",
+	"work",
+	"oss",
+	"day-to-day",
+	"spike",
+	"production",
+	"frugal",
+];
 
 /** 確保 profiles 目錄存在 */
 function ensureProfilesDir() {

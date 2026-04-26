@@ -1,0 +1,25 @@
+name: spike
+description: Prototype / Spike（速度優先，非 production）
+
+# 插件覆蓋：關閉較重的 plugin，只保留核心
+plugins_enabled: []
+plugins_disabled:
+  - code-review
+  - security-guidance
+  - ralph-loop
+
+# MCP 伺服器覆蓋（空 = 使用 settings.json 預設）
+mcp_overrides: {}
+
+# 記憶範圍
+memory_scope:
+  - ~/.claude/memory/preferences/
+
+# 備註
+notes: |
+  速度優先模式：適合 30 分鐘內出能跑的 PoC，不上 production。
+  建議搭配設定：
+    model: sonnet（純 Sonnet，不用 opusplan）
+    effortLevel: medium
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 70（提早壓縮保持 context fresh）
+  代價：複雜邏輯易出錯，需更多手動 review。
