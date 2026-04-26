@@ -37,6 +37,7 @@
 		"c:plugin": "node apps/dotfiles/bin/plugin-audit.mjs --audit",
 		"c:metrics": "node apps/dotfiles/bin/metrics-report.mjs",
 		"c:memory": "node apps/dotfiles/bin/memory-lint.mjs --lint",
+		"c:memory:federated": "node apps/dotfiles/bin/memory-federated.mjs",
 		"c:failure-patterns": "node apps/dotfiles/bin/failure-patterns.mjs",
 		"docs:audit": "node apps/dotfiles/scripts/docs-audit.mjs",
 		"quickstart:smoke-test": "echo 'quickstart smoke test — not yet implemented'",
