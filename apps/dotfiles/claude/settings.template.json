@@ -56,5 +56,14 @@
 			"Bash(rm -rf /)",
 			"Bash(rm -rf ~)"
 		]
+	},
+	"_abTao": {
+		"version": "1.6.0",
+		"voiceTrigger": false,
+		"costRouting": "dynamic",
+		"tddStrictMode": false,
+		"contextBudgetThreshold": 80,
+		"skillCreatorEnabled": false,
+		"memoryLintEnabled": true
 	}
 }
