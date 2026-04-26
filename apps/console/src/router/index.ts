@@ -84,6 +84,12 @@ const sectionRoutes = [
 		meta: { title: "About" },
 		component: () => import("@/views/sections/AboutSection.vue"),
 	},
+	{
+		path: "ai-features",
+		name: "ai-features",
+		meta: { title: "AI Features" },
+		component: () => import("@/views/sections/AiSection.vue"),
+	},
 ];
 
 const router = createRouter({

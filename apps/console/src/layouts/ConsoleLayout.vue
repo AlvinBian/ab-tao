@@ -5,6 +5,7 @@ import {
 	Files,
 	Fold,
 	InfoFilled,
+	MagicStick,
 	Monitor,
 	Setting,
 	VideoPlay,
@@ -27,6 +28,7 @@ const navItems = [
 	{ path: "/configuration", label: "Configuration", icon: Setting },
 	{ path: "/actions", label: "Actions", icon: VideoPlay },
 	{ path: "/about", label: "About", icon: InfoFilled },
+	{ path: "/ai-features", label: "AI Features", icon: MagicStick },
 ] as const;
 
 // biome-ignore lint/correctness/noUnusedVariables: used in template
