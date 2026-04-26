@@ -1,0 +1,17 @@
+{
+	"event": "UserPromptSubmit",
+	"hooks": [
+		{
+			"id": "ab-tao:pre:user-prompt:voice-poc",
+			"description": "M1.4 spike: 驗證 UserPromptSubmit hook stdout rewrite 行為（預設 disabled）",
+			"enabled": false,
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/user-prompt-submit-voice-poc.sh",
+					"timeout": 5
+				}
+			]
+		}
+	]
+}

@@ -11,9 +11,19 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
-import { HOME } from "../core/paths.mjs";
+import { HOME, P } from "../core/paths.mjs";
 
 const CLAUDE_DIR = path.join(HOME, ".claude");
+
+/**
+ * 確保 P.abTao 命名空間下的所有子目錄存在。
+ * 每次 install 時呼叫，保持冪等。
+ */
+function initAbTaoDirs() {
+	for (const dir of Object.values(P.abTao)) {
+		fs.mkdirSync(dir, { recursive: true });
+	}
+}
 
 export default {
 	id: "claude-base",
@@ -370,6 +380,9 @@ export default {
 		} catch {
 			// profiles.mjs 不存在或 initDefaultProfiles 失敗不應中斷主流程
 		}
+
+		// 初始化 .ab-tao/ 子目錄（P.abTao.xxx 命名空間對應的實體目錄）
+		initAbTaoDirs();
 
 		return result;
 	},
