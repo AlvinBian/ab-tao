@@ -120,9 +120,19 @@ function loadFromCache(cacheDir) {
 
 	// 讀取路徑映射 manifest（由 sync-sources.mjs 的 syncSource 寫入）
 	const pathsFile = path.join(cacheDir, "_ab-tao-paths.json");
-	const customPaths = fs.existsSync(pathsFile)
-		? (JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {})
-		: {};
+	let customPaths = {};
+	if (fs.existsSync(pathsFile)) {
+		try {
+			customPaths =
+				JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {};
+		} catch (err) {
+			console.warn(
+				"source-sync: malformed manifest at",
+				pathsFile,
+				err.message,
+			);
+		}
+	}
 
 	for (const sub of ["commands", "agents", "rules"]) {
 		const dir = path.join(cacheDir, customPaths[sub] ?? sub);

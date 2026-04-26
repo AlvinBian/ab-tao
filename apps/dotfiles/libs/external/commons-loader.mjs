@@ -10,15 +10,38 @@ import path from "node:path";
 import { TECH_TO_LANG } from "@ab-tao/commons/detect";
 import { RESOURCES_DIR } from "@ab-tao/commons/paths";
 
+// 計算 commands 資源時排除的非資源檔名
+const EXCLUDED_FILENAMES = [
+	"SKILL.md",
+	"README.md",
+	"CHANGELOG.md",
+	"LICENSE.md",
+];
+
 /**
- * 從目錄中載入所有 .md 檔案
+ * 讀取 source 目錄內的 _ab-tao-paths.json manifest
+ * @param {string} sourceDir - 來源目錄絕對路徑
+ * @returns {{ resourcePaths?: Record<string, string | string[]> }}
+ */
+function readResourcePaths(sourceDir) {
+	try {
+		const manifestPath = path.join(sourceDir, "_ab-tao-paths.json");
+		const raw = fs.readFileSync(manifestPath, "utf8");
+		return JSON.parse(raw);
+	} catch {
+		return { resourcePaths: {} };
+	}
+}
+
+/**
+ * 從目錄中載入所有 .md 檔案（排除 EXCLUDED_FILENAMES）
  * @returns {{ name: string, content: string }[]}
  */
 function loadMdFiles(dir) {
 	if (!fs.existsSync(dir)) return [];
 	return fs
 		.readdirSync(dir)
-		.filter((f) => f.endsWith(".md"))
+		.filter((f) => f.endsWith(".md") && !EXCLUDED_FILENAMES.includes(f))
 		.map((f) => ({
 			name: f,
 			content: fs.readFileSync(path.join(dir, f), "utf8"),
@@ -27,6 +50,7 @@ function loadMdFiles(dir) {
 
 /**
  * 從單一 source 目錄載入所有資源
+ * 優先讀取 _ab-tao-paths.json manifest 中的自訂路徑（resourcePaths）
  * @param {string} sourceName - 來源名稱（如 'ecc', 'anthropic'）
  * @returns {{ name: string, commands: array, agents: array, rules: array, skills: array } | null}
  */
@@ -34,16 +58,30 @@ function loadSource(sourceName) {
 	const sourceDir = path.join(RESOURCES_DIR, sourceName);
 	if (!fs.existsSync(sourceDir)) return null;
 
+	const manifest = readResourcePaths(sourceDir);
+	const customPaths = manifest.resourcePaths ?? {};
+
+	// commands 支援陣列形式（多子目錄合併）
+	let commands = [];
+	const commandsPath = customPaths.commands ?? "commands";
+	if (Array.isArray(commandsPath)) {
+		for (const sub of commandsPath) {
+			commands = commands.concat(loadMdFiles(path.join(sourceDir, sub)));
+		}
+	} else {
+		commands = loadMdFiles(path.join(sourceDir, commandsPath));
+	}
+
 	const result = {
 		name: sourceName,
-		commands: loadMdFiles(path.join(sourceDir, "commands")),
-		agents: loadMdFiles(path.join(sourceDir, "agents")),
-		rules: loadMdFiles(path.join(sourceDir, "rules")),
+		commands,
+		agents: loadMdFiles(path.join(sourceDir, customPaths.agents ?? "agents")),
+		rules: loadMdFiles(path.join(sourceDir, customPaths.rules ?? "rules")),
 		skills: [],
 	};
 
 	// 掃描 skills 目錄（SKILL.md 格式）
-	const skillsDir = path.join(sourceDir, "skills");
+	const skillsDir = path.join(sourceDir, customPaths.skills ?? "skills");
 	if (fs.existsSync(skillsDir)) {
 		for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (!entry.isDirectory()) continue;
