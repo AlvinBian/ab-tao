@@ -9,13 +9,14 @@ const RULES_DIR = resolve(
 );
 const EXPECTED = [
 	"api-and-data",
+	"git-and-pr",
 	"migrations",
 	"testing",
 	"typescript",
 	"vue-nuxt",
 ].sort();
 
-test("rules/ 只含預期的 5 個規則檔", () => {
+test("rules/ 只含預期的 6 個規則檔", () => {
 	const actual = readdirSync(RULES_DIR)
 		.filter((f) => f.endsWith(".md"))
 		.map((f) => f.replace(".md", ""))

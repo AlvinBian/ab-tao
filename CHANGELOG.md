@@ -51,6 +51,29 @@
   - `enterprise-team.md` — 多人 / 合規場景
   - `ai-sources-setup.md` — AI sources 設定完整流程
 
+### 🔗 M3.5 Chain Commands & Federated Memory
+
+- feat: `/chain-product` — 3 步產品流程（specify → reviewer agent → verify），metrics 追蹤
+- feat: `/chain-tdd` — 4 步 TDD 流程（specify → architect agent → check --tdd-strict → verify）
+- feat: federated memory CLI 三件套（`c:memory --list-federated` / `--register-federated` / `--federate`）
+- feat: 8 個 recipe 文件（5 段式，含 PR review / TDD flow / profile switch / federated memory 等）
+- feat: Console AiSection 新增 Chains tab（流程圖展示）+ AI Sources tab（精選清單）
+
+### 🌿 M3.6 Greenfield 收編
+
+- feat: `/ai` dispatcher — 39 條 rule-based intent 映射，未命中寫入 `unmatched-intents.jsonl`（v1.7+ trigger）
+- feat: `session-end-failure-collect.sh` — 偵測糾正信號（不對/重來/應該是...），append-only `failure-patterns.md`
+- feat: `15-self-correction.md` 末行加入 `@.ab-tao/corrections/failure-patterns.md`（永不再改，ADR-002）
+- feat: Console MetricsSection — 3 tabs（即時指標 SSE / 升級觸發條件 / Failure Patterns SSE）
+- feat: 3 個 SSE route（`/api/sse/metrics` / `/api/sse/failure-patterns` / `/api/sse/install-progress`）
+- feat: voice-trigger hook（`user-prompt-submit-voice.sh`）— 中文意圖前置轉換，`voiceTrigger: false` 可關
+- feat: cost-aware routing hook（`pre-tool-cost-router.sh`）— 啟發式 haiku/sonnet/opus 路由，`costRouting: static` 可關
+- feat: gstack guard — `pre-tool-bash.sh` 新增 8 條高風險 pattern（npm/yarn/pnpm publish、force-with-lease 等）
+- feat: plugin install-fallback helper（`install-fallback.mjs`）— plugin 失敗自動降級 copy + 狀態記錄
+- feat: `commons-loader.mjs` 加入 `getSourceInstallMode()` + `pluginMode` 欄位（installMode:plugin 感知）
+- feat: Console demo-data — 5 個 fake project（kkday-email / vue-spa / nuxt-prod / monorepo / solo-spike）
+- docs: `metrics-fields.md` — 9 個 metrics 事件類型 + v1.7+ 升級觸發閾值完整說明
+
 ### Breaking Changes
 
 - 本版本為 greenfield 首次正式發布，不維護 v1.5 相容性
