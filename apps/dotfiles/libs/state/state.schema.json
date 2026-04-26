@@ -9,20 +9,20 @@
 	"additionalProperties": false,
 	"properties": {
 		"runtime": {
-			"type": "object",
-			"description": "運行時狀態（profile 切換、session 狀態等）",
-			"additionalProperties": false,
-			"properties": {
-				"activeProfile": {
-					"type": "string",
-					"description": "當前啟用的 profile（day-to-day / spike / production / frugal / personal / work / oss）"
-				},
-				"lastSwitched": {
-					"type": "string",
-					"format": "date-time",
-					"description": "最後切換 profile 的時間"
-				}
-			}
+			"$ref": "./runtime.schema.json",
+			"description": "運行時狀態（profile 切換、session 狀態等）"
+		},
+		"federated": {
+			"$ref": "./federated.schema.json",
+			"description": "Federated Memory — 各專案 MEMORY.md 路徑映射"
+		},
+		"failurePatterns": {
+			"$ref": "./failure-patterns.schema.json",
+			"description": "Failure Patterns 統計（去重時間、總數、檔案大小）"
+		},
+		"intentCache": {
+			"$ref": "./intent-cache.schema.json",
+			"description": "Intent Cache 統計（命中率、版本、最後更新）"
 		},
 		"$schema": { "type": "string" },
 		"version": {
