@@ -10,6 +10,7 @@
  *   --diff    <name>      顯示本地 vs source 差異
  *   --remove  <name>      安全移除（archive，不直接刪除）
  *   --find    <keyword>   從 source 搜尋 skill
+ *   --synced              列出 / 安裝已同步 AI source 內的 skills（Wave 2.1）
  *   --from    <repo>      從 GitHub 安裝（Phase 10 後續）
  *   --global              寫入 ~/.claude/skills/（預設）
  *   --project             寫入 ./.claude/skills/（Phase 10 後續）
@@ -29,6 +30,9 @@ const SKILLS_SOURCE = path.resolve(
 	__dirname,
 	"../../../apps/dotfiles/claude/skills",
 );
+
+// 已同步 AI source 目錄（packages/commons/resources/ai/sources/）
+const SOURCES_DIR = path.resolve(__dirname, "../resources/ai/sources");
 
 // ~/.claude/ 路徑（從 dotfiles paths.mjs 取得，否則降級為計算值）
 let P;
@@ -446,6 +450,100 @@ function cmdFind(keyword) {
 	console.log();
 }
 
+/**
+ * 列出 / 安裝已同步 AI source 內的 skills（Wave 2.1）
+ * @param {{ all?: boolean, find?: string|null, source?: string|null }} opts
+ */
+async function cmdSynced(opts = {}) {
+	const { all = false, find: keyword = null, source: sourceName = null } = opts;
+
+	if (!fs.existsSync(SOURCES_DIR)) {
+		console.log("ℹ️  找不到 AI sources 目錄，請先執行 pnpm run c:ai-sync");
+		return;
+	}
+
+	// 收集所有（或指定）source 目錄
+	const sources = fs
+		.readdirSync(SOURCES_DIR, { withFileTypes: true })
+		.filter((e) => e.isDirectory() && !e.name.startsWith("."))
+		.map((e) => e.name)
+		.filter((name) => !sourceName || name === sourceName)
+		.sort();
+
+	if (sources.length === 0) {
+		console.log(
+			sourceName
+				? `ℹ️  找不到 source「${sourceName}」，請先執行 pnpm run c:ai-sync`
+				: "ℹ️  尚未同步任何 AI source，請先執行 pnpm run c:ai-sync",
+		);
+		return;
+	}
+
+	// 蒐集所有 source 的 skills
+	const allSkills = [];
+	for (const source of sources) {
+		const skillsDir = path.join(SOURCES_DIR, source, "skills");
+		for (const skill of scanSkillsDir(skillsDir)) {
+			allSkills.push({ ...skill, source });
+		}
+	}
+
+	if (allSkills.length === 0) {
+		console.log(
+			"ℹ️  同步來源中找不到任何 skill（確認各 source 含 skills/ 目錄）",
+		);
+		return;
+	}
+
+	// 關鍵字過濾
+	let filtered = allSkills;
+	if (keyword) {
+		const kw = keyword.toLowerCase();
+		filtered = allSkills.filter(
+			(s) =>
+				s.name.toLowerCase().includes(kw) ||
+				s.description.toLowerCase().includes(kw),
+		);
+		if (filtered.length === 0) {
+			console.log(`ℹ️  找不到包含「${keyword}」的 skill`);
+			return;
+		}
+	}
+
+	if (all) {
+		// 按 source 分組呼叫 installSkillsFrom
+		const bySource =
+			/** @type {Record<string, {name:string,dir:string}[]>} */ ({});
+		for (const skill of filtered) {
+			if (!bySource[skill.source]) bySource[skill.source] = [];
+			bySource[skill.source].push({ name: skill.name, dir: skill.dir });
+		}
+		for (const [source, skills] of Object.entries(bySource)) {
+			installSkillsFrom(skills, { source: `synced:${source}` });
+		}
+	} else {
+		// 純列表
+		console.log(`\n📦 同步來源 Skills（${filtered.length} 個）\n`);
+		console.log(
+			`  ${"來源".padEnd(20)}  ${"狀態".padEnd(6)}  ${"名稱".padEnd(32)}  說明`,
+		);
+		console.log(
+			`  ${"─".repeat(20)}  ${"─".repeat(6)}  ${"─".repeat(32)}  ${"─".repeat(40)}`,
+		);
+		for (const { source, name, description } of filtered) {
+			const installed = fs.existsSync(path.join(P.skills, name));
+			const status = installed ? "✅" : "⬜";
+			console.log(
+				`  ${source.padEnd(20)}  ${status.padEnd(6)}  ${name.padEnd(32)}  ${description.slice(0, 48)}`,
+			);
+		}
+		console.log(`\n  使用 --synced --all 安裝全部`);
+		if (!keyword) console.log(`  使用 --synced --find <keyword> 關鍵字過濾`);
+		if (!sourceName) console.log(`  使用 --synced --source <name> 指定來源`);
+		console.log();
+	}
+}
+
 // ── 主 dispatch ──────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
@@ -471,6 +569,16 @@ switch (flag) {
 	case "--find":
 		cmdFind(rest[0]);
 		break;
+	case "--synced": {
+		const findIdx = rest.indexOf("--find");
+		const sourceIdx = rest.indexOf("--source");
+		await cmdSynced({
+			all: rest.includes("--all"),
+			find: findIdx !== -1 ? (rest[findIdx + 1] ?? null) : null,
+			source: sourceIdx !== -1 ? (rest[sourceIdx + 1] ?? null) : null,
+		});
+		break;
+	}
 	case "--from": {
 		// --from <repo> [--find <keyword>]
 		const repo = rest[0];

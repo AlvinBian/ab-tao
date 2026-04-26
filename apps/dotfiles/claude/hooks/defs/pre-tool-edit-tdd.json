@@ -1,0 +1,17 @@
+{
+	"event": "PreToolUse",
+	"hooks": [
+		{
+			"id": "ab-tao:pre:edit:tdd",
+			"description": "TDD 強制：src 源碼修改前檢查對應測試檔案（預設 off）",
+			"matcher": "Edit|Write",
+			"hooks": [
+				{
+					"type": "command",
+					"command": "$HOME/.claude/hooks/pre-tool-edit-tdd.sh",
+					"timeout": 5
+				}
+			]
+		}
+	]
+}
