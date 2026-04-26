@@ -35,6 +35,11 @@ const SOURCES_CONFIG = {
 		recommended: true,
 		validatePaths: ["rules", "skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: ["silent-failure-hunter", "performance-optimizer"],
+			commands: ["/prp", "/implement", "/validate"],
+		},
 	},
 	anthropic: {
 		url: "https://github.com/anthropics/skills.git",
@@ -42,6 +47,10 @@ const SOURCES_CONFIG = {
 		description: "Anthropic 官方 Skills（claude-api、pdf、xlsx 等）",
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: ["webapp-testing", "pdf", "xlsx", "docx"],
+		},
 	},
 	superpowers: {
 		url: "https://github.com/obra/superpowers.git",
@@ -49,6 +58,15 @@ const SOURCES_CONFIG = {
 		description: "Agents / Commands / Hooks（brainstorm、execute-plan）",
 		validatePaths: ["agents", "commands", "skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: [
+				"using-git-worktrees",
+				"finishing-a-development-branch",
+				"receiving-code-review",
+			],
+			commands: ["brainstorm", "execute-plan"],
+		},
 	},
 	"context-engineering": {
 		url: "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git",
@@ -56,6 +74,14 @@ const SOURCES_CONFIG = {
 		description: "Context 最佳化 / Multi-Agent 模式 / 記憶系統",
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "copy",
+		curatedResources: {
+			skills: [
+				"context-compression",
+				"context-degradation",
+				"context-escalation",
+			],
+		},
 	},
 	"skills-mp": {
 		url: "https://github.com/SkillsMP/SkillsMP.git",
@@ -64,6 +90,10 @@ const SOURCES_CONFIG = {
 		recommended: true,
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "copy",
+		curatedResources: {
+			skills: ["advanced-debugging", "code-review", "performance-analysis"],
+		},
 	},
 	openskills: {
 		url: "https://github.com/numman-ali/openskills.git",
@@ -71,6 +101,10 @@ const SOURCES_CONFIG = {
 		description: "openskills 社群 skills 集合",
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "copy",
+		curatedResources: {
+			skills: ["problem-solving", "research-synthesis", "systematic-debugging"],
+		},
 	},
 	gstack: {
 		url: "https://github.com/garrytan/gstack.git",
@@ -80,6 +114,42 @@ const SOURCES_CONFIG = {
 		optional: true,
 		// gstack skills 直接在頂層，無 skills/ wrapper
 		resourcePaths: { skills: "." },
+		installMode: "copy",
+		curatedResources: {
+			skills: [
+				"builder",
+				"reviewer",
+				"researcher",
+				"writer",
+				"communicator",
+				"debugger",
+			],
+			commands: [
+				"specify",
+				"plan",
+				"build",
+				"test",
+				"review",
+				"ship",
+				"office-hours",
+				"architect",
+				"debug",
+				"refactor",
+				"document",
+				"analyze",
+				"optimize",
+				"security",
+				"deploy",
+				"observe",
+				"retro",
+				"brainstorm",
+				"estimate",
+				"delegate",
+				"clarify",
+				"validate",
+				"summarize",
+			],
+		},
 	},
 	"spec-kit": {
 		url: "https://github.com/github/spec-kit.git",
@@ -89,6 +159,22 @@ const SOURCES_CONFIG = {
 		validatePaths: ["templates/commands"],
 		optional: true,
 		resourcePaths: { commands: "templates/commands" },
+		installMode: "copy",
+		curatedResources: {
+			commands: [
+				"speckit.specify",
+				"speckit.plan",
+				"speckit.tasks",
+				"speckit.implement",
+				"speckit.validate",
+				"speckit.constitution",
+				"speckit.test",
+				"speckit.harden",
+				"speckit.ship",
+				"speckit.analyze",
+				"speckit.checklist",
+			],
+		},
 	},
 	"ai-sdlc": {
 		url: "https://github.com/vakaobr/claude-code-ai-development-workflow.git",
@@ -102,6 +188,17 @@ const SOURCES_CONFIG = {
 			commands: ".claude/commands",
 			skills: ".claude/skills",
 		},
+		installMode: "copy",
+		curatedResources: {
+			commands: [
+				"deploy-plan",
+				"observe",
+				"harden",
+				"retro",
+				"incident-postmortem",
+			],
+			skills: ["sdlc-runner", "deployment-validator"],
+		},
 	},
 	bmad: {
 		url: "https://github.com/bmad-code-org/BMAD-METHOD.git",
@@ -110,6 +207,10 @@ const SOURCES_CONFIG = {
 		validatePaths: ["src"],
 		optional: true,
 		// bmad 結構過深（src/bmm-skills/**），僅作參考用，不自動安裝
+		installMode: "plugin",
+		curatedResources: {
+			agents: ["analyst", "qa-gate-checker"],
+		},
 	},
 };
 
