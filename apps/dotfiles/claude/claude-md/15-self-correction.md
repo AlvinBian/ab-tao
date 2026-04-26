@@ -65,3 +65,4 @@
 禁止靜默修正、禁止假裝沒發生過。
 
 </self_correction>
+@.ab-tao/corrections/failure-patterns.md

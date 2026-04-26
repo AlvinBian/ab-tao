@@ -406,6 +406,31 @@ export default {
 			// intent-cache 複製失敗不應中斷主流程
 		}
 
+		// M3.6.2 failure-patterns seed（若 corrections 目錄尚無此檔案，從 commons template 複製）
+		try {
+			const failurePatternsDest = path.join(
+				P.abTao.corrections,
+				"failure-patterns.md",
+			);
+			if (!fs.existsSync(failurePatternsDest)) {
+				const failurePatternsSrc = path.join(
+					ctx.repoDir,
+					"..",
+					"..",
+					"packages",
+					"commons",
+					"resources",
+					"ai",
+					"failure-patterns-template.md",
+				);
+				if (fs.existsSync(failurePatternsSrc)) {
+					fs.copyFileSync(failurePatternsSrc, failurePatternsDest);
+				}
+			}
+		} catch {
+			// failure-patterns 複製失敗不應中斷主流程
+		}
+
 		return result;
 	},
 
