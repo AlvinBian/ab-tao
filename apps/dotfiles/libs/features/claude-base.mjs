@@ -384,6 +384,28 @@ export default {
 		// 初始化 .ab-tao/ 子目錄（P.abTao.xxx 命名空間對應的實體目錄）
 		initAbTaoDirs();
 
+		// 部署 intent-cache seed（若 runtime 目錄尚無此檔案，從 commons resources 複製）
+		try {
+			const intentCacheDest = path.join(P.abTao.runtime, "intent-cache.json");
+			if (!fs.existsSync(intentCacheDest)) {
+				const intentCacheSrc = path.join(
+					ctx.repoDir,
+					"..",
+					"..",
+					"packages",
+					"commons",
+					"resources",
+					"ai",
+					"intent-cache.json",
+				);
+				if (fs.existsSync(intentCacheSrc)) {
+					fs.copyFileSync(intentCacheSrc, intentCacheDest);
+				}
+			}
+		} catch {
+			// intent-cache 複製失敗不應中斷主流程
+		}
+
 		return result;
 	},
 
