@@ -31,6 +31,26 @@ interface FederatedProject {
 	lastUpdated: string;
 }
 
+interface ChainStep {
+	label: string;
+	type: "command" | "agent" | "result";
+}
+
+interface ChainItem {
+	name: string;
+	usage: string;
+	command: string;
+	steps: ChainStep[];
+}
+
+interface AiSource {
+	name: string;
+	icon: string;
+	installMode: "copy" | "plugin";
+	curated: string[];
+	type: string;
+}
+
 // ── Tab 設定 ─────────────────────────────────────────────────────────────────
 
 const tabs: SectionTabConfig[] = [
@@ -38,6 +58,8 @@ const tabs: SectionTabConfig[] = [
 	{ key: "profiles", label: "Profiles" },
 	{ key: "failure-patterns", label: "Failure Patterns" },
 	{ key: "federated-memory", label: "Federated Memory" },
+	{ key: "chains", label: "Chains" },
+	{ key: "ai-sources", label: "AI Sources" },
 ];
 
 // ── Tab 1: Dispatcher mock data ───────────────────────────────────────────────
@@ -96,6 +118,76 @@ const failurePatterns: FailurePattern[] = [
 		id: 5,
 		pattern: "交付含未說出前提的半成品",
 		category: "半成品禁止",
+	},
+];
+
+// ── Tab 5: Chains mock data ───────────────────────────────────────────────────
+
+const chains: ChainItem[] = [
+	{
+		name: "Chain Product",
+		usage:
+			"將 feature 描述轉化為結構化 spec，並通過 reviewer agent 驗證後產出 ready-to-build 規格。",
+		command: "/chain-product <feature>",
+		steps: [
+			{ label: "/specify", type: "command" },
+			{ label: "reviewer agent", type: "agent" },
+			{ label: "/verify", type: "command" },
+			{ label: "✅ spec ready", type: "result" },
+		],
+	},
+	{
+		name: "Chain TDD",
+		usage:
+			"從 feature 描述出發，由 architect agent 建立測試骨架，再透過嚴格 TDD 流程驗證至測試就緒。",
+		command: "/chain-tdd <feature>",
+		steps: [
+			{ label: "/specify", type: "command" },
+			{ label: "architect agent（測試骨架）", type: "agent" },
+			{ label: "/check --tdd-strict", type: "command" },
+			{ label: "/verify", type: "command" },
+			{ label: "✅ tests ready", type: "result" },
+		],
+	},
+];
+
+// ── Tab 6: AI Sources mock data ───────────────────────────────────────────────
+
+const aiSources: AiSource[] = [
+	{
+		name: "gstack",
+		icon: "🎯",
+		installMode: "copy",
+		curated: ["builder", "reviewer", "researcher"],
+		type: "skills",
+	},
+	{
+		name: "spec-kit",
+		icon: "📐",
+		installMode: "copy",
+		curated: ["speckit.specify", "speckit.plan", "speckit.test"],
+		type: "commands",
+	},
+	{
+		name: "ecc",
+		icon: "🌐",
+		installMode: "plugin",
+		curated: ["silent-failure-hunter", "performance-optimizer"],
+		type: "skills",
+	},
+	{
+		name: "anthropic",
+		icon: "📚",
+		installMode: "plugin",
+		curated: ["webapp-testing", "pdf", "xlsx"],
+		type: "skills",
+	},
+	{
+		name: "superpowers",
+		icon: "🚀",
+		installMode: "plugin",
+		curated: ["using-git-worktrees", "receiving-code-review"],
+		type: "skills",
 	},
 ];
 
@@ -254,6 +346,103 @@ const federatedProjects: FederatedProject[] = [
         </el-table>
       </div>
     </template>
+
+    <!-- ── Tab 5: Chains ──────────────────────────────────────────────────── -->
+    <template #chains>
+      <div class="ai-section-tab">
+        <div class="tab-header">
+          <h3 class="tab-title">Chains</h3>
+          <p class="tab-desc">
+            串接多個 command / agent 的自動化流程，一鍵執行端對端工作流。
+          </p>
+        </div>
+        <div class="chains-grid">
+          <el-card
+            v-for="chain in chains"
+            :key="chain.name"
+            shadow="hover"
+            class="chain-card"
+          >
+            <template #header>
+              <div class="chain-card-header">
+                <span class="chain-name">{{ chain.name }}</span>
+                <el-tag type="primary" size="small" effect="plain">chain</el-tag>
+              </div>
+            </template>
+            <p class="chain-usage">{{ chain.usage }}</p>
+            <div class="chain-steps">
+              <template v-for="(step, index) in chain.steps" :key="index">
+                <div
+                  :class="[
+                    'chain-step',
+                    `chain-step--${step.type}`,
+                  ]"
+                >
+                  {{ step.label }}
+                </div>
+                <span
+                  v-if="index < chain.steps.length - 1"
+                  class="chain-arrow"
+                >→</span>
+              </template>
+            </div>
+            <div class="chain-command">
+              <el-text type="info" size="small">使用命令：</el-text>
+              <el-tag type="info" size="small" effect="plain" style="font-family: monospace">
+                {{ chain.command }}
+              </el-tag>
+            </div>
+          </el-card>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── Tab 6: AI Sources ──────────────────────────────────────────────── -->
+    <template #ai-sources>
+      <div class="ai-section-tab">
+        <div class="tab-header">
+          <h3 class="tab-title">AI Sources</h3>
+          <p class="tab-desc">
+            c:ai-sync 可用來源清單（mock）：展示各 source 的 curated 資源與安裝模式。
+          </p>
+        </div>
+        <div class="sources-grid">
+          <el-card
+            v-for="source in aiSources"
+            :key="source.name"
+            shadow="hover"
+            class="source-card"
+          >
+            <div class="source-card-header">
+              <span class="source-icon">{{ source.icon }}</span>
+              <span class="source-name">{{ source.name }}</span>
+              <el-tag
+                :type="source.installMode === 'copy' ? 'primary' : 'success'"
+                size="small"
+                effect="light"
+              >
+                {{ source.installMode }}
+              </el-tag>
+            </div>
+            <div class="source-meta">
+              <el-text type="secondary" size="small">{{ source.type }}</el-text>
+            </div>
+            <div class="source-curated">
+              <el-tag
+                v-for="item in source.curated"
+                :key="item"
+                :type="source.installMode === 'copy' ? 'primary' : 'success'"
+                size="small"
+                effect="plain"
+                class="curated-tag"
+              >
+                {{ item }}
+              </el-tag>
+            </div>
+          </el-card>
+        </div>
+      </div>
+    </template>
   </SectionTabs>
 </template>
 
@@ -309,5 +498,130 @@ const federatedProjects: FederatedProject[] = [
   margin: 0;
   font-size: 0.9rem;
   color: var(--el-text-color-primary);
+}
+
+/* ── Tab 5: Chains ─────────────────────────────────────────────────────────── */
+
+.chains-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chain-card {
+  width: 100%;
+}
+
+.chain-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chain-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--el-text-color-primary);
+}
+
+.chain-usage {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
+}
+
+.chain-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.chain-step {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: monospace;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chain-step--command {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  border: 1px solid var(--el-color-primary-light-5);
+}
+
+.chain-step--agent {
+  background-color: var(--el-color-warning-light-9);
+  color: var(--el-color-warning-dark-2);
+  border: 1px solid var(--el-color-warning-light-5);
+}
+
+.chain-step--result {
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success-dark-2);
+  border: 1px solid var(--el-color-success-light-5);
+  font-family: inherit;
+}
+
+.chain-arrow {
+  color: var(--el-text-color-placeholder);
+  font-size: 1rem;
+  user-select: none;
+}
+
+.chain-command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Tab 6: AI Sources ─────────────────────────────────────────────────────── */
+
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.source-card {
+  transition: border-color 0.2s;
+}
+
+.source-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.source-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.source-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--el-text-color-primary);
+  flex: 1;
+}
+
+.source-meta {
+  margin-bottom: 10px;
+}
+
+.source-curated {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.curated-tag {
+  font-family: monospace;
+  font-size: 0.78rem;
 }
 </style>
