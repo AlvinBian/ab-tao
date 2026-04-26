@@ -21,9 +21,6 @@ import { HOME } from "../core/paths.mjs";
 /** 官方推薦 Plugins */
 const RECOMMENDED_PLUGINS = [
 	{ name: "code-review", desc: "多 agent 並行 PR 審查" },
-	{ name: "commit-commands", desc: "智能 commit 訊息生成" },
-	{ name: "feature-dev", desc: "7 階段結構化功能開發" },
-	{ name: "code-simplifier", desc: "審查變更代碼的品質與效率" },
 	{ name: "security-guidance", desc: "安全漏洞掃描與修復建議" },
 	{ name: "hookify", desc: "分析對話模式自動生成 hooks" },
 	{ name: "ralph-loop", desc: "持續迭代迴圈 — 自動重試直到完成" },

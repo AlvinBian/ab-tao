@@ -3,7 +3,12 @@
 # 統計當前 session 的檔案讀取操作數，超過閾值時 stdout 注入提示，不阻擋（exit 0）
 # 用小時級 bucket 作 session 邊界近似；同一小時內累計
 
-THRESHOLD=${CONTEXT_BUDGET_THRESHOLD:-12}
+SETTINGS="$HOME/.claude/settings.json"
+THRESHOLD=12
+if command -v jq &>/dev/null && [[ -f "$SETTINGS" ]]; then
+	val=$(jq -r '._abTao.contextBudgetThreshold // empty' "$SETTINGS" 2>/dev/null)
+	[[ -n "$val" ]] && THRESHOLD="$val"
+fi
 
 # 每小時一個計數 bucket，2 小時前的 bucket 清除
 HOUR=$(date +%Y%m%d%H)

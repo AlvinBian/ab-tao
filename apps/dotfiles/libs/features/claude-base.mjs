@@ -363,6 +363,14 @@ export default {
 			result.claudeMd = "kept";
 		}
 
+		// 初始化 builtin profile yml（確保新增的 profile 部署到 ~/.claude/.ab-tao/profiles/）
+		try {
+			const { initDefaultProfiles } = await import("../install/profiles.mjs");
+			initDefaultProfiles(path.join(ctx.repoDir, "claude", "profiles"));
+		} catch {
+			// profiles.mjs 不存在或 initDefaultProfiles 失敗不應中斷主流程
+		}
+
 		return result;
 	},
 
@@ -388,7 +396,7 @@ export default {
 			}
 		}
 
-		for (const f of ["settings.json", "hooks.json"]) {
+		for (const f of ["settings.json"]) {
 			total++;
 			if (fs.existsSync(path.join(CLAUDE_DIR, f))) {
 				passed++;
