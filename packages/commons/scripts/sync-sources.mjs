@@ -78,14 +78,17 @@ const SOURCES_CONFIG = {
 		description: "Garry Tan 23 角色化 slash commands（YC，83.6K stars）",
 		validatePaths: ["skills", "commands"],
 		optional: true,
+		// gstack skills 直接在頂層，無 skills/ wrapper
+		resourcePaths: { skills: "." },
 	},
 	"spec-kit": {
 		url: "https://github.com/github/spec-kit.git",
 		icon: "📐",
 		description:
 			"GitHub 官方 Spec-Driven Development（跨 30+ AI coding agents）",
-		validatePaths: ["templates", "scripts"],
+		validatePaths: ["templates/commands"],
 		optional: true,
+		resourcePaths: { commands: "templates/commands" },
 	},
 	"ai-sdlc": {
 		url: "https://github.com/vakaobr/claude-code-ai-development-workflow.git",
@@ -93,13 +96,20 @@ const SOURCES_CONFIG = {
 		description: "11 phase 全 SDLC（Deploy / Observe / Retro 補齊）",
 		validatePaths: [".claude/agents", ".claude/commands", ".claude/skills"],
 		optional: true,
+		// ai-sdlc 所有資源在隱藏的 .claude/ 子目錄內
+		resourcePaths: {
+			agents: ".claude/agents",
+			commands: ".claude/commands",
+			skills: ".claude/skills",
+		},
 	},
 	bmad: {
 		url: "https://github.com/bmad-code-org/BMAD-METHOD.git",
 		icon: "🏛️",
 		description: "BMAD Quality Gate 機制參考（core 10 agents，不裝整套）",
-		validatePaths: ["agents"],
+		validatePaths: ["src"],
 		optional: true,
+		// bmad 結構過深（src/bmm-skills/**），僅作參考用，不自動安裝
 	},
 };
 
@@ -211,6 +221,15 @@ async function syncSource(sourceName, config, options = {}) {
 		try {
 			fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 			fs.cpSync(tempDir, targetPath, { recursive: true, dereference: true });
+
+			// 寫入路徑映射 manifest，供 countResources / loadFromCache 使用
+			if (config.resourcePaths) {
+				fs.writeFileSync(
+					path.join(targetPath, "_ab-tao-paths.json"),
+					JSON.stringify({ resourcePaths: config.resourcePaths }, null, 2),
+				);
+			}
+
 			recordSync(sourceName, sha);
 
 			if (fs.existsSync(backupPath)) {
@@ -271,17 +290,25 @@ async function syncSelected(sourceNames, options = {}) {
 function countResources(sourceName) {
 	const sourceDir = path.join(RESOURCES_PATH, sourceName);
 	if (!fs.existsSync(sourceDir)) return null;
+
+	// 讀取路徑映射 manifest（由 syncSource 寫入）
+	const pathsFile = path.join(sourceDir, "_ab-tao-paths.json");
+	const customPaths = fs.existsSync(pathsFile)
+		? (JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {})
+		: {};
+
 	const count = (sub) => {
-		const dir = path.join(sourceDir, sub);
+		const dir = path.join(sourceDir, customPaths[sub] ?? sub);
 		if (!fs.existsSync(dir)) return 0;
 		return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
 	};
 	const commands = count("commands");
 	const agents = count("agents");
 	const rules = count("rules");
-	// skills: 子目錄含 SKILL.md
+
+	// skills: 子目錄含 SKILL.md（支援自定義 skills 根目錄）
 	let skills = 0;
-	const skillsDir = path.join(sourceDir, "skills");
+	const skillsDir = path.join(sourceDir, customPaths.skills ?? "skills");
 	if (fs.existsSync(skillsDir)) {
 		for (const d of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (

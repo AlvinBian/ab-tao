@@ -118,8 +118,14 @@ async function checkCache(cacheDir, repo) {
 function loadFromCache(cacheDir) {
 	const result = { commands: [], agents: [], rules: [], hooks: null };
 
+	// 讀取路徑映射 manifest（由 sync-sources.mjs 的 syncSource 寫入）
+	const pathsFile = path.join(cacheDir, "_ab-tao-paths.json");
+	const customPaths = fs.existsSync(pathsFile)
+		? (JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {})
+		: {};
+
 	for (const sub of ["commands", "agents", "rules"]) {
-		const dir = path.join(cacheDir, sub);
+		const dir = path.join(cacheDir, customPaths[sub] ?? sub);
 		if (!fs.existsSync(dir)) continue;
 		for (const f of fs
 			.readdirSync(dir)
