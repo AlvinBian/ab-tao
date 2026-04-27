@@ -399,18 +399,27 @@ function countResources(sourceName) {
 		: {};
 
 	const count = (sub) => {
-		const dir = path.join(sourceDir, customPaths[sub] ?? sub);
-		if (!fs.existsSync(dir)) return 0;
-		return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
+		const subPath = customPaths[sub] ?? sub;
+		const dirs = Array.isArray(subPath) ? subPath : [subPath];
+		let total = 0;
+		for (const p of dirs) {
+			const dir = path.join(sourceDir, p);
+			if (!fs.existsSync(dir)) continue;
+			total += fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
+		}
+		return total;
 	};
 	const commands = count("commands");
 	const agents = count("agents");
 	const rules = count("rules");
 
-	// skills: 子目錄含 SKILL.md（支援自定義 skills 根目錄）
+	// skills: 子目錄含 SKILL.md（支援字串或陣列形式的 skills 根目錄）
 	let skills = 0;
-	const skillsDir = path.join(sourceDir, customPaths.skills ?? "skills");
-	if (fs.existsSync(skillsDir)) {
+	const skillsPath = customPaths.skills ?? "skills";
+	const skillsDirs = Array.isArray(skillsPath) ? skillsPath : [skillsPath];
+	for (const sp of skillsDirs) {
+		const skillsDir = path.join(sourceDir, sp);
+		if (!fs.existsSync(skillsDir)) continue;
 		for (const d of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (
 				d.isDirectory() &&

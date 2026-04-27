@@ -95,6 +95,12 @@ function loadMdFiles(dir) {
 		}));
 }
 
+// manifest resourcePaths[key] 可能是 string 或 string[]，統一回傳 string[]
+function resolveSubPaths(customPaths, key, fallback) {
+	const v = customPaths[key] ?? fallback;
+	return Array.isArray(v) ? v : [v];
+}
+
 /**
  * 從單一 source 目錄載入所有資源
  * 優先讀取 _ab-tao-paths.json manifest 中的自訂路徑（resourcePaths）
@@ -108,22 +114,19 @@ function loadSource(sourceName) {
 	const manifest = readResourcePaths(sourceDir);
 	const customPaths = manifest.resourcePaths ?? {};
 
-	// commands 支援陣列形式（多子目錄合併）
-	let commands = [];
-	const commandsPath = customPaths.commands ?? "commands";
-	if (Array.isArray(commandsPath)) {
-		for (const sub of commandsPath) {
-			commands = commands.concat(loadMdFiles(path.join(sourceDir, sub)));
+	const collect = (key) => {
+		let acc = [];
+		for (const sub of resolveSubPaths(customPaths, key, key)) {
+			acc = acc.concat(loadMdFiles(path.join(sourceDir, sub)));
 		}
-	} else {
-		commands = loadMdFiles(path.join(sourceDir, commandsPath));
-	}
+		return acc;
+	};
 
 	const result = {
 		name: sourceName,
-		commands,
-		agents: loadMdFiles(path.join(sourceDir, customPaths.agents ?? "agents")),
-		rules: loadMdFiles(path.join(sourceDir, customPaths.rules ?? "rules")),
+		commands: collect("commands"),
+		agents: collect("agents"),
+		rules: collect("rules"),
 		skills: [],
 	};
 
@@ -136,9 +139,10 @@ function loadSource(sourceName) {
 		}
 	}
 
-	// 掃描 skills 目錄（SKILL.md 格式）
-	const skillsDir = path.join(sourceDir, customPaths.skills ?? "skills");
-	if (fs.existsSync(skillsDir)) {
+	// 掃描 skills 目錄（SKILL.md 格式，支援多根目錄合併）
+	for (const sub of resolveSubPaths(customPaths, "skills", "skills")) {
+		const skillsDir = path.join(sourceDir, sub);
+		if (!fs.existsSync(skillsDir)) continue;
 		for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (!entry.isDirectory()) continue;
 			const skillMd = path.join(skillsDir, entry.name, "SKILL.md");

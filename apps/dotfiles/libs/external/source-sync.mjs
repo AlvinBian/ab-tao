@@ -135,15 +135,19 @@ function loadFromCache(cacheDir) {
 	}
 
 	for (const sub of ["commands", "agents", "rules"]) {
-		const dir = path.join(cacheDir, customPaths[sub] ?? sub);
-		if (!fs.existsSync(dir)) continue;
-		for (const f of fs
-			.readdirSync(dir)
-			.filter((f) => f.endsWith(".md") || f.endsWith(".json"))) {
-			result[sub].push({
-				name: f,
-				content: fs.readFileSync(path.join(dir, f), "utf8"),
-			});
+		const subPath = customPaths[sub] ?? sub;
+		const dirs = Array.isArray(subPath) ? subPath : [subPath];
+		for (const p of dirs) {
+			const dir = path.join(cacheDir, p);
+			if (!fs.existsSync(dir)) continue;
+			for (const f of fs
+				.readdirSync(dir)
+				.filter((f) => f.endsWith(".md") || f.endsWith(".json"))) {
+				result[sub].push({
+					name: f,
+					content: fs.readFileSync(path.join(dir, f), "utf8"),
+				});
+			}
 		}
 	}
 
