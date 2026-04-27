@@ -17,6 +17,7 @@ import { buildPlanSummary } from "../cli/plan-view.mjs";
 import { BACK, handleCancel, smartSelect } from "../cli/prompts.mjs";
 import { generateMinimalPlan } from "../config/auto-plan.mjs";
 import { HOME } from "../core/paths.mjs";
+import { SOURCE_ICONS as sourceIcons } from "../external/source-meta.mjs";
 
 /** 官方推薦 Plugins */
 const RECOMMENDED_PLUGINS = [
@@ -278,12 +279,6 @@ async function detailConfirm(originalPlan) {
 	// 7.5. 每個 AI 來源的資源確認
 	const commSources = plan._commonsResources?.sources || [];
 	if (!isEmpty(commSources)) {
-		const sourceIcons = {
-			ecc: "🌐",
-			anthropic: "📚",
-			superpowers: "🚀",
-			"context-engineering": "🧠",
-		};
 		plan.commonsSelections = {};
 
 		for (const src of commSources) {

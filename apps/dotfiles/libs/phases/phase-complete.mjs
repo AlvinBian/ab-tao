@@ -19,6 +19,7 @@ import { BACKUP_DIR } from "../core/backup.mjs";
 import { BACKUP_MAX_COUNT } from "../core/constants.mjs";
 import { HOME } from "../core/paths.mjs";
 import { clearSessionProgress, saveSession } from "../core/session.mjs";
+import { SOURCE_ICONS as SOURCE_ICON } from "../external/source-meta.mjs";
 import { generateReport, openInBrowser, saveReport } from "../report.mjs";
 
 /** 偵測 RTK 是否已安裝 */
@@ -169,14 +170,6 @@ export async function phaseComplete(
 	const feats = new Set(plan.features || []);
 	const has = (f) => feats.has(f);
 	const guideLines = ["🎓 快速上手", ""];
-
-	// 讀取 commons 來源名稱對應的圖示
-	const SOURCE_ICON = {
-		ecc: "🌐",
-		anthropic: "📚",
-		superpowers: "🚀",
-		"context-engineering": "🧠",
-	};
 
 	if (has("claude")) {
 		// 動態列出已安裝的 commands

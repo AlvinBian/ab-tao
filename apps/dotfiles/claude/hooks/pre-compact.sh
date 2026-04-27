@@ -2,8 +2,6 @@
 # pre-compact.sh — PreCompact 定向壓縮指令注入
 
 # 通知使用者壓縮即將發生
-NOTIFY="$HOME/.claude/hooks/hook-handler.sh"
-[ -x "$NOTIFY" ] && "$NOTIFY" blocked "" 2>/dev/null || true
 command -v osascript &>/dev/null && \
   osascript -e 'on run argv' \
     -e '  display notification (item 1 of argv) with title "Claude Code" subtitle "⚠️ 壓縮中"' \

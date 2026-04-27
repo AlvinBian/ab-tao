@@ -83,18 +83,6 @@ const SOURCES_CONFIG = {
 			],
 		},
 	},
-	"skills-mp": {
-		url: "https://github.com/SkillsMP/SkillsMP.git",
-		icon: "🏪",
-		description: "Claude 官方 Skills Marketplace",
-		recommended: true,
-		validatePaths: ["skills"],
-		optional: true,
-		installMode: "copy",
-		curatedResources: {
-			skills: ["advanced-debugging", "code-review", "performance-analysis"],
-		},
-	},
 	openskills: {
 		url: "https://github.com/numman-ali/openskills.git",
 		icon: "🌍",
@@ -274,11 +262,18 @@ async function syncSource(sourceName, config, options = {}) {
 	);
 
 	try {
-		// 克隆
-		execFileSync("git", ["clone", "--depth", "1", config.url, tempDir], {
-			stdio: "pipe",
-			timeout: 60000,
-		});
+		// 克隆 — stderr 串入 throw 以便上層拿到真實 git 錯誤（401 / not-found / proxy）
+		try {
+			execFileSync("git", ["clone", "--depth", "1", config.url, tempDir], {
+				stdio: "pipe",
+				timeout: 60000,
+			});
+		} catch (err) {
+			const stderr = err.stderr?.toString() || "";
+			throw new Error(
+				`git clone ${config.url} 失敗${stderr ? `: ${stderr.trim()}` : ` (${err.message})`}`,
+			);
+		}
 
 		// 取得 commit SHA
 		const sha = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -290,18 +285,25 @@ async function syncSource(sourceName, config, options = {}) {
 		// 移除克隆的 .git
 		fs.rmSync(path.join(tempDir, ".git"), { recursive: true, force: true });
 
-		// 安全驗證 — 僅驗證指定的資源子目錄
+		// 安全驗證 — 僅驗證指定的資源子目錄；validatePaths 全 missing 視為 repo 結構異常
 		const pathsToValidate = config.validatePaths || [];
 		if (pathsToValidate.length > 0) {
+			let validatedAny = false;
 			for (const subDir of pathsToValidate) {
 				const subPath = path.join(tempDir, subDir);
 				if (!fs.existsSync(subPath)) continue;
+				validatedAny = true;
 				const { ok, summary } = await validateContent(subPath);
 				if (!ok) {
 					throw new Error(
 						`${sourceName}/${subDir} 安全驗證失敗: ${summary.errors.map((e) => e.message).join(", ")}`,
 					);
 				}
+			}
+			if (!validatedAny) {
+				throw new Error(
+					`${sourceName} 結構異常: 預期路徑全部不存在（${pathsToValidate.join(", ")}），上游 repo 可能已重組`,
+				);
 			}
 		} else {
 			const { ok, summary } = await validateContent(tempDir);

@@ -1,8 +1,19 @@
 /**
  * Commons 資源載入器
  *
- * 掃描 @ab-tao/commons 已同步的所有 AI 來源（7 個），
+ * 掃描 @ab-tao/commons 已同步的所有 AI 來源（9 個），
  * 將 commands/agents/rules/skills 統一載入供 pipeline 使用。
+ *
+ * 兩條安裝管道（邊界說明）：
+ *   c:ai-sync（git clone）→ packages/commons/resources/ai/sources/<name>/  ← 本模組讀取此路徑
+ *   d:setup install（本模組）→ ~/.claude/  ← 安裝至本機 Claude 設定
+ *
+ *   plugin 模式（ecc / anthropic / superpowers / bmad）：
+ *     d:setup 呼叫 `claude plugin install <id>@<marketplace>` 走官方 Plugin Marketplace，
+ *     ai-sync 仍 clone 以保留 curatedResources 供展示，不直接複製到 ~/.claude/。
+ *
+ *   copy 模式（context-engineering / openskills / gstack / spec-kit / ai-sdlc）：
+ *     d:setup 直接從 commons resources 複製 commands/agents/rules/skills 至 ~/.claude/。
  */
 
 import fs from "node:fs";
@@ -49,7 +60,6 @@ const SOURCE_INSTALL_MODES = {
 		pluginMarketplace: "https://github.com/bmad-code-org/BMAD-METHOD",
 	},
 	"context-engineering": { installMode: "copy" },
-	"skills-mp": { installMode: "copy" },
 	openskills: { installMode: "copy" },
 	gstack: { installMode: "copy" },
 	"spec-kit": { installMode: "copy" },

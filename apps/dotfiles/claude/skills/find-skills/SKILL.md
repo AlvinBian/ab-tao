@@ -51,7 +51,6 @@ pnpm run c:skills --from <owner/repo>
 pnpm run c:skills --from <owner/repo> --find <keyword>
 
 # 常用社群來源
-pnpm run c:skills --from SkillsMP/SkillsMP --find <keyword>
 pnpm run c:skills --from numman-ali/openskills --find <keyword>
 
 # 直接安裝本地 source skill

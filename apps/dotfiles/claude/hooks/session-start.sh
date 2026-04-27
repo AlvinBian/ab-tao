@@ -84,7 +84,7 @@ if [ -f "$STATE_FILE" ]; then
 		printf '[冷啟動] ⚠️  %d 個 managed 檔案有 drift，執行 d:status 檢視詳情\n' "$drift_count" >&2
 fi
 
-# ── Part 4: Telemetry（Phase 17）──────────────────────────────────
+# ── Part 4: Telemetry ─────────────────────────────────────────────
 METRICS_FILE="$AB_TAO_DIR/metrics.jsonl"
 SESSION_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 PROFILE="personal"

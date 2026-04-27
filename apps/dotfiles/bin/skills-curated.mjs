@@ -10,81 +10,18 @@
  * 注意：此 CLI 只做展示，實際安裝請執行 pnpm run c:ai-sync --select
  */
 
+import { SOURCES_CONFIG } from "@ab-tao/commons/sync";
+
 // --from <source> 解析
 const fromIdx = process.argv.indexOf("--from");
 const fromSource = fromIdx !== -1 ? process.argv[fromIdx + 1] : null;
 
 /**
- * 已知 sources 的 curated 資源清單（同步自 packages/commons/scripts/sync-sources.mjs）
+ * 已知 sources 的 curated 資源清單（直接從 SOURCES_CONFIG 派生避免 drift）
  * 實際安裝由 c:ai-sync 處理，此處僅展示
  */
 function getSources() {
-	return {
-		ecc: {
-			icon: "🌐",
-			description: "Commands / Agents / Rules / Skills（社群最大集合）",
-			curatedResources: {
-				skills: ["silent-failure-hunter", "performance-optimizer"],
-				commands: ["/prp", "/implement", "/validate"],
-			},
-		},
-		anthropic: {
-			icon: "📚",
-			description: "Anthropic 官方 Skills（claude-api、pdf、xlsx 等）",
-			curatedResources: {
-				skills: ["webapp-testing", "pdf", "xlsx", "docx"],
-			},
-		},
-		superpowers: {
-			icon: "🚀",
-			description: "Agents / Commands / Hooks（brainstorm、execute-plan）",
-			curatedResources: {
-				skills: [
-					"using-git-worktrees",
-					"finishing-a-development-branch",
-					"receiving-code-review",
-				],
-				commands: ["brainstorm", "execute-plan"],
-			},
-		},
-		"context-engineering": {
-			icon: "🧠",
-			description: "Context 最佳化 / Multi-Agent 模式 / 記憶系統",
-			curatedResources: {
-				skills: [
-					"context-compression",
-					"context-degradation",
-					"context-escalation",
-				],
-			},
-		},
-		gstack: {
-			icon: "🎯",
-			description: "Garry Tan 23 角色化 slash commands（YC，83.6K stars）",
-			curatedResources: {
-				skills: ["builder", "reviewer", "researcher", "writer", "debugger"],
-				commands: ["specify", "plan", "build", "test", "review", "ship"],
-			},
-		},
-		"skills-mp": {
-			icon: "🏪",
-			description: "Claude 官方 Skills Marketplace",
-			curatedResources: {
-				skills: ["advanced-debugging", "code-review", "performance-analysis"],
-			},
-		},
-		openskills: {
-			icon: "🌍",
-			description: "openskills 社群 skills 集合",
-			curatedResources: {
-				skills: [
-					"problem-solving",
-					"research-synthesis",
-					"systematic-debugging",
-				],
-			},
-		},
-	};
+	return SOURCES_CONFIG;
 }
 
 /** 輸出單一 source 的 curated 資源 */

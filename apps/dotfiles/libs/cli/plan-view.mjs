@@ -13,6 +13,10 @@ import {
 	getDescription,
 	getRating,
 } from "../config/descriptions.mjs";
+import {
+	SOURCE_ICONS,
+	SOURCE_LABELS as SOURCE_LABELS_MAP,
+} from "../external/source-meta.mjs";
 
 // ── 資源 Model 對照 ──
 const CMD_MODEL = {
@@ -329,14 +333,6 @@ export function formatUnifiedAiResources(
 ) {
 	const lines = [];
 
-	// 來源標籤對照
-	const SOURCE_LABELS = {
-		ecc: "ECC",
-		anthropic: "Anthropic",
-		superpowers: "Superpowers",
-		"context-engineering": "CtxEng",
-	};
-
 	// ── 收集所有資源（外部 + Commons）──
 	const unified = { commands: [], agents: [], rules: [], skills: [] };
 	const itemsMap = {}; // 用於去重：{ "type:name" => item }
@@ -456,7 +452,7 @@ export function formatUnifiedAiResources(
 		lines.push(`  ${typeLabel}（${items.length} 個）`);
 
 		for (const item of items) {
-			const sourceLabel = SOURCE_LABELS[item.source] || item.source;
+			const sourceLabel = SOURCE_LABELS_MAP[item.source] || item.source;
 			const isSelected = selected
 				? selected[type]?.has(item.name)
 				: item.isPreselected;
@@ -485,12 +481,7 @@ export function formatUnifiedAiResources(
 export function formatCommonsResources(plan) {
 	const lines = [];
 	const commSources = plan._pipelineResult?.commonsResources?.sources || [];
-	const sourceIcons = {
-		ecc: "🌐",
-		anthropic: "📚",
-		superpowers: "🚀",
-		"context-engineering": "🧠",
-	};
+	const sourceIcons = SOURCE_ICONS;
 
 	if (!isEmpty(commSources)) {
 		const commTotal = commSources.reduce(

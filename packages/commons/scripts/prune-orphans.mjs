@@ -10,20 +10,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { SOURCES_CONFIG } from "./sync-sources.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_PATH = path.resolve(__dirname, "../resources/ai/sources");
 const APPLY = process.argv.includes("--apply");
 
-// 已登記來源（與 sync-sources.mjs 保持一致）
-const KNOWN_SOURCES = new Set([
-	"ecc",
-	"anthropic",
-	"superpowers",
-	"context-engineering",
-	"skills-mp",
-	"openskills",
-]);
+const KNOWN_SOURCES = new Set(Object.keys(SOURCES_CONFIG));
 
 if (!fs.existsSync(RESOURCES_PATH)) {
 	console.log("resources/ai/sources/ 不存在，無需清理。");

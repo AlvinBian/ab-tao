@@ -155,20 +155,6 @@ const chains: ChainItem[] = [
 
 const aiSources: AiSource[] = [
 	{
-		name: "gstack",
-		icon: "🎯",
-		installMode: "copy",
-		curated: ["builder", "reviewer", "researcher"],
-		type: "skills",
-	},
-	{
-		name: "spec-kit",
-		icon: "📐",
-		installMode: "copy",
-		curated: ["speckit.specify", "speckit.plan", "speckit.test"],
-		type: "commands",
-	},
-	{
 		name: "ecc",
 		icon: "🌐",
 		installMode: "plugin",
@@ -188,6 +174,48 @@ const aiSources: AiSource[] = [
 		installMode: "plugin",
 		curated: ["using-git-worktrees", "receiving-code-review"],
 		type: "skills",
+	},
+	{
+		name: "context-engineering",
+		icon: "🧠",
+		installMode: "plugin",
+		curated: ["memory-systems", "multi-agent-patterns"],
+		type: "skills",
+	},
+	{
+		name: "openskills",
+		icon: "🌍",
+		installMode: "copy",
+		curated: [],
+		type: "skills",
+	},
+	{
+		name: "gstack",
+		icon: "🎯",
+		installMode: "copy",
+		curated: ["builder", "reviewer", "researcher"],
+		type: "skills",
+	},
+	{
+		name: "spec-kit",
+		icon: "📐",
+		installMode: "copy",
+		curated: ["speckit.specify", "speckit.plan", "speckit.test"],
+		type: "commands",
+	},
+	{
+		name: "ai-sdlc",
+		icon: "🔄",
+		installMode: "copy",
+		curated: ["plan", "observe", "retro"],
+		type: "commands",
+	},
+	{
+		name: "bmad",
+		icon: "⚡",
+		installMode: "copy",
+		curated: [],
+		type: "agents",
 	},
 ];
 
