@@ -66,8 +66,7 @@
 - feat: `15-self-correction.md` 末行加入 `@.ab-tao/corrections/failure-patterns.md`（永不再改，ADR-002）
 - feat: Console MetricsSection — 3 tabs（即時指標 SSE / 升級觸發條件 / Failure Patterns SSE）
 - feat: 3 個 SSE route（`/api/sse/metrics` / `/api/sse/failure-patterns` / `/api/sse/install-progress`）
-- feat: voice-trigger hook（`user-prompt-submit-voice.sh`）— 中文意圖前置轉換，`voiceTrigger: false` 可關
-- feat: cost-aware routing hook（`pre-tool-cost-router.sh`）— 啟發式 haiku/sonnet/opus 路由，`costRouting: static` 可關
+- feat: gstack guard patterns — `pre-tool-bash.sh` 8 條高風險 pattern（publish、force-with-lease 等）
 - feat: gstack guard — `pre-tool-bash.sh` 新增 8 條高風險 pattern（npm/yarn/pnpm publish、force-with-lease 等）
 - feat: plugin install-fallback helper（`install-fallback.mjs`）— plugin 失敗自動降級 copy + 狀態記錄
 - feat: `commons-loader.mjs` 加入 `getSourceInstallMode()` + `pluginMode` 欄位（installMode:plugin 感知）
@@ -82,3 +81,13 @@
 - `bin/profile.mjs` 新 CLI，`d:profile` 取代直接修改 `profiles/active.json`
 
 詳細升級指引見 [MIGRATION-v1.6.md](MIGRATION-v1.6.md)
+
+### 🔧 Bug Fixes
+
+- fix: `d:setup [6/7]` manifest array reader 漂移 — `sync-sources.mjs::countResources()` 和 `source-sync.mjs::loadFromCache()` 補齊 Array.isArray pattern
+- fix: AI sources 同步狀態分裂 — `ai-source-select` needSync 改用 `.versions.json` sha 判斷，spinner 顯示真實計數，失敗 source 從回傳值過濾
+- fix: `sync-sources.mjs` 移除 skills-mp（repo URL 異常），git clone 失敗改串接 stderr，加 `validatedAny` 守護
+- fix: `validate-structure.mjs` EXPECTED_STRUCTURES 補齊 9 個 source（gstack/spec-kit/ai-sdlc/bmad）
+- refactor: `source-meta.mjs` 集中 icon/label map（消除 plan-view / phase-complete / phase-plan 三處重複）
+- refactor: `prune-orphans.mjs` KNOWN_SOURCES 改從 SOURCES_CONFIG 自動派生
+- docs: README 三語（zh-TW/zh-CN/en）補 gstack/spec-kit/ai-sdlc/bmad sources 表格

@@ -1,6 +1,6 @@
 {
 	"name": "@ab-tao/commons",
-	"version": "1.0.3",
+	"version": "1.1.0",
 	"description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
 	"type": "module",
 	"exports": {
