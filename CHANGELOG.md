@@ -91,3 +91,13 @@
 - refactor: `source-meta.mjs` 集中 icon/label map（消除 plan-view / phase-complete / phase-plan 三處重複）
 - refactor: `prune-orphans.mjs` KNOWN_SOURCES 改從 SOURCES_CONFIG 自動派生
 - docs: README 三語（zh-TW/zh-CN/en）補 gstack/spec-kit/ai-sdlc/bmad sources 表格
+
+### 📐 M4 Code Standards — Barrel Export Rules
+
+- feat: 新增 `rules/barrel-exports.md` 條件載入規則 — 7 條 barrel export 規範（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
+- feat: `claude-md/03-code-standards.md` 程式碼規範加第 7 條 pointer 指向 barrel-exports 規則，確保冷啟動可發現
+- docs: `docs/config-map.md` rules 樹更新（5 → 6 個條件規則）
+- docs: `docs/audit-checklists.md` 【審查設定】checklist 計數 5 → 6 + 加 barrel-exports sub-rule 完整性檢查
+- chore: 全域配置版本號 `CLAUDE.md` + `config-map.md` 升至 `v1.6.0`
+
+> 規則本體 language-agnostic，不綁副檔名；paths 覆蓋所有 JS-family（`.vue .ts .tsx .js .jsx .mjs .cjs`）；實際入口檔語言由當前專案技術棧決定。

@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.3.0)
+# ~/.claude/ 結構全圖 (v1.6.0)
 
 ```
 ~/.claude/
@@ -29,7 +29,8 @@
 │   ├── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
 │   ├── typescript.md            paths: *.ts *.tsx
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/
-│   └── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   └── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │
 ├── docs/                        # 參考文件（可 @import，非規則）
 │   ├── rtk.md                   RTK 工具 + token 預算影響

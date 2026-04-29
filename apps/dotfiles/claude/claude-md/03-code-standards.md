@@ -27,6 +27,7 @@
 4. 依賴管理：不隨意引入新套件；若必須引入，需說明版本、理由、優缺點與風險
 5. 禁止輸出：demo 代碼、過時 API、有安全漏洞的實現、邏輯不完整的片段
 6. API 規範：統一回傳 `{ code, message, data }`；分頁統一使用 cursor-based
+7. 模組導出 / 引入：資料夾統一以 barrel 入口檔 re-export，外部禁止 deep import — 詳見 `rules/barrel-exports.md`
 
 ## 收到代碼的工作流
 
