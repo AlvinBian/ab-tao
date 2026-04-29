@@ -1,0 +1,2 @@
+{"ts":"2026-04-10T08:00:00Z","event":"dispatcher_hit","intent":"PR review","command":"/verify"}
+{"ts":"2026-04-11T16:00:00Z","event":"failure_pattern_added","trigger":"不對","pattern_count":3}

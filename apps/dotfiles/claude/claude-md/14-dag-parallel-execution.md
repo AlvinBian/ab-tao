@@ -40,6 +40,6 @@
 | 程式碼審查 | `code-reviewer` |
 | 探索/分析 | `Explore` / `general-purpose` |
 | 規劃 | `/plan` mode / `Plan` subagent |
-| 重構/簡化 | `code-simplifier` |
+| 重構/簡化 | `architect` agent（5 維審查含簡化建議）|
 
 </dag_parallel_execution>

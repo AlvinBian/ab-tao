@@ -38,6 +38,12 @@ Claude 判斷當前任務需要特定 pattern，且 `~/.claude/skills/` 內無�
 # 本地搜尋（從 ab-tao source）
 pnpm run c:skills --find <keyword>
 
+# 已同步 AI source 搜尋（Wave 2.1 — gstack / spec-kit / ai-sdlc / bmad 等）
+pnpm run c:skills --synced                        # 列出所有同步來源的 skill
+pnpm run c:skills --synced --find <keyword>       # 關鍵字過濾
+pnpm run c:skills --synced --all                  # 安裝全部
+pnpm run c:skills --synced --find auth --all      # 過濾後全裝
+
 # 從指定 repo 安裝全部 skills
 pnpm run c:skills --from <owner/repo>
 
@@ -45,7 +51,6 @@ pnpm run c:skills --from <owner/repo>
 pnpm run c:skills --from <owner/repo> --find <keyword>
 
 # 常用社群來源
-pnpm run c:skills --from SkillsMP/SkillsMP --find <keyword>
 pnpm run c:skills --from numman-ali/openskills --find <keyword>
 
 # 直接安裝本地 source skill
@@ -71,6 +76,8 @@ pnpm run c:skills --list
 ## 說明
 
 - 本地搜尋範圍：`apps/dotfiles/claude/skills/`（ab-tao source）
+- 同步來源搜尋：`--synced` 掃描 `packages/commons/resources/ai/sources/*/skills/`（需先執行 `c:ai-sync`）
 - 遠端搜尋：`--from <repo>` 淺層 clone → 掃描 `skills/` → 安裝至 `~/.claude/skills/`
 - 安裝後自動更新 `~/.claude/AGENTS.md` 索引
 - 已安裝的 skill 不會被覆蓋（使用 `--update` 更新）
+- 找不到合適 skill → 使用 `skill-creator`（opt-in，`c:skills --install skill-creator --from anthropic`）自建

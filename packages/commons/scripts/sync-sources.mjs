@@ -35,6 +35,11 @@ const SOURCES_CONFIG = {
 		recommended: true,
 		validatePaths: ["rules", "skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: ["silent-failure-hunter", "performance-optimizer"],
+			commands: ["/prp", "/implement", "/validate"],
+		},
 	},
 	anthropic: {
 		url: "https://github.com/anthropics/skills.git",
@@ -42,6 +47,10 @@ const SOURCES_CONFIG = {
 		description: "Anthropic 官方 Skills（claude-api、pdf、xlsx 等）",
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: ["webapp-testing", "pdf", "xlsx", "docx"],
+		},
 	},
 	superpowers: {
 		url: "https://github.com/obra/superpowers.git",
@@ -49,6 +58,15 @@ const SOURCES_CONFIG = {
 		description: "Agents / Commands / Hooks（brainstorm、execute-plan）",
 		validatePaths: ["agents", "commands", "skills"],
 		optional: true,
+		installMode: "plugin",
+		curatedResources: {
+			skills: [
+				"using-git-worktrees",
+				"finishing-a-development-branch",
+				"receiving-code-review",
+			],
+			commands: ["brainstorm", "execute-plan"],
+		},
 	},
 	"context-engineering": {
 		url: "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git",
@@ -56,14 +74,14 @@ const SOURCES_CONFIG = {
 		description: "Context 最佳化 / Multi-Agent 模式 / 記憶系統",
 		validatePaths: ["skills"],
 		optional: true,
-	},
-	"skills-mp": {
-		url: "https://github.com/SkillsMP/SkillsMP.git",
-		icon: "🏪",
-		description: "Claude 官方 Skills Marketplace",
-		recommended: true,
-		validatePaths: ["skills"],
-		optional: true,
+		installMode: "copy",
+		curatedResources: {
+			skills: [
+				"context-compression",
+				"context-degradation",
+				"context-escalation",
+			],
+		},
 	},
 	openskills: {
 		url: "https://github.com/numman-ali/openskills.git",
@@ -71,6 +89,116 @@ const SOURCES_CONFIG = {
 		description: "openskills 社群 skills 集合",
 		validatePaths: ["skills"],
 		optional: true,
+		installMode: "copy",
+		curatedResources: {
+			skills: ["problem-solving", "research-synthesis", "systematic-debugging"],
+		},
+	},
+	gstack: {
+		url: "https://github.com/garrytan/gstack.git",
+		icon: "🎯",
+		description: "Garry Tan 23 角色化 slash commands（YC，83.6K stars）",
+		validatePaths: ["skills", "commands"],
+		optional: true,
+		// gstack skills 直接在頂層，無 skills/ wrapper
+		resourcePaths: { skills: "." },
+		installMode: "copy",
+		curatedResources: {
+			skills: [
+				"builder",
+				"reviewer",
+				"researcher",
+				"writer",
+				"communicator",
+				"debugger",
+			],
+			commands: [
+				"specify",
+				"plan",
+				"build",
+				"test",
+				"review",
+				"ship",
+				"office-hours",
+				"architect",
+				"debug",
+				"refactor",
+				"document",
+				"analyze",
+				"optimize",
+				"security",
+				"deploy",
+				"observe",
+				"retro",
+				"brainstorm",
+				"estimate",
+				"delegate",
+				"clarify",
+				"validate",
+				"summarize",
+			],
+		},
+	},
+	"spec-kit": {
+		url: "https://github.com/github/spec-kit.git",
+		icon: "📐",
+		description:
+			"GitHub 官方 Spec-Driven Development（跨 30+ AI coding agents）",
+		validatePaths: ["templates/commands"],
+		optional: true,
+		resourcePaths: { commands: "templates/commands" },
+		installMode: "copy",
+		curatedResources: {
+			commands: [
+				"speckit.specify",
+				"speckit.plan",
+				"speckit.tasks",
+				"speckit.implement",
+				"speckit.validate",
+				"speckit.constitution",
+				"speckit.test",
+				"speckit.harden",
+				"speckit.ship",
+				"speckit.analyze",
+				"speckit.checklist",
+			],
+		},
+	},
+	"ai-sdlc": {
+		url: "https://github.com/vakaobr/claude-code-ai-development-workflow.git",
+		icon: "🔄",
+		description: "11 phase 全 SDLC（Deploy / Observe / Retro 補齊）",
+		validatePaths: [".claude/agents", ".claude/commands", ".claude/skills"],
+		optional: true,
+		// ai-sdlc 所有資源在隱藏的 .claude/ 子目錄內
+		resourcePaths: {
+			agents: ".claude/agents",
+			commands: ".claude/commands",
+			skills: ".claude/skills",
+		},
+		installMode: "copy",
+		curatedResources: {
+			commands: [
+				"deploy-plan",
+				"observe",
+				"harden",
+				"retro",
+				"incident-postmortem",
+			],
+			skills: ["sdlc-runner", "deployment-validator"],
+		},
+	},
+	bmad: {
+		url: "https://github.com/bmad-code-org/BMAD-METHOD.git",
+		icon: "🏛️",
+		description: "BMAD Quality Gate 機制參考（core 10 agents，不裝整套）",
+		validatePaths: ["src"],
+		optional: true,
+		// bmad 結構過深（src/bmm-skills/**），僅作參考用，不自動安裝
+		installMode: "plugin",
+		curatedResources: {
+			agents: ["analyst", "qa-gate-checker"],
+		},
 	},
 };
 
@@ -134,11 +262,18 @@ async function syncSource(sourceName, config, options = {}) {
 	);
 
 	try {
-		// 克隆
-		execFileSync("git", ["clone", "--depth", "1", config.url, tempDir], {
-			stdio: "pipe",
-			timeout: 60000,
-		});
+		// 克隆 — stderr 串入 throw 以便上層拿到真實 git 錯誤（401 / not-found / proxy）
+		try {
+			execFileSync("git", ["clone", "--depth", "1", config.url, tempDir], {
+				stdio: "pipe",
+				timeout: 60000,
+			});
+		} catch (err) {
+			const stderr = err.stderr?.toString() || "";
+			throw new Error(
+				`git clone ${config.url} 失敗${stderr ? `: ${stderr.trim()}` : ` (${err.message})`}`,
+			);
+		}
 
 		// 取得 commit SHA
 		const sha = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -150,18 +285,25 @@ async function syncSource(sourceName, config, options = {}) {
 		// 移除克隆的 .git
 		fs.rmSync(path.join(tempDir, ".git"), { recursive: true, force: true });
 
-		// 安全驗證 — 僅驗證指定的資源子目錄
+		// 安全驗證 — 僅驗證指定的資源子目錄；validatePaths 全 missing 視為 repo 結構異常
 		const pathsToValidate = config.validatePaths || [];
 		if (pathsToValidate.length > 0) {
+			let validatedAny = false;
 			for (const subDir of pathsToValidate) {
 				const subPath = path.join(tempDir, subDir);
 				if (!fs.existsSync(subPath)) continue;
+				validatedAny = true;
 				const { ok, summary } = await validateContent(subPath);
 				if (!ok) {
 					throw new Error(
 						`${sourceName}/${subDir} 安全驗證失敗: ${summary.errors.map((e) => e.message).join(", ")}`,
 					);
 				}
+			}
+			if (!validatedAny) {
+				throw new Error(
+					`${sourceName} 結構異常: 預期路徑全部不存在（${pathsToValidate.join(", ")}），上游 repo 可能已重組`,
+				);
 			}
 		} else {
 			const { ok, summary } = await validateContent(tempDir);
@@ -182,6 +324,15 @@ async function syncSource(sourceName, config, options = {}) {
 		try {
 			fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 			fs.cpSync(tempDir, targetPath, { recursive: true, dereference: true });
+
+			// 寫入路徑映射 manifest，供 countResources / loadFromCache 使用
+			if (config.resourcePaths) {
+				fs.writeFileSync(
+					path.join(targetPath, "_ab-tao-paths.json"),
+					JSON.stringify({ resourcePaths: config.resourcePaths }, null, 2),
+				);
+			}
+
 			recordSync(sourceName, sha);
 
 			if (fs.existsSync(backupPath)) {
@@ -242,18 +393,35 @@ async function syncSelected(sourceNames, options = {}) {
 function countResources(sourceName) {
 	const sourceDir = path.join(RESOURCES_PATH, sourceName);
 	if (!fs.existsSync(sourceDir)) return null;
+
+	// 讀取路徑映射 manifest（由 syncSource 寫入）
+	const pathsFile = path.join(sourceDir, "_ab-tao-paths.json");
+	const customPaths = fs.existsSync(pathsFile)
+		? (JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {})
+		: {};
+
 	const count = (sub) => {
-		const dir = path.join(sourceDir, sub);
-		if (!fs.existsSync(dir)) return 0;
-		return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
+		const subPath = customPaths[sub] ?? sub;
+		const dirs = Array.isArray(subPath) ? subPath : [subPath];
+		let total = 0;
+		for (const p of dirs) {
+			const dir = path.join(sourceDir, p);
+			if (!fs.existsSync(dir)) continue;
+			total += fs.readdirSync(dir).filter((f) => f.endsWith(".md")).length;
+		}
+		return total;
 	};
 	const commands = count("commands");
 	const agents = count("agents");
 	const rules = count("rules");
-	// skills: 子目錄含 SKILL.md
+
+	// skills: 子目錄含 SKILL.md（支援字串或陣列形式的 skills 根目錄）
 	let skills = 0;
-	const skillsDir = path.join(sourceDir, "skills");
-	if (fs.existsSync(skillsDir)) {
+	const skillsPath = customPaths.skills ?? "skills";
+	const skillsDirs = Array.isArray(skillsPath) ? skillsPath : [skillsPath];
+	for (const sp of skillsDirs) {
+		const skillsDir = path.join(sourceDir, sp);
+		if (!fs.existsSync(skillsDir)) continue;
 		for (const d of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (
 				d.isDirectory() &&

@@ -66,7 +66,7 @@ pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
 推薦安裝層（第三方輪子）：
 ```
   Token 優化            — RTK（Bash 輸出 -89%，brew install rtk）
-  官方 Plugins          — code-review · commit-commands · feature-dev · security-guidance · hookify · ralph-loop · session-report · code-simplifier
+  官方 Plugins          — code-review · security-guidance · hookify · ralph-loop · session-report
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
   監控與診斷            — claude-hud（自動部署 wrapper + 注入 plugin）· doctor（環境診斷）
 ```

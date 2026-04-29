@@ -11,9 +11,19 @@ import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
 import { BACK, handleCancel } from "../cli/prompts.mjs";
-import { HOME } from "../core/paths.mjs";
+import { HOME, P } from "../core/paths.mjs";
 
 const CLAUDE_DIR = path.join(HOME, ".claude");
+
+/**
+ * 確保 P.abTao 命名空間下的所有子目錄存在。
+ * 每次 install 時呼叫，保持冪等。
+ */
+function initAbTaoDirs() {
+	for (const dir of Object.values(P.abTao)) {
+		fs.mkdirSync(dir, { recursive: true });
+	}
+}
 
 export default {
 	id: "claude-base",
@@ -363,6 +373,64 @@ export default {
 			result.claudeMd = "kept";
 		}
 
+		// 初始化 builtin profile yml（確保新增的 profile 部署到 ~/.claude/.ab-tao/profiles/）
+		try {
+			const { initDefaultProfiles } = await import("../install/profiles.mjs");
+			initDefaultProfiles(path.join(ctx.repoDir, "claude", "profiles"));
+		} catch {
+			// profiles.mjs 不存在或 initDefaultProfiles 失敗不應中斷主流程
+		}
+
+		// 初始化 .ab-tao/ 子目錄（P.abTao.xxx 命名空間對應的實體目錄）
+		initAbTaoDirs();
+
+		// 部署 intent-cache seed（若 runtime 目錄尚無此檔案，從 commons resources 複製）
+		try {
+			const intentCacheDest = path.join(P.abTao.runtime, "intent-cache.json");
+			if (!fs.existsSync(intentCacheDest)) {
+				const intentCacheSrc = path.join(
+					ctx.repoDir,
+					"..",
+					"..",
+					"packages",
+					"commons",
+					"resources",
+					"ai",
+					"intent-cache.json",
+				);
+				if (fs.existsSync(intentCacheSrc)) {
+					fs.copyFileSync(intentCacheSrc, intentCacheDest);
+				}
+			}
+		} catch {
+			// intent-cache 複製失敗不應中斷主流程
+		}
+
+		// M3.6.2 failure-patterns seed（若 corrections 目錄尚無此檔案，從 commons template 複製）
+		try {
+			const failurePatternsDest = path.join(
+				P.abTao.corrections,
+				"failure-patterns.md",
+			);
+			if (!fs.existsSync(failurePatternsDest)) {
+				const failurePatternsSrc = path.join(
+					ctx.repoDir,
+					"..",
+					"..",
+					"packages",
+					"commons",
+					"resources",
+					"ai",
+					"failure-patterns-template.md",
+				);
+				if (fs.existsSync(failurePatternsSrc)) {
+					fs.copyFileSync(failurePatternsSrc, failurePatternsDest);
+				}
+			}
+		} catch {
+			// failure-patterns 複製失敗不應中斷主流程
+		}
+
 		return result;
 	},
 
@@ -388,7 +456,7 @@ export default {
 			}
 		}
 
-		for (const f of ["settings.json", "hooks.json"]) {
+		for (const f of ["settings.json"]) {
 			total++;
 			if (fs.existsSync(path.join(CLAUDE_DIR, f))) {
 				passed++;

@@ -51,6 +51,17 @@ export const P = {
 	),
 	claudeHudConfig: path.join(CLAUDE, "plugins", "claude-hud", "config.json"),
 	agentsMd: path.join(CLAUDE, "AGENTS.md"),
+
+	/** .ab-tao/ 子目錄命名空間（禁止在其他檔案硬編碼這些路徑） */
+	abTao: {
+		root: path.join(CLAUDE, ".ab-tao"),
+		runtime: path.join(CLAUDE, ".ab-tao", "runtime"),
+		memory: path.join(CLAUDE, ".ab-tao", "memory"),
+		corrections: path.join(CLAUDE, ".ab-tao", "corrections"),
+		metrics: path.join(CLAUDE, ".ab-tao", "metrics"),
+		logs: path.join(CLAUDE, ".ab-tao", "logs"),
+		schemas: path.join(CLAUDE, ".ab-tao", "schemas"),
+	},
 };
 
 /** 將絕對路徑轉為相對 HOME 的顯示路徑 */

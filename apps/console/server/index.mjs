@@ -20,6 +20,9 @@ import { restoreRouter } from "./routes/restore.mjs";
 import { scanRouter } from "./routes/scan.mjs";
 import { settingsRouter } from "./routes/settings.mjs";
 import { setupRouter } from "./routes/setup.mjs";
+import { sseFailurePatternsRouter } from "./routes/sse-failure-patterns.mjs";
+import { sseInstallProgressRouter } from "./routes/sse-install-progress.mjs";
+import { sseMetricsRouter } from "./routes/sse-metrics.mjs";
 import { statusRouter } from "./routes/status.mjs";
 import { syncRouter } from "./routes/sync.mjs";
 import { worklogRouter } from "./routes/worklog.mjs";
@@ -151,6 +154,13 @@ const server = createServer(async (req, res) => {
 
 		// /api/worklog/* — Worklog 草稿管理
 		if (await worklogRouter(req, res, url, json)) return;
+
+		// /api/sse/* — SSE 串流端點
+		if (url.pathname.startsWith("/api/sse")) {
+			if (await sseMetricsRouter(req, res, url)) return;
+			if (await sseFailurePatternsRouter(req, res, url)) return;
+			if (await sseInstallProgressRouter(req, res, url)) return;
+		}
 
 		// 未匹配路由
 		json(res, 404, "Not Found", null, 404);

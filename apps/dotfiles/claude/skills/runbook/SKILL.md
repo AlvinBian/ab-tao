@@ -73,3 +73,42 @@ curl -I https://{URL}/health
 ```
 
 依回答填入 `{...}` 佔位符生成完整 Runbook。
+
+## Retro（Sprint / Feature 回顧）
+
+> 觸發時機：功能 merge 後、Sprint 結束、或使用者輸入「retro」「回顧」「review this sprint」
+
+### 詢問
+
+1. 本次 Sprint / Feature 的目標是什麼？
+2. 哪些事進行順利？（Keep）
+3. 哪些事需要改進？（Improve）
+4. 哪些事下次不再做？（Stop）
+5. 有什麼意外收穫或學習？
+
+### 輸出模板
+
+```markdown
+# Retro：{功能 / Sprint 名稱}
+
+> 日期：{YYYY-MM-DD} | 負責人：{name}
+
+## Keep（繼續做）
+- {項目}
+
+## Improve（需要改進）
+- {項目}
+
+## Stop（停止做）
+- {項目}
+
+## 學習與意外收穫
+- {項目}
+
+## 行動項（Action Items）
+| 事項 | 負責人 | 期限 |
+|------|--------|------|
+| {事項} | {人} | {日期} |
+```
+
+> 輸出後自動寫入 `~/.claude/memory/retros/{YYYY-MM-DD}-{slug}.md`（需確認 memory 目錄存在）。

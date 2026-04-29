@@ -1,0 +1,24 @@
+name: day-to-day
+description: 日常開發（平衡模式，ab-tao 推薦預設）
+
+# 插件覆蓋（空 = 使用 plugins.yml 預設）
+plugins_enabled: []
+plugins_disabled: []
+
+# MCP 伺服器覆蓋（空 = 使用 settings.json 預設）
+mcp_overrides: {}
+
+# 記憶範圍
+memory_scope:
+  - ~/.claude/memory/preferences/
+  - ~/.claude/memory/patterns/
+
+# 備註
+notes: |
+  ab-tao 推薦日常預設：適合 bug fix、小 feature、維護工作。
+  建議搭配設定：
+    model: opusplan（Opus 計畫 + Sonnet 執行）
+    effortLevel: high（從 xhigh 降，省 ~15% 思考 token）
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: 80
+    CLAUDE_CODE_SUBAGENT_MODEL: sonnet
+  預期：準確度持平、月成本 ↓ 25% vs xhigh 基線。

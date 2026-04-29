@@ -341,9 +341,6 @@ export async function runAnalysisPipeline({
 			// 官方 plugins 名稱 — 與這些重複的外部資源不推薦
 			const OFFICIAL_PLUGIN_NAMES = new Set([
 				"code-review",
-				"commit-commands",
-				"feature-dev",
-				"code-simplifier",
 				"security-guidance",
 				"hookify",
 				"ralph-loop",

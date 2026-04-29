@@ -1,0 +1,43 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "ab-tao:state:runtime",
+	"title": "Runtime State",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"activeProfile": {
+			"type": "string",
+			"enum": [
+				"day-to-day",
+				"production",
+				"spike",
+				"frugal",
+				"personal",
+				"work",
+				"oss"
+			],
+			"description": "當前啟用的 profile"
+		},
+		"lastSwitchedAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "最後切換 profile 的時間"
+		},
+		"lastInstalledAt": {
+			"type": "string",
+			"format": "date-time",
+			"description": "最後執行安裝的時間"
+		},
+		"voiceTrigger": {
+			"type": "boolean",
+			"default": false,
+			"description": "是否啟用語音觸發"
+		},
+		"costRouting": {
+			"type": "string",
+			"enum": ["dynamic", "static"],
+			"default": "dynamic",
+			"description": "費用路由策略"
+		}
+	}
+}

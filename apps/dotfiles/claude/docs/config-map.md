@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.3.0)
+# ~/.claude/ 結構全圖 (v1.6.0)
 
 ```
 ~/.claude/
@@ -29,7 +29,8 @@
 │   ├── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
 │   ├── typescript.md            paths: *.ts *.tsx
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/
-│   └── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   └── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │
 ├── docs/                        # 參考文件（可 @import，非規則）
 │   ├── rtk.md                   RTK 工具 + token 預算影響
@@ -38,28 +39,35 @@
 │   ├── slack-audience-profiles.md   7 種 audience（reader mental model + 決策原則）+ channel 建議 + permalink 解析
 │   └── config-map.md            本文件
 │
-├── agents/                      # 2 focused agents
+├── agents/                      # 4 agents（2 核心 + 2 角色化）
 │   ├── architect.md             架構設計 + 5 維審查
-│   └── debugger.md              根因定位 + 最小 diff
+│   ├── debugger.md              根因定位 + 最小 diff
+│   ├── pm.md                    產品需求釐清 + 6 逼問框架（唯讀）
+│   └── reviewer.md              第二意見 code review（唯讀）
 │
-├── commands/                    # 5 unique commands
-│   ├── check.md
+├── commands/                    # 8 unique commands
+│   ├── check.md                 Build Fix + Quality Gate + 9-gate --gates
 │   ├── db-migration.md
 │   ├── pr-stack.md
 │   ├── slack.md
-│   └── test.md
+│   ├── specify.md               需求 → 結構化 spec（AC + non-goals）
+│   ├── test.md
+│   ├── verify.md                spec AC 反向覆蓋驗證
+│   └── worklog.md
 │
-├── skills/                      # 23 skills（按需載入）
+├── skills/                      # 24+ skills（按需載入）
 │
-├── hooks/                       # 7 hooks（事件驅動，零 context cost）
+├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
-│   │   ├── session-start.json   ab-tao:session:start
-│   │   ├── pre-tool-bash.json   ab-tao:pre:bash
-│   │   ├── pre-tool-edit.json   ab-tao:pre:edit
-│   │   ├── pre-compact.json     ab-tao:pre-compact
-│   │   ├── post-tool.json       ab-tao:post-tool
-│   │   ├── stop.json            ab-tao:stop
-│   │   └── session-end.json     ab-tao:session:end
+│   │   ├── session-start.json        ab-tao:session:start
+│   │   ├── pre-tool-bash.json        ab-tao:pre:bash
+│   │   ├── pre-tool-edit.json        ab-tao:pre:edit
+│   │   ├── pre-tool-edit-tdd.json    ab-tao:pre:edit:tdd（TDD 強制，預設 off）
+│   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）
+│   │   ├── pre-compact.json          ab-tao:pre-compact
+│   │   ├── post-tool.json            ab-tao:post-tool
+│   │   ├── stop.json                 ab-tao:stop
+│   │   └── session-end.json          ab-tao:session:end
 │   └── *.sh                     Hook 執行腳本
 │
 ├── memory/                      # 全域記憶（所有 session 共享）

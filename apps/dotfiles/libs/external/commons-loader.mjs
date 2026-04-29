@@ -1,8 +1,19 @@
 /**
  * Commons 資源載入器
  *
- * 掃描 @ab-tao/commons 已同步的所有 AI 來源（7 個），
+ * 掃描 @ab-tao/commons 已同步的所有 AI 來源（9 個），
  * 將 commands/agents/rules/skills 統一載入供 pipeline 使用。
+ *
+ * 兩條安裝管道（邊界說明）：
+ *   c:ai-sync（git clone）→ packages/commons/resources/ai/sources/<name>/  ← 本模組讀取此路徑
+ *   d:setup install（本模組）→ ~/.claude/  ← 安裝至本機 Claude 設定
+ *
+ *   plugin 模式（ecc / anthropic / superpowers / bmad）：
+ *     d:setup 呼叫 `claude plugin install <id>@<marketplace>` 走官方 Plugin Marketplace，
+ *     ai-sync 仍 clone 以保留 curatedResources 供展示，不直接複製到 ~/.claude/。
+ *
+ *   copy 模式（context-engineering / openskills / gstack / spec-kit / ai-sdlc）：
+ *     d:setup 直接從 commons resources 複製 commands/agents/rules/skills 至 ~/.claude/。
  */
 
 import fs from "node:fs";
@@ -10,41 +21,138 @@ import path from "node:path";
 import { TECH_TO_LANG } from "@ab-tao/commons/detect";
 import { RESOURCES_DIR } from "@ab-tao/commons/paths";
 
+// 計算 commands 資源時排除的非資源檔名
+const EXCLUDED_FILENAMES = [
+	"SKILL.md",
+	"README.md",
+	"CHANGELOG.md",
+	"LICENSE.md",
+];
+
 /**
- * 從目錄中載入所有 .md 檔案
+ * 各來源的安裝模式元資料
+ * 鏡像自 packages/commons/scripts/sync-sources.mjs 的 SOURCES_CONFIG.installMode 欄位。
+ * sync-sources.mjs 包含 CLI 入口點（module-level side effects），無法安全直接 import，
+ * 故在此維護一份僅含 installMode 相關欄位的精簡副本。
+ *
+ * plugin 模式：資源透過 Claude Code 官方 plugin marketplace 安裝
+ * copy 模式：資源直接複製至 ~/.claude/ 目錄
+ */
+const SOURCE_INSTALL_MODES = {
+	ecc: {
+		installMode: "plugin",
+		pluginId: "everything-claude-code",
+		pluginMarketplace: "https://github.com/affaan-m/everything-claude-code",
+	},
+	anthropic: {
+		installMode: "plugin",
+		pluginId: "anthropic-skills",
+		pluginMarketplace: "https://github.com/anthropics/skills",
+	},
+	superpowers: {
+		installMode: "plugin",
+		pluginId: "superpowers",
+		pluginMarketplace: "https://github.com/obra/superpowers",
+	},
+	bmad: {
+		installMode: "plugin",
+		pluginId: "bmad-method",
+		pluginMarketplace: "https://github.com/bmad-code-org/BMAD-METHOD",
+	},
+	"context-engineering": { installMode: "copy" },
+	openskills: { installMode: "copy" },
+	gstack: { installMode: "copy" },
+	"spec-kit": { installMode: "copy" },
+	"ai-sdlc": { installMode: "copy" },
+};
+
+/**
+ * 讀取來源的安裝模式資訊
+ * @param {string} sourceName - 來源名稱（如 'ecc', 'anthropic'）
+ * @returns {{ installMode: "plugin" | "copy", pluginId?: string, pluginMarketplace?: string }}
+ */
+export function getSourceInstallMode(sourceName) {
+	return SOURCE_INSTALL_MODES[sourceName] ?? { installMode: "copy" };
+}
+
+/**
+ * 讀取 source 目錄內的 _ab-tao-paths.json manifest
+ * @param {string} sourceDir - 來源目錄絕對路徑
+ * @returns {{ resourcePaths?: Record<string, string | string[]> }}
+ */
+function readResourcePaths(sourceDir) {
+	try {
+		const manifestPath = path.join(sourceDir, "_ab-tao-paths.json");
+		const raw = fs.readFileSync(manifestPath, "utf8");
+		return JSON.parse(raw);
+	} catch {
+		return { resourcePaths: {} };
+	}
+}
+
+/**
+ * 從目錄中載入所有 .md 檔案（排除 EXCLUDED_FILENAMES）
  * @returns {{ name: string, content: string }[]}
  */
 function loadMdFiles(dir) {
 	if (!fs.existsSync(dir)) return [];
 	return fs
 		.readdirSync(dir)
-		.filter((f) => f.endsWith(".md"))
+		.filter((f) => f.endsWith(".md") && !EXCLUDED_FILENAMES.includes(f))
 		.map((f) => ({
 			name: f,
 			content: fs.readFileSync(path.join(dir, f), "utf8"),
 		}));
 }
 
+// manifest resourcePaths[key] 可能是 string 或 string[]，統一回傳 string[]
+function resolveSubPaths(customPaths, key, fallback) {
+	const v = customPaths[key] ?? fallback;
+	return Array.isArray(v) ? v : [v];
+}
+
 /**
  * 從單一 source 目錄載入所有資源
+ * 優先讀取 _ab-tao-paths.json manifest 中的自訂路徑（resourcePaths）
  * @param {string} sourceName - 來源名稱（如 'ecc', 'anthropic'）
- * @returns {{ name: string, commands: array, agents: array, rules: array, skills: array } | null}
+ * @returns {{ name: string, commands: array, agents: array, rules: array, skills: array, pluginMode?: boolean, pluginId?: string } | null}
  */
 function loadSource(sourceName) {
 	const sourceDir = path.join(RESOURCES_DIR, sourceName);
 	if (!fs.existsSync(sourceDir)) return null;
 
+	const manifest = readResourcePaths(sourceDir);
+	const customPaths = manifest.resourcePaths ?? {};
+
+	const collect = (key) => {
+		let acc = [];
+		for (const sub of resolveSubPaths(customPaths, key, key)) {
+			acc = acc.concat(loadMdFiles(path.join(sourceDir, sub)));
+		}
+		return acc;
+	};
+
 	const result = {
 		name: sourceName,
-		commands: loadMdFiles(path.join(sourceDir, "commands")),
-		agents: loadMdFiles(path.join(sourceDir, "agents")),
-		rules: loadMdFiles(path.join(sourceDir, "rules")),
+		commands: collect("commands"),
+		agents: collect("agents"),
+		rules: collect("rules"),
 		skills: [],
 	};
 
-	// 掃描 skills 目錄（SKILL.md 格式）
-	const skillsDir = path.join(sourceDir, "skills");
-	if (fs.existsSync(skillsDir)) {
+	// 注入 plugin 模式標記（供呼叫端識別 plugin-mode 來源）
+	const installInfo = getSourceInstallMode(sourceName);
+	if (installInfo.installMode === "plugin") {
+		result.pluginMode = true;
+		if (installInfo.pluginId) {
+			result.pluginId = installInfo.pluginId;
+		}
+	}
+
+	// 掃描 skills 目錄（SKILL.md 格式，支援多根目錄合併）
+	for (const sub of resolveSubPaths(customPaths, "skills", "skills")) {
+		const skillsDir = path.join(sourceDir, sub);
+		if (!fs.existsSync(skillsDir)) continue;
 		for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
 			if (!entry.isDirectory()) continue;
 			const skillMd = path.join(skillsDir, entry.name, "SKILL.md");

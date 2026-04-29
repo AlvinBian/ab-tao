@@ -92,8 +92,11 @@ Separation of concerns: `commons` only syncs resources → `dotfiles` filters by
 | **anthropic**           | Anthropic official Skills                                |
 | **superpowers**         | Claude Superpowers — advanced agent capabilities         |
 | **context-engineering** | Context Engineering Skills (context optimization/compression/evaluation) |
-| **skills-mp**           | Skills Marketplace — curated community skill packs       |
 | **openskills**          | OpenSkills — open-source skill collection                |
+| **gstack**              | Garry Tan role-based slash commands (YC, 83.6K stars)    |
+| **spec-kit**            | GitHub official Spec-Driven Development                  |
+| **ai-sdlc**             | 11-phase full SDLC (Deploy / Observe / Retro covered)    |
+| **bmad**                | BMAD Quality Gate reference (core 10 agents)             |
 
 ## Tech Stack
 

@@ -9,13 +9,20 @@ import { readVersions } from "./version-tracker.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCES_PATH = path.resolve(__dirname, "../resources/ai/sources");
 
+// 結構規則對應 SOURCES_CONFIG 9 個 source；format=custom 跳過 SKILL.md 預設掃描
 const EXPECTED_STRUCTURES = {
 	ecc: { required: ["commands", "agents", "rules"], format: "ecc" },
 	anthropic: { required: [], format: "agent-skills" },
 	superpowers: { required: [], format: "agent-skills" },
 	"context-engineering": { required: [], format: "agent-skills" },
-	"skills-mp": { required: [], format: "agent-skills" },
 	openskills: { required: [], format: "agent-skills" },
+	gstack: { required: [], format: "custom" },
+	"spec-kit": { required: ["templates/commands"], format: "custom" },
+	"ai-sdlc": {
+		required: [".claude/agents", ".claude/commands", ".claude/skills"],
+		format: "custom",
+	},
+	bmad: { required: ["src"], format: "custom" },
 };
 
 function validateSourceStructure(sourceName, sourcePath) {

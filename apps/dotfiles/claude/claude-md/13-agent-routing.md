@@ -8,10 +8,10 @@
 | 除錯 / 修復 | `debugger` agent |
 | 複雜計畫 | `/plan` mode 或 `Plan` subagent |
 | 程式碼審查 | `code-review` plugin |
-| Feature 實作 | `feature-dev` plugin |
-| 代碼簡化 | `code-simplifier` plugin |
 | 廣域探索 | `Explore` subagent |
-| 找 skill / 補 skill | `ab-find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
+| 需求結構化 / spec | `/specify` command |
+| spec AC 反向驗證 | `/verify` command |
+| 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 
 ## 調度規則（強制）
 

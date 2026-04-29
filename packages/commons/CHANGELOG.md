@@ -1,5 +1,40 @@
 # @ab-tao/commons
 
+## 1.1.0
+
+### Minor Changes
+
+- feat: v1.6.0 Greenfield Release — AI Dispatcher、Chain Commands、Federated Memory
+
+  **M1 Foundation**
+
+  - commons-loader 讀 `_ab-tao-paths.json` manifest，動態解析各 source 安裝路徑
+  - `P.abTao` 子目錄命名空間正式化（runtime/memory/corrections/metrics/logs/schemas）
+  - 殘留清理：deprecated skill dirs、plugin 重分類（6 → 4 enabled，2 改 on-demand）
+
+  **M2 Core Features**
+
+  - 9 source `SOURCES_CONFIG` 加入 `curatedResources` 精選清單 + `installMode`（copy/plugin）欄位
+  - 5 個新 CLI：`d:profile` / `c:plugin` / `c:metrics` / `c:memory` / `c:skills:curated`
+  - `state.json` 加入 4 個 sub-schema：federated / failurePatterns / intentCache / metricsSnapshot
+  - `FEATURE_REGISTRY` + `d:uninstall --feature` 精細移除
+  - `settings.json._abTao` 區段（voiceTrigger / costRouting / tddStrictMode / securityMode）
+
+  **M3 AI Dispatcher & Chain Commands**
+
+  - `/ai` rule-based dispatcher — 39 條 intent 映射，自動路由到對應命令 / agent
+  - `/chain-product` / `/chain-tdd` Chain commands
+  - Federated memory CLI 三件套
+  - Console 17 view scaffold + 8 SSE channel（即時推送）
+  - M3.6：session-end failure-collect hook、voice-trigger hook、cost-aware routing hook
+
+  **Bug Fixes（AI sources sync）**
+
+  - `ai-source-select` needSync 改用 .versions.json sha 判斷，spinner 顯示真實計數
+  - `sync-sources` 移除 skills-mp，git clone 錯誤改串接 stderr
+  - 新增 `source-meta.mjs` 集中管理 icon/label map（消除三處重複）
+  - `prune-orphans` KNOWN_SOURCES 改從 SOURCES_CONFIG 自動派生
+
 ## 1.0.3
 
 ### Patch Changes

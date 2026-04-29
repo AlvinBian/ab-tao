@@ -6,8 +6,6 @@
  */
 
 import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import { RESOURCES_DIR } from "@ab-tao/commons/paths";
 import { SOURCES_CONFIG } from "@ab-tao/commons/sync";
 import { readVersions } from "@ab-tao/commons/versions";
 import * as p from "@clack/prompts";
@@ -53,17 +51,14 @@ export async function selectAiSources() {
 		return [];
 	}
 
-	// 找出需要同步的（未同步的）
-	const needSync = selected.filter((name) => {
-		const sourceDir = fs.existsSync(RESOURCES_DIR)
-			? fs.existsSync(`${RESOURCES_DIR}/${name}`)
-			: false;
-		return !sourceDir;
-	});
+	// 找出需要同步的（以 .versions.json sha 為單一事實來源）
+	const needSync = selected.filter((name) => !versions[name]?.sha);
+	let finalVersions = versions;
 
 	if (!isEmpty(needSync)) {
 		const spinner = p.spinner();
 		spinner.start(`正在同步 ${needSync.length} 個 AI 來源...`);
+		let stderrOutput = "";
 		try {
 			const pickArg = needSync.join(",");
 			execFileSync(
@@ -82,21 +77,35 @@ export async function selectAiSources() {
 					timeout: 120000,
 				},
 			);
-			spinner.stop(`已同步 ${needSync.length} 個 AI 來源`);
 		} catch (err) {
+			stderrOutput =
+				err.stderr?.toString() || err.stdout?.toString() || err.message || "";
+		}
+		// 重新讀 versions 比對真實成功 / 失敗集合
+		finalVersions = readVersions();
+		const succeeded = needSync.filter((n) => finalVersions[n]?.sha);
+		const failed = needSync.filter((n) => !finalVersions[n]?.sha);
+		if (failed.length === 0) {
+			spinner.stop(`已同步 ${succeeded.length} 個 AI 來源`);
+		} else {
 			spinner.stop(
 				pc.yellow(
-					`同步部分失敗（${err.message?.slice(0, 50)}），繼續使用已有資源`,
+					`同步完成：成功 ${succeeded.length} / 失敗 ${failed.length}（${failed.join(", ")}）`,
 				),
 			);
+			if (stderrOutput) p.log.error(stderrOutput.slice(-500));
 		}
+	} else {
+		p.log.info("所有選取來源均已同步，無需重新同步");
 	}
 
-	const lines = selected.map((name, i) => {
+	// 只回傳確認有 sha 的來源（過濾同步失敗者）
+	const ready = selected.filter((n) => finalVersions[n]?.sha);
+	const lines = ready.map((name, i) => {
 		const config = SOURCES_CONFIG[name];
 		return `  ${i + 1}. ${config.icon} ${pc.cyan(name)} ${config.description}`;
 	});
-	p.log.success(`已選擇 ${selected.length} 個 AI 來源：\n${lines.join("\n")}`);
+	p.log.success(`已就緒 ${ready.length} 個 AI 來源：\n${lines.join("\n")}`);
 
-	return selected;
+	return ready;
 }

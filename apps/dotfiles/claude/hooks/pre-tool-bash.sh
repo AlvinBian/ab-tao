@@ -35,6 +35,15 @@ BUILTIN_PATTERNS=(
 	'wget[[:space:]].*\|[[:space:]]*(bash|sh)'
 	'eval[[:space:]].*base64'
 	'eval[[:space:]]*\$\('
+	# gstack guard — 高風險操作（網路發布 / force-with-lease 變體）
+	'npm[[:space:]]+publish([[:space:]]|$)'
+	'yarn[[:space:]]+publish([[:space:]]|$)'
+	'pnpm[[:space:]]+publish([[:space:]]|$)'
+	'git[[:space:]].*push[[:space:]].*--force-with-lease'
+	'git[[:space:]].*push[[:space:]].*--(force|f)[[:space:]]*$'
+	'npx[[:space:]]+.*--yes[[:space:]].*exec'
+	'>[[:space:]]*/etc/'
+	'chmod[[:space:]]+[0-7]*[2367][[:space:]]'
 )
 for pattern in "${BUILTIN_PATTERNS[@]}"; do
 	printf '%s' "$COMMAND" | grep -Eiq "$pattern" && _block

@@ -2,7 +2,52 @@
 
 **繁體中文** | [简体中文](README-zh-CN.md) | [English](README-en.md)
 
-Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
+ab-tao 是 Turborepo monorepo — 開發環境統一管理 + 共用 Claude AI 資源。v1.6.0 為 greenfield 首次正式發布，不維護 v1.5 相容性。
+
+## v1.6.0 標誌特色
+
+- **10 個 AI source** — 4 plugin pure mode + 6 copy 模式，含 `curatedResources` 精選清單
+- **`/ai` rule-based dispatcher** — 30+ intent 映射，自動路由到對應命令 / agent
+- **failure-patterns append-only 自我演進** — session-end hook 記錄失敗模式，規則本體永不變
+- **7 個 profile + `d:profile` 快速切換** — `day-to-day` / `spike` / `work` / `production` 等
+- **Console 17 view scaffold + 8 SSE channel** — 即時推送，可視化管理所有配置
+- **4 維 100% 覆蓋** — 安裝 / 文件 / Console / Walkthrough 全場景完整
+
+## 快速開始（5 分鐘）
+
+```bash
+git clone https://github.com/AlvinBian/ab-tao.git
+cd ab-tao
+pnpm install
+pnpm run d:setup
+pnpm run d:profile day-to-day
+pnpm run c:ai-sync --select
+```
+
+## 能力矩陣
+
+| 功能 | 命令 | Milestone | 狀態 |
+| --- | --- | --- | --- |
+| 互動式環境部署 | `d:setup` | M1 | ✅ |
+| 技術棧感知安裝 | `d:scan` | M1 | ✅ |
+| commons AI 資源同步 | `c:ai-sync --select` | M1 | ✅ |
+| Profile 快速切換 | `d:profile <name>` | M2 | ✅ |
+| Plugin 管理 | `c:plugin --audit` | M2 | ✅ |
+| Failure patterns 自我演進 | session-end hook | M2 | ✅ |
+| `/ai` dispatcher | `/ai <intent>` | M3 | ✅ |
+| Chain commands | `/chain-product` / `/chain-tdd` | M3 | ✅ |
+| Federated memory | `c:memory --list-federated` | M3 | ✅ |
+| 精選 Skills | `c:skills:curated --from gstack` | M3 | ✅ |
+| Console 17 views | `pnpm run cs:dev` | M3 | ✅ |
+| 指標追蹤 | `c:metrics --summary` | M3 | ✅ |
+
+## 文件與資源
+
+- [完整文件](apps/dotfiles/claude/docs/) — API reference + 架構指南
+- [Walkthroughs](apps/dotfiles/docs/walkthroughs/) — 5 個完整使用情境指南
+- [Console GUI](apps/console/) — Vue 3 後台控制台
+- [CHANGELOG](CHANGELOG.md) — 版本記錄
+- [MIGRATION-v1.6.md](MIGRATION-v1.6.md) — v1.5 升級指引
 
 ## 這是什麼
 
@@ -92,8 +137,11 @@ ab-tao/
 | **anthropic**           | Anthropic 官方 Skills                                |
 | **superpowers**         | Claude Superpowers — 進階 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 優化/壓縮/評估） |
-| **skills-mp**           | Skills Marketplace — 社群精選技能包                  |
 | **openskills**          | OpenSkills — 開源技能集合                            |
+| **gstack**              | Garry Tan 角色化 slash commands（YC，83.6K stars）   |
+| **spec-kit**            | GitHub 官方 Spec-Driven Development                  |
+| **ai-sdlc**             | 11 phase 全 SDLC（Deploy / Observe / Retro 補齊）    |
+| **bmad**                | BMAD Quality Gate 機制參考（core 10 agents）         |
 
 ## 技術棧
 

@@ -118,16 +118,36 @@ async function checkCache(cacheDir, repo) {
 function loadFromCache(cacheDir) {
 	const result = { commands: [], agents: [], rules: [], hooks: null };
 
+	// 讀取路徑映射 manifest（由 sync-sources.mjs 的 syncSource 寫入）
+	const pathsFile = path.join(cacheDir, "_ab-tao-paths.json");
+	let customPaths = {};
+	if (fs.existsSync(pathsFile)) {
+		try {
+			customPaths =
+				JSON.parse(fs.readFileSync(pathsFile, "utf8")).resourcePaths ?? {};
+		} catch (err) {
+			console.warn(
+				"source-sync: malformed manifest at",
+				pathsFile,
+				err.message,
+			);
+		}
+	}
+
 	for (const sub of ["commands", "agents", "rules"]) {
-		const dir = path.join(cacheDir, sub);
-		if (!fs.existsSync(dir)) continue;
-		for (const f of fs
-			.readdirSync(dir)
-			.filter((f) => f.endsWith(".md") || f.endsWith(".json"))) {
-			result[sub].push({
-				name: f,
-				content: fs.readFileSync(path.join(dir, f), "utf8"),
-			});
+		const subPath = customPaths[sub] ?? sub;
+		const dirs = Array.isArray(subPath) ? subPath : [subPath];
+		for (const p of dirs) {
+			const dir = path.join(cacheDir, p);
+			if (!fs.existsSync(dir)) continue;
+			for (const f of fs
+				.readdirSync(dir)
+				.filter((f) => f.endsWith(".md") || f.endsWith(".json"))) {
+				result[sub].push({
+					name: f,
+					content: fs.readFileSync(path.join(dir, f), "utf8"),
+				});
+			}
 		}
 	}
 
