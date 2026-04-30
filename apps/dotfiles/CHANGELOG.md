@@ -39,6 +39,7 @@
 
 - Updated dependencies
   - @ab-tao/commons@1.1.0
+- feat(claude/rules): `claude-md/04-verification.md` 新增 Figma MCP 規格擷取強制規則 — 禁止單靠 `get_screenshot` 實作；`get_design_context` 為主要工具
 
 ## 1.5.0
 

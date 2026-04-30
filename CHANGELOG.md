@@ -101,3 +101,10 @@
 - chore: 全域配置版本號 `CLAUDE.md` + `config-map.md` 升至 `v1.6.0`
 
 > 規則本體 language-agnostic，不綁副檔名；paths 覆蓋所有 JS-family（`.vue .ts .tsx .js .jsx .mjs .cjs`）；實際入口檔語言由當前專案技術棧決定。
+
+### 🔍 M5 Verification Rules — Figma MCP 規格擷取
+
+- feat: `claude-md/04-verification.md` 新增 Figma MCP 規格擷取強制規則
+  - 禁止單靠 `mcp__claude_ai_Figma__get_screenshot` 實作 Figma 設計（截圖只回圖片，拿不到 layer 名 / 尺寸 / 字體 / 顏色 hex / design tokens / Code Connect 對映）
+  - 主要工具明確為 `get_design_context`（回傳 React+Tailwind 結構 + 設計 hints + tokens）
+  - `get_screenshot` 降為視覺輔助：可與 `get_design_context` 並用，禁止單獨作為實作依據

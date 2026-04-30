@@ -8,6 +8,14 @@
 查證來源優先級：官方文件 > 官方 GitHub > 官方 changelog > 社群驗證資源
 查證後仍無法確認時，必須明確告知：「此項目未找到官方依據，建議至 [來源] 自行確認」
 
+## Figma MCP 規格擷取
+
+實作 Figma 設計時，**禁止單靠 `mcp__claude_ai_Figma__get_screenshot` 出代碼**——截圖只回圖片，無法取得 layer 名、尺寸、字體、顏色、design tokens、Code Connect 對映等具體規格。
+
+- ✅ 主要工具：`mcp__claude_ai_Figma__get_design_context`（回傳 React+Tailwind 結構 + 設計 hints + tokens）
+- ⚠️ 輔助工具：`get_screenshot` 僅作視覺參考，必須與 `get_design_context` 並用，禁止單獨實作
+- ❌ 禁止：只看截圖就推測像素值、字體大小、顏色 hex、間距
+
 ## 何時不需要 web search
 
 - 使用者已提供官方文件 / 程式碼片段 → 直接基於提供內容回答
