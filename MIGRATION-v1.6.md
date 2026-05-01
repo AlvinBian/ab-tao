@@ -31,7 +31,6 @@ v1.6.0 在 `~/.claude/.ab-tao/state.json` 新增四個 sub-schema（ADR-001）�
 | `bmad` | enabled | on-demand | 重量級，按需 |
 | `ai-sdlc` | enabled | on-demand | 按需載入 |
 | `gstack` | enabled | on-demand | 按需載入 |
-| `openskills` | enabled | on-demand | 按需載入 |
 
 啟用方式：`pnpm run c:plugin --enable <plugin-name>`
 

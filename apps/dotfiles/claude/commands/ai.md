@@ -48,6 +48,8 @@ description: "rule-based 意圖 dispatcher：自然語言輸入 → 對應命令
 
 完整映射表：`~/.claude/.ab-tao/runtime/intent-cache.json`
 
+完整 intent 說明與 30+ 映射條目：`@docs/ai-dispatcher.md`
+
 ## 擴充意圖
 
 直接編輯 `~/.claude/.ab-tao/runtime/intent-cache.json` 的 `intents` 物件加入自訂映射。

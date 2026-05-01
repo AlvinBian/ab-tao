@@ -20,7 +20,8 @@
 		"ai-sync": "node scripts/sync-sources.mjs",
 		"skills": "node scripts/skills.mjs",
 		"validate": "node scripts/validate-structure.mjs",
-		"translate": "node scripts/generate-translations.mjs"
+		"translate": "node scripts/generate-translations.mjs",
+		"locals": "node scripts/locals.mjs"
 	},
 	"dependencies": {
 		"@ab-tao/share": "workspace:*"

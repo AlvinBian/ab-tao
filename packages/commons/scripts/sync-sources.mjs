@@ -83,24 +83,12 @@ const SOURCES_CONFIG = {
 			],
 		},
 	},
-	openskills: {
-		url: "https://github.com/numman-ali/openskills.git",
-		icon: "🌍",
-		description: "openskills 社群 skills 集合",
-		validatePaths: ["skills"],
-		optional: true,
-		installMode: "copy",
-		curatedResources: {
-			skills: ["problem-solving", "research-synthesis", "systematic-debugging"],
-		},
-	},
 	gstack: {
 		url: "https://github.com/garrytan/gstack.git",
 		icon: "🎯",
-		description: "Garry Tan 23 角色化 slash commands（YC，83.6K stars）",
-		validatePaths: ["skills", "commands"],
+		description: "Garry Tan 角色化 slash commands（60+ skills）",
+		validatePaths: [],
 		optional: true,
-		// gstack skills 直接在頂層，無 skills/ wrapper
 		resourcePaths: { skills: "." },
 		installMode: "copy",
 		curatedResources: {
@@ -199,6 +187,15 @@ const SOURCES_CONFIG = {
 		curatedResources: {
 			agents: ["analyst", "qa-gate-checker"],
 		},
+	},
+	"awesome-ai-pedia": {
+		url: "https://github.com/qdleader/Awesome-AI-Pedia.git",
+		icon: "📖",
+		description: "11 分類 AI 知識庫（工具 / 模型 / 提示詞 / Agent / 應用）",
+		optional: true,
+		installMode: "copy",
+		// 純 markdown，無需驗證子目錄結構
+		validatePaths: [],
 	},
 };
 
@@ -333,11 +330,11 @@ async function syncSource(sourceName, config, options = {}) {
 				);
 			}
 
-			recordSync(sourceName, sha);
-
 			if (fs.existsSync(backupPath)) {
 				fs.rmSync(backupPath, { recursive: true, force: true });
 			}
+
+			recordSync(sourceName, sha);
 		} catch (err) {
 			// 失敗時回滾
 			if (fs.existsSync(backupPath)) {

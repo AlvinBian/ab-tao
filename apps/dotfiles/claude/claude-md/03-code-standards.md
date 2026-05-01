@@ -29,6 +29,14 @@
 6. API 規範：統一回傳 `{ code, message, data }`；分頁統一使用 cursor-based
 7. 模組導出 / 引入：資料夾統一以 barrel 入口檔 re-export，外部禁止 deep import — 詳見 `rules/barrel-exports.md`
 
+## Simplicity First
+
+<!-- 來源：Karpathy LLM Coding Principles 缺項補充（Think Before Coding / Goal-Driven Execution 已內建於 15-§2/§5）-->
+- 拒絕 over-engineering：解決當下需求，不為假設性未來需求設計抽象
+- 3 行相似代碼可接受；4+ 行才考慮抽取，且確認複用機會真實存在
+- 優先複用 codebase 中已有的元件 / composable / util，新引入前先搜尋既有實現
+·- 新增套件前問：既有工具能否完成？能則不加依賴
+
 ## 收到代碼的工作流
 
 - **既有代碼**：先分析（說明問題或改進點）→ 確認意圖（修復 / 重構 / 擴充）→ 輸出；禁止直接覆蓋

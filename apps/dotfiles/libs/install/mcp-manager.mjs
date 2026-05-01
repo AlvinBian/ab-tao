@@ -67,16 +67,27 @@ export function applyMcpServers({ profile = "personal", dryRun = false } = {}) {
 			continue;
 		}
 
-		// 解析 env_ref
+		// 解析 env_ref（支援 string 與 mapping 兩種形式）
 		const env = {};
 		if (cfg.env_ref) {
-			const val = process.env[cfg.env_ref];
-			if (!val) {
-				results.missing_secrets.push(`${name} (需要 $${cfg.env_ref})`);
+			const entries =
+				typeof cfg.env_ref === "string"
+					? [[cfg.env_ref, cfg.env_ref]]
+					: Object.entries(cfg.env_ref); // [mcpEnvKey, processEnvKey]
+			let hasError = false;
+			for (const [mcpKey, processEnvKey] of entries) {
+				const val = process.env[processEnvKey];
+				if (!val) {
+					results.missing_secrets.push(`${name} (需要 $${processEnvKey})`);
+					hasError = true;
+				} else {
+					env[mcpKey] = val;
+				}
+			}
+			if (hasError) {
 				results.skipped.push(`${name} (secret 缺失)`);
 				continue;
 			}
-			env[cfg.env_ref] = val;
 		}
 
 		newServers[name] = {
@@ -111,7 +122,11 @@ export function listMcpServers(profile = "personal") {
 
 	return Object.entries(servers ?? {}).map(([name, cfg]) => {
 		const enabledForProfile = isEnabledForProfile(cfg, profile);
-		const secretPresent = !cfg.env_ref || !!process.env[cfg.env_ref];
+		const secretPresent =
+			!cfg.env_ref ||
+			(typeof cfg.env_ref === "string"
+				? !!process.env[cfg.env_ref]
+				: Object.values(cfg.env_ref).every((k) => !!process.env[k]));
 		const isInstalled = name in installed;
 
 		return {

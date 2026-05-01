@@ -34,6 +34,7 @@
 		"c:skills:curated": "node apps/dotfiles/bin/skills-curated.mjs",
 		"c:validate": "pnpm -C packages/commons run validate",
 		"c:translate": "pnpm -C packages/commons run translate",
+		"c:locals": "pnpm -C packages/commons run locals",
 		"c:plugin": "node apps/dotfiles/bin/plugin-audit.mjs --audit",
 		"c:metrics": "node apps/dotfiles/bin/metrics-report.mjs",
 		"c:memory": "node apps/dotfiles/bin/memory-lint.mjs --lint",

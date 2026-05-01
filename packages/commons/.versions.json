@@ -44,5 +44,11 @@
 		"date": "2026-04-27",
 		"locked": false,
 		"type": "ai"
+	},
+	"awesome-ai-pedia": {
+		"sha": "a66da87afe776d108848abf8880ecdac431c93e3",
+		"date": "2026-05-01",
+		"locked": false,
+		"type": "ai"
 	}
 }

@@ -13,6 +13,37 @@
 
 **禁止**：在 CLAUDE.md / plan / agent prompt 中主動建議使用者開啟此模式；禁止用於繞過安全 hook。
 
+## Git 操作紅線（強規則）
+
+### `git commit` / `git push`（Slack-style 三豁免）
+
+❗ **嚴禁未經授權執行 `git commit` / `git push`**。
+
+**授權任一即可**：
+1. **當前 turn 動作語義**：「commit 這個」「幫我提交」「push 出去」
+2. **session 級預先聲明**：plan frontmatter `autoCommit: true` 或 CLAUDE.local.md 明寫
+3. **自動化迴圈情境**：`/loop`、`ralph-loop`、CI/CD agent runs — skill prompt 已隱含授權
+
+**不屬於授權（必須暫停確認）**：
+- 「處理一下」「弄好它」「修完這個」（含糊指令，無動作語義）
+- task 完成後 Claude 自行判斷該 commit
+- 多 PR 工作流中段不確定是否該推進到下一支
+
+**強制流程**：如有疑問 → 呈現 diff + 詢問「是否 commit / push？[Y/N]」→ 等明確 Y 才執行。
+
+### `gh pr merge`（任何情境禁止，無豁免）
+
+❌ **禁止 `gh pr merge`**（任何 PR、任何情境，含 `autoCommit: true` 也不豁免）
+❌ **禁止開啟 GitHub auto-merge**
+✅ **PR merge 唯一方式**：GitHub UI 手動點擊
+
+詳細規範見 `rules/git-and-pr.md`（stacked PR 工作流、metadata 同步等）。
+
+### Force push（必先 backup）
+
+❌ Force push 前必先 `git branch backup/<original>`，禁直接覆蓋上游（任何模式皆不豁免）
+❌ `--no-verify` 僅限使用者明說 hotfix 緊急；自動化迴圈不豁免
+
 ## 外部通訊安全（強規則）
 
 ### Slack 訊息發送

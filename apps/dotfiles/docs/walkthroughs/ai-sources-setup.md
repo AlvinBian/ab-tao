@@ -44,7 +44,7 @@ pnpm run c:ai-sync --select
   ◉ ecc              — Claude Code 社群資源（commands/agents/rules/skills）
   ◉ anthropic        — Anthropic 官方 Skills
   ○ superpowers      — Claude Superpowers — 進階 agent 能力
-  ○ gstack           — Google Stack 最佳實踐
+  ○ gstack           — Garry Tan 60+ 角色化 skills
   ○ bmad             — BMAD 方法論框架
   ○ ai-sdlc          — AI-SDLC 完整開發生命週期
   ○ context-engineering  — Context 優化 / 壓縮 / 評估

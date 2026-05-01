@@ -64,6 +64,33 @@ const FEATURE_DEFS = [
 		visible: true,
 		order: 50,
 	},
+	{
+		id: "claude-context",
+		label: "🔍 語義代碼搜尋",
+		hint: "LM Studio + Milvus Docker — 需先手動啟動本地服務",
+		load: () => import("./integrations/claude-context.mjs"),
+		dependsOn: [],
+		visible: true,
+		order: 51,
+	},
+	{
+		id: "browser-harness",
+		label: "🌐 browser-harness",
+		hint: "Python uv + Playwright Chromium — 瀏覽器自動化（~300MB）",
+		load: () => import("./integrations/browser-harness.mjs"),
+		dependsOn: [],
+		visible: true,
+		order: 52,
+	},
+	{
+		id: "awesome-ai-pedia",
+		label: "📖 Awesome-AI-Pedia",
+		hint: "AI 知識庫同步（optional，按需使用）",
+		load: () => import("./integrations/awesome-ai-pedia.mjs"),
+		dependsOn: [],
+		visible: true,
+		order: 53,
+	},
 
 	// ── 內部功能（依賴鏈自動拉入，不在選單中顯示）────────
 	{

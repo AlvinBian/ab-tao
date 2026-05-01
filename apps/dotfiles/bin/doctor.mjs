@@ -10,9 +10,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as p from "@clack/prompts";
-import { P } from "../libs/core/paths.mjs";
+import { getDirname, P } from "../libs/core/paths.mjs";
 import { verifyPluginCachePaths } from "../libs/install/plugin-manager.mjs";
 import { stateWrite, verifyManaged } from "../libs/state/state.mjs";
+
+const __dirname = getDirname(import.meta);
+const REPO_ROOT = path.resolve(__dirname, "../../..");
 
 const FIX = process.argv.includes("--fix");
 const CLAUDE_BASE = path.resolve(P.state, "../..");
@@ -109,6 +112,67 @@ async function runPluginsSection() {
 	}
 }
 
+async function runAiSourcesSection() {
+	const VERSIONS_PATH = path.join(REPO_ROOT, "packages/commons/.versions.json");
+	const SOURCES_DIR = path.join(
+		REPO_ROOT,
+		"packages/commons/resources/ai/sources",
+	);
+
+	if (!fs.existsSync(SOURCES_DIR)) {
+		p.log.info("AI Sources：目錄不存在（尚未執行 pnpm run c:ai-sync）");
+		return;
+	}
+
+	let versions = {};
+	if (fs.existsSync(VERSIONS_PATH)) {
+		try {
+			versions = JSON.parse(fs.readFileSync(VERSIONS_PATH, "utf8"));
+		} catch {
+			p.log.warn(
+				"AI Sources：.versions.json 解析失敗（可能損壞），建議執行 c:ai-sync --all 重建",
+			);
+			return;
+		}
+	}
+
+	const sourceDirs = fs
+		.readdirSync(SOURCES_DIR, { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+		.map((d) => d.name);
+
+	const warnings = [];
+	for (const name of sourceDirs) {
+		const vEntry = versions[name];
+		const srcPath = path.join(SOURCES_DIR, name);
+		const fileCount = fs.readdirSync(srcPath).length;
+
+		if (!vEntry?.sha) {
+			warnings.push(`${name}：未同步（pnpm run c:ai-sync --source ${name}）`);
+			continue;
+		}
+		if (fileCount === 0) {
+			warnings.push(`${name}：目錄空白（pnpm run c:ai-sync --source ${name}）`);
+			continue;
+		}
+		if (vEntry.date) {
+			const daysSince =
+				(Date.now() - new Date(vEntry.date).getTime()) / (1000 * 86400);
+			if (daysSince > 90) {
+				warnings.push(
+					`${name}：${Math.floor(daysSince)} 天未更新（建議 pnpm run c:ai-sync --source ${name}）`,
+				);
+			}
+		}
+	}
+
+	if (warnings.length > 0) {
+		p.log.warn(`AI Sources 問題：\n  ${warnings.join("\n  ")}`);
+	} else {
+		p.log.success(`AI Sources：${sourceDirs.length} 個來源健康`);
+	}
+}
+
 async function main() {
 	p.intro(" d:doctor — State 健康診斷 ");
 
@@ -117,6 +181,9 @@ async function main() {
 
 	p.log.info("── Plugins ────────────────────────────────────────");
 	await runPluginsSection();
+
+	p.log.info("── AI Sources ─────────────────────────────────────");
+	await runAiSourcesSection();
 
 	if (!FIX) {
 		p.log.info("提示：加 --fix 自動修復 ghost 與 dead sync.included");

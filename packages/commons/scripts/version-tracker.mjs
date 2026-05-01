@@ -19,7 +19,9 @@ export function readVersions() {
  * @param {Record<string, object>} versions
  */
 export function writeVersions(versions) {
-	fs.writeFileSync(VERSIONS_PATH, `${JSON.stringify(versions, null, 2)}\n`);
+	const tmp = `${VERSIONS_PATH}.tmp.${process.pid}`;
+	fs.writeFileSync(tmp, `${JSON.stringify(versions, null, 2)}\n`);
+	fs.renameSync(tmp, VERSIONS_PATH);
 }
 
 /**
@@ -29,7 +31,7 @@ export function writeVersions(versions) {
  */
 export function recordSync(sourceName, sha) {
 	const versions = readVersions();
-	// 來源不存在時建立初始條目（支援 openskills、gstack 等新來源）
+	// 來源不存在時建立初始條目（支援 gstack 等新來源）
 	if (!versions[sourceName]) {
 		versions[sourceName] = { sha: "", date: "", locked: false, type: "ai" };
 	}

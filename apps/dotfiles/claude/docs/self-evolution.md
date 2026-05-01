@@ -1,6 +1,13 @@
-# 18-self-evolution
+# Self Evolution
 
 failure-patterns append-only 自我演進機制 — 累積糾正信號，規則本體永不修改。
+
+## ADR-002 Invariants（4 條強制不變式）
+
+1. **規則本體不可變**：`claude-md/` 下任何 `.md` 檔案不得被 Claude 自動修改；所有規則變更需人工審核並以 git commit 形式提交。
+2. **`failure-patterns.md` 為 append-only**：只允許新增條目，禁止刪除或覆蓋既有條目（dedupe 只改狀態，不刪行）。
+3. **糾正信號不等於新規則**：記錄信號是為了累積，累積足夠後才提交 ADR 讓人類決策是否更新規則；Claude 不得自行將信號升格為規則。
+4. **溯源完整性**：每個條目必須能追溯至原始 session 的使用者糾正語句；禁止憑推斷記錄不確定的糾正信號。
 
 ## Session-end Hook 觸發條件
 
@@ -42,15 +49,3 @@ session-end hook 在以下信號出現時，自動抽取並寫入 `failure-patte
 2. 語義相似度 ≥ 0.85 的條目合併為一，保留最早的 pattern ID
 3. 合併後的條目狀態改為 `reviewed`，附上「merged from P-XXXX, P-XXXX」
 4. 輸出摘要報告至 stdout
-
-## ADR-002 Invariants（4 條強制不變式）
-
-以下規則在 self-evolution 機制下**永遠成立**，任何 failure-pattern 不得違反：
-
-1. **規則本體不可變**：`claude-md/` 下任何 `.md` 檔案不得被 Claude 自動修改；所有規則變更需人工審核並以 git commit 形式提交。
-
-2. **`failure-patterns.md` 為 append-only**：只允許新增條目，禁止刪除或覆蓋既有條目（dedupe 只改狀態，不刪行）。
-
-3. **糾正信號不等於新規則**：記錄信號是為了累積，累積足夠後才提交 ADR 讓人類決策是否更新規則；Claude 不得自行將信號升格為規則。
-
-4. **溯源完整性**：每個 `failure-patterns.md` 條目必須能追溯至原始 session 的使用者糾正語句；禁止憑推斷記錄不確定的糾正信號。

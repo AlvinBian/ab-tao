@@ -15,7 +15,6 @@ const EXPECTED_STRUCTURES = {
 	anthropic: { required: [], format: "agent-skills" },
 	superpowers: { required: [], format: "agent-skills" },
 	"context-engineering": { required: [], format: "agent-skills" },
-	openskills: { required: [], format: "agent-skills" },
 	gstack: { required: [], format: "custom" },
 	"spec-kit": { required: ["templates/commands"], format: "custom" },
 	"ai-sdlc": {

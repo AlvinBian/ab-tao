@@ -1,5 +1,11 @@
 ---
-paths: ["**/*.md", "**/.github/**", "**/CHANGELOG*"]
+name: git-and-pr
+description: Git commit / PR 命名 / 堆疊 PR / force push 紅線（含 gh pr merge 禁用）。
+paths:
+  - "**/.github/**"
+  - "**/CHANGELOG*"
+  - "**/PULL_REQUEST_TEMPLATE*"
+  - "**/COMMIT_EDITMSG"
 ---
 
 ## Git 與 PR 規範

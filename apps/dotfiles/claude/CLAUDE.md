@@ -19,8 +19,7 @@
 ## 降噪與配置
 
 @claude-md/07-context-hygiene.md
-@claude-md/08-memory-system.md
-@claude-md/09-task-system.md
+@claude-md/08-state-system.md
 @claude-md/10-config-management.md
 
 ## 邊界與審查
@@ -30,8 +29,7 @@
 
 ## 尾錨定：Agent 調度 + 自我糾正（最高權重）
 
-@claude-md/13-agent-routing.md
-@claude-md/14-dag-parallel-execution.md
+@claude-md/13-agent-orchestration.md
 @claude-md/15-self-correction.md
 
 ## 參考資源（按需載入）
@@ -39,3 +37,4 @@
 @docs/rtk.md
 @docs/audit-checklists.md
 @docs/config-map.md
+@docs/local-tools.md

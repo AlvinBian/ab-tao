@@ -12,7 +12,7 @@
  *     d:setup 呼叫 `claude plugin install <id>@<marketplace>` 走官方 Plugin Marketplace，
  *     ai-sync 仍 clone 以保留 curatedResources 供展示，不直接複製到 ~/.claude/。
  *
- *   copy 模式（context-engineering / openskills / gstack / spec-kit / ai-sdlc）：
+ *   copy 模式（context-engineering / gstack / spec-kit / ai-sdlc）：
  *     d:setup 直接從 commons resources 複製 commands/agents/rules/skills 至 ~/.claude/。
  */
 
@@ -60,7 +60,6 @@ const SOURCE_INSTALL_MODES = {
 		pluginMarketplace: "https://github.com/bmad-code-org/BMAD-METHOD",
 	},
 	"context-engineering": { installMode: "copy" },
-	openskills: { installMode: "copy" },
 	gstack: { installMode: "copy" },
 	"spec-kit": { installMode: "copy" },
 	"ai-sdlc": { installMode: "copy" },

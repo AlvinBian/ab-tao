@@ -137,8 +137,7 @@ ab-tao/
 | **anthropic**           | Anthropic 官方 Skills                                |
 | **superpowers**         | Claude Superpowers — 進階 agent 能力                 |
 | **context-engineering** | Context Engineering Skills（context 優化/壓縮/評估） |
-| **openskills**          | OpenSkills — 開源技能集合                            |
-| **gstack**              | Garry Tan 角色化 slash commands（YC，83.6K stars）   |
+| **gstack**              | Garry Tan 角色化 slash commands（60+ skills）        |
 | **spec-kit**            | GitHub 官方 Spec-Driven Development                  |
 | **ai-sdlc**             | 11 phase 全 SDLC（Deploy / Observe / Retro 補齊）    |
 | **bmad**                | BMAD Quality Gate 機制參考（core 10 agents）         |

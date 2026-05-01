@@ -16,7 +16,6 @@ export const SOURCE_LABELS = {
 	anthropic: "Anthropic",
 	superpowers: "Superpowers",
 	"context-engineering": "CtxEng",
-	openskills: "OpenSkill",
 	gstack: "gstack",
 	"spec-kit": "spec-kit",
 	"ai-sdlc": "ai-sdlc",

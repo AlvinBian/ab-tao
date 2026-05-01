@@ -73,6 +73,37 @@
 					"description": "Paths relative to ~/.claude/ to exclude from sync"
 				}
 			}
+		},
+		"integrations": {
+			"type": "object",
+			"description": "外部整合服務安裝狀態（claude-context / browser-harness / awesome-ai-pedia）",
+			"additionalProperties": false,
+			"properties": {
+				"claude-context": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"enabled": { "type": "boolean", "default": false },
+						"installedAt": { "type": ["string", "null"], "format": "date-time" }
+					}
+				},
+				"browser-harness": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"enabled": { "type": "boolean", "default": false },
+						"installedAt": { "type": ["string", "null"], "format": "date-time" }
+					}
+				},
+				"awesome-ai-pedia": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"enabled": { "type": "boolean", "default": false },
+						"installedAt": { "type": ["string", "null"], "format": "date-time" }
+					}
+				}
+			}
 		}
 	}
 }

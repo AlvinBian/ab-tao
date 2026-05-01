@@ -19,6 +19,10 @@
 | `failure_pattern_added` | session-end-failure-collect.sh | `trigger`, `pattern_count` |
 | `adversarial_invocation` | c:adversarial CLI | `plan`, `models` |
 | `skill_invocation` | session-end hook 統計 | `skill`, `duration_ms` |
+| `claude_context_search` | claude-context-init skill 搜尋觸發（planned，尚無 emitter）| `query`, `results_count`, `duration_ms` |
+| `browser_harness_run` | browser-harness 任務執行（planned，尚無 emitter）| `task`, `success`, `duration_ms` |
+| `awesome_ai_pedia_search` | awesome-ai-search skill 觸發（planned，尚無 emitter）| `query`, `results_count` |
+| `integration_used` | 任意整合被呼叫（planned，尚無 emitter）| `integration`, `action` |
 
 ## v1.7+ 升級觸發閾值
 

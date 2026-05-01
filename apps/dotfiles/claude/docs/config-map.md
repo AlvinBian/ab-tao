@@ -1,28 +1,26 @@
-# ~/.claude/ 結構全圖 (v1.6.0)
+# ~/.claude/ 結構全圖 (v1.6.1)
 
 ```
 ~/.claude/
 │
 ├── CLAUDE.md                    # ≤80 行，純 @import 索引
 │
-├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）
+├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）14 檔（00–08, 10–13, 15）
 │   ├── README.md
 │   ├── 00-identity.md           首錨定
 │   ├── 01-language.md
 │   ├── 02-response-format.md
 │   ├── 03-code-standards.md     技術傾向 + 版本管理 + 程式碼規範
-│   ├── 04-verification.md
-│   ├── 05-security.md           安全規範 + bypassPermissions 風險揭露
+│   ├── 04-verification.md       查證規則 + Figma MCP + i18n 缺項
+│   ├── 05-security.md           安全規範 + bypassPermissions + Git 操作紅線
 │   ├── 06-quality-targets.md
 │   ├── 07-context-hygiene.md    降噪四層策略
-│   ├── 08-memory-system.md      Memory 生命週期 + 三溫層
-│   ├── 09-task-system.md        Tasks/Plans/Memory 邊界
+│   ├── 08-state-system.md       Tasks/Plans/Memory 邊界 + 三溫層 + 冷啟動（取代 08+09）
 │   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
-│   ├── 13-agent-routing.md      尾錨定（資源速查 + 調度規則）
-│   ├── 14-dag-parallel-execution.md  DAG 並行執行規則（尾錨定前）
-│   └── 15-self-correction.md    尾錨群（8 條自我糾正規則）
+│   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則 + DAG 並行，取代 13+14）
+│   └── 15-self-correction.md    尾錨群（8 條自我糾正 + 數值估算驗算）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
@@ -37,6 +35,10 @@
 │   ├── audit-checklists.md      三模式 checklist 完整版
 │   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns（commands/slack.md 動態載入）
 │   ├── slack-audience-profiles.md   7 種 audience（reader mental model + 決策原則）+ channel 建議 + permalink 解析
+│   ├── ai-dispatcher.md         /ai dispatcher 30+ intent 映射表 + 使用說明
+│   ├── federated-memory.md      第四溫層跨專案記憶設定與使用（projects.json 格式）
+│   ├── self-evolution.md        failure-patterns append-only 自我演進 + ADR-002 invariants
+│   ├── local-tools.md           LM Studio + Milvus + browser-harness + Awesome-AI-Pedia 本地工具安裝指引
 │   └── config-map.md            本文件
 │
 ├── agents/                      # 4 agents（2 核心 + 2 角色化）

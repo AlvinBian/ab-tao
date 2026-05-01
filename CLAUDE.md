@@ -49,6 +49,10 @@ pnpm run c:validate        # 驗證資源結構
 pnpm run cs:dev            # 啟動後台控制台（Vite + API server）
 pnpm run cs:build          # 構建 console SPA
 pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
+
+pnpm run c:locals --status   # 本地整合服務狀態（claude-context / browser-harness / AI-Pedia）
+pnpm run c:locals --start    # 啟動 Milvus
+pnpm run c:locals --doctor   # 診斷整合服務
 ```
 
 ## v2.0.0 架構：輕量化配置 + 命令驅動
@@ -70,6 +74,15 @@ pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
   增強工具              — pilot-shell · prompt-improver · LSP（按語言）
   監控與診斷            — claude-hud（自動部署 wrapper + 注入 plugin）· doctor（環境診斷）
 ```
+
+## v1.4.x 整合擴展
+
+d:setup 中可選的三個整合（需本地服務就緒）：
+- **🔍 語義代碼搜尋**（claude-context）— LM Studio + Milvus Docker，語意搜尋 codebase
+- **🌐 browser-harness** — Python uv + Playwright Chromium，瀏覽器自動化
+- **📖 Awesome-AI-Pedia** — AI 工具知識庫，grep-based 本地搜尋
+
+安裝指引：`apps/dotfiles/claude/docs/local-tools.md`
 
 ## v1.3.x 智能能力
 

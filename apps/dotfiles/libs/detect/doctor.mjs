@@ -4,7 +4,7 @@
  * 檢查順序：Homebrew → Node 版本管理（fnm/nvm/n）→ Node.js → pnpm → gh CLI → gh 登入 → claude CLI
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import * as p from "@clack/prompts";
 import { isEmpty } from "lodash-es";
@@ -124,6 +124,104 @@ export async function ensureEnvironment() {
 			ver: has("gh-stack") ? ver("gh-stack") : has("gs") ? ver("gs") : null,
 			failLabel:
 				"未安裝（可選 — 堆疊 PR 工具，建議 brew install abhinav/tap/git-spice）",
+			actionLabel: null,
+			optional: true,
+		},
+		// optional — 本地整合服務（claude-context / browser-harness / AI-Pedia）
+		{
+			name: "Docker daemon",
+			ok: (() => {
+				try {
+					execSync("docker info", { stdio: "pipe" });
+					return true;
+				} catch {
+					return false;
+				}
+			})(),
+			ver: ver("docker", "--version")?.match(/[\d.]+/)?.[0] ?? null,
+			failLabel: "未啟動（Milvus 需要，參考 docs/local-tools.md § A）",
+			actionLabel: null,
+			optional: true,
+		},
+		{
+			name: "LM Studio",
+			ok: (() => {
+				try {
+					execFileSync(
+						"curl",
+						["-sf", "--max-time", "2", "http://127.0.0.1:1234/v1/models"],
+						{ stdio: "pipe" },
+					);
+					return true;
+				} catch {
+					return false;
+				}
+			})(),
+			ver: null,
+			failLabel:
+				"未啟動（claude-context 語義搜尋，參考 docs/local-tools.md § A）",
+			actionLabel: null,
+			optional: true,
+		},
+		{
+			name: "Milvus",
+			ok: (() => {
+				try {
+					execFileSync(
+						"curl",
+						["-sf", "--max-time", "2", "http://127.0.0.1:19530/healthz"],
+						{ stdio: "pipe" },
+					);
+					return true;
+				} catch {
+					return false;
+				}
+			})(),
+			ver: null,
+			failLabel:
+				"未啟動（claude-context 向量資料庫，docker compose up milvus-standalone）",
+			actionLabel: null,
+			optional: true,
+		},
+		{
+			name: "browser-harness",
+			ok: (() => {
+				const playwrightBin = `${HOME}/.ab-tao/browser-harness/.venv/bin/playwright`;
+				if (!existsSync(playwrightBin)) return false;
+				try {
+					execFileSync(playwrightBin, ["--version"], { stdio: "pipe" });
+					return true;
+				} catch {
+					return false;
+				}
+			})(),
+			ver: null,
+			failLabel: "未安裝（Python venv + Playwright，執行 pnpm run d:setup）",
+			actionLabel: null,
+			optional: true,
+		},
+		{
+			name: "AI-Pedia",
+			ok: (() => {
+				const aipediaDir = `${HOME}/.ab-tao/external/awesome-ai-pedia`;
+				if (!existsSync(`${aipediaDir}/.git`)) return false;
+				try {
+					const ts = execFileSync(
+						"git",
+						["-C", aipediaDir, "log", "-1", "--format=%ct", "FETCH_HEAD"],
+						{ stdio: "pipe" },
+					)
+						.toString()
+						.trim();
+					if (!ts) return true;
+					return (Date.now() / 1000 - Number(ts)) / 86400 <= 30;
+				} catch {
+					return true;
+				}
+			})(),
+			ver: null,
+			failLabel:
+				"超過 30 天未更新（pnpm run c:ai-sync --source awesome-ai-pedia）",
 			actionLabel: null,
 			optional: true,
 		},

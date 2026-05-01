@@ -50,9 +50,6 @@ pnpm run c:skills --from <owner/repo>
 # 從指定 repo 搜尋並安裝符合關鍵字的 skills
 pnpm run c:skills --from <owner/repo> --find <keyword>
 
-# 常用社群來源
-pnpm run c:skills --from numman-ali/openskills --find <keyword>
-
 # 直接安裝本地 source skill
 pnpm run c:skills --install <name>
 
