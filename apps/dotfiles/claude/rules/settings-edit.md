@@ -1,3 +1,12 @@
+---
+name: settings-edit
+description: Claude / ab-tao 設定檔修改紅線與優先級。
+paths:
+  - "**/.claude/settings.json"
+  - "**/.claude/settings.local.json"
+  - "**/.ab-tao/state.json"
+---
+
 <config_management>
 
 ## 設定檔修改紅線

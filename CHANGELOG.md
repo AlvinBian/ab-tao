@@ -2,6 +2,37 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.7.0] — 2026-05-13 — Context Cold-Start Optimization v2
+
+### ✨ 三層載入架構（v1.7.0 核心）
+
+- feat: CLAUDE.md 重構為三層架構 — 首錨定 / 高風險紅線 / 對話初始錨定 / 按需載入表
+- feat: `rules/code-quality.md` 新增 — 版本管理 + 程式碼規範，.vue/.ts 編輯時條件注入
+- feat: `rules/settings-edit.md` 新增 — 設定檔修改紅線，.claude/settings.json 編輯時條件注入
+- feat: `rules/vue-nuxt.md` 補齊 quality_targets 區塊（從 06-quality-targets 合併）
+- feat: `docs/state-system-details.md` 新增 — 資料夾命名 + Plan Frontmatter Convention（從 08 按需指向）
+- chore: 刪除 `claude-md/06-quality-targets.md`（內容合入 rules/vue-nuxt.md）
+- chore: 刪除 `claude-md/10-config-management.md`（內容移至 rules/settings-edit.md）
+- refactor: `03-code-standards.md` 瘦身 — 版本管理 / 規範細節移至 rules/code-quality.md
+- refactor: `08-state-system.md` 瘦身 — 資料夾組織 / Plan Frontmatter 細節移至 docs/state-system-details.md
+- docs: `docs/config-map.md` 更新至 v1.7.0（12 個 claude-md，9 個 rules，12 個 docs）
+- docs: `docs/audit-checklists.md` 更新計數（claude-md 14→12，rules 7→9，docs 9→12）
+
+### ✨ 冷啟動優化 Phase 1（v1.6.1）
+
+- feat: `docs/agent-dag-parallel.md` 新增 — DAG 並行執行細節（從 13 按需指向）
+- feat: `docs/self-correction-details.md` 新增 — §5 目標錨定 + §7 半成品禁止（從 15 按需指向）
+- refactor: `13-agent-orchestration.md` 瘦身 — DAG 完整內容移至 docs/agent-dag-parallel.md
+- refactor: `15-self-correction.md` 精簡 9→5 節 — §2+§4 合併；§5+§7 移至 docs；移除 @import failure-patterns
+- chore: CLAUDE.md 移除 4 個假按需 @import（docs/rtk / audit-checklists / config-map / local-tools）
+
+### 📊 Context 效益
+
+- 冷啟動從 ~975 行降至 ~277 行（-72%，估節省 ~13,960 tokens）
+- always-on 載入：6 個核心 section（首錨定 3 + 高風險紅線 2 + 對話初始錨定 3 = 8 節）
+- 條件注入：9 個 rules/ 規則（paths: frontmatter 觸發）
+- 按需 Read：4 個 claude-md + 5 個 docs（LLM 依觸發詞自主載入）
+
 ## [1.6.0] — 2026-04-27 — Greenfield Release
 
 ### 🚀 M1 Foundation
