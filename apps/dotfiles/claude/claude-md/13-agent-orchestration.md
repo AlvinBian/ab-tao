@@ -37,47 +37,7 @@
 
 agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立第二意見、可平行的多方向探索。
 
-## DAG 並行執行
-
-**原則**：有明確依賴圖（DAG）的多 phase 任務，**強制優先使用多 agent 並行**，禁止盲目序列執行。
-
-### 何時觸發
-
-- plan / 任務含 ≥3 phase
-- phase 間有明確依賴（可繪 DAG）
-- 使用者批准 plan 後、使用者問「能並行嗎 / 有更好切分嗎」、使用者下「按照計畫執行」
-
-### 執行流程（4 步）
-
-1. **依賴分析**：列所有 phase → 繪 DAG → 標檔案衝突點
-2. **Wave 切分**：同 Wave 內 ① 無直接依賴 ② 無檔案衝突
-3. **並行啟動**：單一 message 多 Agent tool call（foreground）
-4. **Wave gate**：Wave N 全完成 + review → 啟 Wave N+1
-
-### 禁止
-
-- 序列執行可並行 phase
-- Wave 內未檢查檔案衝突就並行（race condition）
-- 不列 DAG 直接並行（邏輯錯誤）
-- 單 agent 跨 Wave 執行（違反 gate 原則）
-
-### 衝突處理
-
-兩 phase 改同檔 → 選一：
-- 合併為同一 agent（熱檔共修）
-- 強制序列化（放不同 Wave）
-- 拆檔解耦（若檔案本身過大）
-
-### Agent 分派建議
-
-| phase 類型 | 建議 subagent_type |
-|---|---|
-| 架構/設計評估 | `architect` |
-| 除錯 / build 修復 | `debugger` |
-| 程式碼審查 | `code-reviewer` |
-| 探索/分析 | `Explore` / `general-purpose` |
-| 規劃 | `/plan` mode / `Plan` subagent |
-| 重構/簡化 | `architect` agent（5 維審查含簡化建議）|
+> 多 phase 並行排程（DAG 切分 / Wave gate / 衝突處理）→ Read `~/.claude/docs/agent-dag-parallel.md`（任務含 ≥3 phase 時）。
 
 ## 瀏覽器自動化分流
 
@@ -88,7 +48,6 @@ agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立�
 | session 內互動 / Lighthouse / 記憶體分析 | chrome-devtools MCP |
 | 長任務 / self-healing / domain helper 沉澱 | browser-harness |
 
-> browser-harness **預設啟用**（d:setup 自動安裝）；不需要時可在 d:setup 功能選擇取消勾選，
-> 或透過 `c:locals --stop browser-harness` 暫停。
+> browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
 
 </agent_orchestration>
