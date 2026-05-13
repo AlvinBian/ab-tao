@@ -42,5 +42,27 @@
 - **既有代碼**：先分析（說明問題或改進點）→ 確認意圖（修復 / 重構 / 擴充）→ 輸出；禁止直接覆蓋
 - **新需求**：確認意圖與範圍 → 需求模糊時主動追問，禁止自行填補假設 → 確認後進入實作
 
+## JSDoc 規範
+
+開發時盡量補全完整 JSDoc 註釋：
+
+**必須加**：公開函式 / composable / utility、複雜邏輯、公開 `interface` / `type`、回傳值語義不明確的函式
+
+**標準格式**：
+```ts
+/**
+ * 一句話說明函式用途（繁體中文）。
+ *
+ * @param paramName - 參數說明
+ * @returns 回傳值說明
+ * @throws {ErrorType} 觸發條件（若會拋錯）
+ * @example
+ * const result = myFn('input') // => 'output'
+ */
+```
+
+**規則**：`@param` 與 `@returns` 每個都要補；TS 類型已宣告時可省略類型括號 `{Type}`；優先說明「為什麼 / 什麼時候用」，不重複函式名稱已表達的資訊。
+
+**可省略**：自說明的簡單 getter/setter、框架生命週期鉤子、單行 arrow function。
 
 </code_standards>
