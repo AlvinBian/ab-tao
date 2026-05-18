@@ -14,7 +14,7 @@
 	"includeGitInstructions": false,
 	"statusLine": {
 		"type": "command",
-		"command": "~/.claude/plugins/claude-hud/hud-wrapper.sh"
+		"command": "~/.claude/hooks/statusline.sh"
 	},
 	"extraKnownMarketplaces": {
 		"claude-hud": {
@@ -38,7 +38,9 @@
 		"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
 		"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
 		"DISABLE_EXTRA_USAGE_COMMAND": "1",
-		"CLAUDE_CODE_NO_FLICKER": "1"
+		"CLAUDE_CODE_NO_FLICKER": "1",
+		"CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "5",
+		"CLAUDE_CODE_PLUGIN_PREFER_HTTPS": "1"
 	},
 	"enabledPlugins": {
 		"code-review@claude-plugins-official": true,
@@ -54,15 +56,22 @@
 			"Bash(git push --force *)",
 			"Bash(git reset --hard *)",
 			"Bash(rm -rf /)",
-			"Bash(rm -rf ~)"
+			"Bash(rm -rf ~)",
+			"Bash(gh pr merge *)",
+			"Bash(gh pr review --approve *)",
+			"Bash(git commit --no-verify *)",
+			"Bash(git push --no-verify *)",
+			"Bash(npm publish *)",
+			"Bash(pnpm publish *)",
+			"Bash(claude plugin uninstall *)"
 		]
 	},
 	"_abTao": {
-		"version": "1.6.0",
+		"version": "1.7.1",
 		"voiceTrigger": false,
-		"costRouting": "dynamic",
+		"costRouting": "fixed",
 		"tddStrictMode": false,
-		"contextBudgetThreshold": 80,
+		"contextBudgetFileCount": 12,
 		"skillCreatorEnabled": false,
 		"memoryLintEnabled": true
 	}

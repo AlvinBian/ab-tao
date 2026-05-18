@@ -61,4 +61,15 @@
 - 任何需要推斷是否發送的情況
 
 **強制流程**：如有疑問 → 呈現完整草稿 → 明確詢問「是否發送至 Slack？[Y/N]」→ 等待明確確認後才執行。
+
+### /feedback 禁用（資料外洩防護）
+❗ **嚴禁主動執行 `/feedback`**。
+
+`/feedback` 預設會附帶最近 24h / 7d 的 session transcript，含 Confluence Cloud ID、Mixpanel API token、KKday 內部資料等敏感資訊，有外洩至 Anthropic 伺服器的風險。
+
+**禁止情況**：
+- 任何 session 中自行判斷要提交 feedback
+- 使用者說「回報問題」、「提交 feedback」但未明確同意 session 資料上傳
+
+**強制流程**：使用者要回報問題 → 先說明 session 附帶內容 → 得到明確確認後才執行。
 </security>

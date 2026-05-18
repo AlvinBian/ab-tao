@@ -2,6 +2,38 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.7.1] — 2026-05-18 — Security & Hook Hardening
+
+### 🔒 Security Rules
+
+- feat(claude-md): `05-security.md` 新增 `/feedback` 禁用規則 — 防止 session transcript（含 Confluence Cloud ID、Mixpanel token、內部資料）外洩至 Anthropic 伺服器
+- feat(settings): `settings.template.json` 新增 6 條 deny 規則（`gh pr merge`、`gh pr review --approve`、`git commit/push --no-verify`、`npm/pnpm publish`、`claude plugin uninstall`）
+
+### 🪝 Hooks 改善
+
+- feat(hooks): 新增 `post-tool-failure.json` — 工具失敗日誌 + terminalSequence 高頻告警（`ab-tao:post:tool:failure`）
+- fix(hooks): `reload-hint.sh` 改用 `terminalSequence` JSON 輸出，避免污染 Claude context；通知改為 OSC 9 桌面通知 + ANSI 黃色終端機文字
+- fix(hooks): 所有 `defs/*.json` command 格式統一為字串形式（`"bash $HOME/.claude/hooks/xxx.sh"`），與 `settings.json` 部署格式一致
+- fix(hooks): `pre-tool-context-budget.sh` 設定 key 修正（`contextBudgetThreshold` → `contextBudgetFileCount`）
+- chore(hooks): 移除 `pre-tool-edit-tdd.json`（TDD 強制 hook 已整合至 `tddStrictMode` 設定控制）
+
+### 📋 Claude Rules 新增
+
+- feat(claude-md): `07-context-hygiene.md` 新增 Rewind「Summarize up to here」工作流 — Phase 切換點主動 surgical 壓縮，優先於被動 `AUTOCOMPACT_PCT_OVERRIDE`
+- feat(claude-md): `13-agent-orchestration.md` 新增 Review 入口決策表（6 種工具分流）+ 多 session 監看（`claude agents`）
+- feat(claude-md): `03-code-standards.md` 新增 JSDoc 規範（必加情境 / 標準格式 / 可省略條件）
+
+### ⚙️ Settings Template
+
+- feat(settings): 新增環境變數 `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP=5`、`CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`
+- fix(settings): `statusLine.command` 更新為 `~/.claude/hooks/statusline.sh`
+- chore(settings): `costRouting` 改為 `fixed`；`contextBudgetThreshold` 重命名為 `contextBudgetFileCount`（預設值 12）
+
+### 📚 Docs
+
+- docs(config-map): 同步 hook defs 清單（移除 `pre-tool-edit-tdd`，新增 `post-tool-failure`）
+- chore: 移除 ghostty 配置（已獨立管理）
+
 ## [1.6.0] — 2026-04-27 — Greenfield Release
 
 ### 🚀 M1 Foundation

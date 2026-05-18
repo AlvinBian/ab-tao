@@ -8,7 +8,7 @@
 			"hooks": [
 				{
 					"type": "command",
-					"command": "$HOME/.claude/hooks/pre-tool-bash.sh",
+					"command": "bash $HOME/.claude/hooks/pre-tool-bash.sh",
 					"timeout": 5
 				}
 			]

@@ -64,10 +64,10 @@
 │   │   ├── session-start.json        ab-tao:session:start
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
 │   │   ├── pre-tool-edit.json        ab-tao:pre:edit
-│   │   ├── pre-tool-edit-tdd.json    ab-tao:pre:edit:tdd（TDD 強制，預設 off）
 │   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）
 │   │   ├── pre-compact.json          ab-tao:pre-compact
 │   │   ├── post-tool.json            ab-tao:post-tool
+│   │   ├── post-tool-failure.json    ab-tao:post:tool:failure（工具失敗日誌 + 告警）
 │   │   ├── stop.json                 ab-tao:stop
 │   │   └── session-end.json          ab-tao:session:end
 │   └── *.sh                     Hook 執行腳本

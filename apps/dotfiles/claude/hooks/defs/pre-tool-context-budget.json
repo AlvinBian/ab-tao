@@ -8,7 +8,7 @@
 			"hooks": [
 				{
 					"type": "command",
-					"command": "$HOME/.claude/hooks/pre-tool-context-budget.sh",
+					"command": "bash $HOME/.claude/hooks/pre-tool-context-budget.sh",
 					"timeout": 3
 				}
 			]

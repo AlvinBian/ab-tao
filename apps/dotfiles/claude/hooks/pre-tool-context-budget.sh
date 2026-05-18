@@ -6,7 +6,7 @@
 SETTINGS="$HOME/.claude/settings.json"
 THRESHOLD=12
 if command -v jq &>/dev/null && [[ -f "$SETTINGS" ]]; then
-	val=$(jq -r '._abTao.contextBudgetThreshold // empty' "$SETTINGS" 2>/dev/null)
+	val=$(jq -r '._abTao.contextBudgetFileCount // empty' "$SETTINGS" 2>/dev/null)
 	[[ -n "$val" ]] && THRESHOLD="$val"
 fi
 

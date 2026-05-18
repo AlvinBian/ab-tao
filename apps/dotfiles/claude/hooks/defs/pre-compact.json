@@ -7,7 +7,7 @@
 			"hooks": [
 				{
 					"type": "command",
-					"command": "$HOME/.claude/hooks/pre-compact.sh",
+					"command": "bash $HOME/.claude/hooks/pre-compact.sh",
 					"timeout": 5
 				}
 			]

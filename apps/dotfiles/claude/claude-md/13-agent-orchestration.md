@@ -79,6 +79,23 @@ agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立�
 | 規劃 | `/plan` mode / `Plan` subagent |
 | 重構/簡化 | `architect` agent（5 維審查含簡化建議）|
 
+## Review 入口決策表
+
+| 需求 | 工具 | 備註 |
+|---|---|---|
+| 第二意見 / 獨立 code review | `reviewer` agent | 主要 review 入口 |
+| PR 測試覆蓋率 | `pr-test-analyzer` agent | 行為覆蓋 + 漏洞防護 |
+| 無聲失敗 / 錯誤吞噬 | `silent-failure-hunter` agent | 專項分析 |
+| 型別設計 | `type-design-analyzer` agent | 不變量 + 封裝 |
+| 架構深度審查 | `architect` agent | 5 維度評分 |
+| PR slash 命令 | `code-review` plugin | `/code-review` slash |
+
+> `code-reviewer` agent 已移除（與 `reviewer` 高度重疊）。
+
+## 多 session 監看
+
+啟動 `/bg`、`ralph-loop` 或背景 agent 後，主對話可用 `claude agents` 一覽所有 session 狀態 / 耗時 / 退出原因，無需逐一切換。
+
 ## 瀏覽器自動化分流
 
 遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策：
