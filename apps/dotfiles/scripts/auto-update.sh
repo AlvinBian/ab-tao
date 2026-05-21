@@ -11,6 +11,15 @@
 # 自動觸發：
 #   - git pull 後（由 .git/hooks/post-merge 呼叫）
 #
+# 變更偵測路徑（git diff --name-only 相對於 repo root）：
+#   apps/dotfiles/claude/commands/  → Claude commands（透過 config-sync）
+#   apps/dotfiles/claude/agents/    → Claude agents（透過 config-sync）
+#   apps/dotfiles/claude/rules/     → Claude rules（透過 config-sync）
+#   apps/dotfiles/claude/hooks/     → hooks 配置（透過 config-sync）
+#   apps/dotfiles/zsh/modules/      → zsh 模組（ln -sf 至 ~/.zshrc.d/conf/）
+#   apps/dotfiles/zsh/.zshrc.d/sheldon/ → sheldon 插件配置
+#
+# 注意：~/.zshrc.local 為本機專屬設定，不受本腳本管控
 # =============================================================================
 set -e
 
@@ -73,12 +82,12 @@ step "② 分析變更範圍"
 CHANGED_FILES=$(git diff --name-only HEAD "origin/$REPO_BRANCH")
 
 # 分類變更
-COMMANDS_CHANGED=$(echo "$CHANGED_FILES" | grep "^claude/commands/" | sed 's|claude/commands/||;s|\.md$||' | tr '\n' ',' | sed 's/,$//')
-AGENTS_CHANGED=$(echo "$CHANGED_FILES"   | grep "^claude/agents/"   | sed 's|claude/agents/||;s|\.md$||'   | tr '\n' ',' | sed 's/,$//')
-RULES_CHANGED=$(echo "$CHANGED_FILES"    | grep "^claude/rules/"    | sed 's|claude/rules/||;s|\.md$||'    | tr '\n' ',' | sed 's/,$//')
-HOOKS_CHANGED=$(echo "$CHANGED_FILES"    | grep -c "claude/hooks.json" || true)
-ZSH_MODULES=$(echo "$CHANGED_FILES"      | grep "^zsh/\.zshrc\.d/conf/"  | sed 's|zsh/\.zshrc\.d/conf/||;s|\.zsh$||' | tr '\n' ',' | sed 's/,$//')
-SHELDON_CHANGED=$(echo "$CHANGED_FILES"  | grep -c "^zsh/\.zshrc\.d/sheldon/" || true)
+COMMANDS_CHANGED=$(echo "$CHANGED_FILES" | grep "^apps/dotfiles/claude/commands/" | sed 's|apps/dotfiles/claude/commands/||;s|\.md$||' | tr '\n' ',' | sed 's/,$//')
+AGENTS_CHANGED=$(echo "$CHANGED_FILES"   | grep "^apps/dotfiles/claude/agents/"   | sed 's|apps/dotfiles/claude/agents/||;s|\.md$||'   | tr '\n' ',' | sed 's/,$//')
+RULES_CHANGED=$(echo "$CHANGED_FILES"    | grep "^apps/dotfiles/claude/rules/"    | sed 's|apps/dotfiles/claude/rules/||;s|\.md$||'    | tr '\n' ',' | sed 's/,$//')
+HOOKS_CHANGED=$(echo "$CHANGED_FILES"    | grep -c "^apps/dotfiles/claude/hooks/" || true)
+ZSH_MODULES=$(echo "$CHANGED_FILES"      | grep "^apps/dotfiles/zsh/modules/"  | sed 's|apps/dotfiles/zsh/modules/||;s|\.zsh$||' | tr '\n' ',' | sed 's/,$//')
+SHELDON_CHANGED=$(echo "$CHANGED_FILES"  | grep -c "^apps/dotfiles/zsh/\.zshrc\.d/sheldon/" || true)
 
 # 顯示分析結果
 [[ -n "$COMMANDS_CHANGED" ]] && info "Claude commands：$COMMANDS_CHANGED" || skip "Claude commands（無變更）"
@@ -129,18 +138,21 @@ ESEOF
   DEPLOYED=$((DEPLOYED + 1))
 fi
 
-# zsh 環境模組（直接複製變更的檔案到 ~/.zshrc.d/conf/）
+# zsh 環境模組（透過 symlink 更新 ~/.zshrc.d/conf/）
 if [[ -n "$ZSH_MODULES" ]]; then
   info "更新 zsh 環境模組：$ZSH_MODULES"
   mkdir -p "$HOME/.zshrc.d/conf"
   IFS=',' read -rA _mods <<< "$ZSH_MODULES"
   for _m in $_mods; do
-    local _src="$REPO_DIR/zsh/.zshrc.d/conf/${_m}.zsh"
+    local _src="$REPO_DIR/zsh/modules/${_m}.zsh"
     local _dest="$HOME/.zshrc.d/conf/${_m}.zsh"
     if [[ -f "$_src" ]]; then
-      cp "$_src" "$_dest"
+      ln -sf "$_src" "$_dest"
       zcompile "$_dest" 2>/dev/null
       success "${_m}.zsh"
+    else
+      # 模組已刪除 — 移除對應 symlink
+      [[ -L "$_dest" ]] && rm "$_dest" && success "removed ${_m}.zsh"
     fi
   done
   DEPLOYED=$((DEPLOYED + 1))
