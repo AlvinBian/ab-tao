@@ -1,5 +1,15 @@
 # @ab-tao/dotfiles
 
+## 1.7.2
+
+### Patch Changes
+
+- feat(zsh): gitnexus aliases 搬移至 30-aliases.zsh 並補齊全套指令
+
+  - 將 gitnexus alias 從 `60-tools.zsh` 搬至語義正確的 `30-aliases.zsh`
+  - 原有 6 個 alias 擴充為 23 個，覆蓋所有 gitnexus CLI 指令
+  - 新增：`gnidx` `gnrm` `gndr` `gnui` `gnmcp` `gnq` `gnctx` `gnimp` `gncy` `gndc` `gnpub` `gngrp` `gngrpl` `gngrps` `gngrpi` `gngrpq` `gnsetup`
+
 ## 1.6.0
 
 ### Minor Changes
