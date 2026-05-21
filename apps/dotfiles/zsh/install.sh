@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# zsh/install.sh — zsh 模組 symlink 部署（v1.2.0）
+# zsh/install.sh — zsh 模組 symlink 部署（v1.3.0）
 #
 # 職責：將 zsh/modules/*.zsh 以 symlink 方式部署到 ~/.zshrc.d/conf/
 #       並在 ~/.zshrc 注入 ab-tao 結構（首次安裝）或補齊缺失項（升級）
+#
+# 模組清單（zsh/modules/）：
+#   00-env / 05-options / 10-history / 20-keys / 30-aliases /
+#   35-chrome / 40-git / 50-claude / 50-functions / 60-tools /
+#   90-plugins  （共 11 個，sheldon 插件管理另見 .zshrc.d/sheldon/）
 #
 # ~/.zshrc 結構（首次安裝時注入）：
 #   typeset -U path               ← PATH 去重，必須最先
@@ -11,11 +16,13 @@
 #   個人偏好 AB_*                  ← d:setup 填入，使用者可見可改
 #   # ab-tao:loader               ← 標記（防重複注入）
 #   for _f in ~/.zshrc.d/conf/*.zsh(N); do source "$_f"; done; unset _f
+#   [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local  ← 本機專屬（不受管控）
 #
 # 策略：
 #   - symlink 部署可重複執行（等冪）
 #   - ~/.zshrc 只追加一次（marker 防重複）
 #   - 升級時只補齊 typeset -U path，不重複注入 PATH
+#   - 本機專屬設定請寫入 ~/.zshrc.local（不在 repo 內，不會被覆蓋）
 #
 # 用法：
 #   bash zsh/install.sh          ← 部署所有模組
@@ -57,6 +64,7 @@ path=("$PNPM_HOME" $path)
 
 # === ab-tao:loader ===
 for _f in ~/.zshrc.d/conf/*.zsh(N); do source "$_f"; done; unset _f
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 ZSHRC_BLOCK
   echo "  → 已注入結構至 ~/.zshrc（typeset-U + PATH + loader）"
 else

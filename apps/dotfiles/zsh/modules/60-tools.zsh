@@ -64,6 +64,46 @@ fi
 # Claude Code CLI 短命令
 _command_exists claude && (( ! ${+aliases[cc]} )) && alias cc='claude'
 
+# GitNexus 知識圖譜 CLI
+if _command_exists gitnexus; then
+  # Index 管理
+  alias gna='gitnexus analyze --index-only'
+  alias gnaf='gitnexus analyze --index-only --force'
+  alias gnidx='gitnexus index'
+  alias gnc='gitnexus clean'
+  alias gnrm='gitnexus remove'
+
+  # 狀態 / 列表
+  alias gns='gitnexus status'
+  alias gnl='gitnexus list'
+  alias gndr='gitnexus doctor'
+
+  # UI / Server
+  alias gnui='gitnexus serve'
+  alias gnmcp='gitnexus mcp'
+
+  # 查詢 / 分析
+  alias gnq='gitnexus query'
+  alias gnctx='gitnexus context'
+  alias gnimp='gitnexus impact'
+  alias gncy='gitnexus cypher'
+  alias gndc='gitnexus detect-changes'
+
+  # 輸出 / 發佈
+  alias gnw='gitnexus wiki'
+  alias gnpub='gitnexus publish'
+
+  # Group（跨 repo）
+  alias gngrp='gitnexus group'
+  alias gngrpl='gitnexus group list'
+  alias gngrps='gitnexus group sync'
+  alias gngrpi='gitnexus group impact'
+  alias gngrpq='gitnexus group query'
+
+  # 初始設定
+  alias gnsetup='gitnexus setup'
+fi
+
 # FZF 環境變數（key-bindings 由 90-plugins.zsh 延遲載入）
 if _command_exists fzf; then
   if _command_exists fd; then
