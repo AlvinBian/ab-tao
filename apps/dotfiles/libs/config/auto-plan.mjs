@@ -40,9 +40,6 @@ const SETTINGS_PRESETS = {
 	model: "opusplan",
 	effortLevel: "high",
 	autoMemoryEnabled: true,
-	env: {
-		CLAUDE_AUTOCOMPACT_PCT_OVERRIDE: "80",
-	},
 };
 
 // ── ZSH 模組 ──

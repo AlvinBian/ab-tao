@@ -1,6 +1,6 @@
 {
 	"model": "opusplan",
-	"effortLevel": "xhigh",
+	"effortLevel": "high",
 	"autoMemoryEnabled": true,
 	"skipDangerousModePermissionPrompt": true,
 	"autoUpdatesChannel": "latest",
@@ -14,7 +14,7 @@
 	"includeGitInstructions": false,
 	"statusLine": {
 		"type": "command",
-		"command": "~/.claude/hooks/statusline.sh"
+		"command": "$HOME/.claude/hooks/statusline.sh"
 	},
 	"extraKnownMarketplaces": {
 		"claude-hud": {
@@ -26,7 +26,6 @@
 	},
 	"mcpServers": {},
 	"env": {
-		"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
 		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
 		"USE_BUILTIN_RIPGREP": "1",
 		"BASH_DEFAULT_TIMEOUT_MS": "60000",
