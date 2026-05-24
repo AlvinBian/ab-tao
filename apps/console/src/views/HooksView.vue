@@ -1,80 +1,84 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, ref } from "vue";
-import { useStatusStore } from "@/stores/status";
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { useStatusStore } from '@/stores/status'
 
-const store = useStatusStore();
-onMounted(() => store.fetchData());
+const store = useStatusStore()
+onMounted(() => store.fetchData())
 
-const d = computed(() => store.data?.extended?.hooks);
-const filterStatus = ref<"all" | "healthy" | "unhealthy">("all");
-const redeploying = ref<string | null>(null);
+const d = computed(() => store.data?.extended?.hooks)
+const filterStatus = ref<'all' | 'healthy' | 'unhealthy'>('all')
+const redeploying = ref<string | null>(null)
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredHooks = computed(() => {
-	const hooks = d.value?.hooks ?? [];
-	if (filterStatus.value === "healthy")
-		return hooks.filter((h) => h.exists && h.executable);
-	if (filterStatus.value === "unhealthy")
-		return hooks.filter((h) => !h.exists || !h.executable);
-	return hooks;
-});
+  const hooks = d.value?.hooks ?? []
+  if (filterStatus.value === 'healthy')
+    return hooks.filter(h => h.exists && h.executable)
+  if (filterStatus.value === 'unhealthy')
+    return hooks.filter(h => !h.exists || !h.executable)
+  return hooks
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function tagType(row: {
-	exists: boolean;
-	executable: boolean;
-}): "success" | "warning" | "danger" {
-	if (row.exists && row.executable) return "success";
-	if (row.exists) return "warning";
-	return "danger";
+  exists: boolean
+  executable: boolean
+}): 'success' | 'warning' | 'danger' {
+  if (row.exists && row.executable)
+    return 'success'
+  if (row.exists)
+    return 'warning'
+  return 'danger'
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-function tagLabel(row: { exists: boolean; executable: boolean }): string {
-	if (row.exists && row.executable) return "healthy";
-	if (row.exists) return "not-exec";
-	return "missing";
+function tagLabel(row: { exists: boolean, executable: boolean }): string {
+  if (row.exists && row.executable)
+    return 'healthy'
+  if (row.exists)
+    return 'not-exec'
+  return 'missing'
 }
 
 async function redeploy(hookId: string) {
-	redeploying.value = hookId;
-	try {
-		const r = await fetch("/api/hooks/redeploy", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ hookId }),
-		});
-		const { code, message } = (await r.json()) as {
-			code: number;
-			message: string;
-		};
-		if (code === 0) {
-			ElMessage.success("Hook 已重新部署");
-			store.fetchData(true);
-		} else {
-			ElMessage.error(message);
-		}
-	} catch {
-		ElMessage.error("操作失敗，請檢查 API Server");
-	} finally {
-		redeploying.value = null;
-	}
+  redeploying.value = hookId
+  try {
+    const r = await fetch('/api/hooks/redeploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hookId }),
+    })
+    const { code, message } = (await r.json()) as {
+      code: number
+      message: string
+    }
+    if (code === 0) {
+      ElMessage.success('Hook 已重新部署')
+      store.fetchData(true)
+    }
+    else {
+      ElMessage.error(message)
+    }
+  }
+  catch {
+    ElMessage.error('操作失敗，請檢查 API Server')
+  }
+  finally {
+    redeploying.value = null
+  }
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function redeployAll() {
-	try {
-		await ElMessageBox.confirm(
-			"將重新複製所有 Hook 腳本並更新 settings.json，確定繼續？",
-			"全部重新部署",
-			{ confirmButtonText: "確認", cancelButtonText: "取消", type: "warning" },
-		);
-	} catch {
-		// 用戶取消，不做任何操作
-		return;
-	}
-	await redeploy("all");
+  try {
+    await ElMessageBox.confirm(
+      '將重新複製所有 Hook 腳本並更新 settings.json，確定繼續？',
+      '全部重新部署',
+      { confirmButtonText: '確認', cancelButtonText: '取消', type: 'warning' },
+    )
+  }
+  catch {
+    // 用戶取消，不做任何操作
+    return
+  }
+  await redeploy('all')
 }
 </script>
 
@@ -93,7 +97,9 @@ async function redeployAll() {
         <el-card shadow="never">
           <el-statistic title="健康" :value="d?.healthy ?? 0">
             <template #suffix>
-              <el-tag type="success" size="small" style="margin-left:4px">healthy</el-tag>
+              <el-tag type="success" size="small" style="margin-left:4px">
+                healthy
+              </el-tag>
             </template>
           </el-statistic>
         </el-card>
@@ -101,8 +107,10 @@ async function redeployAll() {
       <el-col :span="6">
         <el-card shadow="never">
           <el-statistic title="異常" :value="(d?.total ?? 0) - (d?.healthy ?? 0)">
-            <template #suffix v-if="(d?.total ?? 0) - (d?.healthy ?? 0) > 0">
-              <el-tag type="danger" size="small" style="margin-left:4px">需修復</el-tag>
+            <template v-if="(d?.total ?? 0) - (d?.healthy ?? 0) > 0" #suffix>
+              <el-tag type="danger" size="small" style="margin-left:4px">
+                需修復
+              </el-tag>
             </template>
           </el-statistic>
         </el-card>
@@ -113,13 +121,17 @@ async function redeployAll() {
     <el-row v-if="(d?.hooks ?? []).length > 0" :gutter="16" style="margin-bottom:16px">
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header><span>Hooks 健康分佈（各事件）</span></template>
+          <template #header>
+            <span>Hooks 健康分佈（各事件）</span>
+          </template>
           <HooksByEventBar :hooks="d?.hooks ?? []" />
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="never">
-          <template #header><span>事件流向（Sankey）</span></template>
+          <template #header>
+            <span>事件流向（Sankey）</span>
+          </template>
           <HookEventFlowSankey :hooks="d?.hooks ?? []" />
         </el-card>
       </el-col>
@@ -131,9 +143,15 @@ async function redeployAll() {
         <div style="display:flex; align-items:center; gap:12px">
           <span>Hooks 健檢</span>
           <el-radio-group v-model="filterStatus" size="small">
-            <el-radio-button value="all">全部</el-radio-button>
-            <el-radio-button value="healthy">健康</el-radio-button>
-            <el-radio-button value="unhealthy">異常</el-radio-button>
+            <el-radio-button value="all">
+              全部
+            </el-radio-button>
+            <el-radio-button value="healthy">
+              健康
+            </el-radio-button>
+            <el-radio-button value="unhealthy">
+              異常
+            </el-radio-button>
           </el-radio-group>
           <el-button
             size="small"
@@ -152,7 +170,9 @@ async function redeployAll() {
         <el-table-column prop="name" label="名稱" min-width="160" show-overflow-tooltip />
         <el-table-column label="狀態" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="tagType(row)" size="small">{{ tagLabel(row) }}</el-tag>
+            <el-tag :type="tagType(row)" size="small">
+              {{ tagLabel(row) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="script" label="Script" min-width="200" show-overflow-tooltip>

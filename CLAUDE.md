@@ -6,7 +6,7 @@ Turborepo monorepo — 開發環境統一管理 + 共用資源庫。
 
 - **Node.js 18+ / pnpm 10+** — 運行環境
 - **Turborepo** — 任務編排與快取
-- **Biome** — 格式化與 lint
+- **ESLint（@antfu/eslint-config）** — 格式化與 lint（含 Vue template 分析）
 - **Changesets** — 版本管理
 
 ## 架構
@@ -26,8 +26,8 @@ packages/share/     — @ab-tao/share     — 共用工具庫：utils/libs
 pnpm run help              # 指令總覽
 pnpm run build             # 構建所有套件
 pnpm run test              # 執行測試
-pnpm run lint              # Biome lint
-pnpm run format            # 格式化
+pnpm run lint              # ESLint（turbo run lint）
+pnpm run format            # ESLint --fix（格式化 + lint 一次完成）
 
 pnpm run d:setup           # 互動式環境部署
 pnpm run d:scan            # 技術棧掃描

@@ -1,32 +1,32 @@
 {
-	"name": "@ab-tao/commons",
-	"version": "1.1.0",
-	"description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
-	"type": "module",
-	"exports": {
-		".": "./scripts/index.mjs",
-		"./sync": "./scripts/sync-sources.mjs",
-		"./validate": "./scripts/validate-structure.mjs",
-		"./detect": "./scripts/tech-detection.mjs",
-		"./loader": "./scripts/resource-loader.mjs",
-		"./security": "./scripts/security-validator.mjs",
-		"./versions": "./scripts/version-tracker.mjs",
-		"./paths": "./scripts/paths.mjs"
-	},
-	"scripts": {
-		"build": "echo 'commons build completed'",
-		"lint": "biome check .",
-		"test": "node --test __tests__/*.test.mjs",
-		"ai-sync": "node scripts/sync-sources.mjs",
-		"skills": "node scripts/skills.mjs",
-		"validate": "node scripts/validate-structure.mjs",
-		"translate": "node scripts/generate-translations.mjs",
-		"locals": "node scripts/locals.mjs"
-	},
-	"dependencies": {
-		"@ab-tao/share": "workspace:*"
-	},
-	"devDependencies": {
-		"commander": "^12.1.0"
-	}
+  "name": "@ab-tao/commons",
+  "type": "module",
+  "version": "1.1.0",
+  "description": "共用工具層 — AI 資源同步、安全驗證、版本追蹤、技術棧偵測",
+  "exports": {
+    ".": "./scripts/index.mjs",
+    "./sync": "./scripts/sync-sources.mjs",
+    "./validate": "./scripts/validate-structure.mjs",
+    "./detect": "./scripts/tech-detection.mjs",
+    "./loader": "./scripts/resource-loader.mjs",
+    "./security": "./scripts/security-validator.mjs",
+    "./versions": "./scripts/version-tracker.mjs",
+    "./paths": "./scripts/paths.mjs"
+  },
+  "scripts": {
+    "build": "echo 'commons build completed'",
+    "lint": "eslint .",
+    "test": "node --test __tests__/*.test.mjs",
+    "ai-sync": "node scripts/sync-sources.mjs",
+    "skills": "node scripts/skills.mjs",
+    "validate": "node scripts/validate-structure.mjs",
+    "translate": "node scripts/generate-translations.mjs",
+    "locals": "node scripts/locals.mjs"
+  },
+  "dependencies": {
+    "@ab-tao/share": "workspace:*"
+  },
+  "devDependencies": {
+    "commander": "^12.1.0"
+  }
 }

@@ -1,11 +1,11 @@
 {
-	"version": "1.6.0",
-	"runtime": {
-		"activeProfile": "work",
-		"lastSwitchedAt": "2026-04-20T09:00:00Z",
-		"lastInstalledAt": "2026-04-20T09:10:00Z",
-		"voiceTrigger": false,
-		"costRouting": "dynamic"
-	},
-	"sync": { "included": ["ecc", "gstack", "spec-kit", "context-engineering"] }
+  "version": "1.6.0",
+  "runtime": {
+    "activeProfile": "work",
+    "lastSwitchedAt": "2026-04-20T09:00:00Z",
+    "lastInstalledAt": "2026-04-20T09:10:00Z",
+    "voiceTrigger": false,
+    "costRouting": "dynamic"
+  },
+  "sync": { "included": ["ecc", "gstack", "spec-kit", "context-engineering"] }
 }

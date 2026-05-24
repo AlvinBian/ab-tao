@@ -1,64 +1,64 @@
 {
-	"$schema": "https://turbo.build/schema.json",
-	"globalDependencies": ["**/.env.*local"],
-	"globalPassThroughEnv": ["CI", "NODE_ENV"],
-	"tasks": {
-		"build": {
-			"dependsOn": ["^build"],
-			"outputs": ["dist/**"],
-			"inputs": ["lib/**", "scripts/**", "bin/**", "package.json"]
-		},
-		"lint": {
-			"dependsOn": [],
-			"outputs": [],
-			"inputs": ["lib/**", "scripts/**", "bin/**", "biome.json"],
-			"cache": true
-		},
-		"test": {
-			"dependsOn": ["^build"],
-			"outputs": ["coverage/**"],
-			"inputs": [
-				"lib/**",
-				"scripts/**",
-				"bin/**",
-				"**/__tests__/**",
-				"**/*.test.mjs",
-				"package.json"
-			],
-			"cache": true
-		},
-		"sync": {
-			"dependsOn": [],
-			"outputs": ["resources/**"],
-			"inputs": ["scripts/sync-sources.mjs"],
-			"cache": false
-		},
-		"validate": {
-			"dependsOn": ["sync"],
-			"outputs": [],
-			"inputs": [
-				"scripts/validate-structure.mjs",
-				"scripts/security-validator.mjs",
-				"resources/**"
-			],
-			"cache": false
-		},
-		"setup": {
-			"dependsOn": ["^build"],
-			"cache": false
-		},
-		"format": {
-			"dependsOn": [],
-			"outputs": [],
-			"inputs": ["**/*.mjs", "**/*.js", "**/*.ts", "biome.json"],
-			"cache": false
-		},
-		"clean": {
-			"cache": false
-		},
-		"dev": {
-			"cache": false,
-			"persistent": true
-		}
-	}
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "globalPassThroughEnv": ["CI", "NODE_ENV"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": ["lib/**", "scripts/**", "bin/**", "package.json"]
+    },
+    "lint": {
+      "dependsOn": [],
+      "outputs": [],
+      "inputs": ["lib/**", "scripts/**", "bin/**", "src/**", "eslint.config.js"],
+      "cache": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": [
+        "lib/**",
+        "scripts/**",
+        "bin/**",
+        "**/__tests__/**",
+        "**/*.test.mjs",
+        "package.json"
+      ],
+      "cache": true
+    },
+    "sync": {
+      "dependsOn": [],
+      "outputs": ["resources/**"],
+      "inputs": ["scripts/sync-sources.mjs"],
+      "cache": false
+    },
+    "validate": {
+      "dependsOn": ["sync"],
+      "outputs": [],
+      "inputs": [
+        "scripts/validate-structure.mjs",
+        "scripts/security-validator.mjs",
+        "resources/**"
+      ],
+      "cache": false
+    },
+    "setup": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "format": {
+      "dependsOn": [],
+      "outputs": [],
+      "inputs": ["**/*.mjs", "**/*.js", "**/*.ts", "**/*.vue", "eslint.config.js"],
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
 }

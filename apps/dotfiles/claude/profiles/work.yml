@@ -7,13 +7,13 @@ plugins_enabled:
   - code-review
   - security-guidance
 plugins_disabled:
-  - ralph-loop   # 公司環境快速作業，無需對抗式審查
+  - ralph-loop # 公司環境快速作業，無需對抗式審查
   - code-simplifier
 
 # settings.json 覆蓋（可選）
 settings_overrides:
   permissions:
-    defaultMode: plan   # 公司環境降為 plan mode 提高安全性
+    defaultMode: plan # 公司環境降為 plan mode 提高安全性
 
 # 記憶範圍（限制在公司相關 patterns）
 memory_scope:

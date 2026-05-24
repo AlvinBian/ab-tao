@@ -1,52 +1,50 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
-import { onMounted, ref, watch } from "vue";
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import SettingRow from "@/components/SettingRow.vue";
-import { useSettingsStore } from "@/stores/settings";
+import { ElMessage } from 'element-plus'
+import { onMounted, ref, watch } from 'vue'
+import SettingRow from '@/components/SettingRow.vue'
+import { useSettingsStore } from '@/stores/settings'
 
-const store = useSettingsStore();
-onMounted(() => store.fetchPrefs());
+const store = useSettingsStore()
+onMounted(() => store.fetchPrefs())
 
-const form = ref<Record<string, unknown>>({});
-const dirty = ref(false);
+const form = ref<Record<string, unknown>>({})
+const dirty = ref(false)
 
 watch(
-	() => store.prefs,
-	(p) => {
-		if (!p) return;
-		form.value = { ...p.prefs };
-		dirty.value = false;
-	},
-	{ immediate: true },
-);
+  () => store.prefs,
+  (p) => {
+    if (!p)
+      return
+    form.value = { ...p.prefs }
+    dirty.value = false
+  },
+  { immediate: true },
+)
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function onChange() {
-	dirty.value = true;
+  dirty.value = true
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function save() {
-	try {
-		await store.savePrefs(form.value);
-		dirty.value = false;
-		ElMessage.success("Preferences 已部署");
-	} catch (e) {
-		ElMessage.error(e instanceof Error ? e.message : "儲存失敗");
-	}
+  try {
+    await store.savePrefs(form.value)
+    dirty.value = false
+    ElMessage.success('Preferences 已部署')
+  }
+  catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '儲存失敗')
+  }
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function reset() {
-	if (!store.prefs) return;
-	form.value = { ...store.prefs.prefs };
-	dirty.value = false;
+  if (!store.prefs)
+    return
+  form.value = { ...store.prefs.prefs }
+  dirty.value = false
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function getDefault(key: string): unknown {
-	return store.prefs?.defaults?.[key];
+  return store.prefs?.defaults?.[key]
 }
 </script>
 
@@ -64,7 +62,9 @@ function getDefault(key: string): unknown {
     />
 
     <el-card shadow="never">
-      <template #header><span>Preferences 設定</span></template>
+      <template #header>
+        <span>Preferences 設定</span>
+      </template>
 
       <el-form v-if="store.prefs" label-width="180px" label-position="left">
         <SettingRow label="Notify Flush (秒)">
@@ -74,7 +74,9 @@ function getDefault(key: string): unknown {
             :max="3600"
             @change="onChange"
           />
-          <template #description>預設：{{ getDefault('notifyFlushSecs') }}</template>
+          <template #description>
+            預設：{{ getDefault('notifyFlushSecs') }}
+          </template>
         </SettingRow>
 
         <SettingRow
@@ -82,8 +84,12 @@ function getDefault(key: string): unknown {
           description="ZSH readline 鍵位綁定；emacs 為大多數終端預設，vi 適合習慣 vim 的使用者。"
         >
           <el-radio-group v-model="(form as Record<string, string>).keybinding" @change="onChange">
-            <el-radio value="emacs">emacs</el-radio>
-            <el-radio value="vi">vi</el-radio>
+            <el-radio value="emacs">
+              emacs
+            </el-radio>
+            <el-radio value="vi">
+              vi
+            </el-radio>
           </el-radio-group>
         </SettingRow>
 
@@ -103,7 +109,7 @@ function getDefault(key: string): unknown {
           label="Bat Theme"
           description="bat 語法高亮主題，影響 cat 替代指令的色彩呈現。"
         >
-          <el-select v-model="(form as Record<string, string>).batTheme" placeholder="選擇主題" @change="onChange" clearable>
+          <el-select v-model="(form as Record<string, string>).batTheme" placeholder="選擇主題" clearable @change="onChange">
             <el-option label="Dracula" value="Dracula" />
             <el-option label="TwoDark" value="TwoDark" />
             <el-option label="OneHalfDark" value="OneHalfDark" />
@@ -124,8 +130,10 @@ function getDefault(key: string): unknown {
       </el-form>
 
       <div style="text-align:right; margin-top:16px; display:flex; gap:8px; justify-content:flex-end">
-        <el-button @click="reset" :disabled="!dirty">還原</el-button>
-        <el-button type="primary" :loading="store.saving" @click="save" :disabled="!dirty">
+        <el-button :disabled="!dirty" @click="reset">
+          還原
+        </el-button>
+        <el-button type="primary" :loading="store.saving" :disabled="!dirty" @click="save">
           儲存並部署
         </el-button>
       </div>

@@ -1,11 +1,11 @@
 {
-	"version": "1.6.0",
-	"runtime": {
-		"activeProfile": "spike",
-		"lastSwitchedAt": "2026-04-27T09:00:00Z",
-		"lastInstalledAt": "2026-04-27T09:05:00Z",
-		"voiceTrigger": true,
-		"costRouting": "dynamic"
-	},
-	"sync": { "included": ["anthropic", "bmad"] }
+  "version": "1.6.0",
+  "runtime": {
+    "activeProfile": "spike",
+    "lastSwitchedAt": "2026-04-27T09:00:00Z",
+    "lastInstalledAt": "2026-04-27T09:05:00Z",
+    "voiceTrigger": true,
+    "costRouting": "dynamic"
+  },
+  "sync": { "included": ["anthropic", "bmad"] }
 }

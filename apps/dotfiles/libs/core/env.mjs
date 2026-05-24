@@ -7,17 +7,17 @@
  *   只載入一次（idempotent）。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { getDirname } from "./paths.mjs";
+import fs from 'node:fs'
+import path from 'node:path'
+import { getDirname } from './paths.mjs'
 
-const __dirname = getDirname(import.meta);
-const ENV_LOCAL_PATH = path.resolve(__dirname, "../..", ".env.local");
-const ENV_PATH = path.resolve(__dirname, "../..", ".env");
+const __dirname = getDirname(import.meta)
+const ENV_LOCAL_PATH = path.resolve(__dirname, '../..', '.env.local')
+const ENV_PATH = path.resolve(__dirname, '../..', '.env')
 
-const TEMPLATE_PATH = path.resolve(__dirname, "../..", ".env.template");
+const TEMPLATE_PATH = path.resolve(__dirname, '../..', '.env.template')
 
-let _loaded = false;
+let _loaded = false
 
 /**
  * 載入 .env 檔案到 process.env（只執行一次）
@@ -31,33 +31,39 @@ let _loaded = false;
  * @returns {void}
  */
 function parseEnvFile(filePath) {
-	for (const line of fs.readFileSync(filePath, "utf8").split("\n")) {
-		const trimmed = line.trim();
-		if (!trimmed || trimmed.startsWith("#")) continue;
-		const eq = trimmed.indexOf("=");
-		if (eq === -1) continue;
-		const key = trimmed.slice(0, eq).trim();
-		// 去除 value 前後相符的成對引號（單引號或雙引號）
-		const raw = trimmed.slice(eq + 1).trim();
-		const val =
-			(raw.startsWith('"') && raw.endsWith('"')) ||
-			(raw.startsWith("'") && raw.endsWith("'"))
-				? raw.slice(1, -1)
-				: raw;
-		if (!process.env[key]) process.env[key] = val;
-	}
+  for (const line of fs.readFileSync(filePath, 'utf8').split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#'))
+      continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1)
+      continue
+    const key = trimmed.slice(0, eq).trim()
+    // 去除 value 前後相符的成對引號（單引號或雙引號）
+    const raw = trimmed.slice(eq + 1).trim()
+    const val
+      = (raw.startsWith('"') && raw.endsWith('"'))
+        || (raw.startsWith('\'') && raw.endsWith('\''))
+        ? raw.slice(1, -1)
+        : raw
+    if (!process.env[key])
+      process.env[key] = val
+  }
 }
 
 export function loadEnv() {
-	if (_loaded) return;
-	// .env.local 優先（不 commit，機器獨立覆蓋；符合 Next.js / Vite 慣例）
-	if (fs.existsSync(ENV_LOCAL_PATH)) parseEnvFile(ENV_LOCAL_PATH);
-	// .env 不存在但 template 存在時，自動從 template 建立
-	if (!fs.existsSync(ENV_PATH) && fs.existsSync(TEMPLATE_PATH)) {
-		fs.copyFileSync(TEMPLATE_PATH, ENV_PATH);
-	}
-	if (fs.existsSync(ENV_PATH)) parseEnvFile(ENV_PATH);
-	_loaded = true;
+  if (_loaded)
+    return
+  // .env.local 優先（不 commit，機器獨立覆蓋；符合 Next.js / Vite 慣例）
+  if (fs.existsSync(ENV_LOCAL_PATH))
+    parseEnvFile(ENV_LOCAL_PATH)
+  // .env 不存在但 template 存在時，自動從 template 建立
+  if (!fs.existsSync(ENV_PATH) && fs.existsSync(TEMPLATE_PATH)) {
+    fs.copyFileSync(TEMPLATE_PATH, ENV_PATH)
+  }
+  if (fs.existsSync(ENV_PATH))
+    parseEnvFile(ENV_PATH)
+  _loaded = true
 }
 
 /**
@@ -67,14 +73,17 @@ export function loadEnv() {
  * @returns {*}
  */
 export function env(key, fallback) {
-	loadEnv();
-	const val = process.env[key];
-	if (val === undefined || val === "") return fallback;
-	if (typeof fallback === "number") {
-		const n = parseInt(val, 10);
-		if (Number.isNaN(n) || n < 0) return fallback;
-		return n;
-	}
-	if (typeof fallback === "boolean") return val === "true" || val === "1";
-	return val;
+  loadEnv()
+  const val = process.env[key]
+  if (val === undefined || val === '')
+    return fallback
+  if (typeof fallback === 'number') {
+    const n = Number.parseInt(val, 10)
+    if (Number.isNaN(n) || n < 0)
+      return fallback
+    return n
+  }
+  if (typeof fallback === 'boolean')
+    return val === 'true' || val === '1'
+  return val
 }

@@ -1,27 +1,27 @@
 {
-	"event": "SessionStart",
-	"hooks": [
-		{
-			"id": "ab-tao:session:start",
-			"description": "專案提醒注入 + 冷啟動 briefing + config drift 偵測",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/session-start.sh",
-					"timeout": 8
-				}
-			]
-		},
-		{
-			"id": "ab-tao:reload-hint",
-			"description": "偵測 d:setup 後配置變更並提示重啟（一次性消費）",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/reload-hint.sh",
-					"timeout": 5
-				}
-			]
-		}
-	]
+  "event": "SessionStart",
+  "hooks": [
+    {
+      "id": "ab-tao:session:start",
+      "description": "專案提醒注入 + 冷啟動 briefing + config drift 偵測",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/session-start.sh",
+          "timeout": 8
+        }
+      ]
+    },
+    {
+      "id": "ab-tao:reload-hint",
+      "description": "偵測 d:setup 後配置變更並提示重啟（一次性消費）",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/reload-hint.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }

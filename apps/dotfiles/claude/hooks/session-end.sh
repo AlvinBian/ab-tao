@@ -271,4 +271,44 @@ if [ -f "$WL_STATE" ] && command -v jq &>/dev/null; then
 	rm -f "$WL_STATE"
 fi
 
+# ── Part 6: Auto-curate pending decisions (background, non-blocking) ─
+# 仿 omp Hindsight：session 結束後在 project MEMORY.md 追加 pending-curate 提示
+# Claude 冷啟動讀 MEMORY.md 時會看到此提示，主動建議回顧是否有需記錄的決策
+_auto_curate() {
+	local cwd="$1"
+	[ -z "$cwd" ] && return
+
+	local encoded project_memory
+	encoded=$(printf '%s' "$cwd" | sed 's|/|-|g')
+	project_memory="$HOME/.claude/projects/$encoded/memory"
+
+	[ -d "$project_memory" ] || return
+
+	local memory_md="$project_memory/MEMORY.md"
+	local timestamp
+	timestamp=$(date '+%Y-%m-%d %H:%M')
+
+	# 已有 pending-curate 提示時跳過（避免重複堆疊）
+	if [ -f "$memory_md" ] && grep -q '\[pending-curate\]' "$memory_md" 2>/dev/null; then
+		return
+	fi
+
+	# 追加至 MEMORY.md 末尾（不覆蓋既有內容）
+	{
+		printf '\n## Pending Session Review\n'
+		printf '<!-- [pending-curate] %s -->\n' "$timestamp"
+		printf '> 上次 session 結束於 %s。冷啟動確認本次是否有需記錄的決策、踩坑或偏好。\n' "$timestamp"
+		printf '> 確認後請刪除此段落。\n'
+	} >> "$memory_md" 2>/dev/null && {
+		printf '[session-end] auto-curate 提示已寫入：%s\n' "$memory_md" >&2
+		mkdir -p "$HOME/.claude/telemetry"
+		printf '{"ts":"%s","hook":"session-end","rule":"auto-curate","matched":true}\n' \
+			"$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" \
+			>> "$HOME/.claude/telemetry/rule-hits-${HOSTNAME%%.*}.jsonl" 2>/dev/null
+	}
+}
+
+( _auto_curate "$CWD" ) &
+disown $! 2>/dev/null || true
+
 exit 0

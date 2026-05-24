@@ -1,17 +1,17 @@
 {
-	"event": "PostToolUse",
-	"hooks": [
-		{
-			"id": "ab-tao:post:tool:failure",
-			"description": "工具失敗日誌 + 高頻 terminalSequence 告警",
-			"matcher": "Bash|Edit|Write",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/post-tool-failure.sh",
-					"timeout": 5
-				}
-			]
-		}
-	]
+  "event": "PostToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:post:tool:failure",
+      "description": "工具失敗日誌 + 高頻 terminalSequence 告警",
+      "matcher": "Bash|Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/post-tool-failure.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }

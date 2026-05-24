@@ -1,46 +1,41 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import { getCategoryColor } from "@/charts/categoryColors";
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import { formatRelative } from "@/composables/useFormatRelative";
-import { useStatusStore } from "@/stores/status";
+import { computed, onMounted, ref } from 'vue'
+import { getCategoryColor } from '@/charts/categoryColors'
+import { formatRelative } from '@/composables/useFormatRelative'
+import { useStatusStore } from '@/stores/status'
 
-const store = useStatusStore();
-onMounted(() => store.fetchData());
+const store = useStatusStore()
+onMounted(() => store.fetchData())
 
-const stacks = computed(() => store.data?.cachedTechStacks ?? {});
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const timestamp = computed(() => store.data?.cachedTimestamp);
-const searchQuery = ref("");
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const chartMode = ref<"sunburst" | "pie" | "bar" | "treemap">("sunburst");
+const stacks = computed(() => store.data?.cachedTechStacks ?? {})
+const timestamp = computed(() => store.data?.cachedTimestamp)
+const searchQuery = ref('')
+const chartMode = ref<'sunburst' | 'pie' | 'bar' | 'treemap'>('sunburst')
 
 const categories = computed(() => {
-	return Object.entries(stacks.value)
-		.filter(([, techs]) => techs.length > 0)
-		.sort(([, a], [, b]) => b.length - a.length);
-});
+  return Object.entries(stacks.value)
+    .filter(([, techs]) => techs.length > 0)
+    .sort(([, a], [, b]) => b.length - a.length)
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredCategories = computed(() => {
-	const q = searchQuery.value.toLowerCase();
-	if (!q) return categories.value;
-	return categories.value
-		.map(
-			([cat, techs]) =>
-				[cat, techs.filter((t) => t.toLowerCase().includes(q))] as [
-					string,
-					string[],
-				],
-		)
-		.filter(([, techs]) => techs.length > 0);
-});
+  const q = searchQuery.value.toLowerCase()
+  if (!q)
+    return categories.value
+  return categories.value
+    .map(
+      ([cat, techs]) =>
+        [cat, techs.filter(t => t.toLowerCase().includes(q))] as [
+          string,
+          string[],
+        ],
+    )
+    .filter(([, techs]) => techs.length > 0)
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const totalTechs = computed(() =>
-	Object.values(stacks.value).reduce((sum, arr) => sum + arr.length, 0),
-);
+  Object.values(stacks.value).reduce((sum, arr) => sum + arr.length, 0),
+)
 </script>
 
 <template>
@@ -75,10 +70,18 @@ const totalTechs = computed(() =>
         <div style="display:flex; align-items:center; gap:12px">
           <span>技術棧分布</span>
           <el-radio-group v-model="chartMode" size="small">
-            <el-radio-button value="sunburst">Sunburst</el-radio-button>
-            <el-radio-button value="pie">Pie</el-radio-button>
-            <el-radio-button value="bar">Bar</el-radio-button>
-            <el-radio-button value="treemap">Treemap</el-radio-button>
+            <el-radio-button value="sunburst">
+              Sunburst
+            </el-radio-button>
+            <el-radio-button value="pie">
+              Pie
+            </el-radio-button>
+            <el-radio-button value="bar">
+              Bar
+            </el-radio-button>
+            <el-radio-button value="treemap">
+              Treemap
+            </el-radio-button>
           </el-radio-group>
         </div>
       </template>
@@ -89,7 +92,7 @@ const totalTechs = computed(() =>
     </el-card>
 
     <!-- 技術分類 -->
-    <el-row :gutter="12" v-if="filteredCategories.length > 0">
+    <el-row v-if="filteredCategories.length > 0" :gutter="12">
       <el-col
         v-for="[category, techs] in filteredCategories"
         :key="category"
@@ -104,7 +107,9 @@ const totalTechs = computed(() =>
                 :style="{ background: getCategoryColor(category) }"
               />
               <span style="font-weight:600; text-transform:capitalize">{{ category }}</span>
-              <el-tag size="small" style="margin-left:auto">{{ techs.length }}</el-tag>
+              <el-tag size="small" style="margin-left:auto">
+                {{ techs.length }}
+              </el-tag>
             </div>
           </template>
           <div style="display:flex; flex-wrap:wrap; gap:4px">
@@ -113,7 +118,9 @@ const totalTechs = computed(() =>
               :key="tech"
               size="small"
               effect="plain"
-            >{{ tech }}</el-tag>
+            >
+              {{ tech }}
+            </el-tag>
           </div>
         </el-card>
       </el-col>

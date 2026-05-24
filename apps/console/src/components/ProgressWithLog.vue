@@ -1,22 +1,21 @@
 <script setup lang="ts">
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import LogTail from "./LogTail.vue";
+import LogTail from './LogTail.vue'
 
 interface LogEntry {
-	level: string;
-	message: string;
+  level: string
+  message: string
 }
 
 defineProps<{
-	running: boolean;
-	done: boolean;
-	success: boolean | null;
-	progress: number;
-	stage?: string;
-	logs: LogEntry[];
-	errorMsg?: string;
-	logHeight?: string;
-}>();
+  running: boolean
+  done: boolean
+  success: boolean | null
+  progress: number
+  stage?: string
+  logs: LogEntry[]
+  errorMsg?: string
+  logHeight?: string
+}>()
 </script>
 
 <template>
@@ -30,7 +29,9 @@ defineProps<{
         <el-tag v-if="done" :type="success ? 'success' : 'danger'" size="small">
           {{ success ? '成功' : '失敗' }}
         </el-tag>
-        <el-tag v-else-if="running" type="primary" size="small">執行中</el-tag>
+        <el-tag v-else-if="running" type="primary" size="small">
+          執行中
+        </el-tag>
       </div>
       <el-progress
         :percentage="done ? 100 : running ? Math.max(progress, 5) : 0"

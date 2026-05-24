@@ -12,9 +12,9 @@
  *       跳過 UI 輸出，但仍寫入 firstRunSeen = true。
  */
 
-import * as p from "@clack/prompts";
-import pc from "picocolors";
-import { stateWrite } from "../state/state.mjs";
+import * as p from '@clack/prompts'
+import pc from 'picocolors'
+import { stateWrite } from '../state/state.mjs'
 
 /**
  * 顯示首次部署提示（若尚未顯示過）並更新 state.json
@@ -25,25 +25,26 @@ import { stateWrite } from "../state/state.mjs";
  *   需包含 firstRunSeen: boolean | undefined
  */
 export function showFirstRunNotice(state) {
-	// 已看過首次提示 → 直接返回
-	if (state.firstRunSeen === true) return;
+  // 已看過首次提示 → 直接返回
+  if (state.firstRunSeen === true)
+    return
 
-	// CI / 靜默模式：跳過 UI，只更新狀態
-	const isQuiet = process.env.CI || process.env.AB_TAO_QUIET;
+  // CI / 靜默模式：跳過 UI，只更新狀態
+  const isQuiet = process.env.CI || process.env.AB_TAO_QUIET
 
-	if (!isQuiet) {
-		p.log.info(
-			[
-				`${pc.cyan("ℹ️  ab-tao 首次部署")}`,
-				`  ${pc.dim("•")} 採用 v1.1.0 clean-slate template`,
-				`  ${pc.dim("•")} 本地修改觸發 drift prompt`,
-				`  ${pc.dim("•")} 重置：${pc.cyan("pnpm run d:setup --reset-choices")}`,
-			].join("\n"),
-		);
-	}
+  if (!isQuiet) {
+    p.log.info(
+      [
+        `${pc.cyan('ℹ️  ab-tao 首次部署')}`,
+        `  ${pc.dim('•')} 採用 v1.1.0 clean-slate template`,
+        `  ${pc.dim('•')} 本地修改觸發 drift prompt`,
+        `  ${pc.dim('•')} 重置：${pc.cyan('pnpm run d:setup --reset-choices')}`,
+      ].join('\n'),
+    )
+  }
 
-	// 將 firstRunSeen 標記為 true，持久化到 state.json
-	stateWrite((draft) => {
-		draft.firstRunSeen = true;
-	});
+  // 將 firstRunSeen 標記為 true，持久化到 state.json
+  stateWrite((draft) => {
+    draft.firstRunSeen = true
+  })
 }

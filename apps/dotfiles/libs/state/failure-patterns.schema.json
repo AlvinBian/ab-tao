@@ -1,26 +1,26 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "ab-tao:state:failure-patterns",
-	"title": "Failure Patterns",
-	"type": "object",
-	"additionalProperties": false,
-	"properties": {
-		"lastDedupeAt": {
-			"type": ["string", "null"],
-			"format": "date-time",
-			"description": "最後去重時間"
-		},
-		"totalPatterns": {
-			"type": "integer",
-			"minimum": 0,
-			"default": 0,
-			"description": "累積 failure patterns 總數"
-		},
-		"fileSizeBytes": {
-			"type": "integer",
-			"minimum": 0,
-			"default": 0,
-			"description": "failure patterns 檔案大小（bytes）"
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ab-tao:state:failure-patterns",
+  "title": "Failure Patterns",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "lastDedupeAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "最後去重時間"
+    },
+    "totalPatterns": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "累積 failure patterns 總數"
+    },
+    "fileSizeBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "failure patterns 檔案大小（bytes）"
+    }
+  }
 }

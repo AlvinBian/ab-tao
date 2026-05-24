@@ -3,6 +3,6 @@
 
 pre-commit:
   commands:
-    biome:
-      run: npx biome check --write --no-errors-on-unmatched {staged_files}
-      stage_fixed: true   # 修正後自動重新 stage
+    eslint:
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true # 修正後自動重新 stage

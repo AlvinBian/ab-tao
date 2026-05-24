@@ -13,25 +13,25 @@ servers:
   github:
     command: npx
     args:
-      - "-y"
-      - "@modelcontextprotocol/server-github"
+      - -y
+      - '@modelcontextprotocol/server-github'
     env_ref: GITHUB_TOKEN
     enabled_in_profiles:
       - personal
       - oss
       - work
-    description: "GitHub Issues / PR / Search 操作"
+    description: GitHub Issues / PR / Search 操作
 
   # ── 專案管理 ─────────────────────────────────────────────────────
   linear:
     command: npx
     args:
-      - "-y"
-      - "@linear/mcp-server"
+      - -y
+      - '@linear/mcp-server'
     env_ref: LINEAR_API_KEY
     enabled_in_profiles:
       - work
-    description: "Linear Issue 追蹤（KKday）"
+    description: Linear Issue 追蹤（KKday）
 
   jira:
     command: uvx
@@ -40,36 +40,36 @@ servers:
     env_ref: JIRA_TOKEN
     enabled_in_profiles:
       - work
-    description: "Jira Issues + Confluence 文件（atlassian-mcp-server 統一處理）"
+    description: 'Jira Issues + Confluence 文件（atlassian-mcp-server 統一處理）'
 
   # ── 瀏覽器開發工具 ───────────────────────────────────────────────
   chrome-devtools:
     command: npx
     args:
-      - "-y"
-      - "chrome-devtools-mcp@latest"
+      - -y
+      - chrome-devtools-mcp@latest
     # 無 env_ref — 不需要 token，Node.js v20.19+ 即可
-    enabled_in_profiles: []   # 空 = 全 profile 均啟用
-    description: "Chrome DevTools MCP（Lighthouse · 記憶體洩漏偵測 · 無障礙除錯）"
+    enabled_in_profiles: [] # 空 = 全 profile 均啟用
+    description: Chrome DevTools MCP（Lighthouse · 記憶體洩漏偵測 · 無障礙除錯）
 
   # ── 通訊協作 ──────────────────────────────────────────────────────
   slack:
     command: npx
     args:
-      - "-y"
-      - "@modelcontextprotocol/server-slack"
+      - -y
+      - '@modelcontextprotocol/server-slack'
     env_ref:
       SLACK_BOT_TOKEN: SLACK_BOT_TOKEN
       SLACK_TEAM_ID: SLACK_TEAM_ID
-    enabled_in_profiles: []   # 空 = 全 profile 均啟用
-    description: "Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）"
+    enabled_in_profiles: [] # 空 = 全 profile 均啟用
+    description: 'Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）'
 
   # ── 語義代碼搜尋 ──────────────────────────────────────────────────
   claude-context:
     command: npx
     args:
-      - "-y"
-      - "@zilliz/claude-context-mcp@latest"
+      - -y
+      - '@zilliz/claude-context-mcp@latest'
     env_ref:
       EMBEDDING_PROVIDER: CLAUDE_CONTEXT_PROVIDER
       EMBEDDING_MODEL: CLAUDE_CONTEXT_MODEL
@@ -79,15 +79,15 @@ servers:
       MILVUS_ADDRESS: CLAUDE_CONTEXT_MILVUS_ADDRESS
       MILVUS_TOKEN: CLAUDE_CONTEXT_MILVUS_TOKEN
       CUSTOM_EXTENSIONS: CLAUDE_CONTEXT_CUSTOM_EXTENSIONS
-    enabled_in_profiles: []   # 空 = 全 profile 均啟用
-    description: "語義代碼搜尋（LM Studio + 本地 Milvus；先跑 claude-context-init skill 建立 index）"
+    enabled_in_profiles: [] # 空 = 全 profile 均啟用
+    description: '語義代碼搜尋（LM Studio + 本地 Milvus；先跑 claude-context-init skill 建立 index）'
 
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:
     command: npx
     args:
-      - "-y"
-      - "@upstash/context7-mcp"
+      - -y
+      - '@upstash/context7-mcp'
     # 無 env_ref — context7 不需要 token
-    enabled_in_profiles: []   # 空 = 全 profile 均啟用
-    description: "最新套件文件注入（自動更新）"
+    enabled_in_profiles: [] # 空 = 全 profile 均啟用
+    description: 最新套件文件注入（自動更新）

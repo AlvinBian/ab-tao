@@ -1,48 +1,47 @@
 <script setup lang="ts">
-import type { ComputedRef, Ref } from "vue";
-import { ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import type { ComputedRef, Ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // ── 型別定義 ─────────────────────────────────────────────────────────────────
 export interface SectionTabConfig {
-	key: string;
-	label: string;
-	badge?: ComputedRef<string | number> | Ref<string | number>;
+  key: string
+  label: string
+  badge?: ComputedRef<string | number> | Ref<string | number>
 }
 
 // ── Props ────────────────────────────────────────────────────────────────────
 const props = defineProps<{
-	tabs: SectionTabConfig[];
-	defaultTab?: string;
-}>();
+  tabs: SectionTabConfig[]
+  defaultTab?: string
+}>()
 
 // ── URL ?tab= 雙向同步 ───────────────────────────────────────────────────────
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
 const activeTab = ref<string>(
-	(route.query.tab as string | undefined) ??
-		props.defaultTab ??
-		props.tabs[0]?.key ??
-		"",
-);
+  (route.query.tab as string | undefined)
+  ?? props.defaultTab
+  ?? props.tabs[0]?.key
+  ?? '',
+)
 
 // URL 變化 → 本地狀態（瀏覽器前進 / 後退）
 watch(
-	() => route.query.tab,
-	(val) => {
-		const next = val as string | undefined;
-		if (next && next !== activeTab.value) {
-			activeTab.value = next;
-		}
-	},
-);
+  () => route.query.tab,
+  (val) => {
+    const next = val as string | undefined
+    if (next && next !== activeTab.value) {
+      activeTab.value = next
+    }
+  },
+)
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template via @tab-change
 function onTabChange(key: string | number): void {
-	const keyStr = String(key);
-	activeTab.value = keyStr;
-	void router.replace({ query: { ...route.query, tab: keyStr } });
+  const keyStr = String(key)
+  activeTab.value = keyStr
+  void router.replace({ query: { ...route.query, tab: keyStr } })
 }
 </script>
 

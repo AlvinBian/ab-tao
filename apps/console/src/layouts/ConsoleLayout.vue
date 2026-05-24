@@ -1,40 +1,36 @@
 <script setup lang="ts">
 import {
-	Connection,
-	Expand,
-	Files,
-	Fold,
-	InfoFilled,
-	MagicStick,
-	Monitor,
-	Setting,
-	TrendCharts,
-	VideoPlay,
-} from "@element-plus/icons-vue";
-import { computed, ref } from "vue";
-import { useRoute } from "vue-router";
+  Connection,
+  Expand,
+  Files,
+  Fold,
+  InfoFilled,
+  MagicStick,
+  Monitor,
+  Setting,
+  TrendCharts,
+  VideoPlay,
+} from '@element-plus/icons-vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
-const isCollapsed = ref(false);
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const collapseIcon = computed(() => (isCollapsed.value ? Expand : Fold));
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const appVersion = import.meta.env.VITE_APP_VERSION ?? "dev";
+const route = useRoute()
+const isCollapsed = ref(false)
+const collapseIcon = computed(() => (isCollapsed.value ? Expand : Fold))
+const appVersion = import.meta.env.VITE_APP_VERSION ?? 'dev'
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const navItems = [
-	{ path: "/dashboard", label: "Dashboard", icon: Monitor },
-	{ path: "/resources", label: "Resources", icon: Files },
-	{ path: "/integrations", label: "Integrations", icon: Connection },
-	{ path: "/configuration", label: "Configuration", icon: Setting },
-	{ path: "/actions", label: "Actions", icon: VideoPlay },
-	{ path: "/about", label: "About", icon: InfoFilled },
-	{ path: "/ai-features", label: "AI Features", icon: MagicStick },
-	{ path: "/metrics", label: "Metrics", icon: TrendCharts },
-] as const;
+  { path: '/dashboard', label: 'Dashboard', icon: Monitor },
+  { path: '/resources', label: 'Resources', icon: Files },
+  { path: '/integrations', label: 'Integrations', icon: Connection },
+  { path: '/configuration', label: 'Configuration', icon: Setting },
+  { path: '/actions', label: 'Actions', icon: VideoPlay },
+  { path: '/about', label: 'About', icon: InfoFilled },
+  { path: '/ai-features', label: 'AI Features', icon: MagicStick },
+  { path: '/metrics', label: 'Metrics', icon: TrendCharts },
+] as const
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const activeMenu = computed(() => route.path);
+const activeMenu = computed(() => route.path)
 </script>
 
 <template>
@@ -62,7 +58,9 @@ const activeMenu = computed(() => route.path);
           :index="item.path"
         >
           <el-icon><component :is="item.icon" /></el-icon>
-          <template #title>{{ item.label }}</template>
+          <template #title>
+            {{ item.label }}
+          </template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -79,7 +77,9 @@ const activeMenu = computed(() => route.path);
         <span style="flex: 1; font-weight: 600; font-size: 1rem">
           {{ route.meta.title ?? 'ab-tao Console' }}
         </span>
-        <el-tag type="info" size="small">{{ appVersion }}</el-tag>
+        <el-tag type="info" size="small">
+          {{ appVersion }}
+        </el-tag>
       </el-header>
 
       <el-main style="overflow-y: auto; padding: 0">

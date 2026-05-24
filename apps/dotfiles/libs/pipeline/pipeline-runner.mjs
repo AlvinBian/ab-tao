@@ -11,26 +11,26 @@
  *   ECC：規則匹配推薦（即時）+ 背景 AI 翻譯（不阻塞主流程）
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { isEmpty } from "lodash-es";
-import { pMap } from "../core/concurrency.mjs";
+import fs from 'node:fs'
+import path from 'node:path'
+import { isEmpty } from 'lodash-es'
+import { pMap } from '../core/concurrency.mjs'
 import {
-	AI_CONCURRENCY,
-	AI_RES_TIMEOUT,
-	GH_CONCURRENCY,
-	GH_REPO_ANALYZE_TIMEOUT,
-} from "../core/constants.mjs";
-import { analyzeRepo } from "../detect/skill-detect.mjs";
-import { callClaudeJSON } from "../external/claude-cli.mjs";
+  AI_CONCURRENCY,
+  AI_RES_TIMEOUT,
+  GH_CONCURRENCY,
+  GH_REPO_ANALYZE_TIMEOUT,
+} from '../core/constants.mjs'
+import { analyzeRepo } from '../detect/skill-detect.mjs'
+import { callClaudeJSON } from '../external/claude-cli.mjs'
 import {
-	filterByTechStack,
-	loadAllCommonsResources,
-} from "../external/commons-loader.mjs";
-import { fetchAllSources, filterItems } from "../external/source-sync.mjs";
-import { createAuditTrail } from "./audit-trail.mjs";
-import { mergeRepoResults } from "./merge-dedup.mjs";
-import { buildRepoSummary, classifyRepo } from "./repo-analyzer.mjs";
+  filterByTechStack,
+  loadAllCommonsResources,
+} from '../external/commons-loader.mjs'
+import { fetchAllSources, filterItems } from '../external/source-sync.mjs'
+import { createAuditTrail } from './audit-trail.mjs'
+import { mergeRepoResults } from './merge-dedup.mjs'
+import { buildRepoSummary, classifyRepo } from './repo-analyzer.mjs'
 
 /**
  * 從 AI 資源檔案內容提取描述（跳過 frontmatter 和標題）
@@ -43,26 +43,29 @@ import { buildRepoSummary, classifyRepo } from "./repo-analyzer.mjs";
  * @returns {string} 描述文字
  */
 function extractAiResDesc(content, fallbackName) {
-	if (!content) return fallbackName.replace(".md", "");
-	const lines = content.split("\n");
-	let inFrontmatter = false;
-	for (const line of lines) {
-		const trimmed = line.trim();
-		if (trimmed === "---") {
-			inFrontmatter = !inFrontmatter;
-			continue;
-		}
-		if (inFrontmatter) {
-			// 從 frontmatter 的 description 取
-			const descMatch = trimmed.match(/^description:\s*>?\s*(.+)/);
-			if (descMatch) return descMatch[1].trim().split(/[。.]/)[0];
-			continue;
-		}
-		if (!trimmed || trimmed.startsWith("#")) continue;
-		// 第一個非空非標題行
-		return trimmed.slice(0, 80);
-	}
-	return fallbackName.replace(".md", "");
+  if (!content)
+    return fallbackName.replace('.md', '')
+  const lines = content.split('\n')
+  let inFrontmatter = false
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed === '---') {
+      inFrontmatter = !inFrontmatter
+      continue
+    }
+    if (inFrontmatter) {
+      // 從 frontmatter 的 description 取
+      const descMatch = trimmed.match(/^description:\s*(?:>\s*)?(.+)/)
+      if (descMatch)
+        return descMatch[1].trim().split(/[。.]/)[0]
+      continue
+    }
+    if (!trimmed || trimmed.startsWith('#'))
+      continue
+    // 第一個非空非標題行
+    return trimmed.slice(0, 80)
+  }
+  return fallbackName.replace('.md', '')
 }
 
 /**
@@ -71,18 +74,12 @@ function extractAiResDesc(content, fallbackName) {
  * 並行抓取所有 repos 和 AI 資源來源，完成後進行 per-repo AI 分類、
  * 跨 repo 整合去重，最後建立 AI 資源規則推薦（即時，不需 AI）。
  *
- * @param {Object} options
+ * @param {object} options
  * @param {string[]} options.repos - 選擇的 repo（owner/name 格式，如 'org/repo'）
  * @param {Array} options.sources - AI 資源 sources 配置（來自 config.json）
+ * @param {string[]} [options.selectedAiSources] - 使用者選擇的 AI 來源名稱
  * @param {string} options.baseDir - 專案根目錄（快取儲存位置）
- * @param {Object} options.aiConfig - AI 配置
- * @param {string} [options.aiConfig.model='haiku'] - 使用的 AI 模型
- * @param {string} [options.aiConfig.effort='low'] - AI 分析深度
- * @param {number} [options.aiConfig.timeout=30000] - 單 repo 分析超時（毫秒）
- * @param {number} [options.aiConfig.maxCategories=10] - 最多分類數
- * @param {number} [options.aiConfig.maxTechs=30] - 最多技術數
- * @param {boolean} [options.aiConfig.cacheEnabled=true] - 是否使用快取
- * @param {number} [options.aiConfig.concurrency] - AI 並行數（預設 AI_CONCURRENCY）
+ * @param {object} [options.aiConfig] - AI 配置（model, effort, timeout, maxCategories, maxTechs, cacheEnabled, concurrency）
  * @param {Function} options.onPhase - (phase, detail) => void，各階段進度回呼
  * @param {Function} options.onRepoProgress - (repo, info) => void，單 repo 進度回呼
  * @returns {Promise<{
@@ -90,533 +87,543 @@ function extractAiResDesc(content, fallbackName) {
  *   perRepo: Map,
  *   perRepoResults: Array,
  *   repoData: Array,
- *   repoNpmMap: Object,
+ *   repoNpmMap: object,
  *   allLangs: string[],
  *   coreCategories: Set,
- *   aiResFetchResult: Object|null,
+ *   aiResFetchResult: object|null,
  *   aiResAiPromise: Promise|null,
  *   conflicts: Array,
- *   audit: Object
+ *   audit: object
  * }>}
  */
 export async function runAnalysisPipeline({
-	repos,
-	sources = [],
-	selectedAiSources = [],
-	baseDir,
-	aiConfig = {},
-	onPhase = () => {},
-	onRepoProgress = () => {},
+  repos,
+  sources = [],
+  selectedAiSources = [],
+  baseDir,
+  aiConfig = {},
+  onPhase = () => {},
+  onRepoProgress = () => {},
 }) {
-	const audit = createAuditTrail();
-	const repoNames = repos.map((r) => r.split("/")[1]);
-	const hasAiRes = !isEmpty(sources);
+  const audit = createAuditTrail()
+  const repoNames = repos.map(r => r.split('/')[1])
+  const hasAiRes = !isEmpty(sources)
 
-	// ── TIER 1：repos fetch + AI 資源載入（並行）──
-	onPhase("fetch", {
-		message: hasAiRes ? "分析 repos + 取得 AI 資源..." : "分析 repos...",
-	});
+  // ── TIER 1：repos fetch + AI 資源載入（並行）──
+  onPhase('fetch', {
+    message: hasAiRes ? '分析 repos + 取得 AI 資源...' : '分析 repos...',
+  })
 
-	// 載入 commons 已同步的 AI 來源（僅使用者選擇的，本地零 API）
-	const allCommons = loadAllCommonsResources();
-	const commonsResources = !isEmpty(selectedAiSources)
-		? {
-				...allCommons,
-				sources: allCommons.sources.filter((s) =>
-					selectedAiSources.includes(s.name),
-				),
-			}
-		: allCommons;
-	if (!isEmpty(commonsResources.sources)) {
-		onPhase("commons", {
-			message: `已載入 ${commonsResources.sources.length} 個 AI 來源（${commonsResources.sources.reduce((sum, s) => sum + s.commands.length + s.agents.length + s.rules.length + s.skills.length, 0)} 個資源）`,
-		});
-	}
+  // 載入 commons 已同步的 AI 來源（僅使用者選擇的，本地零 API）
+  const allCommons = loadAllCommonsResources()
+  const commonsResources = !isEmpty(selectedAiSources)
+    ? {
+        ...allCommons,
+        sources: allCommons.sources.filter(s =>
+          selectedAiSources.includes(s.name),
+        ),
+      }
+    : allCommons
+  if (!isEmpty(commonsResources.sources)) {
+    onPhase('commons', {
+      message: `已載入 ${commonsResources.sources.length} 個 AI 來源（${commonsResources.sources.reduce((sum, s) => sum + s.commands.length + s.agents.length + s.rules.length + s.skills.length, 0)} 個資源）`,
+    })
+  }
 
-	const t0 = Date.now();
-	const [analysisResults, aiResFetchResult] = await Promise.all([
-		// GitHub API 限流（GH_CONCURRENCY=8），防止 rate limit 403
-		(async () => {
-			const results = [];
-			await pMap(
-				repos,
-				async (repo) => {
-					try {
-						const r = await Promise.race([
-							analyzeRepo(repo),
-							new Promise((_, rej) =>
-								setTimeout(
-									() => rej(new Error("操作超時")),
-									GH_REPO_ANALYZE_TIMEOUT,
-								),
-							),
-						]);
-						results.push({ status: "fulfilled", value: r });
-					} catch (e) {
-						results.push({ status: "rejected", reason: e });
-					}
-				},
-				{ concurrency: GH_CONCURRENCY },
-			);
-			return results;
-		})(),
-		// 廣泛覆蓋常見語言（此時 repo 分析尚未完成，無法用真實語言）
-		hasAiRes
-			? fetchAllSources(
-					sources,
-					[
-						"typescript",
-						"javascript",
-						"php",
-						"python",
-						"golang",
-						"rust",
-						"java",
-						"kotlin",
-						"swift",
-						"csharp",
-					],
-					baseDir,
-					() => {},
-				)
-			: null,
-	]);
+  const t0 = Date.now()
+  const [analysisResults, aiResFetchResult] = await Promise.all([
+    // GitHub API 限流（GH_CONCURRENCY=8），防止 rate limit 403
+    (async () => {
+      const results = []
+      await pMap(
+        repos,
+        async (repo) => {
+          try {
+            const r = await Promise.race([
+              analyzeRepo(repo),
+              new Promise((_, rej) =>
+                setTimeout(
+                  () => rej(new Error('操作超時')),
+                  GH_REPO_ANALYZE_TIMEOUT,
+                ),
+              ),
+            ])
+            results.push({ status: 'fulfilled', value: r })
+          }
+          catch (e) {
+            results.push({ status: 'rejected', reason: e })
+          }
+        },
+        { concurrency: GH_CONCURRENCY },
+      )
+      return results
+    })(),
+    // 廣泛覆蓋常見語言（此時 repo 分析尚未完成，無法用真實語言）
+    hasAiRes
+      ? fetchAllSources(
+          sources,
+          [
+            'typescript',
+            'javascript',
+            'php',
+            'python',
+            'golang',
+            'rust',
+            'java',
+            'kotlin',
+            'swift',
+            'csharp',
+          ],
+          baseDir,
+          () => {},
+        )
+      : null,
+  ])
 
-	audit.record({
-		phase: "fetch",
-		action: "repos+aiRes",
-		duration: Date.now() - t0,
-		output: {
-			repoCount: analysisResults.filter((r) => r.status === "fulfilled").length,
-			aiResSources: aiResFetchResult?.sources?.length || 0,
-		},
-	});
+  audit.record({
+    phase: 'fetch',
+    action: 'repos+aiRes',
+    duration: Date.now() - t0,
+    output: {
+      repoCount: analysisResults.filter(r => r.status === 'fulfilled').length,
+      aiResSources: aiResFetchResult?.sources?.length || 0,
+    },
+  })
 
-	// 處理 fetch 結果
-	const repoData = []; // { name, analysis, summary }
-	const repoNpmMap = {};
-	const allLangs = new Set();
+  // 處理 fetch 結果
+  const repoData = [] // { name, analysis, summary }
+  const repoNpmMap = {}
+  const allLangs = new Set()
 
-	for (let i = 0; i < analysisResults.length; i++) {
-		if (analysisResults[i].status !== "fulfilled") continue;
-		const analysis = analysisResults[i].value;
-		const name = repoNames[i];
-		const { summary, meta, npmDeps } = buildRepoSummary(name, analysis);
-		repoData.push({ name, fullName: repos[i], analysis, summary, meta });
-		repoNpmMap[name] = npmDeps;
-		for (const lang of meta.languages) allLangs.add(lang);
-	}
+  for (let i = 0; i < analysisResults.length; i++) {
+    if (analysisResults[i].status !== 'fulfilled')
+      continue
+    const analysis = analysisResults[i].value
+    const name = repoNames[i]
+    const { summary, meta, npmDeps } = buildRepoSummary(name, analysis)
+    repoData.push({ name, fullName: repos[i], analysis, summary, meta })
+    repoNpmMap[name] = npmDeps
+    for (const lang of meta.languages) allLangs.add(lang)
+  }
 
-	const aiResFileCount = aiResFetchResult
-		? aiResFetchResult.sources.reduce(
-				(s, src) =>
-					s +
-					src.allFiles.commands.length +
-					src.allFiles.agents.length +
-					src.allFiles.rules.length,
-				0,
-			)
-		: 0;
+  const aiResFileCount = aiResFetchResult
+    ? aiResFetchResult.sources.reduce(
+        (s, src) =>
+          s
+          + src.allFiles.commands.length
+          + src.allFiles.agents.length
+          + src.allFiles.rules.length,
+        0,
+      )
+    : 0
 
-	onPhase("fetch-done", { repoCount: repoData.length, aiResFileCount });
+  onPhase('fetch-done', { repoCount: repoData.length, aiResFileCount })
 
-	// ── TIER 2：per-repo AI 分類（並行，AI_CONCURRENCY 控制）──
-	onPhase("classify", { total: repoData.length });
+  // ── TIER 2：per-repo AI 分類（並行，AI_CONCURRENCY 控制）──
+  onPhase('classify', { total: repoData.length })
 
-	const perRepoResults = await pMap(
-		repoData,
-		async (repo) => {
-			const result = await classifyRepo(repo.name, repo.summary, {
-				baseDir,
-				model: aiConfig.model || "haiku",
-				effort: aiConfig.effort || "low",
-				timeoutMs: aiConfig.timeout || 30000,
-				maxCategories: aiConfig.maxCategories || 10,
-				maxTechs: aiConfig.maxTechs || 30,
-				cacheEnabled: aiConfig.cacheEnabled !== false,
-				onProgress: (info) => onRepoProgress(repo.name, info),
-			});
-			audit.record({
-				phase: "classify",
-				repo: repo.name,
-				action: result.fromCache ? "cache-hit" : "ai-classify",
-				reasoning: result.reasoning,
-				tokens: result.tokens,
-				output: { categories: Object.keys(result.techStacks).length },
-			});
-			onPhase("classify-repo-done", {
-				repo: repo.name,
-				fromCache: result.fromCache,
-				result,
-			});
-			return { repo: repo.name, ...result };
-		},
-		{ concurrency: aiConfig.concurrency || AI_CONCURRENCY || 5 },
-	);
+  const perRepoResults = await pMap(
+    repoData,
+    async (repo) => {
+      const result = await classifyRepo(repo.name, repo.summary, {
+        baseDir,
+        model: aiConfig.model || 'haiku',
+        effort: aiConfig.effort || 'low',
+        timeoutMs: aiConfig.timeout || 30000,
+        maxCategories: aiConfig.maxCategories || 10,
+        maxTechs: aiConfig.maxTechs || 30,
+        cacheEnabled: aiConfig.cacheEnabled !== false,
+      })
+      // 每個 repo 分類完成後才通知上層（不在 streaming chunk 間觸發）
+      onRepoProgress(repo.name)
+      audit.record({
+        phase: 'classify',
+        repo: repo.name,
+        action: result.fromCache ? 'cache-hit' : 'ai-classify',
+        reasoning: result.reasoning,
+        tokens: result.tokens,
+        output: { categories: Object.keys(result.techStacks).length },
+      })
+      onPhase('classify-repo-done', {
+        repo: repo.name,
+        fromCache: result.fromCache,
+        result,
+      })
+      return { repo: repo.name, ...result }
+    },
+    { concurrency: aiConfig.concurrency || AI_CONCURRENCY || 5 },
+  )
 
-	// ── MERGE + DEDUP ──
-	onPhase("merge", {});
-	const { categorizedTechs, perRepo, coreCategories, conflicts } =
-		mergeRepoResults(perRepoResults);
+  // ── MERGE + DEDUP ──
+  onPhase('merge', {})
+  const { categorizedTechs, perRepo, coreCategories, conflicts }
+    = mergeRepoResults(perRepoResults)
 
-	audit.record({
-		phase: "merge",
-		action: "dedup",
-		output: {
-			totalTechs: [...categorizedTechs.values()].reduce(
-				(s, m) => s + m.size,
-				0,
-			),
-			categories: categorizedTechs.size,
-			conflicts: conflicts.length,
-		},
-	});
+  audit.record({
+    phase: 'merge',
+    action: 'dedup',
+    output: {
+      totalTechs: [...categorizedTechs.values()].reduce(
+        (s, m) => s + m.size,
+        0,
+      ),
+      categories: categorizedTechs.size,
+      conflicts: conflicts.length,
+    },
+  })
 
-	if (!isEmpty(conflicts)) {
-		for (const c of conflicts) {
-			audit.record({
-				phase: "merge",
-				action: "conflict-resolved",
-				reasoning: `${c.tech}: ${JSON.stringify(c.votes)} → ${c.resolved} (${c.reason})`,
-			});
-		}
-	}
+  if (!isEmpty(conflicts)) {
+    for (const c of conflicts) {
+      audit.record({
+        phase: 'merge',
+        action: 'conflict-resolved',
+        reasoning: `${c.tech}: ${JSON.stringify(c.votes)} → ${c.resolved} (${c.reason})`,
+      })
+    }
+  }
 
-	onPhase("merge-done", {
-		totalTechs: [...categorizedTechs.values()].reduce((s, m) => s + m.size, 0),
-		conflicts: conflicts.length,
-	});
+  onPhase('merge-done', {
+    totalTechs: [...categorizedTechs.values()].reduce((s, m) => s + m.size, 0),
+    conflicts: conflicts.length,
+  })
 
-	// Fallback：全部 AI 都沒結果時用語言偵測
-	if (categorizedTechs.size === 0) {
-		for (const lang of allLangs) {
-			if (!categorizedTechs.has("語言"))
-				categorizedTechs.set("語言", new Map());
-			categorizedTechs.get("語言").set(lang.toLowerCase(), {
-				label: lang.toLowerCase(),
-				repos: repoNames,
-			});
-		}
-	}
+  // Fallback：全部 AI 都沒結果時用語言偵測
+  if (categorizedTechs.size === 0) {
+    for (const lang of allLangs) {
+      if (!categorizedTechs.has('語言'))
+        categorizedTechs.set('語言', new Map())
+      categorizedTechs.get('語言').set(lang.toLowerCase(), {
+        label: lang.toLowerCase(),
+        repos: repoNames,
+      })
+    }
+  }
 
-	// ── AI 資源推薦（背景用，返回 promise）──
-	const allDetectedTechs = [...categorizedTechs.values()].flatMap((m) => [
-		...m.keys(),
-	]);
-	let aiResAiPromise = null;
+  // ── AI 資源推薦（背景用，返回 promise）──
+  const allDetectedTechs = [...categorizedTechs.values()].flatMap(m => [
+    ...m.keys(),
+  ])
+  let aiResAiPromise = null
 
-	if (hasAiRes && aiResFetchResult) {
-		const existingNames = aiResFetchResult.localNames || new Set();
-		const aiResCandidates = [];
+  if (hasAiRes && aiResFetchResult) {
+    const existingNames = aiResFetchResult.localNames || new Set()
+    const aiResCandidates = []
 
-		for (const src of aiResFetchResult.sources) {
-			const filtered = filterItems(
-				{
-					commands: src.allFiles.commands,
-					agents: src.allFiles.agents,
-					rules: src.allFiles.rules,
-				},
-				!isEmpty(allDetectedTechs)
-					? allDetectedTechs
-					: [...allLangs].map((l) => l.toLowerCase()),
-				existingNames,
-			);
-			for (const type of ["commands", "agents", "rules"]) {
-				for (const item of filtered[type] || []) {
-					aiResCandidates.push({
-						type,
-						name: item.name,
-						desc: extractAiResDesc(item.content, item.name),
-					});
-				}
-			}
-		}
+    for (const src of aiResFetchResult.sources) {
+      const filtered = filterItems(
+        {
+          commands: src.allFiles.commands,
+          agents: src.allFiles.agents,
+          rules: src.allFiles.rules,
+        },
+        !isEmpty(allDetectedTechs)
+          ? allDetectedTechs
+          : [...allLangs].map(l => l.toLowerCase()),
+        existingNames,
+      )
+      for (const type of ['commands', 'agents', 'rules']) {
+        for (const item of filtered[type] || []) {
+          aiResCandidates.push({
+            type,
+            name: item.name,
+            desc: extractAiResDesc(item.content, item.name),
+          })
+        }
+      }
+    }
 
-		// 規則匹配推薦（即時，不需 AI）+ 背景翻譯
-		if (!isEmpty(aiResCandidates)) {
-			// ── 規則匹配 ──
-			const techSet = new Set(allDetectedTechs.map((t) => t.toLowerCase()));
-			const langSet = new Set([...allLangs].map((l) => l.toLowerCase()));
+    // 規則匹配推薦（即時，不需 AI）+ 背景翻譯
+    if (!isEmpty(aiResCandidates)) {
+      // ── 規則匹配 ──
+      const techSet = new Set(allDetectedTechs.map(t => t.toLowerCase()))
+      const langSet = new Set([...allLangs].map(l => l.toLowerCase()))
 
-			// 官方 plugins 名稱 — 與這些重複的外部資源不推薦
-			const OFFICIAL_PLUGIN_NAMES = new Set([
-				"code-review",
-				"security-guidance",
-				"hookify",
-				"ralph-loop",
-				"session-report",
-			]);
+      // 官方 plugins 名稱 — 與這些重複的外部資源不推薦
+      const OFFICIAL_PLUGIN_NAMES = new Set([
+        'code-review',
+        'security-guidance',
+        'hookify',
+        'ralph-loop',
+        'session-report',
+      ])
 
-			// 通用工具關鍵字：名稱包含這些詞就推薦
-			const UNIVERSAL_KEYWORDS = [
-				"review",
-				"test",
-				"lint",
-				"format",
-				"quality",
-				"debug",
-				"fix",
-				"plan",
-				"commit",
-				"git",
-				"pr",
-				"ci",
-				"deploy",
-				"tdd",
-				"coverage",
-			];
+      // 通用工具關鍵字：名稱包含這些詞就推薦
+      const UNIVERSAL_KEYWORDS = [
+        'review',
+        'test',
+        'lint',
+        'format',
+        'quality',
+        'debug',
+        'fix',
+        'plan',
+        'commit',
+        'git',
+        'pr',
+        'ci',
+        'deploy',
+        'tdd',
+        'coverage',
+      ]
 
-			// 語言專用前綴 → 對應語言
-			const LANG_PREFIX = {
-				"typescript-": "typescript",
-				"ts-": "typescript",
-				"javascript-": "javascript",
-				"js-": "javascript",
-				"vue-": "vue",
-				"react-": "react",
-				"node-": "node",
-				"go-": "go",
-				"golang-": "go",
-				"python-": "python",
-				"py-": "python",
-				"php-": "php",
-				"rust-": "rust",
-				"java-": "java",
-				"swift-": "swift",
-				"kotlin-": "kotlin",
-				"flutter-": "dart",
-				"dart-": "dart",
-				"csharp-": "csharp",
-				"cpp-": "cpp",
-				"android-": "kotlin",
-				"pytorch-": "python",
-			};
+      // 語言專用前綴 → 對應語言
+      const LANG_PREFIX = {
+        'typescript-': 'typescript',
+        'ts-': 'typescript',
+        'javascript-': 'javascript',
+        'js-': 'javascript',
+        'vue-': 'vue',
+        'react-': 'react',
+        'node-': 'node',
+        'go-': 'go',
+        'golang-': 'go',
+        'python-': 'python',
+        'py-': 'python',
+        'php-': 'php',
+        'rust-': 'rust',
+        'java-': 'java',
+        'swift-': 'swift',
+        'kotlin-': 'kotlin',
+        'flutter-': 'dart',
+        'dart-': 'dart',
+        'csharp-': 'csharp',
+        'cpp-': 'cpp',
+        'android-': 'kotlin',
+        'pytorch-': 'python',
+      }
 
-			// 語言相關框架關鍵字 → 對應語言（名稱含這些詞視為語言專用）
-			const LANG_KEYWORDS = {
-				flutter: "dart",
-				dart: "dart",
-				swift: "swift",
-				kotlin: "kotlin",
-				android: "kotlin",
-				pytorch: "python",
-				django: "python",
-				fastapi: "python",
-				laravel: "php",
-				spring: "java",
-				dotnet: "csharp",
-				csharp: "csharp",
-				rails: "ruby",
-				ruby: "ruby",
-			};
+      // 語言相關框架關鍵字 → 對應語言（名稱含這些詞視為語言專用）
+      const LANG_KEYWORDS = {
+        flutter: 'dart',
+        dart: 'dart',
+        swift: 'swift',
+        kotlin: 'kotlin',
+        android: 'kotlin',
+        pytorch: 'python',
+        django: 'python',
+        fastapi: 'python',
+        laravel: 'php',
+        spring: 'java',
+        dotnet: 'csharp',
+        csharp: 'csharp',
+        rails: 'ruby',
+        ruby: 'ruby',
+      }
 
-			// 技術棧相關關鍵字擴展（tech → 額外匹配詞）
-			const TECH_EXPAND = {
-				vue: ["vue", "frontend", "component"],
-				nuxt: ["nuxt", "ssr"],
-				typescript: ["typescript", "ts"],
-				jest: ["jest", "spec"],
-				vitest: ["vitest", "spec"],
-				webpack: ["webpack", "bundle"],
-				vite: ["vite"],
-				docker: ["docker", "container"],
-				eslint: ["eslint", "lint"],
-				sass: ["sass", "scss", "css"],
-				postcss: ["postcss", "css"],
-				pinia: ["pinia", "store"],
-				vuex: ["vuex", "store"],
-			};
+      // 技術棧相關關鍵字擴展（tech → 額外匹配詞）
+      const TECH_EXPAND = {
+        vue: ['vue', 'frontend', 'component'],
+        nuxt: ['nuxt', 'ssr'],
+        typescript: ['typescript', 'ts'],
+        jest: ['jest', 'spec'],
+        vitest: ['vitest', 'spec'],
+        webpack: ['webpack', 'bundle'],
+        vite: ['vite'],
+        docker: ['docker', 'container'],
+        eslint: ['eslint', 'lint'],
+        sass: ['sass', 'scss', 'css'],
+        postcss: ['postcss', 'css'],
+        pinia: ['pinia', 'store'],
+        vuex: ['vuex', 'store'],
+      }
 
-			// 建立擴展匹配集（硬編碼 + 未知 tech 用名稱本身）
-			const expandedKeywords = new Set();
-			for (const tech of techSet) {
-				expandedKeywords.add(tech);
-				const extra = TECH_EXPAND[tech];
-				if (extra) {
-					for (const k of extra) expandedKeywords.add(k);
-				} else {
-					// 未知框架：用名稱拆分作為關鍵字（如 socket.io-client → socket, io, client）
-					tech
-						.split(/[-./@ ]/)
-						.filter(Boolean)
-						.forEach((k) => {
-							expandedKeywords.add(k.toLowerCase());
-						});
-				}
-			}
-			for (const lang of langSet) expandedKeywords.add(lang);
+      // 建立擴展匹配集（硬編碼 + 未知 tech 用名稱本身）
+      const expandedKeywords = new Set()
+      for (const tech of techSet) {
+        expandedKeywords.add(tech)
+        const extra = TECH_EXPAND[tech]
+        if (extra) {
+          for (const k of extra) expandedKeywords.add(k)
+        }
+        else {
+          // 未知框架：用名稱拆分作為關鍵字（如 socket.io-client → socket, io, client）
+          tech
+            .split(/[-./@ ]/)
+            .filter(Boolean)
+            .forEach((k) => {
+              expandedKeywords.add(k.toLowerCase())
+            })
+        }
+      }
+      for (const lang of langSet) expandedKeywords.add(lang)
 
-			const recommended = [];
-			for (const c of aiResCandidates) {
-				const name = c.name.replace(".md", "").toLowerCase();
+      const recommended = []
+      for (const c of aiResCandidates) {
+        const name = c.name.replace('.md', '').toLowerCase()
 
-				// 排除與官方 plugins 衝突的外部資源
-				if (OFFICIAL_PLUGIN_NAMES.has(name)) continue;
+        // 排除與官方 plugins 衝突的外部資源
+        if (OFFICIAL_PLUGIN_NAMES.has(name))
+          continue
 
-				// 語言專用前綴 → 只在語言匹配時推薦
-				let isLangSpecific = false;
-				for (const [prefix, lang] of Object.entries(LANG_PREFIX)) {
-					if (name.startsWith(prefix)) {
-						isLangSpecific = true;
-						if (
-							techSet.has(lang) ||
-							langSet.has(lang) ||
-							expandedKeywords.has(lang)
-						) {
-							recommended.push(c.name);
-						}
-						break;
-					}
-				}
-				if (isLangSpecific) continue;
+        // 語言專用前綴 → 只在語言匹配時推薦
+        let isLangSpecific = false
+        for (const [prefix, lang] of Object.entries(LANG_PREFIX)) {
+          if (name.startsWith(prefix)) {
+            isLangSpecific = true
+            if (
+              techSet.has(lang)
+              || langSet.has(lang)
+              || expandedKeywords.has(lang)
+            ) {
+              recommended.push(c.name)
+            }
+            break
+          }
+        }
+        if (isLangSpecific)
+          continue
 
-				// 名稱含語言框架關鍵字 → 視為語言專用（只在匹配時推薦）
-				let isFrameworkSpecific = false;
-				for (const [kw, lang] of Object.entries(LANG_KEYWORDS)) {
-					if (name.includes(kw)) {
-						isFrameworkSpecific = true;
-						if (
-							techSet.has(lang) ||
-							techSet.has(kw) ||
-							langSet.has(lang) ||
-							expandedKeywords.has(lang)
-						) {
-							recommended.push(c.name);
-						}
-						break;
-					}
-				}
-				if (isFrameworkSpecific) continue;
+        // 名稱含語言框架關鍵字 → 視為語言專用（只在匹配時推薦）
+        let isFrameworkSpecific = false
+        for (const [kw, lang] of Object.entries(LANG_KEYWORDS)) {
+          if (name.includes(kw)) {
+            isFrameworkSpecific = true
+            if (
+              techSet.has(lang)
+              || techSet.has(kw)
+              || langSet.has(lang)
+              || expandedKeywords.has(lang)
+            ) {
+              recommended.push(c.name)
+            }
+            break
+          }
+        }
+        if (isFrameworkSpecific)
+          continue
 
-				// 通用關鍵字匹配（名稱包含任一關鍵字）
-				if (UNIVERSAL_KEYWORDS.some((kw) => name.includes(kw))) {
-					recommended.push(c.name);
-					continue;
-				}
+        // 通用關鍵字匹配（名稱包含任一關鍵字）
+        if (UNIVERSAL_KEYWORDS.some(kw => name.includes(kw))) {
+          recommended.push(c.name)
+          continue
+        }
 
-				// 名稱包含技術棧或擴展關鍵字
-				if ([...expandedKeywords].some((k) => name.includes(k))) {
-					recommended.push(c.name);
-					continue;
-				}
+        // 名稱包含技術棧或擴展關鍵字
+        if ([...expandedKeywords].some(k => name.includes(k))) {
+          recommended.push(c.name)
+          continue
+        }
 
-				// 描述匹配：只匹配技術棧名稱本身（不含擴展詞，避免過度匹配）
-				const descLower = (c.desc || "").toLowerCase();
-				if ([...techSet].some((k) => descLower.includes(k))) {
-					recommended.push(c.name);
-				}
-			}
+        // 描述匹配：只匹配技術棧名稱本身（不含擴展詞，避免過度匹配）
+        const descLower = (c.desc || '').toLowerCase()
+        if ([...techSet].some(k => descLower.includes(k))) {
+          recommended.push(c.name)
+        }
+      }
 
-			// 去重：同一資源可能從多來源 + 多條件重複匹配
-			const dedupedRecommended = [...new Set(recommended)];
-			aiResAiPromise = Promise.resolve({ recommended: dedupedRecommended });
-			audit.record({
-				phase: "aiRes",
-				action: "rule-recommend",
-				output: {
-					count: dedupedRecommended.length,
-					total: aiResCandidates.length,
-				},
-			});
+      // 去重：同一資源可能從多來源 + 多條件重複匹配
+      const dedupedRecommended = [...new Set(recommended)]
+      aiResAiPromise = Promise.resolve({ recommended: dedupedRecommended })
+      audit.record({
+        phase: 'aiRes',
+        action: 'rule-recommend',
+        output: {
+          count: dedupedRecommended.length,
+          total: aiResCandidates.length,
+        },
+      })
 
-			// ── 背景翻譯（僅未翻譯的，不阻塞）──
-			// 讀 commons 靜態翻譯檔（版控維護，唯一 source of truth）
-			const transPath = path.join(baseDir, ".cache", "translations.json");
-			let translations = {};
-			try {
-				const { TRANSLATIONS_PATH } = await import("@ab-tao/commons/paths");
-				translations = JSON.parse(fs.readFileSync(TRANSLATIONS_PATH, "utf8"));
-			} catch {
-				/* commons 翻譯檔不存在，使用空物件 */
-			}
+      // ── 背景翻譯（僅未翻譯的，不阻塞）──
+      // 讀 commons 靜態翻譯檔（版控維護，唯一 source of truth）
+      const transPath = path.join(baseDir, '.cache', 'translations.json')
+      let translations = {}
+      try {
+        const { TRANSLATIONS_PATH } = await import('@ab-tao/commons/paths')
+        translations = JSON.parse(fs.readFileSync(TRANSLATIONS_PATH, 'utf8'))
+      }
+      catch {
+        /* commons 翻譯檔不存在，使用空物件 */
+      }
 
-			const untranslated = aiResCandidates.filter((c) => {
-				const key = c.name.replace(".md", "");
-				return !translations[c.type]?.[key];
-			});
+      const untranslated = aiResCandidates.filter((c) => {
+        const key = c.name.replace('.md', '')
+        return !translations[c.type]?.[key]
+      })
 
-			if (!isEmpty(untranslated)) {
-				const batchList = untranslated
-					.map((c) => `[${c.type}] ${c.name.replace(".md", "")} — ${c.desc}`)
-					.join("\n");
-				const transPrompt = `將以下 Claude Code 外部資源翻譯為繁體中文，格式：「簡短名稱 — 一句話說明功能」。
+      if (!isEmpty(untranslated)) {
+        const batchList = untranslated
+          .map(c => `[${c.type}] ${c.name.replace('.md', '')} — ${c.desc}`)
+          .join('\n')
+        const transPrompt = `將以下 Claude Code 外部資源翻譯為繁體中文，格式：「簡短名稱 — 一句話說明功能」。
 
 ${batchList}
 
 回傳純 JSON：{"translations":{"type:name":"繁體中文翻譯"}}
-例如：{"translations":{"commands:build-fix":"建構修復 — 自動修復建構錯誤"}}`;
+例如：{"translations":{"commands:build-fix":"建構修復 — 自動修復建構錯誤"}}`
 
-				// 背景跑，不阻塞
-				callClaudeJSON(transPrompt, {
-					model: "haiku",
-					effort: "low",
-					timeoutMs: AI_RES_TIMEOUT,
-					retries: 0,
-				})
-					.then((r) => {
-						if (r?.translations) {
-							// read-merge-write：寫入前重新讀取最新版本，避免並發覆蓋
-							let current = {};
-							try {
-								current = JSON.parse(fs.readFileSync(transPath, "utf8"));
-							} catch {
-								/* 翻譯檔不存在則使用空物件，避免覆蓋遺失 */
-							}
-							for (const [key, value] of Object.entries(r.translations)) {
-								const [type, name] = key.includes(":")
-									? key.split(":")
-									: ["commands", key];
-								if (!current[type]) current[type] = {};
-								current[type][name] = value;
-							}
-							fs.mkdirSync(path.dirname(transPath), { recursive: true });
-							const tmpPath = `${transPath}.tmp`;
-							fs.writeFileSync(
-								tmpPath,
-								`${JSON.stringify(current, null, 2)}\n`,
-							);
-							fs.renameSync(tmpPath, transPath);
-							audit.record({
-								phase: "aiRes",
-								action: "auto-translate",
-								output: { translated: Object.keys(r.translations).length },
-							});
-						}
-					})
-					.catch((e) => {
-						// logger 在此作用域不可用，降級使用 stderr
-						process.stderr.write(
-							`[pipeline] AI 資源自動翻譯失敗（已跳過）：${e?.message ?? String(e)}\n`,
-						);
-					});
-			}
-		}
-	}
+        // 背景跑，不阻塞
+        callClaudeJSON(transPrompt, {
+          model: 'haiku',
+          effort: 'low',
+          timeoutMs: AI_RES_TIMEOUT,
+          retries: 0,
+        })
+          .then((r) => {
+            if (r?.translations) {
+              // read-merge-write：寫入前重新讀取最新版本，避免並發覆蓋
+              let current = {}
+              try {
+                current = JSON.parse(fs.readFileSync(transPath, 'utf8'))
+              }
+              catch {
+                /* 翻譯檔不存在則使用空物件，避免覆蓋遺失 */
+              }
+              for (const [key, value] of Object.entries(r.translations)) {
+                const [type, name] = key.includes(':')
+                  ? key.split(':')
+                  : ['commands', key]
+                if (!current[type])
+                  current[type] = {}
+                current[type][name] = value
+              }
+              fs.mkdirSync(path.dirname(transPath), { recursive: true })
+              const tmpPath = `${transPath}.tmp`
+              fs.writeFileSync(
+                tmpPath,
+                `${JSON.stringify(current, null, 2)}\n`,
+              )
+              fs.renameSync(tmpPath, transPath)
+              audit.record({
+                phase: 'aiRes',
+                action: 'auto-translate',
+                output: { translated: Object.keys(r.translations).length },
+              })
+            }
+          })
+          .catch((e) => {
+            // logger 在此作用域不可用，降級使用 stderr
+            process.stderr.write(
+              `[pipeline] AI 資源自動翻譯失敗（已跳過）：${e?.message ?? String(e)}\n`,
+            )
+          })
+      }
+    }
+  }
 
-	// 保存審計鏈
-	audit.save(baseDir);
+  // 保存審計鏈
+  audit.save(baseDir)
 
-	// 用偵測到的技術棧篩選 commons 資源（動態匹配）
-	const allDetectedForFilter = [...categorizedTechs.values()].flatMap((m) => [
-		...m.keys(),
-	]);
-	const filteredCommons =
-		!isEmpty(commonsResources.sources) && !isEmpty(allDetectedForFilter)
-			? filterByTechStack(commonsResources, allDetectedForFilter)
-			: commonsResources;
+  // 用偵測到的技術棧篩選 commons 資源（動態匹配）
+  const allDetectedForFilter = [...categorizedTechs.values()].flatMap(m => [
+    ...m.keys(),
+  ])
+  const filteredCommons
+    = !isEmpty(commonsResources.sources) && !isEmpty(allDetectedForFilter)
+      ? filterByTechStack(commonsResources, allDetectedForFilter)
+      : commonsResources
 
-	return {
-		categorizedTechs,
-		perRepo,
-		perRepoResults,
-		repoData,
-		repoNpmMap,
-		allLangs: [...allLangs],
-		coreCategories,
-		aiResFetchResult,
-		aiResAiPromise,
-		commonsResources: filteredCommons,
-		conflicts,
-		audit,
-	};
+  return {
+    categorizedTechs,
+    perRepo,
+    perRepoResults,
+    repoData,
+    repoNpmMap,
+    allLangs: [...allLangs],
+    coreCategories,
+    aiResFetchResult,
+    aiResAiPromise,
+    commonsResources: filteredCommons,
+    conflicts,
+    audit,
+  }
 }

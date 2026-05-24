@@ -1,43 +1,43 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "skill-frontmatter.schema.json",
-	"title": "Skill Frontmatter",
-	"description": "SKILL.md YAML frontmatter schema — validated by c:validate --skills",
-	"type": "object",
-	"required": ["name", "description", "version", "category"],
-	"properties": {
-		"name": {
-			"type": "string",
-			"pattern": "^[a-z][a-z0-9-]*$"
-		},
-		"description": {
-			"type": "string",
-			"minLength": 50,
-			"maxLength": 200,
-			"description": "Single-line trigger condition, 50-200 chars"
-		},
-		"version": {
-			"type": "string",
-			"pattern": "^\\d+\\.\\d+\\.\\d+$"
-		},
-		"category": {
-			"type": "string",
-			"enum": ["workflow", "tech", "meta", "ops"]
-		},
-		"tags": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"allowedTools": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"origin": {
-			"type": "string",
-			"description": "Source attribution, e.g. ECC, anthropics/skills"
-		},
-		"disable-model-invocation": { "type": "boolean" },
-		"model": { "type": "string" },
-		"effort": { "type": "string", "enum": ["low", "medium", "high"] }
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "skill-frontmatter.schema.json",
+  "title": "Skill Frontmatter",
+  "description": "SKILL.md YAML frontmatter schema — validated by c:validate --skills",
+  "type": "object",
+  "required": ["name", "description", "version", "category"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 200,
+      "description": "Single-line trigger condition, 50-200 chars"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["workflow", "tech", "meta", "ops"]
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "allowedTools": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "origin": {
+      "type": "string",
+      "description": "Source attribution, e.g. ECC, anthropics/skills"
+    },
+    "disable-model-invocation": { "type": "boolean" },
+    "model": { "type": "string" },
+    "effort": { "type": "string", "enum": ["low", "medium", "high"] }
+  }
 }

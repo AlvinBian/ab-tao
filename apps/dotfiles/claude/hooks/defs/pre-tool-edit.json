@@ -1,17 +1,17 @@
 {
-	"event": "PreToolUse",
-	"hooks": [
-		{
-			"id": "ab-tao:pre:edit",
-			"description": "檔案保護 + Memory 路徑自動校驗 + MEMORY.md 配額警告",
-			"matcher": "Edit|Write|MultiEdit",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/pre-tool-edit.sh",
-					"timeout": 5
-				}
-			]
-		}
-	]
+  "event": "PreToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:pre:edit",
+      "description": "檔案保護 + Memory 路徑自動校驗 + MEMORY.md 配額警告",
+      "matcher": "Edit|Write|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/pre-tool-edit.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }

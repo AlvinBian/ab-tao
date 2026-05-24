@@ -14,37 +14,37 @@
  *   - 未記錄 → AB_TAO_CHOICE_DEFAULT env（預設 keep-local）
  */
 
-import { spawnSync } from "node:child_process";
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { P } from "../core/paths.mjs";
+import { spawnSync } from 'node:child_process'
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
+import { P } from '../core/paths.mjs'
 import {
-	stateGetChoice,
-	stateGetManaged,
-	stateRead,
-	stateSetChoice,
-	stateSetManaged,
-} from "../state/state.mjs";
-import { backup } from "./backup.mjs";
-import { mergeConfig } from "./config-merge.mjs";
-import { runCmd } from "./run-cmd.mjs";
-import { DiffType, sha256OfFile, threeWayDiff } from "./three-way-diff.mjs";
+  stateGetChoice,
+  stateGetManaged,
+  stateRead,
+  stateSetChoice,
+  stateSetManaged,
+} from '../state/state.mjs'
+import { backup } from './backup.mjs'
+import { mergeConfig } from './config-merge.mjs'
+import { runCmd } from './run-cmd.mjs'
+import { DiffType, sha256OfFile, threeWayDiff } from './three-way-diff.mjs'
 
 // ── 常數 ─────────────────────────────────────────────────────────
 
 export const ChoiceAction = {
-	USE_AB_TAO: "use-ab-tao",
-	KEEP_LOCAL: "keep-local",
-	MERGE: "merge",
-	SKIP: "skip",
-};
+  USE_AB_TAO: 'use-ab-tao',
+  KEEP_LOCAL: 'keep-local',
+  MERGE: 'merge',
+  SKIP: 'skip',
+}
 
 // ── 環境檢測 ─────────────────────────────────────────────────────
 
 /** 是否為非互動模式（CI 或 non-TTY） */
 export function isCI() {
-	return process.env.CI === "true" || !process.stdin.isTTY;
+  return process.env.CI === 'true' || !process.stdin.isTTY
 }
 
 /**
@@ -54,14 +54,17 @@ export function isCI() {
  * 3. 預設 keep-local（yadm 模式：不覆蓋本地）
  */
 export function getCIDefault(relPath) {
-	const existing = stateGetChoice(relPath);
-	if (existing) return existing.decision;
+  const existing = stateGetChoice(relPath)
+  if (existing)
+    return existing.decision
 
-	const env = process.env.AB_TAO_CHOICE_DEFAULT;
-	if (env === ChoiceAction.USE_AB_TAO) return ChoiceAction.USE_AB_TAO;
-	if (env === ChoiceAction.MERGE) return ChoiceAction.MERGE;
+  const env = process.env.AB_TAO_CHOICE_DEFAULT
+  if (env === ChoiceAction.USE_AB_TAO)
+    return ChoiceAction.USE_AB_TAO
+  if (env === ChoiceAction.MERGE)
+    return ChoiceAction.MERGE
 
-	return ChoiceAction.KEEP_LOCAL;
+  return ChoiceAction.KEEP_LOCAL
 }
 
 // ── Managed 檔案工具（原 manifest-validator.mjs 功能）───────────
@@ -72,15 +75,16 @@ export function getCIDefault(relPath) {
  * @param {string} source  ab-tao source 路徑描述
  */
 export function markInstalled(relPath, source) {
-	const absPath = path.join(P.home, relPath);
-	const sha = sha256OfFile(absPath);
-	if (!sha) return;
-	stateSetManaged(relPath, {
-		sha256: sha,
-		source,
-		installedAt: new Date().toISOString(),
-		userOverride: false,
-	});
+  const absPath = path.join(P.home, relPath)
+  const sha = sha256OfFile(absPath)
+  if (!sha)
+    return
+  stateSetManaged(relPath, {
+    sha256: sha,
+    source,
+    installedAt: new Date().toISOString(),
+    userOverride: false,
+  })
 }
 
 /**
@@ -89,11 +93,12 @@ export function markInstalled(relPath, source) {
  * @returns {boolean}
  */
 export function shouldSkip(relPath) {
-	const state = stateRead();
-	const choice = state.choices[relPath];
-	if (choice?.decision === "keep-local") return true;
-	const entry = state.managed[relPath];
-	return entry?.userOverride === true;
+  const state = stateRead()
+  const choice = state.choices[relPath]
+  if (choice?.decision === 'keep-local')
+    return true
+  const entry = state.managed[relPath]
+  return entry?.userOverride === true
 }
 
 // ── 評估 ─────────────────────────────────────────────────────────
@@ -107,44 +112,44 @@ export function shouldSkip(relPath) {
  * @returns {{ status: string, diff: object|null, autoAction: string|null, autoReason?: string }}
  */
 export function evaluateFile(relPath, sourcePath, targetPath) {
-	if (shouldSkip(relPath)) {
-		return { status: "skip", diff: null, autoAction: ChoiceAction.KEEP_LOCAL };
-	}
+  if (shouldSkip(relPath)) {
+    return { status: 'skip', diff: null, autoAction: ChoiceAction.KEEP_LOCAL }
+  }
 
-	const ancestorEntry = stateGetManaged(relPath);
-	const ancestorSha = ancestorEntry?.sha256 ?? null;
-	const diff = threeWayDiff({
-		sourcePath,
-		targetPath,
-		ancestorSha256: ancestorSha,
-	});
+  const ancestorEntry = stateGetManaged(relPath)
+  const ancestorSha = ancestorEntry?.sha256 ?? null
+  const diff = threeWayDiff({
+    sourcePath,
+    targetPath,
+    ancestorSha256: ancestorSha,
+  })
 
-	// source 本身不存在（來源遺失）→ 略過
-	if (diff.sourceSha === null) {
-		return { status: "source-missing", diff, autoAction: ChoiceAction.SKIP };
-	}
+  // source 本身不存在（來源遺失）→ 略過
+  if (diff.sourceSha === null) {
+    return { status: 'source-missing', diff, autoAction: ChoiceAction.SKIP }
+  }
 
-	switch (diff.type) {
-		case DiffType.SAME:
-			return { status: "same", diff, autoAction: "same" };
+  switch (diff.type) {
+    case DiffType.SAME:
+      return { status: 'same', diff, autoAction: 'same' }
 
-		case DiffType.DELETED_LOCAL:
-			// target 不存在 → 新檔案，直接寫入
-			return { status: "new-file", diff, autoAction: ChoiceAction.USE_AB_TAO };
+    case DiffType.DELETED_LOCAL:
+      // target 不存在 → 新檔案，直接寫入
+      return { status: 'new-file', diff, autoAction: ChoiceAction.USE_AB_TAO }
 
-		case DiffType.SOURCE_ONLY_CHANGE:
-			// upstream 更新，本地未動 → 自動套用
-			return {
-				status: "drift",
-				diff,
-				autoAction: ChoiceAction.USE_AB_TAO,
-				autoReason: "source-only",
-			};
+    case DiffType.SOURCE_ONLY_CHANGE:
+      // upstream 更新，本地未動 → 自動套用
+      return {
+        status: 'drift',
+        diff,
+        autoAction: ChoiceAction.USE_AB_TAO,
+        autoReason: 'source-only',
+      }
 
-		// NEW_FILE, LOCAL_ONLY_CHANGE, BOTH_CHANGED → 需要 prompt
-		default:
-			return { status: "drift", diff, autoAction: null };
-	}
+      // NEW_FILE, LOCAL_ONLY_CHANGE, BOTH_CHANGED → 需要 prompt
+    default:
+      return { status: 'drift', diff, autoAction: null }
+  }
 }
 
 // ── 應用 ─────────────────────────────────────────────────────────
@@ -159,106 +164,106 @@ export function evaluateFile(relPath, sourcePath, targetPath) {
  * @returns {{ applied: boolean, backupPath?: string }}
  */
 export function applyFileChoice(action, relPath, sourcePath, targetPath) {
-	switch (action) {
-		case ChoiceAction.USE_AB_TAO: {
-			const backupPath = runCmd(`backup ${relPath}`, () => backup(targetPath));
-			runCmd(`copy ${sourcePath} → ${targetPath}`, () => {
-				fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-				fs.copyFileSync(sourcePath, targetPath);
-			});
-			runCmd(`markInstalled ${relPath}`, () =>
-				markInstalled(relPath, `ab-tao:${sourcePath}`),
-			);
-			return { applied: true, backupPath: backupPath ?? undefined };
-		}
+  switch (action) {
+    case ChoiceAction.USE_AB_TAO: {
+      const backupPath = runCmd(`backup ${relPath}`, () => backup(targetPath))
+      runCmd(`copy ${sourcePath} → ${targetPath}`, () => {
+        fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+        fs.copyFileSync(sourcePath, targetPath)
+      })
+      runCmd(`markInstalled ${relPath}`, () =>
+        markInstalled(relPath, `ab-tao:${sourcePath}`))
+      return { applied: true, backupPath: backupPath ?? undefined }
+    }
 
-		case ChoiceAction.KEEP_LOCAL: {
-			runCmd(`markUserOverride ${relPath}`, () =>
-				stateSetChoice(relPath, "keep-local"),
-			);
-			return { applied: true };
-		}
+    case ChoiceAction.KEEP_LOCAL: {
+      runCmd(`markUserOverride ${relPath}`, () =>
+        stateSetChoice(relPath, 'keep-local'))
+      return { applied: true }
+    }
 
-		case ChoiceAction.MERGE: {
-			const srcContent = fs.readFileSync(sourcePath, "utf8");
-			const tgtContent = fs.existsSync(targetPath)
-				? fs.readFileSync(targetPath, "utf8")
-				: "{}";
+    case ChoiceAction.MERGE: {
+      const srcContent = fs.readFileSync(sourcePath, 'utf8')
+      const tgtContent = fs.existsSync(targetPath)
+        ? fs.readFileSync(targetPath, 'utf8')
+        : '{}'
 
-			let srcJson = null;
-			let tgtJson = null;
-			try {
-				srcJson = JSON.parse(srcContent);
-			} catch {
-				/* 非 JSON */
-			}
-			try {
-				tgtJson = JSON.parse(tgtContent);
-			} catch {
-				/* 非 JSON */
-			}
+      let srcJson = null
+      let tgtJson = null
+      try {
+        srcJson = JSON.parse(srcContent)
+      }
+      catch {
+        /* 非 JSON */
+      }
+      try {
+        tgtJson = JSON.parse(tgtContent)
+      }
+      catch {
+        /* 非 JSON */
+      }
 
-			if (!srcJson || !tgtJson) {
-				// 非 JSON 檔案無法合併，回退至 keep-local
-				runCmd(`markUserOverride ${relPath} (merge-fallback)`, () =>
-					stateSetChoice(relPath, "keep-local"),
-				);
-				return { applied: false, fallback: "keep-local" };
-			}
+      if (!srcJson || !tgtJson) {
+        // 非 JSON 檔案無法合併，回退至 keep-local
+        runCmd(`markUserOverride ${relPath} (merge-fallback)`, () =>
+          stateSetChoice(relPath, 'keep-local'))
+        return { applied: false, fallback: 'keep-local' }
+      }
 
-			// 使用 config-merge.mjs 的 mergeConfig
-			const merged = mergeConfig(srcJson, tgtJson, {});
-			const backupPath = runCmd(`backup ${relPath}`, () => backup(targetPath));
-			runCmd(`write merged ${relPath}`, () => {
-				fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-				fs.writeFileSync(
-					targetPath,
-					JSON.stringify(merged, null, "\t"),
-					"utf8",
-				);
-			});
-			runCmd(`markInstalled ${relPath}`, () =>
-				markInstalled(relPath, `ab-tao:${sourcePath}+local-merge`),
-			);
-			return { applied: true, backupPath: backupPath ?? undefined };
-		}
-		default:
-			return { applied: false };
-	}
+      // 使用 config-merge.mjs 的 mergeConfig
+      const merged = mergeConfig(srcJson, tgtJson, {})
+      const backupPath = runCmd(`backup ${relPath}`, () => backup(targetPath))
+      runCmd(`write merged ${relPath}`, () => {
+        fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+        fs.writeFileSync(
+          targetPath,
+          JSON.stringify(merged, null, '\t'),
+          'utf8',
+        )
+      })
+      runCmd(`markInstalled ${relPath}`, () =>
+        markInstalled(relPath, `ab-tao:${sourcePath}+local-merge`))
+      return { applied: true, backupPath: backupPath ?? undefined }
+    }
+    default:
+      return { applied: false }
+  }
 }
 
 // ── 顯示 diff ─────────────────────────────────────────────────────
 
 /** 顯示兩個檔案的 unified diff（fallback：顯示 sha256） */
 export function showDiff(sourcePath, targetPath) {
-	const result = spawnSync("diff", ["-u", targetPath, sourcePath], {
-		encoding: "utf8",
-		timeout: 3000,
-	});
+  const result = spawnSync('diff', ['-u', targetPath, sourcePath], {
+    encoding: 'utf8',
+    timeout: 3000,
+  })
 
-	if (result.stdout) {
-		const lines = result.stdout.split("\n").slice(0, 50);
-		console.log(lines.join("\n"));
-		if (result.stdout.split("\n").length > 50) {
-			console.log("... （省略後續行）");
-		}
-	} else {
-		console.log(
-			`target: ${_sha(targetPath) ?? "(missing)"}  source: ${_sha(sourcePath) ?? "(missing)"}`,
-		);
-	}
+  if (result.stdout) {
+    const lines = result.stdout.split('\n').slice(0, 50)
+    console.log(lines.join('\n'))
+    if (result.stdout.split('\n').length > 50) {
+      console.log('... （省略後續行）')
+    }
+  }
+  else {
+    console.log(
+      `target: ${_sha(targetPath) ?? '(missing)'}  source: ${_sha(sourcePath) ?? '(missing)'}`,
+    )
+  }
 }
 
 function _sha(p) {
-	try {
-		return crypto
-			.createHash("sha256")
-			.update(fs.readFileSync(p))
-			.digest("hex")
-			.slice(0, 12);
-	} catch {
-		return null;
-	}
+  try {
+    return crypto
+      .createHash('sha256')
+      .update(fs.readFileSync(p))
+      .digest('hex')
+      .slice(0, 12)
+  }
+  catch {
+    return null
+  }
 }
 
 // ── 互動式 prompt（TTY 模式）──────────────────────────────────────
@@ -273,55 +278,59 @@ function _sha(p) {
  * @returns {Promise<string>} ChoiceAction.*
  */
 export async function promptFileChoice(relPath, sourcePath, targetPath) {
-	const evaluation = evaluateFile(relPath, sourcePath, targetPath);
+  const evaluation = evaluateFile(relPath, sourcePath, targetPath)
 
-	// 自動決策情況（無需 prompt）
-	if (evaluation.autoAction !== null) {
-		return evaluation.autoAction;
-	}
+  // 自動決策情況（無需 prompt）
+  if (evaluation.autoAction !== null) {
+    return evaluation.autoAction
+  }
 
-	// CI / 非 TTY 模式
-	if (isCI()) {
-		return getCIDefault(relPath);
-	}
+  // CI / 非 TTY 模式
+  if (isCI()) {
+    return getCIDefault(relPath)
+  }
 
-	// 互動式選單
-	const diffType = evaluation.diff?.type ?? "unknown";
-	const isJson = relPath.endsWith(".json");
+  // 互動式選單
+  const diffType = evaluation.diff?.type ?? 'unknown'
+  const isJson = relPath.endsWith('.json')
 
-	console.log(`\n┌─ 配置選擇 ────────────────────────────────────────┐`);
-	console.log(`│  檔案：${relPath}`);
-	console.log(`│  狀態：${_diffTypeLabel(diffType)}  `);
-	console.log(`│`);
-	console.log(`│  [d] 顯示 diff（本地 vs ab-tao template）`);
-	console.log(`│  [u] 使用 ab-tao 預設（自動備份本地）`);
-	console.log(`│  [k] 保留本地（標記 userOverride，日後自動 skip）`);
-	if (isJson) {
-		console.log(`│  [m] 合併（本地 key 優先，補入 template 缺漏 key）`);
-	}
-	console.log(`│  [s] 跳過本次（下次 d:setup 再問）`);
-	console.log(`└────────────────────────────────────────────────────┘`);
+  console.log(`\n┌─ 配置選擇 ────────────────────────────────────────┐`)
+  console.log(`│  檔案：${relPath}`)
+  console.log(`│  狀態：${_diffTypeLabel(diffType)}  `)
+  console.log(`│`)
+  console.log(`│  [d] 顯示 diff（本地 vs ab-tao template）`)
+  console.log(`│  [u] 使用 ab-tao 預設（自動備份本地）`)
+  console.log(`│  [k] 保留本地（標記 userOverride，日後自動 skip）`)
+  if (isJson) {
+    console.log(`│  [m] 合併（本地 key 優先，補入 template 缺漏 key）`)
+  }
+  console.log(`│  [s] 跳過本次（下次 d:setup 再問）`)
+  console.log(`└────────────────────────────────────────────────────┘`)
 
-	const validChoices = isJson
-		? ["d", "u", "k", "m", "s"]
-		: ["d", "u", "k", "s"];
+  const validChoices = isJson
+    ? ['d', 'u', 'k', 'm', 's']
+    : ['d', 'u', 'k', 's']
 
-	while (true) {
-		const choice = await _readLine(`選擇 [${validChoices.join("/")}]：`);
-		const c = choice.trim().toLowerCase();
+  while (true) {
+    const choice = await _readLine(`選擇 [${validChoices.join('/')}]：`)
+    const c = choice.trim().toLowerCase()
 
-		if (c === "d") {
-			showDiff(sourcePath, targetPath);
-			continue;
-		}
+    if (c === 'd') {
+      showDiff(sourcePath, targetPath)
+      continue
+    }
 
-		if (c === "u") return ChoiceAction.USE_AB_TAO;
-		if (c === "k") return ChoiceAction.KEEP_LOCAL;
-		if (c === "m" && isJson) return ChoiceAction.MERGE;
-		if (c === "s") return ChoiceAction.SKIP;
+    if (c === 'u')
+      return ChoiceAction.USE_AB_TAO
+    if (c === 'k')
+      return ChoiceAction.KEEP_LOCAL
+    if (c === 'm' && isJson)
+      return ChoiceAction.MERGE
+    if (c === 's')
+      return ChoiceAction.SKIP
 
-		console.log(`  無效選項，請輸入 ${validChoices.join("/")}。`);
-	}
+    console.log(`  無效選項，請輸入 ${validChoices.join('/')}。`)
+  }
 }
 
 /**
@@ -333,55 +342,55 @@ export async function promptFileChoice(relPath, sourcePath, targetPath) {
  * @returns {Promise<{ status: string, action: string, result: object }>}
  */
 export async function processFile(relPath, sourcePath, targetPath) {
-	const evaluation = evaluateFile(relPath, sourcePath, targetPath);
+  const evaluation = evaluateFile(relPath, sourcePath, targetPath)
 
-	if (evaluation.status === "same") {
-		return { status: "same", action: "same", result: {} };
-	}
+  if (evaluation.status === 'same') {
+    return { status: 'same', action: 'same', result: {} }
+  }
 
-	if (evaluation.status === "skip") {
-		return { status: "skip", action: ChoiceAction.KEEP_LOCAL, result: {} };
-	}
+  if (evaluation.status === 'skip') {
+    return { status: 'skip', action: ChoiceAction.KEEP_LOCAL, result: {} }
+  }
 
-	if (evaluation.status === "source-missing") {
-		return { status: "source-missing", action: ChoiceAction.SKIP, result: {} };
-	}
+  if (evaluation.status === 'source-missing') {
+    return { status: 'source-missing', action: ChoiceAction.SKIP, result: {} }
+  }
 
-	const action = await promptFileChoice(relPath, sourcePath, targetPath);
+  const action = await promptFileChoice(relPath, sourcePath, targetPath)
 
-	// same / skip 不執行 apply
-	if (action === "same" || action === ChoiceAction.SKIP) {
-		return { status: evaluation.status, action, result: {} };
-	}
+  // same / skip 不執行 apply
+  if (action === 'same' || action === ChoiceAction.SKIP) {
+    return { status: evaluation.status, action, result: {} }
+  }
 
-	const result = applyFileChoice(action, relPath, sourcePath, targetPath);
-	return { status: evaluation.status, action, result };
+  const result = applyFileChoice(action, relPath, sourcePath, targetPath)
+  return { status: evaluation.status, action, result }
 }
 
 // ── 工具 ─────────────────────────────────────────────────────────
 
 function _diffTypeLabel(type) {
-	const labels = {
-		"new-file": "首次安裝（無 ancestor 紀錄）",
-		"local-only-change": "本地已修改（template 未動）",
-		"source-only-change": "template 更新（本地未動）",
-		"both-changed": "雙方都有修改（真衝突）",
-		deleted_local: "本地已刪除",
-		same: "相同",
-	};
-	return labels[type] ?? type;
+  const labels = {
+    'new-file': '首次安裝（無 ancestor 紀錄）',
+    'local-only-change': '本地已修改（template 未動）',
+    'source-only-change': 'template 更新（本地未動）',
+    'both-changed': '雙方都有修改（真衝突）',
+    'deleted_local': '本地已刪除',
+    'same': '相同',
+  }
+  return labels[type] ?? type
 }
 
 async function _readLine(prompt) {
-	const { createInterface } = await import("node:readline");
-	return new Promise((resolve) => {
-		const rl = createInterface({
-			input: process.stdin,
-			output: process.stdout,
-		});
-		rl.question(prompt, (answer) => {
-			rl.close();
-			resolve(answer);
-		});
-	});
+  const { createInterface } = await import('node:readline')
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    })
+    rl.question(prompt, (answer) => {
+      rl.close()
+      resolve(answer)
+    })
+  })
 }

@@ -1,123 +1,124 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import { formatRelative } from "@/composables/useFormatRelative";
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { formatRelative } from '@/composables/useFormatRelative'
 
 // ── 型別 ──────────────────────────────────────────────────────────────
 interface EnrichedRepo {
-	name: string;
-	path: string;
-	role: "main" | "temp" | "archived";
-	techStacks: string[];
-	branch: string | null;
-	lastCommit: string | null;
+  name: string
+  path: string
+  role: 'main' | 'temp' | 'archived'
+  techStacks: string[]
+  branch: string | null
+  lastCommit: string | null
 }
 
 // ── 工具函式 ──────────────────────────────────────────────────────────
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const isEmpty = (d: unknown): boolean =>
-	d == null ||
-	(Array.isArray(d) && d.length === 0) ||
-	(typeof d === "object" &&
-		!Array.isArray(d) &&
-		Object.keys(d as object).length === 0);
+function isEmpty(d: unknown): boolean {
+  return d == null
+    || (Array.isArray(d) && d.length === 0)
+    || (typeof d === 'object'
+      && !Array.isArray(d)
+      && Object.keys(d as object).length === 0)
+}
 
 // ── 狀態 ──────────────────────────────────────────────────────────────
-const router = useRouter();
-const repos = ref<EnrichedRepo[]>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
-const timestamp = ref<string | null>(null);
-const searchQuery = ref("");
+const router = useRouter()
+const repos = ref<EnrichedRepo[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+const timestamp = ref<string | null>(null)
+const searchQuery = ref('')
 
 // ── 資料擷取 ──────────────────────────────────────────────────────────
 async function fetchRepos(): Promise<void> {
-	loading.value = true;
-	error.value = null;
-	try {
-		const res = await fetch("/api/repos");
-		const json = await res.json();
-		if (json.code === 0) {
-			repos.value = json.data as EnrichedRepo[];
-			timestamp.value = new Date().toISOString();
-		} else {
-			error.value = json.message as string;
-		}
-	} catch (e) {
-		error.value = e instanceof Error ? e.message : "連線失敗";
-	} finally {
-		loading.value = false;
-	}
+  loading.value = true
+  error.value = null
+  try {
+    const res = await fetch('/api/repos')
+    const json = await res.json()
+    if (json.code === 0) {
+      repos.value = json.data as EnrichedRepo[]
+      timestamp.value = new Date().toISOString()
+    }
+    else {
+      error.value = json.message as string
+    }
+  }
+  catch (e) {
+    error.value = e instanceof Error ? e.message : '連線失敗'
+  }
+  finally {
+    loading.value = false
+  }
 }
 
-onMounted(fetchRepos);
+onMounted(fetchRepos)
 
 // ── 過濾後分組 ────────────────────────────────────────────────────────
 const filteredRepos = computed<EnrichedRepo[]>(() => {
-	const q = searchQuery.value.toLowerCase();
-	if (!q) return repos.value;
-	return repos.value.filter(
-		(r) => r.name.toLowerCase().includes(q) || r.path.toLowerCase().includes(q),
-	);
-});
+  const q = searchQuery.value.toLowerCase()
+  if (!q)
+    return repos.value
+  return repos.value.filter(
+    r => r.name.toLowerCase().includes(q) || r.path.toLowerCase().includes(q),
+  )
+})
 
 interface RoleGroup {
-	role: "main" | "temp" | "archived";
-	label: string;
-	items: EnrichedRepo[];
+  role: 'main' | 'temp' | 'archived'
+  label: string
+  items: EnrichedRepo[]
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const roleGroups = computed<RoleGroup[]>(() => {
-	const groups: Record<"main" | "temp" | "archived", EnrichedRepo[]> = {
-		main: [],
-		temp: [],
-		archived: [],
-	};
-	for (const repo of filteredRepos.value) {
-		const key = repo.role in groups ? repo.role : "temp";
-		groups[key].push(repo);
-	}
-	return (
-		[
-			{ role: "main" as const, label: "主要專案" },
-			{ role: "temp" as const, label: "暫存專案" },
-			{ role: "archived" as const, label: "已歸檔" },
-		] as { role: "main" | "temp" | "archived"; label: string }[]
-	)
-		.map(({ role, label }) => ({ role, label, items: groups[role] }))
-		.filter((g) => g.items.length > 0);
-});
+  const groups: Record<'main' | 'temp' | 'archived', EnrichedRepo[]> = {
+    main: [],
+    temp: [],
+    archived: [],
+  }
+  for (const repo of filteredRepos.value) {
+    const key = repo.role in groups ? repo.role : 'temp'
+    groups[key].push(repo)
+  }
+  return (
+    [
+      { role: 'main' as const, label: '主要專案' },
+      { role: 'temp' as const, label: '暫存專案' },
+      { role: 'archived' as const, label: '已歸檔' },
+    ] as { role: 'main' | 'temp' | 'archived', label: string }[]
+  )
+    .map(({ role, label }) => ({ role, label, items: groups[role] }))
+    .filter(g => g.items.length > 0)
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
-const activeCollapse = ref<string[]>(["main"]);
+const activeCollapse = ref<string[]>(['main'])
 
 // ── 動作 ──────────────────────────────────────────────────────────────
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function scanRepo(name: string): void {
-	router.push({ path: "/actions", query: { tab: "scan", repo: name } });
+  router.push({ path: '/actions', query: { tab: 'scan', repo: name } })
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function openInFinder(repoPath: string): void {
-	// macOS：透過後端呼叫 `open` 指令；若無後端支援則 fallback 顯示路徑
-	fetch("/api/repos/open", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ path: repoPath }),
-	}).catch(() => {
-		// 無支援時靜默失敗，使用者可從卡片上複製路徑
-	});
+  // macOS：透過後端呼叫 `open` 指令；若無後端支援則 fallback 顯示路徑
+  fetch('/api/repos/open', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: repoPath }),
+  }).catch(() => {
+    // 無支援時靜默失敗，使用者可從卡片上複製路徑
+  })
 }
 
 // ── 顯示輔助 ─────────────────────────────────────────────────────────
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function roleTagType(
-	role: string,
-): "primary" | "success" | "warning" | "info" | "danger" {
-	if (role === "main") return "primary";
-	if (role === "temp") return "warning";
-	return "info";
+  role: string,
+): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+  if (role === 'main')
+    return 'primary'
+  if (role === 'temp')
+    return 'warning'
+  return 'info'
 }
 </script>
 
@@ -192,7 +193,9 @@ function roleTagType(
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap">
                   <el-icon><Folder /></el-icon>
                   <span style="font-weight:600; font-size:14px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ repo.name }}</span>
-                  <el-tag :type="roleTagType(repo.role)" size="small">{{ repo.role }}</el-tag>
+                  <el-tag :type="roleTagType(repo.role)" size="small">
+                    {{ repo.role }}
+                  </el-tag>
                 </div>
 
                 <!-- 路徑 -->
@@ -211,7 +214,9 @@ function roleTagType(
                     size="small"
                     effect="plain"
                     type="info"
-                  >{{ tech }}</el-tag>
+                  >
+                    {{ tech }}
+                  </el-tag>
                 </div>
 
                 <!-- Branch / Last Commit -->
@@ -229,13 +234,17 @@ function roleTagType(
                   <el-button
                     size="small"
                     @click="scanRepo(repo.name)"
-                  >掃描</el-button>
+                  >
+                    掃描
+                  </el-button>
                   <el-button
                     size="small"
                     type="info"
                     plain
                     @click="openInFinder(repo.path)"
-                  >開啟</el-button>
+                  >
+                    開啟
+                  </el-button>
                 </div>
               </el-card>
             </el-col>

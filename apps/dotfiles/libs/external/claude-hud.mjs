@@ -6,18 +6,18 @@
  * ab-tao 職責：部署 wrapper script 與預設 plugin config，不執行任何套件安裝。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { HOME } from "../core/paths.mjs";
+import fs from 'node:fs'
+import path from 'node:path'
+import { HOME } from '../core/paths.mjs'
 
-const CLAUDE_DIR = path.join(HOME, ".claude");
-const PLUGIN_DIR = path.join(CLAUDE_DIR, "plugins", "claude-hud");
-const WRAPPER_DEST = path.join(PLUGIN_DIR, "hud-wrapper.sh");
-const CONFIG_DEST = path.join(PLUGIN_DIR, "config.json");
-const PLUGIN_CACHE_GLOB = path.join(CLAUDE_DIR, "plugins", "cache");
+const CLAUDE_DIR = path.join(HOME, '.claude')
+const PLUGIN_DIR = path.join(CLAUDE_DIR, 'plugins', 'claude-hud')
+const WRAPPER_DEST = path.join(PLUGIN_DIR, 'hud-wrapper.sh')
+const CONFIG_DEST = path.join(PLUGIN_DIR, 'config.json')
+const PLUGIN_CACHE_GLOB = path.join(CLAUDE_DIR, 'plugins', 'cache')
 
-const WRAPPER_SRC_NAME = "hud-wrapper.sh";
-const CONFIG_SRC_NAME = "config.json";
+const WRAPPER_SRC_NAME = 'hud-wrapper.sh'
+const CONFIG_SRC_NAME = 'config.json'
 
 /**
  * 偵測 claude-hud plugin 是否已由 Claude Code 安裝
@@ -26,15 +26,18 @@ const CONFIG_SRC_NAME = "config.json";
  * @returns {boolean}
  */
 export function isClaudeHudPluginInstalled() {
-	if (!fs.existsSync(PLUGIN_CACHE_GLOB)) return false;
-	const entries = fs.readdirSync(PLUGIN_CACHE_GLOB);
-	for (const marketplace of entries) {
-		const hudPath = path.join(PLUGIN_CACHE_GLOB, marketplace, "claude-hud");
-		if (!fs.existsSync(hudPath)) continue;
-		const versions = fs.readdirSync(hudPath);
-		if (versions.some((v) => /^\d+\.\d+\.\d+$/.test(v))) return true;
-	}
-	return false;
+  if (!fs.existsSync(PLUGIN_CACHE_GLOB))
+    return false
+  const entries = fs.readdirSync(PLUGIN_CACHE_GLOB)
+  for (const marketplace of entries) {
+    const hudPath = path.join(PLUGIN_CACHE_GLOB, marketplace, 'claude-hud')
+    if (!fs.existsSync(hudPath))
+      continue
+    const versions = fs.readdirSync(hudPath)
+    if (versions.some(v => /^\d+\.\d+\.\d+$/.test(v)))
+      return true
+  }
+  return false
 }
 
 /**
@@ -43,22 +46,26 @@ export function isClaudeHudPluginInstalled() {
  * @returns {string | null}
  */
 export function getClaudeHudPluginVersion() {
-	if (!fs.existsSync(PLUGIN_CACHE_GLOB)) return null;
-	const entries = fs.readdirSync(PLUGIN_CACHE_GLOB);
-	const versions = [];
-	for (const marketplace of entries) {
-		const hudPath = path.join(PLUGIN_CACHE_GLOB, marketplace, "claude-hud");
-		if (!fs.existsSync(hudPath)) continue;
-		for (const v of fs.readdirSync(hudPath)) {
-			if (/^\d+\.\d+\.\d+$/.test(v)) versions.push(v);
-		}
-	}
-	if (!versions.length) return null;
-	return versions.sort((a, b) => {
-		const [ma, mi, pa] = a.split(".").map(Number);
-		const [mb, mi2, pb] = b.split(".").map(Number);
-		return mb - ma || mi2 - mi || pb - pa;
-	})[0];
+  if (!fs.existsSync(PLUGIN_CACHE_GLOB))
+    return null
+  const entries = fs.readdirSync(PLUGIN_CACHE_GLOB)
+  const versions = []
+  for (const marketplace of entries) {
+    const hudPath = path.join(PLUGIN_CACHE_GLOB, marketplace, 'claude-hud')
+    if (!fs.existsSync(hudPath))
+      continue
+    for (const v of fs.readdirSync(hudPath)) {
+      if (/^\d+\.\d+\.\d+$/.test(v))
+        versions.push(v)
+    }
+  }
+  if (!versions.length)
+    return null
+  return versions.sort((a, b) => {
+    const [ma, mi, pa] = a.split('.').map(Number)
+    const [mb, mi2, pb] = b.split('.').map(Number)
+    return mb - ma || mi2 - mi || pb - pa
+  })[0]
 }
 
 /**
@@ -70,30 +77,32 @@ export function getClaudeHudPluginVersion() {
  * @returns {{ deployed: boolean, skipped: boolean, wrapperPath: string }}
  */
 export function deployClaudeHudWrapper(repoDir) {
-	const src = path.join(repoDir, "claude", "claude-hud", WRAPPER_SRC_NAME);
-	if (!fs.existsSync(src)) {
-		return { deployed: false, skipped: false, wrapperPath: WRAPPER_DEST };
-	}
+  const src = path.join(repoDir, 'claude', 'claude-hud', WRAPPER_SRC_NAME)
+  if (!fs.existsSync(src)) {
+    return { deployed: false, skipped: false, wrapperPath: WRAPPER_DEST }
+  }
 
-	fs.mkdirSync(PLUGIN_DIR, { recursive: true });
+  fs.mkdirSync(PLUGIN_DIR, { recursive: true })
 
-	let shouldWrite = true;
-	if (fs.existsSync(WRAPPER_DEST)) {
-		const srcSt = fs.statSync(src);
-		const destSt = fs.statSync(WRAPPER_DEST);
-		if (srcSt.size === destSt.size) {
-			const srcBuf = fs.readFileSync(src);
-			const destBuf = fs.readFileSync(WRAPPER_DEST);
-			if (srcBuf.equals(destBuf)) shouldWrite = false;
-		}
-	}
+  let shouldWrite = true
+  if (fs.existsSync(WRAPPER_DEST)) {
+    const srcSt = fs.statSync(src)
+    const destSt = fs.statSync(WRAPPER_DEST)
+    if (srcSt.size === destSt.size) {
+      const srcBuf = fs.readFileSync(src)
+      const destBuf = fs.readFileSync(WRAPPER_DEST)
+      if (srcBuf.equals(destBuf))
+        shouldWrite = false
+    }
+  }
 
-	if (shouldWrite) fs.copyFileSync(src, WRAPPER_DEST);
+  if (shouldWrite)
+    fs.copyFileSync(src, WRAPPER_DEST)
 
-	// chmod 永遠執行（冪等，修復 umask 或使用者改權限的 drift）
-	fs.chmodSync(WRAPPER_DEST, 0o755);
+  // chmod 永遠執行（冪等，修復 umask 或使用者改權限的 drift）
+  fs.chmodSync(WRAPPER_DEST, 0o755)
 
-	return { deployed: true, skipped: !shouldWrite, wrapperPath: WRAPPER_DEST };
+  return { deployed: true, skipped: !shouldWrite, wrapperPath: WRAPPER_DEST }
 }
 
 /**
@@ -105,17 +114,17 @@ export function deployClaudeHudWrapper(repoDir) {
  * @returns {{ deployed: boolean, skipped: boolean, configPath: string }}
  */
 export function deployClaudeHudConfig(repoDir) {
-	const src = path.join(repoDir, "claude", "claude-hud", CONFIG_SRC_NAME);
-	if (!fs.existsSync(src)) {
-		return { deployed: false, skipped: false, configPath: CONFIG_DEST };
-	}
+  const src = path.join(repoDir, 'claude', 'claude-hud', CONFIG_SRC_NAME)
+  if (!fs.existsSync(src)) {
+    return { deployed: false, skipped: false, configPath: CONFIG_DEST }
+  }
 
-	fs.mkdirSync(PLUGIN_DIR, { recursive: true });
+  fs.mkdirSync(PLUGIN_DIR, { recursive: true })
 
-	if (fs.existsSync(CONFIG_DEST)) {
-		return { deployed: false, skipped: true, configPath: CONFIG_DEST };
-	}
+  if (fs.existsSync(CONFIG_DEST)) {
+    return { deployed: false, skipped: true, configPath: CONFIG_DEST }
+  }
 
-	fs.copyFileSync(src, CONFIG_DEST);
-	return { deployed: true, skipped: false, configPath: CONFIG_DEST };
+  fs.copyFileSync(src, CONFIG_DEST)
+  return { deployed: true, skipped: false, configPath: CONFIG_DEST }
 }

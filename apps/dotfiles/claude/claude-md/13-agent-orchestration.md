@@ -1,5 +1,15 @@
 <agent_orchestration>
 
+## Harness 設計原則（提煉自 omp）
+
+| 原則 | 含義 |
+|---|---|
+| **Harness > Model** | 工具呼叫格式品質決定 model 能力上限 |
+| **Schema > Prose** | Subagent 回傳結構化資料，禁止依賴散文解析 |
+| **Pattern-trigger > Pre-instruction** | 遇具體 pattern 立即停下，優於通用前置指令 |
+| **Curate > Wait** | 主動記憶勝於等使用者說「記住這個」|
+| **Preview > Apply** | 預覽確認後再執行，不自動 apply 破壞性操作 |
+
 ## 資源速查表
 
 | 需求 | 使用 |
@@ -7,11 +17,30 @@
 | 架構設計 / 審查 | `architect` agent |
 | 除錯 / 修復 | `debugger` agent |
 | 複雜計畫 | `/plan` mode 或 `Plan` subagent |
-| 程式碼審查 | `code-review` plugin |
+| 程式碼審查 | `/code-review` |
 | 廣域探索 | `Explore` subagent |
 | 需求結構化 / spec | `/specify` command |
 | spec AC 反向驗證 | `/verify` command |
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
+| **GitNexus 知識圖譜** | 見下方「GitNexus 整合」章節 |
+
+## GitNexus 知識圖譜整合
+
+GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook 自動增強 Grep/Glob/Bash 搜尋結果。
+
+### 任務 → Skill 映射
+
+| 任務 | Skill | 典型觸發語 |
+|---|---|---|
+| 架構探索 / 理解代碼 | `gitnexus-exploring` | "How does X work?", "Show me the auth flow" |
+| **Blast radius / 改了什麼會 break** | `gitnexus-impact-analysis` | "Is it safe to change X?", "What depends on this?" |
+| Trace bug / 錯誤根因 | `gitnexus-debugging` | "Why is X failing?", "Trace this error" |
+| Rename / Extract / Split | `gitnexus-refactoring` | "Rename this safely", "Extract to module" |
+| PR 改動影響範圍 | `gitnexus-pr-review` | "Review PR #N", "Blast radius of this PR?" |
+| Index / reindex / CLI | `gitnexus-cli` | "Index this repo", "Reanalyze codebase" |
+| Tool / schema 查閱 | `gitnexus-guide` | "What GitNexus tools are available?" |
+
+> MCP 工具速查 / Hook 行為 / Index 管理 → Read `~/.claude/docs/gitnexus-integration.md`（架構探索、blast radius 任務時）
 
 ## 調度規則（強制）
 
@@ -37,60 +66,91 @@
 
 agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立第二意見、可平行的多方向探索。
 
-## DAG 並行執行
+> 多 phase 並行排程（DAG 切分 / Wave gate / 衝突處理）→ Read `~/.claude/docs/agent-dag-parallel.md`（任務含 ≥3 phase 時）。
 
-**原則**：有明確依賴圖（DAG）的多 phase 任務，**強制優先使用多 agent 並行**，禁止盲目序列執行。
+## Subagent 回傳結構規範（Schema > Prose）
 
-### 何時觸發
+啟動 subagent 時 **prompt 必須明確指定回傳 schema**，禁止接受純 prose 後再自行解析。
 
-- plan / 任務含 ≥3 phase
-- phase 間有明確依賴（可繪 DAG）
-- 使用者批准 plan 後、使用者問「能並行嗎 / 有更好切分嗎」、使用者下「按照計畫執行」
+**研究 / 探索類**（Explore / general-purpose research）：
+```
+findings: [{path, line, confidence: ✅|⚠️|❓, summary}]
+conclusion: 一句話結論
+```
 
-### 執行流程（4 步）
+**審查類**（reviewer / architect / pr-test-analyzer / silent-failure-hunter / type-design-analyzer）：
+```
+issues: [{severity: P0|P1|P2|P3, confidence: high|medium|low, location, fix}]
+verdict: SHIP | BLOCK | NEEDS-DISCUSSION
+```
 
-1. **依賴分析**：列所有 phase → 繪 DAG → 標檔案衝突點
-2. **Wave 切分**：同 Wave 內 ① 無直接依賴 ② 無檔案衝突
-3. **並行啟動**：單一 message 多 Agent tool call（foreground）
-4. **Wave gate**：Wave N 全完成 + review → 啟 Wave N+1
+**執行類**（debugger / planner）：
+```
+changes: [{file, before, after, verify}]
+done: boolean
+verdict: PASS | FAIL | NEEDS-REVIEW
+```
 
-### 禁止
+**Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL 或 NEEDS-REVIEW 時：
+- 主對話**禁止**標 task complete
+- **必須** spawn `reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
+- 僅 `verdict: PASS` 才可標完成
 
-- 序列執行可並行 phase
-- Wave 內未檢查檔案衝突就並行（race condition）
-- 不列 DAG 直接並行（邏輯錯誤）
-- 單 agent 跨 Wave 執行（違反 gate 原則）
-
-### 衝突處理
-
-兩 phase 改同檔 → 選一：
-- 合併為同一 agent（熱檔共修）
-- 強制序列化（放不同 Wave）
-- 拆檔解耦（若檔案本身過大）
-
-### Agent 分派建議
-
-| phase 類型 | 建議 subagent_type |
-|---|---|
-| 架構/設計評估 | `architect` |
-| 除錯 / build 修復 | `debugger` |
-| 程式碼審查 | `code-reviewer` |
-| 探索/分析 | `Explore` / `general-purpose` |
-| 規劃 | `/plan` mode / `Plan` subagent |
-| 重構/簡化 | `architect` agent（5 維審查含簡化建議）|
+> 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
 
 ## Review 入口決策表
 
 | 需求 | 工具 | 備註 |
 |---|---|---|
-| 第二意見 / 獨立 code review | `reviewer` agent | 主要 review 入口 |
+| **PR review（預設入口）** | **`/code-review`** | 自動分流 quick/standard/deep；`--effort` flag 覆寫；見下方分流規格 |
+| 第二意見 / quick 單獨呼叫 | `reviewer` agent | quick 模式固定組件；亦可獨立呼叫取第二意見 |
 | PR 測試覆蓋率 | `pr-test-analyzer` agent | 行為覆蓋 + 漏洞防護 |
 | 無聲失敗 / 錯誤吞噬 | `silent-failure-hunter` agent | 專項分析 |
 | 型別設計 | `type-design-analyzer` agent | 不變量 + 封裝 |
 | 架構深度審查 | `architect` agent | 5 維度評分 |
-| PR slash 命令 | `code-review` plugin | `/code-review` slash |
 
-> `code-reviewer` agent 已移除（與 `reviewer` 高度重疊）。
+## Review 深淺分流規格
+
+### 自動判定 Tier
+
+| 層級 | 觸發條件 | 耗時 |
+|---|---|---|
+| **quick** | 行數 ≤ 80（stacked +50%）＆ 檔案 ≤ 3 ＆ 無強制升級訊號 | < 90s |
+| **standard** | 80–300 行 / 4–10 檔 / 命中 standard 升級訊號 | ~5 min |
+| **deep** | > 300 行 / > 10 檔 / 命中 deep 升級訊號 | ~8 min |
+
+**stacked PR**：偵測 git-spice stack（base ≠ main）時，quick 上限 +50%（≤ 120 行）。
+
+### 強制升級訊號
+
+**→ deep**（path allowlist）：
+`**/migrations/**` / `**/schema.prisma` / `**/*.sql` / `**/middleware/auth*` / `**/guards/**` / `**/policies/**` / `**/permissions/**` / `**/payment/**` / `**/billing/**` / `**/charge*` / `**/.env*` / `**/config/secrets*` / `**/crypto*` / `**/hash*`
+
+**→ standard**（path allowlist）：
+`**/cron*` / `**/scheduler*` / `**/queue*` / `**/cors*` / `**/csp*` / `**/cookie*` / `package.json` dependencies|scripts 段
+
+**→ standard**（risk keyword scan）：
+`SECRET` / `SALT` / `PRIVATE_KEY` / `DROP TABLE` / 動態程式碼求值 / React raw HTML 注入屬性 / `child_process` / `bcrypt` / `jwt.sign` / `Math.random`（安全 context）/ diff 含 `^- *if ` 開頭位於 auth 路徑
+
+**→ standard**（diff 形狀）：純刪除 PR `+0/-N` / `.env.example` 改動 / featureFlag default 翻轉
+
+**行數計算排除**：`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock` / `*.snap` / `dist/**` / `*.generated.*` / `*.min.*`
+
+**優先級**：allowlist > keyword > shape > 行數。降級需 4 條全清。
+
+### Quick 模式能力組合
+
+| 能力 | 觸發條件 |
+|---|---|
+| Diff 正確性檢視 | always |
+| typecheck | always |
+| lint | always |
+| `reviewer` agent | always |
+| `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
+| `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
+| `pr-test-analyzer` lite | prod code 改 ＆ test 未改 |
+
+**覆寫**：`--effort=quick|standard|deep`；`--effort=quick --force` 需附 justification。
 
 ## 多 session 監看
 
@@ -105,7 +165,6 @@ agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立�
 | session 內互動 / Lighthouse / 記憶體分析 | chrome-devtools MCP |
 | 長任務 / self-healing / domain helper 沉澱 | browser-harness |
 
-> browser-harness **預設啟用**（d:setup 自動安裝）；不需要時可在 d:setup 功能選擇取消勾選，
-> 或透過 `c:locals --stop browser-harness` 暫停。
+> browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
 
 </agent_orchestration>

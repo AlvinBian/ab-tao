@@ -11,10 +11,10 @@ v1.6.0 在 `~/.claude/.ab-tao/state.json` 新增四個 sub-schema（ADR-001）�
 
 ```json
 {
-  "federated": {},        // 跨來源記憶索引（新增）
-  "failurePatterns": [],  // append-only 失敗模式記錄（新增）
-  "intentCache": {},      // /ai dispatcher intent 快取（新增）
-  "metricsSnapshot": {}   // 使用指標快照（新增）
+  "federated": {}, // 跨來源記憶索引（新增）
+  "failurePatterns": [], // append-only 失敗模式記錄（新增）
+  "intentCache": {}, // /ai dispatcher intent 快取（新增）
+  "metricsSnapshot": {} // 使用指標快照（新增）
 }
 ```
 

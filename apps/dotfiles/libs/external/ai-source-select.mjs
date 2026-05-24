@@ -5,13 +5,13 @@
  * 已同步的直接使用，未同步的即時同步。
  */
 
-import { execFileSync } from "node:child_process";
-import { SOURCES_CONFIG } from "@ab-tao/commons/sync";
-import { readVersions } from "@ab-tao/commons/versions";
-import * as p from "@clack/prompts";
-import { isEmpty } from "lodash-es";
-import pc from "picocolors";
-import { BACK, handleCancel } from "../cli/prompts.mjs";
+import { execFileSync } from 'node:child_process'
+import { SOURCES_CONFIG } from '@ab-tao/commons/sync'
+import { readVersions } from '@ab-tao/commons/versions'
+import * as p from '@clack/prompts'
+import { isEmpty } from 'lodash-es'
+import pc from 'picocolors'
+import { BACK, handleCancel } from '../cli/prompts.mjs'
 
 /**
  * 互動式選擇 AI 來源
@@ -22,90 +22,95 @@ import { BACK, handleCancel } from "../cli/prompts.mjs";
  * @returns {string[]} 選中的來源名稱陣列（空陣列 = 跳過）
  */
 export async function selectAiSources() {
-	const versions = readVersions();
-	const sourceNames = Object.keys(SOURCES_CONFIG);
+  const versions = readVersions()
+  const sourceNames = Object.keys(SOURCES_CONFIG)
 
-	const options = sourceNames.map((name) => {
-		const config = SOURCES_CONFIG[name];
-		const ver = versions[name];
-		const synced = ver?.sha;
-		const tag = synced ? pc.green("✔") : pc.dim("✗");
-		return {
-			value: name,
-			label: `${config.icon} ${name} ${tag} ${pc.dim(config.description)}`,
-		};
-	});
+  const options = sourceNames.map((name) => {
+    const config = SOURCES_CONFIG[name]
+    const ver = versions[name]
+    const synced = ver?.sha
+    const tag = synced ? pc.green('✔') : pc.dim('✗')
+    return {
+      value: name,
+      label: `${config.icon} ${name} ${tag} ${pc.dim(config.description)}`,
+    }
+  })
 
-	const selected = handleCancel(
-		await p.multiselect({
-			message: "AI 來源（Space 切換，Enter 確認，直接 Enter 跳過）",
-			options,
-			initialValues: [],
-			required: false,
-		}),
-	);
+  const selected = handleCancel(
+    await p.multiselect({
+      message: 'AI 來源（Space 切換，Enter 確認，直接 Enter 跳過）',
+      options,
+      initialValues: [],
+      required: false,
+    }),
+  )
 
-	if (selected === BACK) return BACK;
-	if (!selected || isEmpty(selected)) {
-		p.log.info("⏭️ 已跳過 AI 來源");
-		return [];
-	}
+  if (selected === BACK)
+    return BACK
+  if (!selected || isEmpty(selected)) {
+    p.log.info('⏭️ 已跳過 AI 來源')
+    return []
+  }
 
-	// 找出需要同步的（以 .versions.json sha 為單一事實來源）
-	const needSync = selected.filter((name) => !versions[name]?.sha);
-	let finalVersions = versions;
+  // 找出需要同步的（以 .versions.json sha 為單一事實來源）
+  const needSync = selected.filter(name => !versions[name]?.sha)
+  let finalVersions = versions
 
-	if (!isEmpty(needSync)) {
-		const spinner = p.spinner();
-		spinner.start(`正在同步 ${needSync.length} 個 AI 來源...`);
-		let stderrOutput = "";
-		try {
-			const pickArg = needSync.join(",");
-			execFileSync(
-				"pnpm",
-				[
-					"--filter",
-					"@ab-tao/commons",
-					"run",
-					"ai-sync",
-					"--",
-					"--pick",
-					pickArg,
-				],
-				{
-					stdio: "pipe",
-					timeout: 120000,
-				},
-			);
-		} catch (err) {
-			stderrOutput =
-				err.stderr?.toString() || err.stdout?.toString() || err.message || "";
-		}
-		// 重新讀 versions 比對真實成功 / 失敗集合
-		finalVersions = readVersions();
-		const succeeded = needSync.filter((n) => finalVersions[n]?.sha);
-		const failed = needSync.filter((n) => !finalVersions[n]?.sha);
-		if (failed.length === 0) {
-			spinner.stop(`已同步 ${succeeded.length} 個 AI 來源`);
-		} else {
-			spinner.stop(
-				pc.yellow(
-					`同步完成：成功 ${succeeded.length} / 失敗 ${failed.length}（${failed.join(", ")}）`,
-				),
-			);
-			if (stderrOutput) p.log.error(stderrOutput.slice(-500));
-		}
-	} else {
-		p.log.info("所有選取來源均已同步，無需重新同步");
-	}
+  if (!isEmpty(needSync)) {
+    const spinner = p.spinner()
+    spinner.start(`正在同步 ${needSync.length} 個 AI 來源...`)
+    let stderrOutput = ''
+    try {
+      const pickArg = needSync.join(',')
+      execFileSync(
+        'pnpm',
+        [
+          '--filter',
+          '@ab-tao/commons',
+          'run',
+          'ai-sync',
+          '--',
+          '--pick',
+          pickArg,
+        ],
+        {
+          stdio: 'pipe',
+          timeout: 120000,
+        },
+      )
+    }
+    catch (err) {
+      stderrOutput
+        = err.stderr?.toString() || err.stdout?.toString() || err.message || ''
+    }
+    // 重新讀 versions 比對真實成功 / 失敗集合
+    finalVersions = readVersions()
+    const succeeded = needSync.filter(n => finalVersions[n]?.sha)
+    const failed = needSync.filter(n => !finalVersions[n]?.sha)
+    if (failed.length === 0) {
+      spinner.stop(`已同步 ${succeeded.length} 個 AI 來源`)
+    }
+    else {
+      spinner.stop(
+        pc.yellow(
+          `同步完成：成功 ${succeeded.length} / 失敗 ${failed.length}（${failed.join(', ')}）`,
+        ),
+      )
+      if (stderrOutput)
+        p.log.error(stderrOutput.slice(-500))
+    }
+  }
+  else {
+    p.log.info('所有選取來源均已同步，無需重新同步')
+  }
 
-	// 只回傳確認有 sha 的來源（過濾同步失敗者）
-	const ready = selected.filter((n) => finalVersions[n]?.sha);
-	const lines = ready.map((name, i) => {
-		const config = SOURCES_CONFIG[name];
-		return `  ${i + 1}. ${config.icon} ${pc.cyan(name)} ${config.description}`;
-	});
-	p.log.success(`已就緒 ${ready.length} 個 AI 來源：\n${lines.join("\n")}`);
+  // 只回傳確認有 sha 的來源（過濾同步失敗者）
+  const ready = selected.filter(n => finalVersions[n]?.sha)
+  const lines = ready.map((name, i) => {
+    const config = SOURCES_CONFIG[name]
+    return `  ${i + 1}. ${config.icon} ${pc.cyan(name)} ${config.description}`
+  })
+  p.log.success(`已就緒 ${ready.length} 個 AI 來源：\n${lines.join('\n')}`)
 
-	return ready;
+  return ready
 }

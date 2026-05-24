@@ -1,22 +1,22 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "ab-tao:state:federated",
-	"title": "Federated Memory",
-	"type": "object",
-	"additionalProperties": false,
-	"properties": {
-		"projects": {
-			"type": "object",
-			"additionalProperties": {
-				"type": "string",
-				"description": "MEMORY.md 路徑"
-			},
-			"description": "各專案 MEMORY.md 路徑映射（key = 專案識別名）"
-		},
-		"lastFederatedAt": {
-			"type": ["string", "null"],
-			"format": "date-time",
-			"description": "最後 federated 同步時間"
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ab-tao:state:federated",
+  "title": "Federated Memory",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "projects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "description": "MEMORY.md 路徑"
+      },
+      "description": "各專案 MEMORY.md 路徑映射（key = 專案識別名）"
+    },
+    "lastFederatedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "最後 federated 同步時間"
+    }
+  }
 }

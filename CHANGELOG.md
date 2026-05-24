@@ -2,6 +2,33 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.8.0] — 2026-05-24 — omp Harness 哲學落地 + Hook 智能增強
+
+### 🤖 Claude Rules — Stream-rule 細粒度觸發
+
+- feat(claude-md): `15-self-correction.md` §6 新增 5 條 Pattern-trigger 串流中斷清單 — 敏感欄位 log / 範圍爆炸 / `any` 型別 / 破壞性 Bash / Edit 失敗禁止盲改重試
+- feat(claude-md): `08-state-system.md` 新增 Mid-run 主動記憶（Curate > Wait）— 4 條自動觸發情境（pattern 發現 / 設計決策動機 / non-obvious 坑 / 使用者隱式偏好），回覆末自動附「已記錄：[摘要]」
+- feat(claude-md): `08-state-system.md` 冷啟動補規則 — MEMORY.md 含 `[pending-curate]` 標記時主動詢問回顧決策
+- feat(claude-md): `13-agent-orchestration.md` 開頭新增 omp Harness 5 原則（Harness > Model / Schema > Prose / Pattern-trigger > Pre-instruction / Curate > Wait / Preview > Apply）
+- feat(claude-md): `13-agent-orchestration.md` 新增 Subagent 回傳結構規範（研究類 / 審查類 / 執行類 3 套 schema，禁止接受 prose 後自行解析）
+- feat(claude-md): `13-agent-orchestration.md` 新增 Review 深淺分流規格（quick / standard / deep Tier 自動判定 + 強制升級訊號 allowlist + quick 能力組合）
+- refactor(claude-md): `13-agent-orchestration.md` 拆分 GitNexus 詳細文件至 `docs/gitnexus-integration.md`（主檔保留錨點 + 任務→Skill 映射，省 19% token）
+
+### 🪝 Hooks — Telemetry + Auto-curate
+
+- feat(hooks): `pre-tool-bash.sh` 新增 `_log_rule_hit()` — 每次 pattern 命中 append telemetry 到 `~/.claude/telemetry/rule-hits-{hostname}.jsonl`（hostname 分片，防 iCloud 多裝置衝突）
+- feat(hooks): `pre-tool-bash.sh` 補 4 條 BUILTIN_PATTERNS — `git reset --hard` / `git commit --no-verify` / `git push --no-verify` / `git merge --no-verify`
+- feat(hooks): `session-end.sh` Part 6 auto-curate — session 結束後 background 在 project MEMORY.md 追加 `[pending-curate]` 提示；下次冷啟動自動偵測並詢問
+- feat(hooks): `session-start.sh` Part 6 active plan staleness 警告 — 掃 `~/.claude/plans/` 中 `status != done` 且 mtime > 14 天的 plan，stderr 輸出提醒
+
+### 📦 Skills
+
+- feat(skills): 新增 `skills/rules-stats/SKILL.md` — 讀 `rule-hits-*.jsonl` + `edit-failures-*.jsonl`（glob 跨機器 merge），輸出近 30 天觸發統計表 + Edit 失敗 Top 5，觸發詞：`/rules-stats`
+
+### 🐚 ZSH
+
+- chore(zsh): `30-aliases.zsh` GUI editor 偵測順序調整 — Kiro 優先級移至 Cursor 前
+
 ## [1.7.1] — 2026-05-18 — Security & Hook Hardening
 
 ### 🔒 Security Rules

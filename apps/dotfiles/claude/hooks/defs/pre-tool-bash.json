@@ -1,17 +1,17 @@
 {
-	"event": "PreToolUse",
-	"hooks": [
-		{
-			"id": "ab-tao:pre:bash",
-			"description": "危險命令攔截（sudo rm / rm -rf / fork bomb / curl|bash 等）",
-			"matcher": "Bash",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/pre-tool-bash.sh",
-					"timeout": 5
-				}
-			]
-		}
-	]
+  "event": "PreToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:pre:bash",
+      "description": "危險命令攔截（sudo rm / rm -rf / fork bomb / curl|bash 等）",
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/pre-tool-bash.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
 }

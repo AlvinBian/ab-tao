@@ -96,9 +96,10 @@ chezmoi add --encrypt ~/.claude/settings.local.json
 
 ```toml
 encryption = "age"
+
 [age]
-  identity = "~/.config/chezmoi/key.txt"
-  recipients = ["age1..."]  # 你的 age public key
+identity = "~/.config/chezmoi/key.txt"
+recipients = [ "age1..." ] # 你的 age public key
 ```
 
 ## 注意事項

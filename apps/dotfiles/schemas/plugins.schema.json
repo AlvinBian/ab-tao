@@ -1,69 +1,69 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "plugins.schema.json",
-	"title": "ab-tao Plugins",
-	"description": "apps/dotfiles/claude/plugins.yml — declarative plugin list",
-	"type": "object",
-	"required": ["marketplaces", "plugins"],
-	"properties": {
-		"marketplaces": {
-			"type": "array",
-			"items": { "type": "string" },
-			"description": "Plugin marketplace sources"
-		},
-		"plugins": {
-			"type": "object",
-			"description": "Plugin declarations keyed by plugin name",
-			"additionalProperties": {
-				"oneOf": [
-					{ "type": "boolean" },
-					{
-						"type": "object",
-						"required": ["enabled"],
-						"properties": {
-							"enabled": { "type": "boolean" },
-							"version": {
-								"type": "string",
-								"description": "semver range, e.g. ^1.2.0"
-							},
-							"commit": {
-								"type": "string",
-								"description": "SHA pin takes precedence over version"
-							},
-							"config": {
-								"type": "object",
-								"description": "Plugin-specific config overrides",
-								"properties": {
-									"sideEffects": {
-										"type": "array",
-										"items": { "type": "string" }
-									},
-									"conflicts": {
-										"type": "array",
-										"items": { "type": "string" }
-									},
-									"mandatorySetup": {
-										"type": "array",
-										"items": { "type": "string" }
-									}
-								},
-								"additionalProperties": true
-							}
-						}
-					}
-				]
-			}
-		},
-		"profile_overrides": {
-			"type": "object",
-			"description": "Per-profile plugin enable/disable overrides",
-			"additionalProperties": {
-				"type": "object",
-				"properties": {
-					"enable": { "type": "array", "items": { "type": "string" } },
-					"disable": { "type": "array", "items": { "type": "string" } }
-				}
-			}
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "plugins.schema.json",
+  "title": "ab-tao Plugins",
+  "description": "apps/dotfiles/claude/plugins.yml — declarative plugin list",
+  "type": "object",
+  "required": ["marketplaces", "plugins"],
+  "properties": {
+    "marketplaces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Plugin marketplace sources"
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Plugin declarations keyed by plugin name",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "boolean" },
+          {
+            "type": "object",
+            "required": ["enabled"],
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "version": {
+                "type": "string",
+                "description": "semver range, e.g. ^1.2.0"
+              },
+              "commit": {
+                "type": "string",
+                "description": "SHA pin takes precedence over version"
+              },
+              "config": {
+                "type": "object",
+                "description": "Plugin-specific config overrides",
+                "properties": {
+                  "sideEffects": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "conflicts": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "mandatorySetup": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    "profile_overrides": {
+      "type": "object",
+      "description": "Per-profile plugin enable/disable overrides",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enable": { "type": "array", "items": { "type": "string" } },
+          "disable": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
 }

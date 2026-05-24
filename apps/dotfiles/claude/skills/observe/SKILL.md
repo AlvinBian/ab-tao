@@ -98,19 +98,19 @@ Error rate < 0.5%（P3 功能）
 - name: high_error_rate
   condition: error_rate > 5% for 5 minutes
   severity: critical
-  message: "[服務名] error rate 超過 5%，立即調查"
+  message: '[服務名] error rate 超過 5%，立即調查'
 
 # 警告（30 分鐘內處理，Slack）
 - name: elevated_latency
   condition: p95_latency > [SLO × 2] for 10 minutes
   severity: warning
-  message: "[服務名] P95 latency 超標"
+  message: '[服務名] P95 latency 超標'
 
 # 預警（業務時間內處理）
 - name: high_saturation
   condition: cpu_usage > 70% for 15 minutes
   severity: info
-  message: "[服務名] CPU 接近飽和，考慮擴容"
+  message: '[服務名] CPU 接近飽和，考慮擴容'
 ```
 
 ## Dashboard Spec 模板

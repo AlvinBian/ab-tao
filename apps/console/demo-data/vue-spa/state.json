@@ -1,11 +1,11 @@
 {
-	"version": "1.6.0",
-	"runtime": {
-		"activeProfile": "day-to-day",
-		"lastSwitchedAt": "2026-03-15T14:00:00Z",
-		"lastInstalledAt": "2026-03-15T14:30:00Z",
-		"voiceTrigger": true,
-		"costRouting": "dynamic"
-	},
-	"sync": { "included": ["gstack", "spec-kit"] }
+  "version": "1.6.0",
+  "runtime": {
+    "activeProfile": "day-to-day",
+    "lastSwitchedAt": "2026-03-15T14:00:00Z",
+    "lastInstalledAt": "2026-03-15T14:30:00Z",
+    "voiceTrigger": true,
+    "costRouting": "dynamic"
+  },
+  "sync": { "included": ["gstack", "spec-kit"] }
 }

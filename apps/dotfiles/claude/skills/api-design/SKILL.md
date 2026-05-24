@@ -178,17 +178,17 @@ Location: /api/v1/users/abc-123
 ```typescript
 // Option A: Envelope with data wrapper (recommended for public APIs)
 interface ApiResponse<T> {
-  data: T;
-  meta?: PaginationMeta;
-  links?: PaginationLinks;
+  data: T
+  meta?: PaginationMeta
+  links?: PaginationLinks
 }
 
 interface ApiError {
   error: {
-    code: string;
-    message: string;
-    details?: FieldError[];
-  };
+    code: string
+    message: string
+    details?: FieldError[]
+  }
 }
 
 // Option B: Flat response (simpler, common for internal APIs)
@@ -312,18 +312,20 @@ X-API-Key: sk_live_abc123
 
 ```typescript
 // Resource-level: check ownership
-app.get("/api/v1/orders/:id", async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) return res.status(404).json({ error: { code: "not_found" } });
-  if (order.userId !== req.user.id) return res.status(403).json({ error: { code: "forbidden" } });
-  return res.json({ data: order });
-});
+app.get('/api/v1/orders/:id', async (req, res) => {
+  const order = await Order.findById(req.params.id)
+  if (!order)
+    return res.status(404).json({ error: { code: 'not_found' } })
+  if (order.userId !== req.user.id)
+    return res.status(403).json({ error: { code: 'forbidden' } })
+  return res.json({ data: order })
+})
 
 // Role-based: check permissions
-app.delete("/api/v1/users/:id", requireRole("admin"), async (req, res) => {
-  await User.delete(req.params.id);
-  return res.status(204).send();
-});
+app.delete('/api/v1/users/:id', requireRole('admin'), async (req, res) => {
+  await User.delete(req.params.id)
+  return res.status(204).send()
+})
 ```
 
 ## Rate Limiting
@@ -403,33 +405,33 @@ Accept: application/vnd.myapp.v2+json
 ### TypeScript (Next.js API Route)
 
 ```typescript
-import { z } from "zod";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(100),
-});
+})
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = createUserSchema.safeParse(body);
+  const body = await req.json()
+  const parsed = createUserSchema.safeParse(body)
 
   if (!parsed.success) {
     return NextResponse.json({
       error: {
-        code: "validation_error",
-        message: "Request validation failed",
+        code: 'validation_error',
+        message: 'Request validation failed',
         details: parsed.error.issues.map(i => ({
-          field: i.path.join("."),
+          field: i.path.join('.'),
           message: i.message,
           code: i.code,
         })),
       },
-    }, { status: 422 });
+    }, { status: 422 })
   }
 
-  const user = await createUser(parsed.data);
+  const user = await createUser(parsed.data)
 
   return NextResponse.json(
     { data: user },
@@ -437,7 +439,7 @@ export async function POST(req: NextRequest) {
       status: 201,
       headers: { Location: `/api/v1/users/${user.id}` },
     },
-  );
+  )
 }
 ```
 

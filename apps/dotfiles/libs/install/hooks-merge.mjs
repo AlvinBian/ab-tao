@@ -6,107 +6,116 @@
  *   偵測相同 event + matcher 的衝突，並讓用戶選擇處理方式。
  */
 
-import fs from "node:fs";
-import * as p from "@clack/prompts";
-import { isEmpty } from "lodash-es";
-import { handleCancel } from "../cli/prompts.mjs";
+import fs from 'node:fs'
+import * as p from '@clack/prompts'
+import { isEmpty } from 'lodash-es'
+import { handleCancel } from '../cli/prompts.mjs'
 
 /**
  * 檢查用戶 settings.json 中的 hooks 是否與即將安裝的 hooks 衝突
  *
- * @param {Object} newHooks - 即將安裝的 hooks 物件
+ * @param {object} newHooks - 即將安裝的 hooks 物件
  * @param {string} settingsPath - ~/.claude/settings.json 路徑
- * @returns {Promise<Object>} 合併後的 hooks，或 null 表示跳過
+ * @returns {Promise<object>} 合併後的 hooks，或 null 表示跳過
  */
 export async function mergeHooksWithExisting(newHooks, settingsPath) {
-	if (!fs.existsSync(settingsPath)) return newHooks;
+  if (!fs.existsSync(settingsPath))
+    return newHooks
 
-	let existing;
-	try {
-		existing = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-	} catch {
-		return newHooks;
-	}
+  let existing
+  try {
+    existing = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+  }
+  catch {
+    return newHooks
+  }
 
-	if (!existing.hooks || isEmpty(existing.hooks)) return newHooks;
+  if (!existing.hooks || isEmpty(existing.hooks))
+    return newHooks
 
-	// NOTE: 此 dedup 僅針對寫入 ~/.claude/settings.json 的 hooks（ab-tao managed）。
-	// Plugin 安裝的 hooks 寫在 ~/.claude/plugins/{name}/hooks/hooks.json，
-	// 由 Claude Code plugin loader 直接載入，不經本函式 → 不會被 dedup 也不會被誤刪。
-	// 若 ab-tao hooks 需與 plugin hooks 協作，請在 docs/plugin-coexistence.md 文件化。
+  // NOTE: 此 dedup 僅針對寫入 ~/.claude/settings.json 的 hooks（ab-tao managed）。
+  // Plugin 安裝的 hooks 寫在 ~/.claude/plugins/{name}/hooks/hooks.json，
+  // 由 Claude Code plugin loader 直接載入，不經本函式 → 不會被 dedup 也不會被誤刪。
+  // 若 ab-tao hooks 需與 plugin hooks 協作，請在 docs/plugin-coexistence.md 文件化。
 
-	// 找出衝突：相同 event + matcher
-	const conflicts = [];
-	for (const [event, matchers] of Object.entries(newHooks.hooks || {})) {
-		for (const m of matchers) {
-			const existingMatchers = existing.hooks[event] || [];
-			const dup = existingMatchers.find((em) => em.matcher === m.matcher);
-			if (dup) {
-				conflicts.push({
-					event,
-					matcher: m.matcher,
-					existing: dup,
-					incoming: m,
-				});
-			}
-		}
-	}
+  // 找出衝突：相同 event + matcher
+  const conflicts = []
+  for (const [event, matchers] of Object.entries(newHooks.hooks || {})) {
+    for (const m of matchers) {
+      const existingMatchers = existing.hooks[event] || []
+      const dup = existingMatchers.find(em => em.matcher === m.matcher)
+      if (dup) {
+        conflicts.push({
+          event,
+          matcher: m.matcher,
+          existing: dup,
+          incoming: m,
+        })
+      }
+    }
+  }
 
-	if (isEmpty(conflicts)) {
-		// 無衝突，直接合併
-		const merged = { ...newHooks, hooks: { ...newHooks.hooks } };
-		for (const [event, matchers] of Object.entries(existing.hooks)) {
-			if (!merged.hooks[event]) {
-				merged.hooks[event] = matchers;
-			} else {
-				// 保留用戶的不衝突 hooks
-				for (const m of matchers) {
-					const isDup = merged.hooks[event].some(
-						(nm) => nm.matcher === m.matcher,
-					);
-					if (!isDup) merged.hooks[event].push(m);
-				}
-			}
-		}
-		return merged;
-	}
+  if (isEmpty(conflicts)) {
+    // 無衝突，直接合併
+    const merged = { ...newHooks, hooks: { ...newHooks.hooks } }
+    for (const [event, matchers] of Object.entries(existing.hooks)) {
+      if (!merged.hooks[event]) {
+        merged.hooks[event] = matchers
+      }
+      else {
+        // 保留用戶的不衝突 hooks
+        for (const m of matchers) {
+          const isDup = merged.hooks[event].some(
+            nm => nm.matcher === m.matcher,
+          )
+          if (!isDup)
+            merged.hooks[event].push(m)
+        }
+      }
+    }
+    return merged
+  }
 
-	// 有衝突，讓用戶選擇
-	const conflictLines = conflicts
-		.map((c) => `  ${c.event} [${c.matcher || "*"}]`)
-		.join("\n");
-	p.log.warn(`偵測到 ${conflicts.length} 個 hooks 衝突：\n${conflictLines}`);
+  // 有衝突，讓用戶選擇
+  const conflictLines = conflicts
+    .map(c => `  ${c.event} [${c.matcher || '*'}]`)
+    .join('\n')
+  p.log.warn(`偵測到 ${conflicts.length} 個 hooks 衝突：\n${conflictLines}`)
 
-	const action = handleCancel(
-		await p.select({
-			message: "Hooks 衝突處理",
-			options: [
-				{
-					value: "merge",
-					label: "合併 保留雙方，衝突用新版覆蓋（推薦）",
-				},
-				{ value: "overwrite", label: "覆蓋 只用 ab-tao 的 hooks" },
-				{ value: "skip", label: "跳過 保留現有 hooks 不變" },
-			],
-		}),
-	);
+  const action = handleCancel(
+    await p.select({
+      message: 'Hooks 衝突處理',
+      options: [
+        {
+          value: 'merge',
+          label: '合併 保留雙方，衝突用新版覆蓋（推薦）',
+        },
+        { value: 'overwrite', label: '覆蓋 只用 ab-tao 的 hooks' },
+        { value: 'skip', label: '跳過 保留現有 hooks 不變' },
+      ],
+    }),
+  )
 
-	if (action === "skip") return null;
-	if (action === "overwrite") return newHooks;
+  if (action === 'skip')
+    return null
+  if (action === 'overwrite')
+    return newHooks
 
-	// merge：用新版覆蓋衝突，保留用戶獨有的
-	const merged = { ...newHooks, hooks: { ...newHooks.hooks } };
-	for (const [event, matchers] of Object.entries(existing.hooks)) {
-		if (!merged.hooks[event]) {
-			merged.hooks[event] = matchers;
-		} else {
-			for (const m of matchers) {
-				const isDup = merged.hooks[event].some(
-					(nm) => nm.matcher === m.matcher,
-				);
-				if (!isDup) merged.hooks[event].push(m);
-			}
-		}
-	}
-	return merged;
+  // merge：用新版覆蓋衝突，保留用戶獨有的
+  const merged = { ...newHooks, hooks: { ...newHooks.hooks } }
+  for (const [event, matchers] of Object.entries(existing.hooks)) {
+    if (!merged.hooks[event]) {
+      merged.hooks[event] = matchers
+    }
+    else {
+      for (const m of matchers) {
+        const isDup = merged.hooks[event].some(
+          nm => nm.matcher === m.matcher,
+        )
+        if (!isDup)
+          merged.hooks[event].push(m)
+      }
+    }
+  }
+  return merged
 }
