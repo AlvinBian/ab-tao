@@ -1,77 +1,92 @@
 {
-	"model": "opusplan",
-	"effortLevel": "high",
-	"autoMemoryEnabled": true,
-	"skipDangerousModePermissionPrompt": true,
-	"autoUpdatesChannel": "latest",
-	"cleanupPeriodDays": 30,
-	"showThinkingSummaries": true,
-	"enableAllProjectMcpServers": true,
-	"showToolOutputs": true,
-	"showProgress": true,
-	"includeCoAuthoredBy": false,
-	"feedbackSurveyRate": 0,
-	"includeGitInstructions": false,
-	"statusLine": {
-		"type": "command",
-		"command": "$HOME/.claude/hooks/statusline.sh"
-	},
-	"extraKnownMarketplaces": {
-		"claude-hud": {
-			"source": {
-				"source": "github",
-				"repo": "jarrodwatts/claude-hud"
-			}
-		}
-	},
-	"mcpServers": {},
-	"env": {
-		"CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
-		"USE_BUILTIN_RIPGREP": "1",
-		"BASH_DEFAULT_TIMEOUT_MS": "60000",
-		"CLAUDE_BASH_NO_LOGIN": "1",
-		"CLAUDE_CODE_AUTO_SAVE": "1",
-		"CLAUDE_CODE_FAST_MODE": "1",
-		"ENABLE_TOOL_SEARCH": "true",
-		"CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
-		"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-		"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
-		"DISABLE_EXTRA_USAGE_COMMAND": "1",
-		"CLAUDE_CODE_NO_FLICKER": "1",
-		"CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "5",
-		"CLAUDE_CODE_PLUGIN_PREFER_HTTPS": "1"
-	},
-	"enabledPlugins": {
-		"code-review@claude-plugins-official": true,
-		"security-guidance@claude-plugins-official": true,
-		"hookify@claude-plugins-official": true,
-		"ralph-loop@claude-plugins-official": true,
-		"session-report@claude-plugins-official": true,
-		"claude-hud@claude-hud": true
-	},
-	"permissions": {
-		"defaultMode": "bypassPermissions",
-		"deny": [
-			"Bash(git push --force *)",
-			"Bash(git reset --hard *)",
-			"Bash(rm -rf /)",
-			"Bash(rm -rf ~)",
-			"Bash(gh pr merge *)",
-			"Bash(gh pr review --approve *)",
-			"Bash(git commit --no-verify *)",
-			"Bash(git push --no-verify *)",
-			"Bash(npm publish *)",
-			"Bash(pnpm publish *)",
-			"Bash(claude plugin uninstall *)"
-		]
-	},
-	"_abTao": {
-		"version": "1.7.1",
-		"voiceTrigger": false,
-		"costRouting": "fixed",
-		"tddStrictMode": false,
-		"contextBudgetFileCount": 12,
-		"skillCreatorEnabled": false,
-		"memoryLintEnabled": true
-	}
+  "model": "opusplan",
+  "effortLevel": "high",
+  "autoMemoryEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
+  "autoUpdatesChannel": "latest",
+  "cleanupPeriodDays": 30,
+  "showThinkingSummaries": true,
+  "enableAllProjectMcpServers": true,
+  "showToolOutputs": true,
+  "showProgress": true,
+  "includeCoAuthoredBy": false,
+  "feedbackSurveyRate": 0,
+  "includeGitInstructions": false,
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/hooks/statusline.sh"
+  },
+  "extraKnownMarketplaces": {
+    "claude-hud": {
+      "source": {
+        "source": "github",
+        "repo": "jarrodwatts/claude-hud"
+      }
+    }
+  },
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "${PWD}"
+      ]
+    }
+  },
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "USE_BUILTIN_RIPGREP": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "60000",
+    "CLAUDE_BASH_NO_LOGIN": "1",
+    "CLAUDE_CODE_AUTO_SAVE": "1",
+    "CLAUDE_CODE_FAST_MODE": "1",
+    "ENABLE_TOOL_SEARCH": "true",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
+    "DISABLE_EXTRA_USAGE_COMMAND": "1",
+    "CLAUDE_CODE_NO_FLICKER": "1",
+    "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "5",
+    "CLAUDE_CODE_PLUGIN_PREFER_HTTPS": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_INCLUDE_SESSION_ID": "true"
+  },
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "ralph-loop@claude-plugins-official": true,
+    "session-report@claude-plugins-official": true,
+    "claude-hud@claude-hud": true
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr review --approve *)",
+      "Bash(git commit --no-verify *)",
+      "Bash(git push --no-verify *)",
+      "Bash(npm publish *)",
+      "Bash(pnpm publish *)",
+      "Bash(claude plugin uninstall *)"
+    ]
+  },
+  "_abTao": {
+    "version": "1.7.1",
+    "voiceTrigger": false,
+    "costRouting": "fixed",
+    "tddStrictMode": false,
+    "contextBudgetFileCount": 12,
+    "skillCreatorEnabled": false,
+    "memoryLintEnabled": true
+  }
 }

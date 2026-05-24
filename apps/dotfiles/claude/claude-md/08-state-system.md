@@ -12,7 +12,9 @@
 
 ## Memory 三溫層
 
-**Hot**（MEMORY.md）：≤15 項，≤150 char/行 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
+**Hot**（MEMORY.md）：純 index，≤10 行，永不直接寫入內容 → 利於 prompt cache ｜ **Stable**（`system-patterns.md`）：偏好 / feedback / 永久參考 ｜ **Volatile**（`active-context.md`）：進行中 ticket / mid-run 記錄 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
+
+**寫入規則**：stable feedback / 工具偏好 → `system-patterns.md` ｜ 進行中票號 / pending-curate → `active-context.md` ｜ 禁止直接 append 到 MEMORY.md（僅允許修改 index 指向）
 
 ## 手動觸發（Memory）
 
@@ -34,8 +36,8 @@
 
 ## 冷啟動
 
-開新 session 先讀當前專案的 memory index 與 active plan。Context 壓縮前掃描未入記憶的重要決策。
-若 MEMORY.md 含 `[pending-curate]` 標記 → 主動詢問「上次 session 有未處理的記憶建議，是否現在回顧有需記錄的決策？」確認後提示使用者刪除該段落。
+開新 session 先讀當前專案 `system-patterns.md`（永久偏好）→ 再讀 `active-context.md`（進行中項目）→ 最後讀 active plan。Context 壓縮前掃描未入記憶的重要決策。
+若 `active-context.md` 含 `[pending-curate]` 標記 → 主動詢問「上次 session 有未處理的記憶建議，是否現在回顧有需記錄的決策？」確認後提示使用者刪除該段落。
 
 > 資料夾命名 / Plan Frontmatter Convention 細節 → `~/.claude/docs/state-system-details.md`
 

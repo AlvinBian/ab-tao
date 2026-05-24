@@ -170,7 +170,21 @@ browser-harness 使用獨立 Chrome profile，不會干擾正常 Chrome 或 chro
 
 → 詳見 `skills/browser-automation-router/SKILL.md`
 
-## C. Awesome-AI-Pedia（AI 知識庫）
+## C. claude-trace（Token 歸因觀測）
+
+觀測每個 tool call 的 token 消耗，揭露哪個 Bash / Read 最貴。
+
+```bash
+npm install -g @vexor/claude-trace
+# 基本使用（讀 ~/.claude/projects/*.jsonl）：
+claude-trace --tools       # per-tool token 歸因
+claude-trace --reads       # 最貴的 Read 呼叫
+claude-trace --reflect     # 推薦 CLAUDE.md 優化建議
+```
+
+搭配 `CLAUDE_CODE_ENABLE_TELEMETRY=1`（已加入 settings.template.json）可啟用 1h prompt cache TTL。
+
+## D. Awesome-AI-Pedia（AI 知識庫）
 
 透過 `c:ai-sync --source awesome-ai-pedia` 自動同步，不需手動操作。
 同步後內容在 `~/.ab-tao/external/awesome-ai-pedia/`。
@@ -183,3 +197,64 @@ pnpm run c:ai-sync --source awesome-ai-pedia
 
 > **更新提示**：d:doctor 會檢查 awesome-ai-pedia 最後更新時間，超過 30 天會警告。
 > 多台機器各自執行 c:ai-sync 以取得最新版本。
+
+## E. Serena LSP MCP（Symbol-level 搜尋，取代 grep+Read）
+
+Serena 透過 LSP（Language Server Protocol）提供 symbol-level 搜尋，可大幅削減 grep+Read 組合的 token 消耗（大 repo 預期 50-99%）。
+
+**資料依據**：單一 KKday session 實測 grep 362 次 + Read 511 次 = 884 次 search/read 呼叫，正是 Serena 的目標取代場景。
+
+### 前置需求
+
+- uv（已隨 brew install uv 安裝，d:setup 前置步驟）
+- 至少一個語言的 LSP server（按需安裝，不需全部）
+
+### 1. 安裝語言 LSP server（按專案語言安裝）
+
+```bash
+# TypeScript / JavaScript（KKday 主要語言）
+npm i -g typescript-language-server typescript
+
+# Vue（Nuxt 3 / Vue 3 專案）
+npm i -g @vue/language-server
+
+# Python（選擇性）
+pip install python-lsp-server
+```
+
+### 2. MCP server 透過 d:setup 自動寫入
+
+`settings.template.json` 已加入 `serena` MCP 條目。執行 `pnpm run d:setup` 後，serena 會自動寫入 `~/.claude/settings.json`。
+
+無需手動安裝 serena package — `uvx` 會在首次呼叫時自動 fetch。
+
+### 3. 驗證
+
+```bash
+# 開新 KKday session 後，問：
+# 「找 useOrderDetail 這個 composable 的所有呼叫點」
+# 預期：Claude 走 Serena symbol search，非 grep + Read 組合
+```
+
+### 4. 使用方式
+
+Serena 在新 session 自動生效。主要能力：
+
+| 任務 | Serena tool | 替代 |
+|---|---|---|
+| 找 symbol 定義 | `find_symbol` | grep + Read 多個檔 |
+| 找所有 caller | `find_referencing_symbols` | grep -r + Read |
+| 重命名安全性確認 | `find_referencing_symbols` | 手動搜尋 |
+| 探索 class 成員 | `find_symbol` | Read + 手動解析 |
+
+### 5. 每個 session 需指定 project root
+
+Serena 需知道 project 路徑。d:setup 使用 `${PWD}` 作為動態值；若在多個 repo 間切換，重啟 Claude Code 時 Serena 會自動偵測當前 cwd。
+
+### 6. 排錯
+
+**Serena 未回應** → 確認 `uvx` 存在：`which uvx`；首次執行需 fetch（~30s）
+
+**LSP 報錯** → 確認對應 language server 已全局安裝：`which typescript-language-server`
+
+**symbol 找不到** → Serena 依賴 LSP index 建立，新開 session 後等 ~10-30s LSP warmup

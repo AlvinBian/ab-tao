@@ -88,7 +88,13 @@ verdict: SHIP | BLOCK | NEEDS-DISCUSSION
 ```
 changes: [{file, before, after, verify}]
 done: boolean
+verdict: PASS | FAIL | NEEDS-REVIEW
 ```
+
+**Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL 或 NEEDS-REVIEW 時：
+- 主對話**禁止**標 task complete
+- **必須** spawn `reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
+- 僅 `verdict: PASS` 才可標完成
 
 > 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
 

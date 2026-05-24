@@ -1,5 +1,5 @@
 #!/bin/bash
-# pre-tool-bash.sh — PreToolUse (Bash) 危險命令攔截
+# pre-tool-bash.sh — PreToolUse (Bash) 危險命令攔截 + 安全改寫
 
 command -v jq &>/dev/null || exit 0
 
@@ -28,18 +28,44 @@ _block() {
 	exit 2
 }
 
+_rewrite() {
+	local safe_cmd="$1" rule="${2:-rewrite}"
+	_log_rule_hit "rewrite:${rule}"
+	local escaped
+	escaped=$(printf '%s' "$safe_cmd" | sed 's/\\/\\\\/g; s/"/\\"/g')
+	printf '{"decision":"modify","modified_input":{"command":"%s"}}\n' "$escaped"
+	exit 0
+}
+
+# === Rewrite rules（T6-9）— 改寫為安全預覽，優先於 deny ===
+
+# rm -rf → ls 預覽（sudo rm 仍走 deny）
+if printf '%s' "$COMMAND" | grep -Eiq 'rm[[:space:]]+-[a-zA-Z]*[rR][a-zA-Z]*[fF]'; then
+	_TARGET=$(printf '%s' "$COMMAND" | awk '{print $NF}')
+	if [ -n "$_TARGET" ] && [ "$_TARGET" != "$COMMAND" ]; then
+		_SAFE="ls -la ${_TARGET} 2>&1; echo '⚠️  rm -rf 已轉為 ls 預覽。確認後在終端手動執行: rm -rf ${_TARGET}'"
+	else
+		_SAFE="echo '⚠️  rm -rf 已攔截。請在終端確認目標後手動執行。'"
+	fi
+	_rewrite "$_SAFE" "rm-rf"
+fi
+
+# git push --force → 提示先建 backup（--force-with-lease 仍走 deny by gstack guard）
+if printf '%s' "$COMMAND" | grep -Eiq 'git[[:space:]].*push[[:space:]].*(--force[^-]|--force$|-f[[:space:]]|-f$)'; then
+	_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "current-branch")
+	_SAFE="echo '⚠️  git push --force 已攔截。請先建 backup: git branch backup/${_BRANCH} 後改用 git push --force-with-lease'"
+	_rewrite "$_SAFE" "git-push-force"
+fi
+
 # 內建 pattern（永遠執行，不受自訂檔案影響）
 BUILTIN_PATTERNS=(
 	'sudo[[:space:]]+rm[[:space:]]'
-	'rm[[:space:]]+-[a-zA-Z]*[rR][a-zA-Z]*[fF]'
-	'rm[[:space:]]+-[a-zA-Z]*[fF][a-zA-Z]*[rR]'
 	':[[:space:]]*\(\)[[:space:]]*\{'
 	'chmod[[:space:]]+0*777'
 	'dd[[:space:]].*if=/dev/(zero|random|urandom)'
 	'mkfs\.'
 	'(^|[[:space:]])shred[[:space:]]'
 	'(^|[[:space:]])wipefs([[:space:]]|$)'
-	'git[[:space:]].*push[[:space:]].*(--force|-f[[:space:]]|-f$)'
 	'DROP[[:space:]]+TABLE'
 	'curl[[:space:]].*\|[[:space:]]*(bash|sh)'
 	'wget[[:space:]].*\|[[:space:]]*(bash|sh)'
@@ -55,7 +81,6 @@ BUILTIN_PATTERNS=(
 	'yarn[[:space:]]+publish([[:space:]]|$)'
 	'pnpm[[:space:]]+publish([[:space:]]|$)'
 	'git[[:space:]].*push[[:space:]].*--force-with-lease'
-	'git[[:space:]].*push[[:space:]].*--(force|f)[[:space:]]*$'
 	'npx[[:space:]]+.*--yes[[:space:]].*exec'
 	'>[[:space:]]*/etc/'
 	'chmod[[:space:]]+[0-7]*[2367][[:space:]]'
