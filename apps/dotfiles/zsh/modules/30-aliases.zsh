@@ -7,8 +7,8 @@
 if [[ -z "$GUI_EDITOR" ]]; then
   local -a _gui_order=("${AB_GUI_EDITOR_ORDER[@]}")
   (( ${#_gui_order[@]} )) || _gui_order=(
-    "/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
     "/Applications/Kiro.app/Contents/Resources/app/bin/code"
+    "/Applications/Cursor.app/Contents/Resources/app/bin/cursor"
     "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
   )
   for _e in "${_gui_order[@]}"; do
