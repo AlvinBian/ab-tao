@@ -7,68 +7,72 @@
  *   node prune-orphans.mjs --apply    實際刪除孤兒目錄
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { SOURCES_CONFIG } from "./sync-sources.mjs";
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { SOURCES_CONFIG } from './sync-sources.mjs'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const RESOURCES_PATH = path.resolve(__dirname, "../resources/ai/sources");
-const APPLY = process.argv.includes("--apply");
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const RESOURCES_PATH = path.resolve(__dirname, '../resources/ai/sources')
+const APPLY = process.argv.includes('--apply')
 
-const KNOWN_SOURCES = new Set(Object.keys(SOURCES_CONFIG));
+const KNOWN_SOURCES = new Set(Object.keys(SOURCES_CONFIG))
 
 if (!fs.existsSync(RESOURCES_PATH)) {
-	console.log("resources/ai/sources/ 不存在，無需清理。");
-	process.exit(0);
+  console.log('resources/ai/sources/ 不存在，無需清理。')
+  process.exit(0)
 }
 
 const dirs = fs
-	.readdirSync(RESOURCES_PATH, { withFileTypes: true })
-	.filter((d) => d.isDirectory())
-	.map((d) => d.name);
+  .readdirSync(RESOURCES_PATH, { withFileTypes: true })
+  .filter(d => d.isDirectory())
+  .map(d => d.name)
 
-const orphans = dirs.filter((d) => !KNOWN_SOURCES.has(d));
+const orphans = dirs.filter(d => !KNOWN_SOURCES.has(d))
 
 if (orphans.length === 0) {
-	console.log("✅ 無孤兒來源目錄。");
-	process.exit(0);
+  console.log('✅ 無孤兒來源目錄。')
+  process.exit(0)
 }
 
-console.log(`找到 ${orphans.length} 個孤兒來源目錄：`);
+console.log(`找到 ${orphans.length} 個孤兒來源目錄：`)
 for (const o of orphans) {
-	const fullPath = path.join(RESOURCES_PATH, o);
-	const size = getDirSize(fullPath);
-	console.log(`  - ${o}  (${formatBytes(size)})`);
+  const fullPath = path.join(RESOURCES_PATH, o)
+  const size = getDirSize(fullPath)
+  console.log(`  - ${o}  (${formatBytes(size)})`)
 }
 
 if (!APPLY) {
-	console.log("\n提示：加 --apply 旗標實際刪除。");
-	process.exit(0);
+  console.log('\n提示：加 --apply 旗標實際刪除。')
+  process.exit(0)
 }
 
-console.log("\n開始刪除孤兒目錄...");
+console.log('\n開始刪除孤兒目錄...')
 for (const o of orphans) {
-	const fullPath = path.join(RESOURCES_PATH, o);
-	fs.rmSync(fullPath, { recursive: true, force: true });
-	console.log(`  ✅ 已刪除：${o}`);
+  const fullPath = path.join(RESOURCES_PATH, o)
+  fs.rmSync(fullPath, { recursive: true, force: true })
+  console.log(`  ✅ 已刪除：${o}`)
 }
-console.log(`\n清理完成，共移除 ${orphans.length} 個孤兒目錄。`);
+console.log(`\n清理完成，共移除 ${orphans.length} 個孤兒目錄。`)
 
 function getDirSize(dir) {
-	let total = 0;
-	try {
-		for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-			const p = path.join(dir, entry.name);
-			if (entry.isDirectory()) total += getDirSize(p);
-			else total += fs.statSync(p).size;
-		}
-	} catch {}
-	return total;
+  let total = 0
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, entry.name)
+      if (entry.isDirectory())
+        total += getDirSize(p)
+      else total += fs.statSync(p).size
+    }
+  }
+  catch {}
+  return total
 }
 
 function formatBytes(bytes) {
-	if (bytes < 1024) return `${bytes}B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes < 1024)
+    return `${bytes}B`
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(1)}KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }

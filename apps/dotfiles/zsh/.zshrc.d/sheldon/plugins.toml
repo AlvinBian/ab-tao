@@ -14,24 +14,24 @@ rev = "53a26e287fbbe2dcebb3aa1801546c6de32416fa"
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
 rev = "85919cd1ffa7d2d5412f6d3fe437ebdbeeec4fc5"
-apply = ["defer"]
+apply = [ "defer" ]
 
 [plugins.fast-syntax-highlighting]
 github = "zdharma-continuum/fast-syntax-highlighting"
 rev = "3d574ccf48804b10dca52625df13da5edae7f553"
-apply = ["defer"]
+apply = [ "defer" ]
 
 # 被動提醒：使用原始命令時提示已設定的 alias
 [plugins.you-should-use]
 github = "MichaelAquilina/zsh-you-should-use"
 tag = "1.11.1"
-apply = ["defer"]
+apply = [ "defer" ]
 
 # fzf-tab 由 sheldon 下載，但在 90-plugins.zsh 中 compinit 之後手動載入
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
 rev = "0983009f8666f11e91a2ee1f88cfdb748d14f656"
-apply = ["fpath"]
+apply = [ "fpath" ]
 
 # ── 補全（加入 fpath，由 compinit 統一載入）──────────────────────
 
@@ -39,4 +39,4 @@ apply = ["fpath"]
 github = "zsh-users/zsh-completions"
 rev = "ed67fbb8ee9ec00abfaecdc3dcfc330202ede323"
 dir = "src"
-apply = ["fpath"]
+apply = [ "fpath" ]

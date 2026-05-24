@@ -1,76 +1,75 @@
 <script setup lang="ts">
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import { Search } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
-import { computed, ref } from "vue";
-import type { ResourceEntry } from "@/types/resources";
+import type { ResourceEntry } from '@/types/resources'
+import { Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, ref } from 'vue'
 
 interface ResourceStore {
-	items: ResourceEntry[];
-	loading: boolean;
-	error: string | null;
-	toggling: Set<string>;
-	fetchItems: (force?: boolean) => Promise<void>;
-	toggleEnabled: (name: string, enabled: boolean) => Promise<void>;
+  items: ResourceEntry[]
+  loading: boolean
+  error: string | null
+  toggling: Set<string>
+  fetchItems: (_force?: boolean) => Promise<void>
+  toggleEnabled: (_name: string, _enabled: boolean) => Promise<void>
 }
 
 const props = defineProps<{
-	store: ResourceStore;
-	kindLabel: string;
-	showSourceColumn?: boolean;
-	showPathColumn?: boolean;
-}>();
+  store: ResourceStore
+  kindLabel: string
+  showSourceColumn?: boolean
+  showPathColumn?: boolean
+}>()
 
-const searchQuery = ref("");
+const searchQuery = ref('')
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const filteredItems = computed(() => {
-	const q = searchQuery.value.toLowerCase();
-	if (!q) return props.store.items;
-	return props.store.items.filter(
-		(s) =>
-			s.name.toLowerCase().includes(q) ||
-			s.description?.toLowerCase().includes(q),
-	);
-});
+  const q = searchQuery.value.toLowerCase()
+  if (!q)
+    return props.store.items
+  return props.store.items.filter(
+    s =>
+      s.name.toLowerCase().includes(q)
+      || s.description?.toLowerCase().includes(q),
+  )
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const enabledCount = computed(
-	() => props.store.items.filter((s) => s.enabled).length,
-);
+  () => props.store.items.filter(s => s.enabled).length,
+)
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function sourceTagType(
-	source?: string,
-): "primary" | "success" | "warning" | "info" {
-	if (source === "ab-tao") return "primary";
-	if (source === "ecc") return "success";
-	if (source === "custom") return "warning";
-	return "info";
+  source?: string,
+): 'primary' | 'success' | 'warning' | 'info' {
+  if (source === 'ab-tao')
+    return 'primary'
+  if (source === 'ecc')
+    return 'success'
+  if (source === 'custom')
+    return 'warning'
+  return 'info'
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const sourceGroupsData = computed(() => {
-	const counts = new Map<string, number>();
-	for (const item of props.store.items) {
-		const src = item.source ?? "custom";
-		counts.set(src, (counts.get(src) ?? 0) + 1);
-	}
-	return [...counts.entries()].map(([src, count]) => ({
-		name: src,
-		kind: props.kindLabel.toLowerCase(),
-		count,
-	}));
-});
+  const counts = new Map<string, number>()
+  for (const item of props.store.items) {
+    const src = item.source ?? 'custom'
+    counts.set(src, (counts.get(src) ?? 0) + 1)
+  }
+  return [...counts.entries()].map(([src, count]) => ({
+    name: src,
+    kind: props.kindLabel.toLowerCase(),
+    count,
+  }))
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function onToggle(name: string, enabled: boolean) {
-	try {
-		await props.store.toggleEnabled(name, enabled);
-		ElMessage.success(`${name} 已${enabled ? "啟用" : "停用"}`);
-	} catch (e) {
-		ElMessage.error(e instanceof Error ? e.message : "切換失敗");
-	}
+  try {
+    await props.store.toggleEnabled(name, enabled)
+    ElMessage.success(`${name} 已${enabled ? '啟用' : '停用'}`)
+  }
+  catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '切換失敗')
+  }
 }
 </script>
 
@@ -94,13 +93,17 @@ async function onToggle(name: string, enabled: boolean) {
     <el-row v-if="store.items.length > 0" :gutter="16" style="margin-bottom:16px">
       <el-col :span="12">
         <el-card shadow="never" style="height:100%">
-          <template #header><span>來源分佈</span></template>
+          <template #header>
+            <span>來源分佈</span>
+          </template>
           <ResourceSourcePie :resources="store.items" />
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card shadow="never" style="height:100%">
-          <template #header><span>來源數量</span></template>
+          <template #header>
+            <span>來源數量</span>
+          </template>
           <ResourceUsageBar :resources="sourceGroupsData" />
         </el-card>
       </el-col>
@@ -116,7 +119,9 @@ async function onToggle(name: string, enabled: boolean) {
         </el-table-column>
         <el-table-column v-if="showSourceColumn" label="來源" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="sourceTagType(row.source)" size="small">{{ row.source ?? "—" }}</el-tag>
+            <el-tag :type="sourceTagType(row.source)" size="small">
+              {{ row.source ?? "—" }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column v-if="showPathColumn" prop="path" label="路徑" min-width="200" show-overflow-tooltip>

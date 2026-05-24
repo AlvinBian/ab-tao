@@ -1,9 +1,9 @@
 {
-	"pathLevels": 2,
-	"gitStatus": {
-		"showAheadBehind": true
-	},
-	"display": {
-		"showCost": true
-	}
+  "pathLevels": 2,
+  "gitStatus": {
+    "showAheadBehind": true
+  },
+  "display": {
+    "showCost": true
+  }
 }

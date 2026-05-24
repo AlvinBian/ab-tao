@@ -1,6 +1,5 @@
 add_newline = false
 command_timeout = 2000
-
 format = "$directory$git_branch$character"
 
 [directory]
@@ -17,4 +16,4 @@ format = "[$symbol$branch]($style) "
 
 [character]
 success_symbol = "[❯](bold green)"
-error_symbol   = "[❯](bold red)"
+error_symbol = "[❯](bold red)"

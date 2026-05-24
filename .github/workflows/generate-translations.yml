@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: '強制重新翻譯全部項目'
+        description: 強制重新翻譯全部項目
         type: boolean
         default: false
 

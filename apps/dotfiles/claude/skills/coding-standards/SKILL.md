@@ -106,8 +106,8 @@ const updatedUser = {
 const updatedArray = [...items, newItem]
 
 // FAIL: NEVER mutate directly
-user.name = 'New Name'  // BAD
-items.push(newItem)     // BAD
+user.name = 'New Name' // BAD
+items.push(newItem) // BAD
 ```
 
 ### Error Handling
@@ -123,7 +123,8 @@ async function fetchData(url: string) {
     }
 
     return await response.json()
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Fetch failed:', error)
     throw new Error('Failed to fetch data')
   }
@@ -241,7 +242,7 @@ const [count, setCount] = useState(0)
 setCount(prev => prev + 1)
 
 // FAIL: BAD: Direct state reference
-setCount(count + 1)  // Can be stale in async scenarios
+setCount(count + 1) // Can be stale in async scenarios
 ```
 
 ### Conditional Rendering
@@ -320,7 +321,8 @@ export async function POST(request: Request) {
   try {
     const validated = CreateMarketSchema.parse(body)
     // Proceed with validated data
-  } catch (error) {
+  }
+  catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         success: false,
@@ -371,7 +373,7 @@ types/market.types.ts         # camelCase with .types suffix
 ```typescript
 // PASS: GOOD: Explain WHY, not WHAT
 // Use exponential backoff to avoid overwhelming the API during outages
-const delay = Math.min(1000 * Math.pow(2, retryCount), 30000)
+const delay = Math.min(1000 * 2 ** retryCount, 30000)
 
 // Deliberately using mutation here for performance with large arrays
 items.push(newItem)
@@ -414,7 +416,7 @@ export async function searchMarkets(
 ### Memoization
 
 ```typescript
-import { useMemo, useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 // PASS: GOOD: Memoize expensive computations
 const sortedMarkets = useMemo(() => {
@@ -525,11 +527,16 @@ if (user) {
 }
 
 // PASS: GOOD: Early returns
-if (!user) return
-if (!user.isAdmin) return
-if (!market) return
-if (!market.isActive) return
-if (!hasPermission) return
+if (!user)
+  return
+if (!user.isAdmin)
+  return
+if (!market)
+  return
+if (!market.isActive)
+  return
+if (!hasPermission)
+  return
 
 // Do something
 ```

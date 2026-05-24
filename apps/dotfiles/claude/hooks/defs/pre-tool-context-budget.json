@@ -1,17 +1,17 @@
 {
-	"event": "PreToolUse",
-	"hooks": [
-		{
-			"id": "ab-tao:pre:context-budget",
-			"description": "Context budget 監控：Read/Glob/Grep 操作計數，超過閾值提示改用 find-skills",
-			"matcher": "Read|Glob|Grep",
-			"hooks": [
-				{
-					"type": "command",
-					"command": "bash $HOME/.claude/hooks/pre-tool-context-budget.sh",
-					"timeout": 3
-				}
-			]
-		}
-	]
+  "event": "PreToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:pre:context-budget",
+      "description": "Context budget 監控：Read/Glob/Grep 操作計數，超過閾值提示改用 find-skills",
+      "matcher": "Read|Glob|Grep",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/pre-tool-context-budget.sh",
+          "timeout": 3
+        }
+      ]
+    }
+  ]
 }

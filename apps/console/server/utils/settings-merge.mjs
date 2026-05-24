@@ -4,20 +4,20 @@
  * 將 dotfiles 的 mergeConfig + preserve-policy 封裝為 Console 友好的介面。
  * Console 只 import 此 facade，不直接 import dotfiles 內部。
  */
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DOTFILES_LIB = path.resolve(__dirname, "../../../dotfiles/libs");
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const DOTFILES_LIB = path.resolve(__dirname, '../../../dotfiles/libs')
 
 // 動態 import 讓路徑可在測試時 mock
 const { mergeConfig } = await import(
-	path.join(DOTFILES_LIB, "install/config-merge.mjs")
-);
-const { SETTINGS_PRESERVE_PATHS, SETTINGS_ARRAY_MERGE, HOOKS_DEDUP_KEY } =
-	await import(path.join(DOTFILES_LIB, "config/preserve-policy.mjs"));
+  path.join(DOTFILES_LIB, 'install/config-merge.mjs'),
+)
+const { SETTINGS_PRESERVE_PATHS, SETTINGS_ARRAY_MERGE, HOOKS_DEDUP_KEY }
+  = await import(path.join(DOTFILES_LIB, 'config/preserve-policy.mjs'))
 
-export { HOOKS_DEDUP_KEY, SETTINGS_ARRAY_MERGE, SETTINGS_PRESERVE_PATHS };
+export { HOOKS_DEDUP_KEY, SETTINGS_ARRAY_MERGE, SETTINGS_PRESERVE_PATHS }
 
 /**
  * 合併使用者在 JSON editor 提交的新設定與現有 settings.json。
@@ -31,8 +31,8 @@ export { HOOKS_DEDUP_KEY, SETTINGS_ARRAY_MERGE, SETTINGS_PRESERVE_PATHS };
  * @returns {object} 合併後的設定（可安全寫回磁碟）
  */
 export function mergeSettings(incoming, current) {
-	return mergeConfig(incoming, current, {
-		preservePaths: SETTINGS_PRESERVE_PATHS,
-		arrayMerge: SETTINGS_ARRAY_MERGE,
-	});
+  return mergeConfig(incoming, current, {
+    preservePaths: SETTINGS_PRESERVE_PATHS,
+    arrayMerge: SETTINGS_ARRAY_MERGE,
+  })
 }

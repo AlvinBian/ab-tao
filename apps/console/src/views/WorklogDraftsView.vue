@@ -1,109 +1,129 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import type { WorklogDraft } from "@/stores/worklog";
-import { useWorklogStore } from "@/stores/worklog";
+import type { WorklogDraft } from '@/stores/worklog'
+import { computed, onMounted, ref } from 'vue'
+import { useWorklogStore } from '@/stores/worklog'
 
-const store = useWorklogStore();
+const store = useWorklogStore()
 
-const selected = ref<string[]>([]);
-const editDialogVisible = ref(false);
-const editTarget = ref<WorklogDraft | null>(null);
+const selected = ref<string[]>([])
+const editDialogVisible = ref(false)
+const editTarget = ref<WorklogDraft | null>(null)
 const editForm = ref({
-	ticketKey: "",
-	durationH: 0,
-	durationM: 0,
-	comment: "",
-});
+  ticketKey: '',
+  durationH: 0,
+  durationM: 0,
+  comment: '',
+})
 
 const totalHours = computed(() =>
-	store.drafts.reduce((sum, d) => sum + d.durationSec / 3600, 0),
-);
+  store.drafts.reduce((sum, d) => sum + d.durationSec / 3600, 0),
+)
 const unknownCount = computed(
-	() => store.drafts.filter((d) => d.ticketKey === "unknown").length,
-);
+  () => store.drafts.filter(d => d.ticketKey === 'unknown').length,
+)
 const todayCount = computed(() => {
-	const today = new Date().toISOString().slice(0, 10);
-	return store.drafts.filter((d) => d.createdAt.startsWith(today)).length;
-});
+  const today = new Date().toISOString().slice(0, 10)
+  return store.drafts.filter(d => d.createdAt.startsWith(today)).length
+})
 
 function fmtDuration(sec: number) {
-	const h = Math.floor(sec / 3600);
-	const m = Math.floor((sec % 3600) / 60);
-	return `${h}h${m.toString().padStart(2, "0")}m`;
+  const h = Math.floor(sec / 3600)
+  const m = Math.floor((sec % 3600) / 60)
+  return `${h}h${m.toString().padStart(2, '0')}m`
 }
 
 function fmtDate(iso: string) {
-	return iso ? iso.slice(0, 16).replace("T", " ") : "";
+  return iso ? iso.slice(0, 16).replace('T', ' ') : ''
 }
 
 function openEdit(row: WorklogDraft) {
-	editTarget.value = { ...row };
-	const h = Math.floor(row.durationSec / 3600);
-	const m = Math.floor((row.durationSec % 3600) / 60);
-	editForm.value = {
-		ticketKey: row.ticketKey,
-		durationH: h,
-		durationM: m,
-		comment: row.comment,
-	};
-	editDialogVisible.value = true;
+  editTarget.value = { ...row }
+  const h = Math.floor(row.durationSec / 3600)
+  const m = Math.floor((row.durationSec % 3600) / 60)
+  editForm.value = {
+    ticketKey: row.ticketKey,
+    durationH: h,
+    durationM: m,
+    comment: row.comment,
+  }
+  editDialogVisible.value = true
 }
 
 async function confirmEdit() {
-	if (!editTarget.value) return;
-	const durationSec =
-		editForm.value.durationH * 3600 + editForm.value.durationM * 60;
-	await store.patch(editTarget.value.id, {
-		ticketKey: editForm.value.ticketKey,
-		durationSec,
-		comment: editForm.value.comment,
-	});
-	editDialogVisible.value = false;
+  if (!editTarget.value)
+    return
+  const durationSec
+    = editForm.value.durationH * 3600 + editForm.value.durationM * 60
+  await store.patch(editTarget.value.id, {
+    ticketKey: editForm.value.ticketKey,
+    durationSec,
+    comment: editForm.value.comment,
+  })
+  editDialogVisible.value = false
 }
 
 async function dismissOne(id: string) {
-	await store.dismiss([id]);
-	selected.value = selected.value.filter((s) => s !== id);
+  await store.dismiss([id])
+  selected.value = selected.value.filter(s => s !== id)
 }
 
 async function dismissSelected() {
-	if (selected.value.length === 0) return;
-	await store.dismiss(selected.value);
-	selected.value = [];
+  if (selected.value.length === 0)
+    return
+  await store.dismiss(selected.value)
+  selected.value = []
 }
 
 function handleSelectionChange(rows: WorklogDraft[]) {
-	selected.value = rows.map((r) => r.id);
+  selected.value = rows.map(r => r.id)
 }
 
-onMounted(() => store.load());
+onMounted(() => store.load())
 </script>
 
 <template>
   <div class="worklog-drafts">
     <!-- 統計卡 -->
-    <div class="stat-cards" v-if="store.drafts.length > 0 || store.loading">
+    <div v-if="store.drafts.length > 0 || store.loading" class="stat-cards">
       <div class="stat-card">
-        <div class="label">Drafts</div>
-        <div class="value">{{ store.drafts.length }}</div>
+        <div class="label">
+          Drafts
+        </div>
+        <div class="value">
+          {{ store.drafts.length }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Total Hours</div>
-        <div class="value">{{ totalHours.toFixed(1) }}h</div>
+        <div class="label">
+          Total Hours
+        </div>
+        <div class="value">
+          {{ totalHours.toFixed(1) }}h
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Unknown Ticket</div>
-        <div class="value" :class="{ warn: unknownCount > 0 }">{{ unknownCount }}</div>
+        <div class="label">
+          Unknown Ticket
+        </div>
+        <div class="value" :class="{ warn: unknownCount > 0 }">
+          {{ unknownCount }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Today</div>
-        <div class="value">{{ todayCount }}</div>
+        <div class="label">
+          Today
+        </div>
+        <div class="value">
+          {{ todayCount }}
+        </div>
       </div>
     </div>
 
     <!-- 工具列 -->
     <div class="toolbar">
-      <el-button size="small" :loading="store.loading" @click="store.load()">刷新</el-button>
+      <el-button size="small" :loading="store.loading" @click="store.load()">
+        刷新
+      </el-button>
       <el-button
         size="small"
         type="warning"
@@ -112,7 +132,9 @@ onMounted(() => store.load());
       >
         批次略過（{{ selected.length }}）
       </el-button>
-      <div class="hint">批次提交請至 Claude Code 執行 <code>/worklog</code></div>
+      <div class="hint">
+        批次提交請至 Claude Code 執行 <code>/worklog</code>
+      </div>
     </div>
 
     <!-- 錯誤 -->
@@ -136,7 +158,9 @@ onMounted(() => store.load());
         </template>
       </el-table-column>
       <el-table-column label="Duration" width="90" align="right">
-        <template #default="{ row }">{{ fmtDuration(row.durationSec) }}</template>
+        <template #default="{ row }">
+          {{ fmtDuration(row.durationSec) }}
+        </template>
       </el-table-column>
       <el-table-column prop="branch" label="Branch" min-width="180">
         <template #default="{ row }">
@@ -144,15 +168,23 @@ onMounted(() => store.load());
         </template>
       </el-table-column>
       <el-table-column label="Commits" width="76" align="right">
-        <template #default="{ row }">{{ row.commits?.length ?? 0 }}</template>
+        <template #default="{ row }">
+          {{ row.commits?.length ?? 0 }}
+        </template>
       </el-table-column>
       <el-table-column label="Started" width="130">
-        <template #default="{ row }">{{ fmtDate(row.startedAt) }}</template>
+        <template #default="{ row }">
+          {{ fmtDate(row.startedAt) }}
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="110" align="center">
         <template #default="{ row }">
-          <el-button link size="small" @click="openEdit(row)">修改</el-button>
-          <el-button link size="small" type="danger" @click="dismissOne(row.id)">略過</el-button>
+          <el-button link size="small" @click="openEdit(row)">
+            修改
+          </el-button>
+          <el-button link size="small" type="danger" @click="dismissOne(row.id)">
+            略過
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -187,8 +219,12 @@ onMounted(() => store.load());
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmEdit">確認</el-button>
+        <el-button @click="editDialogVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" @click="confirmEdit">
+          確認
+        </el-button>
       </template>
     </el-dialog>
   </div>

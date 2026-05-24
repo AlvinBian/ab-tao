@@ -42,11 +42,11 @@ GET /api/markets?status=active&sort=volume&limit=20&offset=0
 ```typescript
 // Abstract data access logic
 interface MarketRepository {
-  findAll(filters?: MarketFilters): Promise<Market[]>
-  findById(id: string): Promise<Market | null>
-  create(data: CreateMarketDto): Promise<Market>
-  update(id: string, data: UpdateMarketDto): Promise<Market>
-  delete(id: string): Promise<void>
+  findAll: (filters?: MarketFilters) => Promise<Market[]>
+  findById: (id: string) => Promise<Market | null>
+  create: (data: CreateMarketDto) => Promise<Market>
+  update: (id: string, data: UpdateMarketDto) => Promise<Market>
+  delete: (id: string) => Promise<void>
 }
 
 class SupabaseMarketRepository implements MarketRepository {
@@ -63,7 +63,8 @@ class SupabaseMarketRepository implements MarketRepository {
 
     const { data, error } = await query
 
-    if (error) throw new Error(error.message)
+    if (error)
+      throw new Error(error.message)
     return data
   }
 
@@ -116,7 +117,8 @@ export function withAuth(handler: NextApiHandler): NextApiHandler {
       const user = await verifyToken(token)
       req.user = user
       return handler(req, res)
-    } catch (error) {
+    }
+    catch (error) {
       return res.status(401).json({ error: 'Invalid token' })
     }
   }
@@ -153,16 +155,16 @@ const { data } = await supabase
 // FAIL: BAD: N+1 query problem
 const markets = await getMarkets()
 for (const market of markets) {
-  market.creator = await getUser(market.creator_id)  // N queries
+  market.creator = await getUser(market.creator_id) // N queries
 }
 
 // PASS: GOOD: Batch fetch
 const markets = await getMarkets()
 const creatorIds = markets.map(m => m.creator_id)
-const creators = await getUsers(creatorIds)  // 1 query
+const creators = await getUsers(creatorIds) // 1 query
 const creatorMap = new Map(creators.map(c => [c.id, c]))
 
-markets.forEach(market => {
+markets.forEach((market) => {
   market.creator = creatorMap.get(market.creator_id)
 })
 ```
@@ -249,12 +251,14 @@ async function getMarketWithCache(id: string): Promise<Market> {
 
   // Try cache
   const cached = await redis.get(cacheKey)
-  if (cached) return JSON.parse(cached)
+  if (cached)
+    return JSON.parse(cached)
 
   // Cache miss - fetch from DB
   const market = await db.markets.findUnique({ where: { id } })
 
-  if (!market) throw new Error('Market not found')
+  if (!market)
+    throw new Error('Market not found')
 
   // Update cache
   await redis.setex(cacheKey, 300, JSON.stringify(market))
@@ -309,7 +313,8 @@ export async function GET(request: Request) {
   try {
     const data = await fetchData()
     return NextResponse.json({ success: true, data })
-  } catch (error) {
+  }
+  catch (error) {
     return errorHandler(error, request)
   }
 }
@@ -327,12 +332,13 @@ async function fetchWithRetry<T>(
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn()
-    } catch (error) {
+    }
+    catch (error) {
       lastError = error as Error
 
       if (i < maxRetries - 1) {
         // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, i) * 1000
+        const delay = 2 ** i * 1000
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
@@ -362,7 +368,8 @@ export function verifyToken(token: string): JWTPayload {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
     return payload
-  } catch (error) {
+  }
+  catch (error) {
     throw new ApiError(401, 'Invalid token')
   }
 }
@@ -450,7 +457,7 @@ class RateLimiter {
     const recentRequests = requests.filter(time => now - time < windowMs)
 
     if (recentRequests.length >= maxRequests) {
-      return false  // Rate limit exceeded
+      return false // Rate limit exceeded
     }
 
     // Add current request
@@ -466,7 +473,7 @@ const limiter = new RateLimiter()
 export async function GET(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown'
 
-  const allowed = await limiter.checkLimit(ip, 100, 60000)  // 100 req/min
+  const allowed = await limiter.checkLimit(ip, 100, 60000) // 100 req/min
 
   if (!allowed) {
     return NextResponse.json({
@@ -503,7 +510,8 @@ class JobQueue<T> {
 
       try {
         await this.execute(job)
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Job failed:', error)
       }
     }
@@ -590,7 +598,8 @@ export async function GET(request: Request) {
   try {
     const markets = await fetchMarkets()
     return NextResponse.json({ success: true, data: markets })
-  } catch (error) {
+  }
+  catch (error) {
     logger.error('Failed to fetch markets', error as Error, { requestId })
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }

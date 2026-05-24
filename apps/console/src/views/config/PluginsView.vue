@@ -1,41 +1,38 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
-import { computed, onMounted } from "vue";
-import { useSettingsStore } from "@/stores/settings";
+import { ElMessage } from 'element-plus'
+import { computed, onMounted } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
-const store = useSettingsStore();
-onMounted(() => store.fetchSettings());
+const store = useSettingsStore()
+onMounted(() => store.fetchSettings())
 
 const pluginEntries = computed(() => {
-	const plugins = store.settings?.enabledPlugins ?? {};
-	return Object.entries(plugins)
-		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([name, enabled]) => ({ name, enabled }));
-});
+  const plugins = store.settings?.enabledPlugins ?? {}
+  return Object.entries(plugins)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, enabled]) => ({ name, enabled }))
+})
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 const enabledCount = computed(
-	() => pluginEntries.value.filter((p) => p.enabled).length,
-);
+  () => pluginEntries.value.filter(p => p.enabled).length,
+)
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function onToggle(name: string, enabled: boolean) {
-	try {
-		await store.patchPluginEnabled(name, enabled);
-		ElMessage.success(`${name} 已${enabled ? "啟用" : "停用"}`);
-	} catch (e) {
-		ElMessage.error(e instanceof Error ? e.message : "切換失敗");
-	}
+  try {
+    await store.patchPluginEnabled(name, enabled)
+    ElMessage.success(`${name} 已${enabled ? '啟用' : '停用'}`)
+  }
+  catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '切換失敗')
+  }
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function pluginShortName(full: string): string {
-	return full.split("@")[0] ?? full;
+  return full.split('@')[0] ?? full
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 function pluginSource(full: string): string {
-	return full.split("@")[1] ?? "—";
+  return full.split('@')[1] ?? '—'
 }
 </script>
 
@@ -57,7 +54,9 @@ function pluginSource(full: string): string {
 
     <!-- 啟用比例圖 -->
     <el-card v-if="pluginEntries.length > 0" shadow="never" style="margin-bottom:16px">
-      <template #header><span>啟用比例</span></template>
+      <template #header>
+        <span>啟用比例</span>
+      </template>
       <PluginStatusPie :total="pluginEntries.length" :enabled="enabledCount" />
     </el-card>
 
@@ -70,7 +69,9 @@ function pluginSource(full: string): string {
         </el-table-column>
         <el-table-column label="來源" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-tag size="small" type="info">{{ pluginSource(row.name) }}</el-tag>
+            <el-tag size="small" type="info">
+              {{ pluginSource(row.name) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="狀態" width="100" align="center">

@@ -24,4 +24,4 @@ export const TESTING_CONTENT = `
 - 目標 80%+ 行覆蓋率
 - 重點涵蓋：領域邏輯、驗證、授權、失敗路徑
 - 執行測試：node --test 或項目配置的測試指令
-`.trim();
+`.trim()

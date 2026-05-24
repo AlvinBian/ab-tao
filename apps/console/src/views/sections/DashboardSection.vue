@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { SectionTabConfig } from "@/components/SectionTabs.vue";
-import SectionTabs from "@/components/SectionTabs.vue";
-import EnvironmentView from "@/views/EnvironmentView.vue";
-import OverviewView from "@/views/OverviewView.vue";
-import StateView from "@/views/StateView.vue";
-import TokenStatsView from "@/views/TokenStatsView.vue";
-import WorklogDraftsView from "@/views/WorklogDraftsView.vue";
+import type { SectionTabConfig } from '@/components/SectionTabs.vue'
+import SectionTabs from '@/components/SectionTabs.vue'
+import EnvironmentView from '@/views/EnvironmentView.vue'
+import OverviewView from '@/views/OverviewView.vue'
+import StateView from '@/views/StateView.vue'
+import TokenStatsView from '@/views/TokenStatsView.vue'
+import WorklogDraftsView from '@/views/WorklogDraftsView.vue'
 
 const tabs: SectionTabConfig[] = [
-	{ key: "overview", label: "Overview" },
-	{ key: "state", label: "State & Drift" },
-	{ key: "environment", label: "Environment" },
-	{ key: "stats", label: "Token Stats" },
-	{ key: "worklog", label: "Worklog Drafts" },
-];
+  { key: 'overview', label: 'Overview' },
+  { key: 'state', label: 'State & Drift' },
+  { key: 'environment', label: 'Environment' },
+  { key: 'stats', label: 'Token Stats' },
+  { key: 'worklog', label: 'Worklog Drafts' },
+]
 </script>
 
 <template>

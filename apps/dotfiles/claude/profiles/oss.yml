@@ -7,7 +7,7 @@ plugins_enabled:
   - code-review
   - security-guidance
   - code-simplifier
-  - ralph-loop   # OSS 需要高品質審查
+  - ralph-loop # OSS 需要高品質審查
 plugins_disabled: []
 
 # 記憶範圍（OSS 獨立 pattern）

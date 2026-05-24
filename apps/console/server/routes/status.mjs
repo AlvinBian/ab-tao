@@ -5,85 +5,90 @@
  * collectExtendedData 是同步函式；sessions 內的 Map 序列化為 plain object。
  */
 
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DOTFILES_LIB = path.resolve(__dirname, "../../../dotfiles/libs");
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const DOTFILES_LIB = path.resolve(__dirname, '../../../dotfiles/libs')
 
-let _collectFn = null;
-let _usageFn = null;
-let _humanizeFn = null;
+let _collectFn = null
+let _usageFn = null
+let _humanizeFn = null
 
 async function getCollectFn() {
-	if (!_collectFn) {
-		const m = await import(path.join(DOTFILES_LIB, "core/usage-scanner.mjs"));
-		_collectFn = m.collectUnifiedReportData;
-	}
-	return _collectFn;
+  if (!_collectFn) {
+    const m = await import(path.join(DOTFILES_LIB, 'core/usage-scanner.mjs'))
+    _collectFn = m.collectUnifiedReportData
+  }
+  return _collectFn
 }
 
 async function getUsageFn() {
-	if (!_usageFn) {
-		const m = await import(path.join(DOTFILES_LIB, "core/usage-scanner.mjs"));
-		_usageFn = m.scanUsageStats;
-	}
-	return _usageFn;
+  if (!_usageFn) {
+    const m = await import(path.join(DOTFILES_LIB, 'core/usage-scanner.mjs'))
+    _usageFn = m.scanUsageStats
+  }
+  return _usageFn
 }
 
 async function getHumanizeFn() {
-	if (!_humanizeFn) {
-		const m = await import(path.join(DOTFILES_LIB, "core/usage-scanner.mjs"));
-		_humanizeFn = m.humanizeProjectPath;
-	}
-	return _humanizeFn;
+  if (!_humanizeFn) {
+    const m = await import(path.join(DOTFILES_LIB, 'core/usage-scanner.mjs'))
+    _humanizeFn = m.humanizeProjectPath
+  }
+  return _humanizeFn
 }
 
 /** Map / Set → plain object（JSON.stringify 無法序列化 Map） */
 function serializeData(data) {
-	if (data === null || data === undefined) return data;
-	if (data instanceof Map) return Object.fromEntries(data);
-	if (data instanceof Set) return [...data];
-	if (Array.isArray(data)) return data.map(serializeData);
-	if (typeof data === "object") {
-		return Object.fromEntries(
-			Object.entries(data).map(([k, v]) => [k, serializeData(v)]),
-		);
-	}
-	return data;
+  if (data === null || data === undefined)
+    return data
+  if (data instanceof Map)
+    return Object.fromEntries(data)
+  if (data instanceof Set)
+    return [...data]
+  if (Array.isArray(data))
+    return data.map(serializeData)
+  if (typeof data === 'object') {
+    return Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, serializeData(v)]),
+    )
+  }
+  return data
 }
 
 export async function statusRouter(req, res, url, json) {
-	// GET /api/status/overview — 含 extended 資料
-	if (req.method === "GET" && url.pathname === "/api/status/overview") {
-		const collect = await getCollectFn();
-		const humanize = await getHumanizeFn();
-		const raw = await collect();
-		// 將 sessions.byProject 的 Claude 編碼路徑（-Users-alvin-…）還原為可讀形式
-		// byProject 可能是 Map（來自 scanUsage），必須用 Map API 而非 Object.entries
-		if (raw?.sessions?.byProject) {
-			const src = raw.sessions.byProject;
-			const entries =
-				src instanceof Map ? [...src.entries()] : Object.entries(src);
-			raw.sessions.byProject = Object.fromEntries(
-				entries.map(([k, v]) => [humanize(k), v]),
-			);
-		}
-		json(res, 0, "ok", serializeData(raw));
-		return true;
-	}
+  // GET /api/status/overview — 含 extended 資料
+  if (req.method === 'GET' && url.pathname === '/api/status/overview') {
+    const collect = await getCollectFn()
+    const humanize = await getHumanizeFn()
+    const raw = await collect()
+    // 將 sessions.byProject 的 Claude 編碼路徑（-Users-alvin-…）還原為可讀形式
+    // byProject 可能是 Map（來自 scanUsage），必須用 Map API 而非 Object.entries
+    if (raw?.sessions?.byProject) {
+      const src = raw.sessions.byProject
+      const entries
+        = src instanceof Map ? [...src.entries()] : Object.entries(src)
+      raw.sessions.byProject = Object.fromEntries(
+        entries.map(([k, v]) => [humanize(k), v]),
+      )
+    }
+    json(res, 0, 'ok', serializeData(raw))
+    return true
+  }
 
-	// GET /api/status/usage — scanUsageStats（Map → plain object）
-	if (req.method === "GET" && url.pathname === "/api/status/usage") {
-		try {
-			const scanUsage = await getUsageFn();
-			const raw = scanUsage ? await scanUsage() : new Map();
-			json(res, 0, "ok", serializeData(raw));
-		} catch {
-			json(res, 0, "ok", {});
-		}
-		return true;
-	}
+  // GET /api/status/usage — scanUsageStats（Map → plain object）
+  if (req.method === 'GET' && url.pathname === '/api/status/usage') {
+    try {
+      const scanUsage = await getUsageFn()
+      const raw = scanUsage ? await scanUsage() : new Map()
+      json(res, 0, 'ok', serializeData(raw))
+    }
+    catch {
+      json(res, 0, 'ok', {})
+    }
+    return true
+  }
 
-	return false;
+  return false
 }

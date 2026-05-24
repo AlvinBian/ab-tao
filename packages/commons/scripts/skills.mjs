@@ -16,109 +16,118 @@
  *   --project             寫入 ./.claude/skills/（Phase 10 後續）
  */
 
-import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ab-tao source skills 目錄（packages/commons/scripts/ → monorepo root → apps/dotfiles/claude/skills/）
 const SKILLS_SOURCE = path.resolve(
-	__dirname,
-	"../../../apps/dotfiles/claude/skills",
-);
+  __dirname,
+  '../../../apps/dotfiles/claude/skills',
+)
 
 // 已同步 AI source 目錄（packages/commons/resources/ai/sources/）
-const SOURCES_DIR = path.resolve(__dirname, "../resources/ai/sources");
+const SOURCES_DIR = path.resolve(__dirname, '../resources/ai/sources')
 
 // ~/.claude/ 路徑（從 dotfiles paths.mjs 取得，否則降級為計算值）
-let P;
+let P
 try {
-	const dotfilePaths = await import(
-		path.resolve(__dirname, "../../../apps/dotfiles/libs/core/paths.mjs")
-	);
-	P = dotfilePaths.P;
-} catch {
-	// 降級：直接計算
-	const HOME = process.env.HOME || process.env.USERPROFILE || "";
-	const CLAUDE = path.join(HOME, ".claude");
-	P = {
-		skills: path.join(CLAUDE, "skills"),
-		archive: path.join(CLAUDE, "_archive"),
-		agentsMd: path.join(CLAUDE, "AGENTS.md"),
-	};
+  const dotfilePaths = await import(
+    path.resolve(__dirname, '../../../apps/dotfiles/libs/core/paths.mjs'),
+  )
+  P = dotfilePaths.P
+}
+catch {
+  // 降級：直接計算
+  const HOME = process.env.HOME || process.env.USERPROFILE || ''
+  const CLAUDE = path.join(HOME, '.claude')
+  P = {
+    skills: path.join(CLAUDE, 'skills'),
+    archive: path.join(CLAUDE, '_archive'),
+    agentsMd: path.join(CLAUDE, 'AGENTS.md'),
+  }
 }
 
 // ── 輔助函式 ────────────────────────────────────────────────────────────────
 
 /** 掃描目錄下的第一層子資料夾（skill 名稱清單） */
 function scanSkills(dir) {
-	if (!fs.existsSync(dir)) return [];
-	return fs
-		.readdirSync(dir, { withFileTypes: true })
-		.filter((e) => e.isDirectory() && !e.name.startsWith("."))
-		.map((e) => e.name)
-		.sort();
+  if (!fs.existsSync(dir))
+    return []
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+    .map(e => e.name)
+    .sort()
 }
 
 /** 讀取 SKILL.md frontmatter 中的 description */
 function readSkillMeta(skillDir) {
-	const skillFile = path.join(skillDir, "SKILL.md");
-	if (!fs.existsSync(skillFile)) return { description: "" };
-	const content = fs.readFileSync(skillFile, "utf8");
-	const match = content.match(/^---\n([\s\S]*?)\n---/);
-	if (!match) return { description: "" };
-	const descMatch = match[1].match(/^description:\s*["']?(.+?)["']?\s*$/m);
-	return { description: descMatch ? descMatch[1].trim() : "" };
+  const skillFile = path.join(skillDir, 'SKILL.md')
+  if (!fs.existsSync(skillFile))
+    return { description: '' }
+  const content = fs.readFileSync(skillFile, 'utf8')
+  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  if (!match)
+    return { description: '' }
+  // eslint-disable-next-line regexp/no-super-linear-backtracking -- frontmatter description pattern with bounded input
+  const descMatch = match[1].match(/^description:\s*["']?(.+?)["']?\s*$/m)
+  return { description: descMatch ? descMatch[1].trim() : '' }
 }
 
 /** 比較兩個目錄是否有差異（基於 SKILL.md）；true = 有差異 */
 function hasDiff(src, dst) {
-	const srcFile = path.join(src, "SKILL.md");
-	const dstFile = path.join(dst, "SKILL.md");
-	if (!fs.existsSync(srcFile) || !fs.existsSync(dstFile)) return true;
-	try {
-		execFileSync("diff", ["-q", srcFile, dstFile], { stdio: "pipe" });
-		return false;
-	} catch {
-		return true;
-	}
+  const srcFile = path.join(src, 'SKILL.md')
+  const dstFile = path.join(dst, 'SKILL.md')
+  if (!fs.existsSync(srcFile) || !fs.existsSync(dstFile))
+    return true
+  try {
+    execFileSync('diff', ['-q', srcFile, dstFile], { stdio: 'pipe' })
+    return false
+  }
+  catch {
+    return true
+  }
 }
 
 /** 生成 ~/.claude/AGENTS.md 的 <available_skills> XML 索引 */
 function generateAgentsMd() {
-	const skills = scanSkills(P.skills);
-	if (skills.length === 0) {
-		if (fs.existsSync(P.agentsMd)) fs.unlinkSync(P.agentsMd);
-		return;
-	}
+  const skills = scanSkills(P.skills)
+  if (skills.length === 0) {
+    if (fs.existsSync(P.agentsMd))
+      fs.unlinkSync(P.agentsMd)
+    return
+  }
 
-	const entries = skills
-		.map(
-			(name) =>
-				`  <skill name="${name}" path="${P.skills}/${name}/SKILL.md" />`,
-		)
-		.join("\n");
+  const entries = skills
+    .map(
+      name =>
+        `  <skill name="${name}" path="${P.skills}/${name}/SKILL.md" />`,
+    )
+    .join('\n')
 
-	const content = `<!-- AUTO-GENERATED by ab-tao c:skills — do not edit manually -->
+  const content = `<!-- AUTO-GENERATED by ab-tao c:skills — do not edit manually -->
 <available_skills>
 ${entries}
 </available_skills>
-`;
-	fs.writeFileSync(P.agentsMd, content, "utf8");
-	console.log(`✅ 已更新 ~/.claude/AGENTS.md（${skills.length} 個 skills）`);
+`
+  fs.writeFileSync(P.agentsMd, content, 'utf8')
+  console.log(`✅ 已更新 ~/.claude/AGENTS.md（${skills.length} 個 skills）`)
 }
 
 /** 顯示 live-reload 提示 */
 function printLiveReloadHint(isNewInstall = false) {
-	if (isNewInstall) {
-		console.log("⚠️  新增頂層資料夾 → 需重啟 Claude Code session 才生效");
-	} else {
-		console.log("ℹ️  Claude Code 支援 skill 熱載入，無需重啟");
-	}
+  if (isNewInstall) {
+    console.log('⚠️  新增頂層資料夾 → 需重啟 Claude Code session 才生效')
+  }
+  else {
+    console.log('ℹ️  Claude Code 支援 skill 熱載入，無需重啟')
+  }
 }
 
 // ── --from 輔助函式 ──────────────────────────────────────────────────────────
@@ -129,20 +138,21 @@ function printLiveReloadHint(isNewInstall = false) {
  * @returns {Promise<string>}
  */
 async function cloneShallow(repo) {
-	const tmpDir = await mkdtemp(path.join(tmpdir(), `ab-tao-skills-from-`));
-	const url = `https://github.com/${repo}.git`;
-	try {
-		execFileSync("git", ["clone", "--depth", "1", url, tmpDir], {
-			stdio: "pipe",
-			timeout: 60000,
-		});
-	} catch (err) {
-		await rm(tmpDir, { recursive: true, force: true });
-		throw new Error(`無法 clone ${repo}：${err.message}`);
-	}
-	// 移除 .git 避免後續操作誤判
-	fs.rmSync(path.join(tmpDir, ".git"), { recursive: true, force: true });
-	return tmpDir;
+  const tmpDir = await mkdtemp(path.join(tmpdir(), `ab-tao-skills-from-`))
+  const url = `https://github.com/${repo}.git`
+  try {
+    execFileSync('git', ['clone', '--depth', '1', url, tmpDir], {
+      stdio: 'pipe',
+      timeout: 60000,
+    })
+  }
+  catch (err) {
+    await rm(tmpDir, { recursive: true, force: true })
+    throw new Error(`無法 clone ${repo}：${err.message}`)
+  }
+  // 移除 .git 避免後續操作誤判
+  fs.rmSync(path.join(tmpDir, '.git'), { recursive: true, force: true })
+  return tmpDir
 }
 
 /**
@@ -151,21 +161,24 @@ async function cloneShallow(repo) {
  * @returns {{ name: string, dir: string, description: string }[]}
  */
 function scanSkillsDir(dir) {
-	if (!fs.existsSync(dir)) return [];
-	const results = [];
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
-		const skillDir = path.join(dir, entry.name);
-		const skillFile = path.join(skillDir, "SKILL.md");
-		if (!fs.existsSync(skillFile)) continue;
-		const meta = readSkillMeta(skillDir);
-		results.push({
-			name: entry.name,
-			dir: skillDir,
-			description: meta.description,
-		});
-	}
-	return results.sort((a, b) => a.name.localeCompare(b.name));
+  if (!fs.existsSync(dir))
+    return []
+  const results = []
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.'))
+      continue
+    const skillDir = path.join(dir, entry.name)
+    const skillFile = path.join(skillDir, 'SKILL.md')
+    if (!fs.existsSync(skillFile))
+      continue
+    const meta = readSkillMeta(skillDir)
+    results.push({
+      name: entry.name,
+      dir: skillDir,
+      description: meta.description,
+    })
+  }
+  return results.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -174,280 +187,286 @@ function scanSkillsDir(dir) {
  * @param {{ source: string }} opts
  */
 function installSkillsFrom(skills, opts) {
-	const skillsDirExisted = fs.existsSync(P.skills);
-	if (!skillsDirExisted) {
-		fs.mkdirSync(P.skills, { recursive: true });
-	}
+  const skillsDirExisted = fs.existsSync(P.skills)
+  if (!skillsDirExisted) {
+    fs.mkdirSync(P.skills, { recursive: true })
+  }
 
-	const installed = [];
-	const skipped = [];
+  const installed = []
+  const skipped = []
 
-	for (const { name, dir: src } of skills) {
-		const dst = path.join(P.skills, name);
-		if (fs.existsSync(dst)) {
-			skipped.push(name);
-			continue;
-		}
-		fs.cpSync(src, dst, { recursive: true });
-		// 寫入來源標記
-		const metaFile = path.join(dst, ".source");
-		fs.writeFileSync(metaFile, opts.source, "utf8");
-		installed.push(name);
-	}
+  for (const { name, dir: src } of skills) {
+    const dst = path.join(P.skills, name)
+    if (fs.existsSync(dst)) {
+      skipped.push(name)
+      continue
+    }
+    fs.cpSync(src, dst, { recursive: true })
+    // 寫入來源標記
+    const metaFile = path.join(dst, '.source')
+    fs.writeFileSync(metaFile, opts.source, 'utf8')
+    installed.push(name)
+  }
 
-	if (installed.length > 0) {
-		console.log(
-			`\n✅ 已安裝 ${installed.length} 個 skills（來源：${opts.source}）至 ${P.skills}`,
-		);
-		for (const n of installed) console.log(`   + ${n}`);
-		printLiveReloadHint(!skillsDirExisted);
-		generateAgentsMd();
-	}
-	if (skipped.length > 0) {
-		console.log(
-			`\nℹ️  已跳過 ${skipped.length} 個（已安裝）：${skipped.join(", ")}`,
-		);
-		console.log("   使用 --update 更新已安裝的 skills");
-	}
+  if (installed.length > 0) {
+    console.log(
+      `\n✅ 已安裝 ${installed.length} 個 skills（來源：${opts.source}）至 ${P.skills}`,
+    )
+    for (const n of installed) console.log(`   + ${n}`)
+    printLiveReloadHint(!skillsDirExisted)
+    generateAgentsMd()
+  }
+  if (skipped.length > 0) {
+    console.log(
+      `\nℹ️  已跳過 ${skipped.length} 個（已安裝）：${skipped.join(', ')}`,
+    )
+    console.log('   使用 --update 更新已安裝的 skills')
+  }
 }
 
 // ── 子命令實作 ───────────────────────────────────────────────────────────────
 
 function cmdList() {
-	const sourceSet = new Set(scanSkills(SKILLS_SOURCE));
-	const installedSet = new Set(scanSkills(P.skills));
-	const all = [...new Set([...sourceSet, ...installedSet])].sort();
+  const sourceSet = new Set(scanSkills(SKILLS_SOURCE))
+  const installedSet = new Set(scanSkills(P.skills))
+  const all = [...new Set([...sourceSet, ...installedSet])].sort()
 
-	console.log(`\n📚 Skills 狀態\n`);
-	console.log(`  ${"狀態".padEnd(10)}  ${"名稱".padEnd(32)}  說明`);
-	console.log(`  ${"─".repeat(10)}  ${"─".repeat(32)}  ${"─".repeat(40)}`);
+  console.log(`\n📚 Skills 狀態\n`)
+  console.log(`  ${'狀態'.padEnd(10)}  ${'名稱'.padEnd(32)}  說明`)
+  console.log(`  ${'─'.repeat(10)}  ${'─'.repeat(32)}  ${'─'.repeat(40)}`)
 
-	for (const name of all) {
-		const inSource = sourceSet.has(name);
-		const installed = installedSet.has(name);
+  for (const name of all) {
+    const inSource = sourceSet.has(name)
+    const installed = installedSet.has(name)
 
-		let status;
-		if (inSource && installed) {
-			const diff = hasDiff(
-				path.join(SKILLS_SOURCE, name),
-				path.join(P.skills, name),
-			);
-			status = diff ? "🔄 可更新" : "✅ 最新";
-		} else if (installed) {
-			status = "🌐 外部";
-		} else {
-			status = "⬜ 未安裝";
-		}
+    let status
+    if (inSource && installed) {
+      const diff = hasDiff(
+        path.join(SKILLS_SOURCE, name),
+        path.join(P.skills, name),
+      )
+      status = diff ? '🔄 可更新' : '✅ 最新'
+    }
+    else if (installed) {
+      status = '🌐 外部'
+    }
+    else {
+      status = '⬜ 未安裝'
+    }
 
-		const meta = inSource
-			? readSkillMeta(path.join(SKILLS_SOURCE, name))
-			: readSkillMeta(path.join(P.skills, name));
+    const meta = inSource
+      ? readSkillMeta(path.join(SKILLS_SOURCE, name))
+      : readSkillMeta(path.join(P.skills, name))
 
-		const desc = meta.description.slice(0, 48);
-		console.log(`  ${status.padEnd(10)}  ${name.padEnd(32)}  ${desc}`);
-	}
-	console.log(`\n  source: ${SKILLS_SOURCE}`);
-	console.log(`  target: ${P.skills}\n`);
+    const desc = meta.description.slice(0, 48)
+    console.log(`  ${status.padEnd(10)}  ${name.padEnd(32)}  ${desc}`)
+  }
+  console.log(`\n  source: ${SKILLS_SOURCE}`)
+  console.log(`  target: ${P.skills}\n`)
 }
 
 function cmdInstall(names) {
-	const sourceSkills = scanSkills(SKILLS_SOURCE);
-	const toInstall = names.length > 0 ? names : sourceSkills;
-	const skillsDirExisted = fs.existsSync(P.skills);
+  const sourceSkills = scanSkills(SKILLS_SOURCE)
+  const toInstall = names.length > 0 ? names : sourceSkills
+  const skillsDirExisted = fs.existsSync(P.skills)
 
-	if (!skillsDirExisted) {
-		fs.mkdirSync(P.skills, { recursive: true });
-	}
+  if (!skillsDirExisted) {
+    fs.mkdirSync(P.skills, { recursive: true })
+  }
 
-	const installed = [];
-	const skipped = [];
-	const notFound = [];
+  const installed = []
+  const skipped = []
+  const notFound = []
 
-	for (const name of toInstall) {
-		const src = path.join(SKILLS_SOURCE, name);
-		const dst = path.join(P.skills, name);
+  for (const name of toInstall) {
+    const src = path.join(SKILLS_SOURCE, name)
+    const dst = path.join(P.skills, name)
 
-		if (!fs.existsSync(src)) {
-			notFound.push(name);
-			continue;
-		}
-		if (fs.existsSync(dst)) {
-			skipped.push(name);
-			continue;
-		}
+    if (!fs.existsSync(src)) {
+      notFound.push(name)
+      continue
+    }
+    if (fs.existsSync(dst)) {
+      skipped.push(name)
+      continue
+    }
 
-		fs.cpSync(src, dst, { recursive: true });
-		installed.push(name);
-	}
+    fs.cpSync(src, dst, { recursive: true })
+    installed.push(name)
+  }
 
-	if (installed.length > 0) {
-		console.log(`\n✅ 已安裝 ${installed.length} 個 skills 至 ${P.skills}`);
-		for (const n of installed) console.log(`   + ${n}`);
-		printLiveReloadHint(!skillsDirExisted);
-		generateAgentsMd();
-	}
-	if (skipped.length > 0) {
-		console.log(
-			`\nℹ️  已跳過 ${skipped.length} 個（已安裝）：${skipped.join(", ")}`,
-		);
-		console.log("   使用 --update 更新已安裝的 skills");
-	}
-	if (notFound.length > 0) {
-		console.error(`\n❌ source 中找不到：${notFound.join(", ")}`);
-		console.error(`   可用 skills：${sourceSkills.join(", ")}`);
-		process.exitCode = 1;
-	}
+  if (installed.length > 0) {
+    console.log(`\n✅ 已安裝 ${installed.length} 個 skills 至 ${P.skills}`)
+    for (const n of installed) console.log(`   + ${n}`)
+    printLiveReloadHint(!skillsDirExisted)
+    generateAgentsMd()
+  }
+  if (skipped.length > 0) {
+    console.log(
+      `\nℹ️  已跳過 ${skipped.length} 個（已安裝）：${skipped.join(', ')}`,
+    )
+    console.log('   使用 --update 更新已安裝的 skills')
+  }
+  if (notFound.length > 0) {
+    console.error(`\n❌ source 中找不到：${notFound.join(', ')}`)
+    console.error(`   可用 skills：${sourceSkills.join(', ')}`)
+    process.exitCode = 1
+  }
 }
 
 function cmdUpdate(names) {
-	const sourceSkills = scanSkills(SKILLS_SOURCE);
-	const installedSkills = scanSkills(P.skills);
-	const candidates =
-		names.length > 0
-			? names
-			: installedSkills.filter((n) => sourceSkills.includes(n));
+  const sourceSkills = scanSkills(SKILLS_SOURCE)
+  const installedSkills = scanSkills(P.skills)
+  const candidates
+    = names.length > 0
+      ? names
+      : installedSkills.filter(n => sourceSkills.includes(n))
 
-	const updated = [];
-	const upToDate = [];
-	const notFound = [];
+  const updated = []
+  const upToDate = []
+  const notFound = []
 
-	for (const name of candidates) {
-		const src = path.join(SKILLS_SOURCE, name);
-		const dst = path.join(P.skills, name);
+  for (const name of candidates) {
+    const src = path.join(SKILLS_SOURCE, name)
+    const dst = path.join(P.skills, name)
 
-		if (!fs.existsSync(src)) {
-			notFound.push(name);
-			continue;
-		}
-		if (!fs.existsSync(dst)) {
-			fs.cpSync(src, dst, { recursive: true });
-			updated.push(`${name} (新安裝)`);
-			continue;
-		}
+    if (!fs.existsSync(src)) {
+      notFound.push(name)
+      continue
+    }
+    if (!fs.existsSync(dst)) {
+      fs.cpSync(src, dst, { recursive: true })
+      updated.push(`${name} (新安裝)`)
+      continue
+    }
 
-		if (!hasDiff(src, dst)) {
-			upToDate.push(name);
-			continue;
-		}
+    if (!hasDiff(src, dst)) {
+      upToDate.push(name)
+      continue
+    }
 
-		// Backup 舊版本
-		const backupDir = `${dst}.bak.${Date.now()}`;
-		fs.cpSync(dst, backupDir, { recursive: true });
-		fs.rmSync(dst, { recursive: true });
-		fs.cpSync(src, dst, { recursive: true });
-		updated.push(name);
-	}
+    // Backup 舊版本
+    const backupDir = `${dst}.bak.${Date.now()}`
+    fs.cpSync(dst, backupDir, { recursive: true })
+    fs.rmSync(dst, { recursive: true })
+    fs.cpSync(src, dst, { recursive: true })
+    updated.push(name)
+  }
 
-	if (updated.length > 0) {
-		console.log(`\n✅ 已更新 ${updated.length} 個 skills`);
-		for (const n of updated) console.log(`   ↑ ${n}`);
-		// Bug 5 修復：新安裝（dst 不存在）需重啟 session，更新已存在的 skill 可熱載入
-		const hasNewInstall = updated.some((n) => n.endsWith(" (新安裝)"));
-		printLiveReloadHint(hasNewInstall);
-		generateAgentsMd();
-	}
-	if (upToDate.length > 0) {
-		console.log(`\nℹ️  ${upToDate.length} 個已是最新版：${upToDate.join(", ")}`);
-	}
-	if (notFound.length > 0) {
-		console.error(`\n❌ source 中找不到：${notFound.join(", ")}`);
-		process.exitCode = 1;
-	}
+  if (updated.length > 0) {
+    console.log(`\n✅ 已更新 ${updated.length} 個 skills`)
+    for (const n of updated) console.log(`   ↑ ${n}`)
+    // Bug 5 修復：新安裝（dst 不存在）需重啟 session，更新已存在的 skill 可熱載入
+    const hasNewInstall = updated.some(n => n.endsWith(' (新安裝)'))
+    printLiveReloadHint(hasNewInstall)
+    generateAgentsMd()
+  }
+  if (upToDate.length > 0) {
+    console.log(`\nℹ️  ${upToDate.length} 個已是最新版：${upToDate.join(', ')}`)
+  }
+  if (notFound.length > 0) {
+    console.error(`\n❌ source 中找不到：${notFound.join(', ')}`)
+    process.exitCode = 1
+  }
 }
 
 function cmdDiff(name) {
-	if (!name) {
-		console.error("❌ 請指定 skill 名稱：c:skills --diff <name>");
-		process.exit(1);
-	}
+  if (!name) {
+    console.error('❌ 請指定 skill 名稱：c:skills --diff <name>')
+    process.exit(1)
+  }
 
-	const srcFile = path.join(SKILLS_SOURCE, name, "SKILL.md");
-	const dstFile = path.join(P.skills, name, "SKILL.md");
+  const srcFile = path.join(SKILLS_SOURCE, name, 'SKILL.md')
+  const dstFile = path.join(P.skills, name, 'SKILL.md')
 
-	if (!fs.existsSync(srcFile)) {
-		console.error(`❌ source 中找不到 ${name}`);
-		process.exit(1);
-	}
-	if (!fs.existsSync(dstFile)) {
-		console.log(`ℹ️  ${name} 尚未安裝（使用 --install ${name}）`);
-		return;
-	}
+  if (!fs.existsSync(srcFile)) {
+    console.error(`❌ source 中找不到 ${name}`)
+    process.exit(1)
+  }
+  if (!fs.existsSync(dstFile)) {
+    console.log(`ℹ️  ${name} 尚未安裝（使用 --install ${name}）`)
+    return
+  }
 
-	try {
-		execFileSync("diff", ["-q", srcFile, dstFile], { stdio: "pipe" });
-		console.log(`✅ ${name}：本地與 source 一致，無需更新`);
-	} catch (e) {
-		const diffOutput = /** @type {string} */ (e.stdout ?? "");
-		if (diffOutput) {
-			console.log(`--- 本地  ${dstFile}`);
-			console.log(`+++ source ${srcFile}\n`);
-			// 使用 diff -u 取得 unified diff
-			try {
-				execFileSync("diff", ["-u", dstFile, srcFile], { stdio: "inherit" });
-			} catch {
-				// diff 回傳 exit 1 表示有差異，非錯誤
-			}
-		} else {
-			console.log(
-				`🔄 ${name}：SKILL.md 有差異（執行 --update ${name} 可更新）`,
-			);
-		}
-	}
+  try {
+    execFileSync('diff', ['-q', srcFile, dstFile], { stdio: 'pipe' })
+    console.log(`✅ ${name}：本地與 source 一致，無需更新`)
+  }
+  catch (e) {
+    const diffOutput = /** @type {string} */ (e.stdout ?? '')
+    if (diffOutput) {
+      console.log(`--- 本地  ${dstFile}`)
+      console.log(`+++ source ${srcFile}\n`)
+      // 使用 diff -u 取得 unified diff
+      try {
+        execFileSync('diff', ['-u', dstFile, srcFile], { stdio: 'inherit' })
+      }
+      catch {
+        // diff 回傳 exit 1 表示有差異，非錯誤
+      }
+    }
+    else {
+      console.log(
+        `🔄 ${name}：SKILL.md 有差異（執行 --update ${name} 可更新）`,
+      )
+    }
+  }
 }
 
 function cmdRemove(name) {
-	if (!name) {
-		console.error("❌ 請指定 skill 名稱：c:skills --remove <name>");
-		process.exit(1);
-	}
+  if (!name) {
+    console.error('❌ 請指定 skill 名稱：c:skills --remove <name>')
+    process.exit(1)
+  }
 
-	const dst = path.join(P.skills, name);
-	if (!fs.existsSync(dst)) {
-		console.error(`❌ ${name} 未安裝`);
-		process.exit(1);
-	}
+  const dst = path.join(P.skills, name)
+  if (!fs.existsSync(dst)) {
+    console.error(`❌ ${name} 未安裝`)
+    process.exit(1)
+  }
 
-	// Archive-not-delete（O5 原則）
-	const archiveDir = path.join(P.archive, `skills-removed-${Date.now()}`);
-	fs.mkdirSync(archiveDir, { recursive: true });
-	fs.cpSync(dst, path.join(archiveDir, name), { recursive: true });
-	fs.rmSync(dst, { recursive: true });
+  // Archive-not-delete（O5 原則）
+  const archiveDir = path.join(P.archive, `skills-removed-${Date.now()}`)
+  fs.mkdirSync(archiveDir, { recursive: true })
+  fs.cpSync(dst, path.join(archiveDir, name), { recursive: true })
+  fs.rmSync(dst, { recursive: true })
 
-	console.log(`✅ 已移除 ${name}（備份至 ${archiveDir}）`);
-	generateAgentsMd();
+  console.log(`✅ 已移除 ${name}（備份至 ${archiveDir}）`)
+  generateAgentsMd()
 }
 
 function cmdFind(keyword) {
-	if (!keyword) {
-		console.error("❌ 請指定關鍵字：c:skills --find <keyword>");
-		process.exit(1);
-	}
+  if (!keyword) {
+    console.error('❌ 請指定關鍵字：c:skills --find <keyword>')
+    process.exit(1)
+  }
 
-	const sourceSkills = scanSkills(SKILLS_SOURCE);
-	const kw = keyword.toLowerCase();
-	const results = [];
+  const sourceSkills = scanSkills(SKILLS_SOURCE)
+  const kw = keyword.toLowerCase()
+  const results = []
 
-	for (const name of sourceSkills) {
-		const meta = readSkillMeta(path.join(SKILLS_SOURCE, name));
-		if (
-			name.toLowerCase().includes(kw) ||
-			meta.description.toLowerCase().includes(kw)
-		) {
-			results.push({ name, description: meta.description });
-		}
-	}
+  for (const name of sourceSkills) {
+    const meta = readSkillMeta(path.join(SKILLS_SOURCE, name))
+    if (
+      name.toLowerCase().includes(kw)
+      || meta.description.toLowerCase().includes(kw)
+    ) {
+      results.push({ name, description: meta.description })
+    }
+  }
 
-	if (results.length === 0) {
-		console.log(`ℹ️  找不到包含「${keyword}」的 skill`);
-		return;
-	}
+  if (results.length === 0) {
+    console.log(`ℹ️  找不到包含「${keyword}」的 skill`)
+    return
+  }
 
-	console.log(`\n🔍 搜尋「${keyword}」結果（${results.length} 個）：\n`);
-	for (const { name, description } of results) {
-		console.log(`  ${name}`);
-		if (description) console.log(`    ${description}`);
-	}
-	console.log();
+  console.log(`\n🔍 搜尋「${keyword}」結果（${results.length} 個）：\n`)
+  for (const { name, description } of results) {
+    console.log(`  ${name}`)
+    if (description)
+      console.log(`    ${description}`)
+  }
+  console.log()
 }
 
 /**
@@ -455,198 +474,205 @@ function cmdFind(keyword) {
  * @param {{ all?: boolean, find?: string|null, source?: string|null }} opts
  */
 async function cmdSynced(opts = {}) {
-	const { all = false, find: keyword = null, source: sourceName = null } = opts;
+  const { all = false, find: keyword = null, source: sourceName = null } = opts
 
-	if (!fs.existsSync(SOURCES_DIR)) {
-		console.log("ℹ️  找不到 AI sources 目錄，請先執行 pnpm run c:ai-sync");
-		return;
-	}
+  if (!fs.existsSync(SOURCES_DIR)) {
+    console.log('ℹ️  找不到 AI sources 目錄，請先執行 pnpm run c:ai-sync')
+    return
+  }
 
-	// 收集所有（或指定）source 目錄
-	const sources = fs
-		.readdirSync(SOURCES_DIR, { withFileTypes: true })
-		.filter((e) => e.isDirectory() && !e.name.startsWith("."))
-		.map((e) => e.name)
-		.filter((name) => !sourceName || name === sourceName)
-		.sort();
+  // 收集所有（或指定）source 目錄
+  const sources = fs
+    .readdirSync(SOURCES_DIR, { withFileTypes: true })
+    .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+    .map(e => e.name)
+    .filter(name => !sourceName || name === sourceName)
+    .sort()
 
-	if (sources.length === 0) {
-		console.log(
-			sourceName
-				? `ℹ️  找不到 source「${sourceName}」，請先執行 pnpm run c:ai-sync`
-				: "ℹ️  尚未同步任何 AI source，請先執行 pnpm run c:ai-sync",
-		);
-		return;
-	}
+  if (sources.length === 0) {
+    console.log(
+      sourceName
+        ? `ℹ️  找不到 source「${sourceName}」，請先執行 pnpm run c:ai-sync`
+        : 'ℹ️  尚未同步任何 AI source，請先執行 pnpm run c:ai-sync',
+    )
+    return
+  }
 
-	// 蒐集所有 source 的 skills
-	const allSkills = [];
-	for (const source of sources) {
-		const skillsDir = path.join(SOURCES_DIR, source, "skills");
-		for (const skill of scanSkillsDir(skillsDir)) {
-			allSkills.push({ ...skill, source });
-		}
-	}
+  // 蒐集所有 source 的 skills
+  const allSkills = []
+  for (const source of sources) {
+    const skillsDir = path.join(SOURCES_DIR, source, 'skills')
+    for (const skill of scanSkillsDir(skillsDir)) {
+      allSkills.push({ ...skill, source })
+    }
+  }
 
-	if (allSkills.length === 0) {
-		console.log(
-			"ℹ️  同步來源中找不到任何 skill（確認各 source 含 skills/ 目錄）",
-		);
-		return;
-	}
+  if (allSkills.length === 0) {
+    console.log(
+      'ℹ️  同步來源中找不到任何 skill（確認各 source 含 skills/ 目錄）',
+    )
+    return
+  }
 
-	// 關鍵字過濾
-	let filtered = allSkills;
-	if (keyword) {
-		const kw = keyword.toLowerCase();
-		filtered = allSkills.filter(
-			(s) =>
-				s.name.toLowerCase().includes(kw) ||
-				s.description.toLowerCase().includes(kw),
-		);
-		if (filtered.length === 0) {
-			console.log(`ℹ️  找不到包含「${keyword}」的 skill`);
-			return;
-		}
-	}
+  // 關鍵字過濾
+  let filtered = allSkills
+  if (keyword) {
+    const kw = keyword.toLowerCase()
+    filtered = allSkills.filter(
+      s =>
+        s.name.toLowerCase().includes(kw)
+        || s.description.toLowerCase().includes(kw),
+    )
+    if (filtered.length === 0) {
+      console.log(`ℹ️  找不到包含「${keyword}」的 skill`)
+      return
+    }
+  }
 
-	if (all) {
-		// 按 source 分組呼叫 installSkillsFrom
-		const bySource =
-			/** @type {Record<string, {name:string,dir:string}[]>} */ ({});
-		for (const skill of filtered) {
-			if (!bySource[skill.source]) bySource[skill.source] = [];
-			bySource[skill.source].push({ name: skill.name, dir: skill.dir });
-		}
-		for (const [source, skills] of Object.entries(bySource)) {
-			installSkillsFrom(skills, { source: `synced:${source}` });
-		}
-	} else {
-		// 純列表
-		console.log(`\n📦 同步來源 Skills（${filtered.length} 個）\n`);
-		console.log(
-			`  ${"來源".padEnd(20)}  ${"狀態".padEnd(6)}  ${"名稱".padEnd(32)}  說明`,
-		);
-		console.log(
-			`  ${"─".repeat(20)}  ${"─".repeat(6)}  ${"─".repeat(32)}  ${"─".repeat(40)}`,
-		);
-		for (const { source, name, description } of filtered) {
-			const installed = fs.existsSync(path.join(P.skills, name));
-			const status = installed ? "✅" : "⬜";
-			console.log(
-				`  ${source.padEnd(20)}  ${status.padEnd(6)}  ${name.padEnd(32)}  ${description.slice(0, 48)}`,
-			);
-		}
-		console.log(`\n  使用 --synced --all 安裝全部`);
-		if (!keyword) console.log(`  使用 --synced --find <keyword> 關鍵字過濾`);
-		if (!sourceName) console.log(`  使用 --synced --source <name> 指定來源`);
-		console.log();
-	}
+  if (all) {
+    // 按 source 分組呼叫 installSkillsFrom
+    const bySource
+    /** @type {Record<string, {name:string,dir:string}[]>} */ = ({})
+    for (const skill of filtered) {
+      if (!bySource[skill.source])
+        bySource[skill.source] = []
+      bySource[skill.source].push({ name: skill.name, dir: skill.dir })
+    }
+    for (const [source, skills] of Object.entries(bySource)) {
+      installSkillsFrom(skills, { source: `synced:${source}` })
+    }
+  }
+  else {
+    // 純列表
+    console.log(`\n📦 同步來源 Skills（${filtered.length} 個）\n`)
+    console.log(
+      `  ${'來源'.padEnd(20)}  ${'狀態'.padEnd(6)}  ${'名稱'.padEnd(32)}  說明`,
+    )
+    console.log(
+      `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(32)}  ${'─'.repeat(40)}`,
+    )
+    for (const { source, name, description } of filtered) {
+      const installed = fs.existsSync(path.join(P.skills, name))
+      const status = installed ? '✅' : '⬜'
+      console.log(
+        `  ${source.padEnd(20)}  ${status.padEnd(6)}  ${name.padEnd(32)}  ${description.slice(0, 48)}`,
+      )
+    }
+    console.log(`\n  使用 --synced --all 安裝全部`)
+    if (!keyword)
+      console.log(`  使用 --synced --find <keyword> 關鍵字過濾`)
+    if (!sourceName)
+      console.log(`  使用 --synced --source <name> 指定來源`)
+    console.log()
+  }
 }
 
 // ── 主 dispatch ──────────────────────────────────────────────────────────────
 
-const args = process.argv.slice(2);
-const [flag, ...rest] = args;
+const args = process.argv.slice(2)
+const [flag, ...rest] = args
 
 switch (flag) {
-	case undefined:
-	case "--list":
-		cmdList();
-		break;
-	case "--install":
-		cmdInstall(rest);
-		break;
-	case "--update":
-		cmdUpdate(rest);
-		break;
-	case "--diff":
-		cmdDiff(rest[0]);
-		break;
-	case "--remove":
-		cmdRemove(rest[0]);
-		break;
-	case "--find":
-		cmdFind(rest[0]);
-		break;
-	case "--synced": {
-		const findIdx = rest.indexOf("--find");
-		const sourceIdx = rest.indexOf("--source");
-		await cmdSynced({
-			all: rest.includes("--all"),
-			find: findIdx !== -1 ? (rest[findIdx + 1] ?? null) : null,
-			source: sourceIdx !== -1 ? (rest[sourceIdx + 1] ?? null) : null,
-		});
-		break;
-	}
-	case "--from": {
-		// --from <repo> [--find <keyword>]
-		const repo = rest[0];
-		if (!repo) {
-			console.error("❌ --from 需要指定 repo（格式：owner/name）");
-			process.exit(1);
-		}
-		const findIdx = rest.indexOf("--find");
-		const keyword = findIdx !== -1 ? rest[findIdx + 1] : null;
+  case undefined:
+  case '--list':
+    cmdList()
+    break
+  case '--install':
+    cmdInstall(rest)
+    break
+  case '--update':
+    cmdUpdate(rest)
+    break
+  case '--diff':
+    cmdDiff(rest[0])
+    break
+  case '--remove':
+    cmdRemove(rest[0])
+    break
+  case '--find':
+    cmdFind(rest[0])
+    break
+  case '--synced': {
+    const findIdx = rest.indexOf('--find')
+    const sourceIdx = rest.indexOf('--source')
+    await cmdSynced({
+      all: rest.includes('--all'),
+      find: findIdx !== -1 ? (rest[findIdx + 1] ?? null) : null,
+      source: sourceIdx !== -1 ? (rest[sourceIdx + 1] ?? null) : null,
+    })
+    break
+  }
+  case '--from': {
+    // --from <repo> [--find <keyword>]
+    const repo = rest[0]
+    if (!repo) {
+      console.error('❌ --from 需要指定 repo（格式：owner/name）')
+      process.exit(1)
+    }
+    const findIdx = rest.indexOf('--find')
+    const keyword = findIdx !== -1 ? rest[findIdx + 1] : null
 
-		console.log(`\n正在從 github:${repo} 取得 skills…`);
-		let tmpDir;
-		try {
-			tmpDir = await cloneShallow(repo);
-		} catch (err) {
-			console.error(`❌ ${err.message}`);
-			process.exit(1);
-		}
+    console.log(`\n正在從 github:${repo} 取得 skills…`)
+    let tmpDir
+    try {
+      tmpDir = await cloneShallow(repo)
+    }
+    catch (err) {
+      console.error(`❌ ${err.message}`)
+      process.exit(1)
+    }
 
-		const skillsPath = path.join(tmpDir, "skills");
-		if (!fs.existsSync(skillsPath)) {
-			console.error(`❌ ${repo} 中找不到 skills/ 目錄`);
-			await rm(tmpDir, { recursive: true, force: true });
-			process.exit(1);
-		}
+    const skillsPath = path.join(tmpDir, 'skills')
+    if (!fs.existsSync(skillsPath)) {
+      console.error(`❌ ${repo} 中找不到 skills/ 目錄`)
+      await rm(tmpDir, { recursive: true, force: true })
+      process.exit(1)
+    }
 
-		let skills = scanSkillsDir(skillsPath);
+    let skills = scanSkillsDir(skillsPath)
 
-		if (keyword) {
-			// 過濾關鍵字
-			const kw = keyword.toLowerCase();
-			skills = skills.filter(
-				(s) =>
-					s.name.toLowerCase().includes(kw) ||
-					s.description.toLowerCase().includes(kw),
-			);
-			if (skills.length === 0) {
-				console.log(`ℹ️  ${repo} 中找不到包含「${keyword}」的 skill`);
-				await rm(tmpDir, { recursive: true, force: true });
-				process.exit(0);
-			}
-			console.log(`\n🔍 搜尋「${keyword}」結果（${skills.length} 個）：\n`);
-			for (const { name, description } of skills) {
-				console.log(`  ${name}`);
-				if (description) console.log(`    ${description}`);
-			}
-			console.log();
-		}
+    if (keyword) {
+      // 過濾關鍵字
+      const kw = keyword.toLowerCase()
+      skills = skills.filter(
+        s =>
+          s.name.toLowerCase().includes(kw)
+          || s.description.toLowerCase().includes(kw),
+      )
+      if (skills.length === 0) {
+        console.log(`ℹ️  ${repo} 中找不到包含「${keyword}」的 skill`)
+        await rm(tmpDir, { recursive: true, force: true })
+        process.exit(0)
+      }
+      console.log(`\n🔍 搜尋「${keyword}」結果（${skills.length} 個）：\n`)
+      for (const { name, description } of skills) {
+        console.log(`  ${name}`)
+        if (description)
+          console.log(`    ${description}`)
+      }
+      console.log()
+    }
 
-		// Bug 4 修復：改用 try/finally 確保 tmpDir 無論成功或例外都能清理
-		try {
-			installSkillsFrom(skills, { source: `github:${repo}` });
-		} finally {
-			await rm(tmpDir, { recursive: true, force: true });
-		}
-		break;
-	}
-	case "--global":
-		console.log("ℹ️  --global 是預設行為（寫入 ~/.claude/skills/）。");
-		cmdList();
-		break;
-	case "--project":
-		console.log("ℹ️  --project（寫入 ./.claude/skills/）規劃於後續版本。");
-		break;
-	default:
-		console.error(`❌ 未知旗標：${flag}`);
-		console.error(
-			"用法：c:skills [--list|--install|--update|--diff|--remove|--find] [name]",
-		);
-		process.exit(1);
+    // Bug 4 修復：改用 try/finally 確保 tmpDir 無論成功或例外都能清理
+    try {
+      installSkillsFrom(skills, { source: `github:${repo}` })
+    }
+    finally {
+      await rm(tmpDir, { recursive: true, force: true })
+    }
+    break
+  }
+  case '--global':
+    console.log('ℹ️  --global 是預設行為（寫入 ~/.claude/skills/）。')
+    cmdList()
+    break
+  case '--project':
+    console.log('ℹ️  --project（寫入 ./.claude/skills/）規劃於後續版本。')
+    break
+  default:
+    console.error(`❌ 未知旗標：${flag}`)
+    console.error(
+      '用法：c:skills [--list|--install|--update|--diff|--remove|--find] [name]',
+    )
+    process.exit(1)
 }

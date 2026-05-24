@@ -1,57 +1,59 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import TokensPerDayBar from "@/charts/TokensPerDayBar.vue";
-import { useStatusStore } from "@/stores/status";
+import { computed, onMounted, ref, watch } from 'vue'
+import TokensPerDayBar from '@/charts/TokensPerDayBar.vue'
+import { useStatusStore } from '@/stores/status'
 
-type Range = "7d" | "30d" | "all";
-type Dimension = "tokens" | "requests";
+type Range = '7d' | '30d' | 'all'
+type Dimension = 'tokens' | 'requests'
 
-const store = useStatusStore();
+const store = useStatusStore()
 
-const range = ref<Range>("7d");
-const dimension = ref<Dimension>("tokens");
-const visibleModels = ref<string[]>([]);
+const range = ref<Range>('7d')
+const dimension = ref<Dimension>('tokens')
+const visibleModels = ref<string[]>([])
 
-const allModels = computed(() => store.aiUsage?.allModels ?? []);
-const byDay = computed(() => store.aiUsage?.byDay ?? null);
-const meta = computed(() => store.aiUsage?.meta ?? null);
-const byModel = computed(() => store.aiUsage?.byModel ?? []);
+const allModels = computed(() => store.aiUsage?.allModels ?? [])
+const byDay = computed(() => store.aiUsage?.byDay ?? null)
+const meta = computed(() => store.aiUsage?.meta ?? null)
+const byModel = computed(() => store.aiUsage?.byModel ?? [])
 
 const totalTokens = computed(() =>
-	byModel.value.reduce((sum, m) => sum + m.inputTokens + m.outputTokens, 0),
-);
+  byModel.value.reduce((sum, m) => sum + m.inputTokens + m.outputTokens, 0),
+)
 
 function fmt(n: number) {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-	return String(n);
+  if (n >= 1_000_000)
+    return `${(n / 1_000_000).toFixed(2)}M`
+  if (n >= 1_000)
+    return `${(n / 1_000).toFixed(1)}K`
+  return String(n)
 }
 
 function fmtModel(name: string) {
-	return name.replace("claude-", "").replace(/-\d+$/, (m) => ` v${m.slice(1)}`);
+  return name.replace('claude-', '').replace(/-\d+$/, m => ` v${m.slice(1)}`)
 }
 
 async function load() {
-	await store.loadAiUsage(range.value);
-	// 預設全選
-	if (visibleModels.value.length === 0 && allModels.value.length > 0) {
-		visibleModels.value = [...allModels.value];
-	}
+  await store.loadAiUsage(range.value)
+  // 預設全選
+  if (visibleModels.value.length === 0 && allModels.value.length > 0) {
+    visibleModels.value = [...allModels.value]
+  }
 }
 
-watch(range, () => load());
-onMounted(() => load());
+watch(range, () => load())
+onMounted(() => load())
 
-const rangeOptions: { label: string; value: Range }[] = [
-	{ label: "7 天", value: "7d" },
-	{ label: "30 天", value: "30d" },
-	{ label: "全部", value: "all" },
-];
+const rangeOptions: { label: string, value: Range }[] = [
+  { label: '7 天', value: '7d' },
+  { label: '30 天', value: '30d' },
+  { label: '全部', value: 'all' },
+]
 
-const dimOptions: { label: string; value: Dimension }[] = [
-	{ label: "Tokens", value: "tokens" },
-	{ label: "Requests", value: "requests" },
-];
+const dimOptions: { label: string, value: Dimension }[] = [
+  { label: 'Tokens', value: 'tokens' },
+  { label: 'Requests', value: 'requests' },
+]
 </script>
 
 <template>
@@ -70,22 +72,38 @@ const dimOptions: { label: string; value: Dimension }[] = [
     </div>
 
     <!-- 統計卡 -->
-    <div class="stat-cards" v-if="meta && meta.source !== 'absent'">
+    <div v-if="meta && meta.source !== 'absent'" class="stat-cards">
       <div class="stat-card">
-        <div class="label">Total Tokens</div>
-        <div class="value">{{ fmt(totalTokens) }}</div>
+        <div class="label">
+          Total Tokens
+        </div>
+        <div class="value">
+          {{ fmt(totalTokens) }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Requests</div>
-        <div class="value">{{ meta.totalRequests.toLocaleString() }}</div>
+        <div class="label">
+          Requests
+        </div>
+        <div class="value">
+          {{ meta.totalRequests.toLocaleString() }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Sessions</div>
-        <div class="value">{{ meta.fileCount }}</div>
+        <div class="label">
+          Sessions
+        </div>
+        <div class="value">
+          {{ meta.fileCount }}
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Models</div>
-        <div class="value">{{ allModels.length }}</div>
+        <div class="label">
+          Models
+        </div>
+        <div class="value">
+          {{ allModels.length }}
+        </div>
       </div>
     </div>
 
@@ -103,8 +121,10 @@ const dimOptions: { label: string; value: Dimension }[] = [
     </div>
 
     <!-- Model 篩選 + 明細 -->
-    <div class="model-section" v-if="allModels.length > 0">
-      <div class="section-title">Model 篩選</div>
+    <div v-if="allModels.length > 0" class="model-section">
+      <div class="section-title">
+        Model 篩選
+      </div>
       <el-checkbox-group v-model="visibleModels" size="small">
         <el-checkbox
           v-for="m in allModels"
@@ -130,19 +150,29 @@ const dimOptions: { label: string; value: Dimension }[] = [
           </template>
         </el-table-column>
         <el-table-column prop="requests" label="Requests" align="right" width="90">
-          <template #default="{ row }">{{ row.requests.toLocaleString() }}</template>
+          <template #default="{ row }">
+            {{ row.requests.toLocaleString() }}
+          </template>
         </el-table-column>
         <el-table-column label="Input" align="right" width="100">
-          <template #default="{ row }">{{ fmt(row.inputTokens) }}</template>
+          <template #default="{ row }">
+            {{ fmt(row.inputTokens) }}
+          </template>
         </el-table-column>
         <el-table-column label="Output" align="right" width="100">
-          <template #default="{ row }">{{ fmt(row.outputTokens) }}</template>
+          <template #default="{ row }">
+            {{ fmt(row.outputTokens) }}
+          </template>
         </el-table-column>
         <el-table-column label="Cache Read" align="right" width="110">
-          <template #default="{ row }">{{ fmt(row.cacheReadTokens) }}</template>
+          <template #default="{ row }">
+            {{ fmt(row.cacheReadTokens) }}
+          </template>
         </el-table-column>
         <el-table-column label="Total" align="right" width="100">
-          <template #default="{ row }">{{ fmt(row.inputTokens + row.outputTokens) }}</template>
+          <template #default="{ row }">
+            {{ fmt(row.inputTokens + row.outputTokens) }}
+          </template>
         </el-table-column>
       </el-table>
     </div>

@@ -13,17 +13,17 @@
  *           prompt 或依賴沒變化就不重新呼叫 AI。
  */
 
-import { isEmpty } from "lodash-es";
-import { callClaudeJSONStream } from "../external/claude-cli.mjs";
-import { classifyBatch, getStandardCategories } from "../taxonomy/classify.mjs";
-import { hashKey, readCache, writeCache } from "./pipeline-cache.mjs";
+import { isEmpty } from 'lodash-es'
+import { callClaudeJSONStream } from '../external/claude-cli.mjs'
+import { classifyBatch, getStandardCategories } from '../taxonomy/classify.mjs'
+import { hashKey, readCache, writeCache } from './pipeline-cache.mjs'
 
-const NOISE_RE =
-	/^(@types\/|@babel\/|@swc\/|@storybook\/|@typescript-eslint\/|babel-|postcss-|eslint-|stylelint-|webpack-|@eslint\/|@postcss\/)/;
-const INFRA_SIGNALS =
-	/^(docker-compose|Dockerfile|nginx|Makefile|Vagrantfile|Procfile|serverless|terraform|pulumi|k8s|kubernetes|helm)/i;
-const INFRA_DIRS =
-	/^(nginx|redis|postgres|mysql|mongo|pgadmin|jaeger|grafana|prometheus|elasticsearch|rabbitmq|kafka|certificates|ssl)/i;
+const NOISE_RE
+  = /^(?:@types\/|@babel\/|@swc\/|@storybook\/|@typescript-eslint\/|babel-|postcss-|eslint-|stylelint-|webpack-|@eslint\/|@postcss\/)/
+const INFRA_SIGNALS
+  = /^(?:docker-compose|Dockerfile|nginx|Makefile|Vagrantfile|Procfile|serverless|terraform|pulumi|k8s|kubernetes|helm)/i
+const INFRA_DIRS
+  = /^(?:nginx|redis|postgres|mysql|mongo|pgadmin|jaeger|grafana|prometheus|elasticsearch|rabbitmq|kafka|certificates|ssl)/i
 
 /**
  * 從 analyzeRepo 結果提取結構化摘要，供 AI 分類 prompt 使用
@@ -33,7 +33,7 @@ const INFRA_DIRS =
  * 減少 AI 需要判斷的範圍。
  *
  * @param {string} repoName - repo 短名稱（不含 owner）
- * @param {Object} analysis - analyzeRepo 的完整回傳值
+ * @param {object} analysis - analyzeRepo 的完整回傳值
  * @returns {{
  *   summary: string,
  *   meta: { description, stars, topics, languages, rootFiles },
@@ -44,105 +44,115 @@ const INFRA_DIRS =
  * }}
  */
 export function buildRepoSummary(repoName, analysis) {
-	const { context, languages, description, stars, topics, rootFiles, skills } =
-		analysis;
-	const meta = {
-		description,
-		stars,
-		topics,
-		languages: Object.keys(languages),
-		rootFiles: rootFiles || [],
-	};
-	const tf = context.techFiles;
+  const { context, languages, description, stars, topics, rootFiles, skills }
+    = analysis
+  const meta = {
+    description,
+    stars,
+    topics,
+    languages: Object.keys(languages),
+    rootFiles: rootFiles || [],
+  }
+  const tf = context.techFiles
 
-	const deps = {},
-		devDeps = {},
-		phpDeps = {};
-	for (const [fileName, content] of Object.entries(tf)) {
-		if (fileName.endsWith("package.json")) {
-			try {
-				const pkg = JSON.parse(content);
-				for (const [n, v] of Object.entries(pkg.dependencies || {})) {
-					if (!n.startsWith("@types/")) deps[n] = v;
-				}
-				for (const [n, v] of Object.entries(pkg.devDependencies || {})) {
-					if (!n.startsWith("@types/")) devDeps[n] = v;
-				}
-			} catch {
-				/* package.json 格式錯誤則略過 */
-			}
-		}
-		if (fileName.endsWith("composer.json")) {
-			try {
-				const c = JSON.parse(content);
-				for (const [n, v] of Object.entries(c.require || {})) {
-					if (!/^(php$|ext-|lib-|composer\/|psr\/)/.test(n)) phpDeps[n] = v;
-				}
-			} catch {
-				/* composer.json 格式錯誤則略過 */
-			}
-		}
-	}
+  const deps = {}
+  const devDeps = {}
+  const phpDeps = {}
+  for (const [fileName, content] of Object.entries(tf)) {
+    if (fileName.endsWith('package.json')) {
+      try {
+        const pkg = JSON.parse(content)
+        for (const [n, v] of Object.entries(pkg.dependencies || {})) {
+          if (!n.startsWith('@types/'))
+            deps[n] = v
+        }
+        for (const [n, v] of Object.entries(pkg.devDependencies || {})) {
+          if (!n.startsWith('@types/'))
+            devDeps[n] = v
+        }
+      }
+      catch {
+        /* package.json 格式錯誤則略過 */
+      }
+    }
+    if (fileName.endsWith('composer.json')) {
+      try {
+        const c = JSON.parse(content)
+        for (const [n, v] of Object.entries(c.require || {})) {
+          if (!/^(?:php$|ext-|lib-|composer\/|psr\/)/.test(n))
+            phpDeps[n] = v
+        }
+      }
+      catch {
+        /* composer.json 格式錯誤則略過 */
+      }
+    }
+  }
 
-	const npmDeps = Object.keys(deps).filter((n) => !NOISE_RE.test(n));
-	const npmDevDeps = Object.keys(devDeps).filter((n) => !NOISE_RE.test(n));
-	const phpDepNames = Object.keys(phpDeps);
+  const npmDeps = Object.keys(deps).filter(n => !NOISE_RE.test(n))
+  const npmDevDeps = Object.keys(devDeps).filter(n => !NOISE_RE.test(n))
+  const phpDepNames = Object.keys(phpDeps)
 
-	// 建構 prompt 用的文字摘要
-	const parts = [`[${repoName}]${description ? ` ${description}` : ""}`];
-	parts.push(`  語言: ${meta.languages.join(", ")}`);
-	if (topics?.length) parts.push(`  topics: ${topics.join(", ")}`);
-	if (npmDeps.length) parts.push(`  dependencies: ${npmDeps.join(", ")}`);
-	if (npmDevDeps.length)
-		parts.push(`  devDependencies: ${npmDevDeps.join(", ")}`);
-	if (phpDepNames.length)
-		parts.push(`  composer require: ${phpDepNames.join(", ")}`);
+  // 建構 prompt 用的文字摘要
+  const parts = [`[${repoName}]${description ? ` ${description}` : ''}`]
+  parts.push(`  語言: ${meta.languages.join(', ')}`)
+  if (topics?.length)
+    parts.push(`  topics: ${topics.join(', ')}`)
+  if (npmDeps.length)
+    parts.push(`  dependencies: ${npmDeps.join(', ')}`)
+  if (npmDevDeps.length)
+    parts.push(`  devDependencies: ${npmDevDeps.join(', ')}`)
+  if (phpDepNames.length)
+    parts.push(`  composer require: ${phpDepNames.join(', ')}`)
 
-	const infraFiles = meta.rootFiles.filter((f) => INFRA_SIGNALS.test(f));
-	const infraDirs = meta.rootFiles.filter((f) => INFRA_DIRS.test(f));
-	const infra = [...infraFiles, ...infraDirs];
-	if (infra.length) parts.push(`  基礎設施: ${infra.join(", ")}`);
+  const infraFiles = meta.rootFiles.filter(f => INFRA_SIGNALS.test(f))
+  const infraDirs = meta.rootFiles.filter(f => INFRA_DIRS.test(f))
+  const infra = [...infraFiles, ...infraDirs]
+  if (infra.length)
+    parts.push(`  基礎設施: ${infra.join(', ')}`)
 
-	// rule-based 預分類（來自 stacks/*/detect.json）
-	if (skills?.length) parts.push(`  規則偵測: ${skills.join(", ")}`);
+  // rule-based 預分類（來自 stacks/*/detect.json）
+  if (skills?.length)
+    parts.push(`  規則偵測: ${skills.join(', ')}`)
 
-	// taxonomy 查表預分類（來自 awesome-* 列表）
-	const { classified, unclassified } = classifyBatch(
-		[...npmDeps, ...npmDevDeps],
-		phpDepNames,
-	);
-	if (classified.size > 0) {
-		const preParts = [...classified.entries()].map(
-			([cat, pkgs]) =>
-				`${cat}: ${pkgs.slice(0, 3).join(", ")}${pkgs.length > 3 ? " …" : ""}`,
-		);
-		parts.push(`  已知分類: ${preParts.join(" | ")}`);
-	}
-	if (!isEmpty(unclassified)) {
-		parts.push(
-			`  待分類: ${unclassified.slice(0, 10).join(", ")}${unclassified.length > 10 ? " …" : ""}`,
-		);
-	}
+  // taxonomy 查表預分類（來自 awesome-* 列表）
+  const { classified, unclassified } = classifyBatch(
+    [...npmDeps, ...npmDevDeps],
+    phpDepNames,
+  )
+  if (classified.size > 0) {
+    const preParts = [...classified.entries()].map(
+      ([cat, pkgs]) =>
+        `${cat}: ${pkgs.slice(0, 3).join(', ')}${pkgs.length > 3 ? ' …' : ''}`,
+    )
+    parts.push(`  已知分類: ${preParts.join(' | ')}`)
+  }
+  if (!isEmpty(unclassified)) {
+    parts.push(
+      `  待分類: ${unclassified.slice(0, 10).join(', ')}${unclassified.length > 10 ? ' …' : ''}`,
+    )
+  }
 
-	if (!npmDeps.length && !npmDevDeps.length && !phpDepNames.length) {
-		const dirs = meta.rootFiles
-			.filter((f) => !f.startsWith(".") && !f.includes("."))
-			.slice(0, 15);
-		if (dirs.length) parts.push(`  目錄結構: ${dirs.join(", ")}`);
-	}
+  if (!npmDeps.length && !npmDevDeps.length && !phpDepNames.length) {
+    const dirs = meta.rootFiles
+      .filter(f => !f.startsWith('.') && !f.includes('.'))
+      .slice(0, 15)
+    if (dirs.length)
+      parts.push(`  目錄結構: ${dirs.join(', ')}`)
+  }
 
-	return {
-		summary: parts.join("\n"),
-		meta,
-		npmDeps: new Set(
-			[...Object.keys(deps), ...Object.keys(devDeps)].filter(
-				(n) => !n.startsWith("@types/"),
-			),
-		),
-		allDeps: { deps, devDeps, phpDeps },
-		taxonomyClassified: classified,
-		taxonomyUnclassified: unclassified,
-	};
+  return {
+    summary: parts.join('\n'),
+    meta,
+    npmDeps: new Set(
+      [...Object.keys(deps), ...Object.keys(devDeps)].filter(
+        n => !n.startsWith('@types/'),
+      ),
+    ),
+    allDeps: { deps, devDeps, phpDeps },
+    taxonomyClassified: classified,
+    taxonomyUnclassified: unclassified,
+  }
 }
 
 /**
@@ -150,37 +160,45 @@ export function buildRepoSummary(repoName, analysis) {
  *
  * @param {string} repoName
  * @param {string} summary - buildRepoSummary().summary
- * @param {Object} options
+ * @param {object} [options]
+ * @param {string} [options.baseDir] - 快取儲存目錄
+ * @param {string} [options.model] - AI 模型別名
+ * @param {string} [options.effort] - AI 推理強度
+ * @param {number} [options.timeoutMs] - 超時毫秒數
+ * @param {number} [options.maxCategories] - 最多分類數
+ * @param {number} [options.maxTechs] - 最多技術數
+ * @param {boolean} [options.cacheEnabled] - 是否使用快取
+ * @param {Function} [options.onProgress] - 進度回呼
  * @returns {{ techStacks, reasoning, tokens, fromCache }}
  */
 export async function classifyRepo(
-	repoName,
-	summary,
-	{
-		baseDir,
-		model = "haiku",
-		effort = "low",
-		timeoutMs = 30000,
-		maxCategories = 10,
-		maxTechs = 30,
-		cacheEnabled = true,
-		onProgress = () => {},
-	} = {},
+  repoName,
+  summary,
+  {
+    baseDir,
+    model = 'haiku',
+    effort = 'low',
+    timeoutMs = 30000,
+    maxCategories = 10,
+    maxTechs = 30,
+    cacheEnabled = true,
+    onProgress = () => {},
+  } = {},
 ) {
-	const cacheKey = `${repoName.replace("/", "-")}-${hashKey(summary)}`;
+  const cacheKey = `${repoName.replace('/', '-')}-${hashKey(summary)}`
 
-	// 快取
-	if (cacheEnabled && baseDir) {
-		const cached = readCache(baseDir, "repo-ai", cacheKey);
-		if (cached) {
-			onProgress({ done: true, fromCache: true });
-			return { ...cached, fromCache: true, cacheKey };
-		}
-	}
+  // 快取
+  if (cacheEnabled && baseDir) {
+    const cached = readCache(baseDir, 'repo-ai', cacheKey)
+    if (cached) {
+      onProgress({ done: true, fromCache: true })
+      return { ...cached, fromCache: true, cacheKey }
+    }
+  }
 
-	const stdCats = getStandardCategories().join("、");
+  const stdCats = getStandardCategories().join('、')
 
-	const prompt = `你是技術棧分析專家。從以下 repo 提取**最核心**的技術棧。
+  const prompt = `你是技術棧分析專家。從以下 repo 提取**最核心**的技術棧。
 
 ${summary}
 
@@ -198,43 +216,44 @@ ${summary}
 9. 分類名必須從以下標準詞表中選擇：${stdCats}
 10. 標記核心分類（定義專案架構方向的）放入 coreCategories，輔助性的不放
 
-回傳純 JSON：{"techStacks":{"分類":["id"]},"coreCategories":["核心分類名"],"reasoning":"一句話說明主要技術方向"}`;
+回傳純 JSON：{"techStacks":{"分類":["id"]},"coreCategories":["核心分類名"],"reasoning":"一句話說明主要技術方向"}`
 
-	const tokens = {};
-	let result = null;
+  const tokens = {}
+  let result = null
 
-	try {
-		result = await callClaudeJSONStream(prompt, {
-			model,
-			effort,
-			timeoutMs,
-			onProgress: (info) => {
-				Object.assign(tokens, info);
-				onProgress({ ...info, repo: repoName });
-			},
-		});
-	} catch {
-		/* AI 分析失敗則返回空結果 */
-	}
+  try {
+    result = await callClaudeJSONStream(prompt, {
+      model,
+      effort,
+      timeoutMs,
+      onProgress: (info) => {
+        Object.assign(tokens, info)
+        onProgress({ ...info, repo: repoName })
+      },
+    })
+  }
+  catch {
+    /* AI 分析失敗則返回空結果 */
+  }
 
-	const output = {
-		techStacks: result?.techStacks || {},
-		coreCategories: result?.coreCategories || [],
-		reasoning: result?.reasoning || "",
-		tokens,
-		cacheKey,
-		fromCache: false,
-	};
+  const output = {
+    techStacks: result?.techStacks || {},
+    coreCategories: result?.coreCategories || [],
+    reasoning: result?.reasoning || '',
+    tokens,
+    cacheKey,
+    fromCache: false,
+  }
 
-	// 寫快取
-	if (result?.techStacks && cacheEnabled && baseDir) {
-		writeCache(baseDir, "repo-ai", cacheKey, {
-			techStacks: output.techStacks,
-			coreCategories: output.coreCategories,
-			reasoning: output.reasoning,
-			tokens,
-		});
-	}
+  // 寫快取
+  if (result?.techStacks && cacheEnabled && baseDir) {
+    writeCache(baseDir, 'repo-ai', cacheKey, {
+      techStacks: output.techStacks,
+      coreCategories: output.coreCategories,
+      reasoning: output.reasoning,
+      tokens,
+    })
+  }
 
-	return output;
+  return output
 }

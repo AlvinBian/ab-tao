@@ -7,14 +7,14 @@
  */
 
 /** @type {boolean} 全域 dry-run 旗標 */
-let _dryRun = false;
+let _dryRun = false
 
 /**
  * 設定 dry-run 模式（由 setup.mjs 解析 CLI 旗標後呼叫）
  * @param {boolean} value
  */
 export function setDryRun(value) {
-	_dryRun = Boolean(value);
+  _dryRun = Boolean(value)
 }
 
 /**
@@ -22,7 +22,7 @@ export function setDryRun(value) {
  * @returns {boolean}
  */
 export function isDryRun() {
-	return _dryRun;
+  return _dryRun
 }
 
 /**
@@ -33,11 +33,11 @@ export function isDryRun() {
  * @returns {any} fn() 的回傳值（dry-run 時為 undefined）
  */
 export function runCmd(description, fn) {
-	if (_dryRun) {
-		console.log(`[DRY-RUN] ${description}`);
-		return undefined;
-	}
-	return fn();
+  if (_dryRun) {
+    console.log(`[DRY-RUN] ${description}`)
+    return undefined
+  }
+  return fn()
 }
 
 /**
@@ -48,9 +48,9 @@ export function runCmd(description, fn) {
  * @returns {Promise<any>}
  */
 export async function runCmdAsync(description, fn) {
-	if (_dryRun) {
-		console.log(`[DRY-RUN] ${description}`);
-		return undefined;
-	}
-	return fn();
+  if (_dryRun) {
+    console.log(`[DRY-RUN] ${description}`)
+    return undefined
+  }
+  return fn()
 }

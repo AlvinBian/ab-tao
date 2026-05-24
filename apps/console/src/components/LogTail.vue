@@ -1,33 +1,34 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref, watch } from 'vue'
 
 interface LogEntry {
-	level: string;
-	message: string;
+  level: string
+  message: string
 }
 
 const props = withDefaults(
-	defineProps<{
-		logs: LogEntry[];
-		height?: string;
-		autoScroll?: boolean;
-	}>(),
-	{ height: "260px", autoScroll: true },
-);
+  defineProps<{
+    logs: LogEntry[]
+    height?: string
+    autoScroll?: boolean
+  }>(),
+  { height: '260px', autoScroll: true },
+)
 
-const scrollRef = ref<HTMLElement>();
+const scrollRef = ref<HTMLElement>()
 
 watch(
-	() => props.logs.length,
-	() => {
-		if (!props.autoScroll) return;
-		nextTick(() => {
-			if (scrollRef.value) {
-				scrollRef.value.scrollTop = scrollRef.value.scrollHeight;
-			}
-		});
-	},
-);
+  () => props.logs.length,
+  () => {
+    if (!props.autoScroll)
+      return
+    nextTick(() => {
+      if (scrollRef.value) {
+        scrollRef.value.scrollTop = scrollRef.value.scrollHeight
+      }
+    })
+  },
+)
 </script>
 
 <template>
@@ -36,7 +37,9 @@ watch(
     class="log-tail"
     :style="{ height: props.height }"
   >
-    <div v-if="!logs.length" class="log-empty">（無輸出）</div>
+    <div v-if="!logs.length" class="log-empty">
+      （無輸出）
+    </div>
     <div
       v-for="(entry, i) in logs"
       :key="i"

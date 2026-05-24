@@ -1,8 +1,8 @@
 {
-	"name": "frontend-dev",
-	"description": "前端開發者 Chrome 配置",
-	"features": ["flags", "memory", "search", "zsh"],
-	"flags": "@../flags.json",
-	"memory": "@../memory.json",
-	"searchEngines": "@../search-engines.json"
+  "name": "frontend-dev",
+  "description": "前端開發者 Chrome 配置",
+  "features": ["flags", "memory", "search", "zsh"],
+  "flags": "@../flags.json",
+  "memory": "@../memory.json",
+  "searchEngines": "@../search-engines.json"
 }

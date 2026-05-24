@@ -1,16 +1,15 @@
 <script setup lang="ts">
-// biome-ignore lint/correctness/noUnusedImports: used in template
-import { InfoFilled } from "@element-plus/icons-vue";
+import { InfoFilled } from '@element-plus/icons-vue'
 
 defineProps<{
-	label: string;
-	description?: string;
-	hint?: string;
-	labelWidth?: string;
-	required?: boolean;
-	disabled?: boolean;
-	error?: string;
-}>();
+  label: string
+  description?: string
+  hint?: string
+  labelWidth?: string
+  required?: boolean
+  disabled?: boolean
+  error?: string
+}>()
 </script>
 
 <template>
@@ -21,14 +20,18 @@ defineProps<{
     :error="error"
   >
     <div class="setting-row__body">
-      <div :class="['setting-row__control', { 'setting-row__control--disabled': disabled }]">
+      <div class="setting-row__control" :class="[{ 'setting-row__control--disabled': disabled }]">
         <slot />
         <slot name="extra" />
       </div>
       <div v-if="description || $slots.description || hint" class="setting-row__desc">
-        <slot name="description">{{ description }}</slot>
+        <slot name="description">
+          {{ description }}
+        </slot>
         <el-tooltip v-if="hint" :content="hint" placement="top">
-          <el-icon class="setting-row__hint-icon"><InfoFilled /></el-icon>
+          <el-icon class="setting-row__hint-icon">
+            <InfoFilled />
+          </el-icon>
         </el-tooltip>
       </div>
     </div>

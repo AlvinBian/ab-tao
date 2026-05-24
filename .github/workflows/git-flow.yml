@@ -106,7 +106,6 @@ jobs:
             echo "::notice::建議格式：{type}({scope}): {description}"
           fi
 
-
   # ── PR changeset 校驗（packages/ 有變更時必須附帶 changeset 記錄）──
   validate-changeset:
     if: github.event_name == 'pull_request'

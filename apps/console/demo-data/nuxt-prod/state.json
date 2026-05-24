@@ -1,11 +1,11 @@
 {
-	"version": "1.6.0",
-	"runtime": {
-		"activeProfile": "production",
-		"lastSwitchedAt": "2026-04-25T08:00:00Z",
-		"lastInstalledAt": "2026-04-25T08:20:00Z",
-		"voiceTrigger": false,
-		"costRouting": "static"
-	},
-	"sync": { "included": ["ecc", "anthropic", "ai-sdlc"] }
+  "version": "1.6.0",
+  "runtime": {
+    "activeProfile": "production",
+    "lastSwitchedAt": "2026-04-25T08:00:00Z",
+    "lastInstalledAt": "2026-04-25T08:20:00Z",
+    "voiceTrigger": false,
+    "costRouting": "static"
+  },
+  "sync": { "included": ["ecc", "anthropic", "ai-sdlc"] }
 }

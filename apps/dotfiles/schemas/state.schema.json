@@ -1,109 +1,109 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "state.schema.json",
-	"title": "ab-tao State",
-	"description": "~/.claude/.ab-tao/state.json — unified manifest (managed files + user choices + sync config)",
-	"type": "object",
-	"required": ["version", "managed", "choices", "sync"],
-	"additionalProperties": false,
-	"properties": {
-		"$schema": { "type": "string" },
-		"version": {
-			"type": "string",
-			"pattern": "^\\d+\\.\\d+\\.\\d+$",
-			"description": "semver — bump minor on new fields, major on breaking changes"
-		},
-		"installedAt": { "type": ["string", "null"], "format": "date-time" },
-		"abTaoVersion": { "type": ["string", "null"] },
-		"firstRunSeen": {
-			"type": "boolean",
-			"default": false,
-			"description": "true 表示使用者已看過首次部署提示，避免重複顯示"
-		},
-		"managed": {
-			"type": "object",
-			"description": "Files managed by ab-tao, keyed by path relative to ~/.claude/",
-			"additionalProperties": {
-				"type": "object",
-				"required": ["sha256", "source", "installedAt"],
-				"additionalProperties": false,
-				"properties": {
-					"sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-					"source": { "type": "string" },
-					"installedAt": { "type": "string", "format": "date-time" },
-					"userOverride": { "type": "boolean", "default": false }
-				}
-			}
-		},
-		"choices": {
-			"type": "object",
-			"description": "Persisted per-file user decisions from d:setup prompts",
-			"additionalProperties": {
-				"type": "object",
-				"required": ["decision"],
-				"additionalProperties": false,
-				"properties": {
-					"decision": {
-						"type": "string",
-						"enum": ["use-ab-tao", "keep-local", "merge", "skip"]
-					},
-					"lockedAt": { "type": "string", "format": "date-time" }
-				}
-			}
-		},
-		"sync": {
-			"type": "object",
-			"description": "Cross-machine sync configuration",
-			"required": ["tool", "included", "excluded"],
-			"additionalProperties": false,
-			"properties": {
-				"tool": {
-					"type": "string",
-					"enum": ["ab-tao", "chezmoi", "yadm", "git"],
-					"default": "ab-tao"
-				},
-				"included": {
-					"type": "array",
-					"items": { "type": "string" },
-					"description": "Paths relative to ~/.claude/ to include in sync"
-				},
-				"excluded": {
-					"type": "array",
-					"items": { "type": "string" },
-					"description": "Paths relative to ~/.claude/ to exclude from sync"
-				}
-			}
-		},
-		"integrations": {
-			"type": "object",
-			"description": "外部整合服務安裝狀態（claude-context / browser-harness / awesome-ai-pedia）",
-			"additionalProperties": false,
-			"properties": {
-				"claude-context": {
-					"type": "object",
-					"additionalProperties": false,
-					"properties": {
-						"enabled": { "type": "boolean", "default": false },
-						"installedAt": { "type": ["string", "null"], "format": "date-time" }
-					}
-				},
-				"browser-harness": {
-					"type": "object",
-					"additionalProperties": false,
-					"properties": {
-						"enabled": { "type": "boolean", "default": false },
-						"installedAt": { "type": ["string", "null"], "format": "date-time" }
-					}
-				},
-				"awesome-ai-pedia": {
-					"type": "object",
-					"additionalProperties": false,
-					"properties": {
-						"enabled": { "type": "boolean", "default": false },
-						"installedAt": { "type": ["string", "null"], "format": "date-time" }
-					}
-				}
-			}
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "state.schema.json",
+  "title": "ab-tao State",
+  "description": "~/.claude/.ab-tao/state.json — unified manifest (managed files + user choices + sync config)",
+  "type": "object",
+  "required": ["version", "managed", "choices", "sync"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "semver — bump minor on new fields, major on breaking changes"
+    },
+    "installedAt": { "type": ["string", "null"], "format": "date-time" },
+    "abTaoVersion": { "type": ["string", "null"] },
+    "firstRunSeen": {
+      "type": "boolean",
+      "default": false,
+      "description": "true 表示使用者已看過首次部署提示，避免重複顯示"
+    },
+    "managed": {
+      "type": "object",
+      "description": "Files managed by ab-tao, keyed by path relative to ~/.claude/",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sha256", "source", "installedAt"],
+        "additionalProperties": false,
+        "properties": {
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "source": { "type": "string" },
+          "installedAt": { "type": "string", "format": "date-time" },
+          "userOverride": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "choices": {
+      "type": "object",
+      "description": "Persisted per-file user decisions from d:setup prompts",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["decision"],
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": ["use-ab-tao", "keep-local", "merge", "skip"]
+          },
+          "lockedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "sync": {
+      "type": "object",
+      "description": "Cross-machine sync configuration",
+      "required": ["tool", "included", "excluded"],
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": ["ab-tao", "chezmoi", "yadm", "git"],
+          "default": "ab-tao"
+        },
+        "included": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths relative to ~/.claude/ to include in sync"
+        },
+        "excluded": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths relative to ~/.claude/ to exclude from sync"
+        }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "description": "外部整合服務安裝狀態（claude-context / browser-harness / awesome-ai-pedia）",
+      "additionalProperties": false,
+      "properties": {
+        "claude-context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "installedAt": { "type": ["string", "null"], "format": "date-time" }
+          }
+        },
+        "browser-harness": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "installedAt": { "type": ["string", "null"], "format": "date-time" }
+          }
+        },
+        "awesome-ai-pedia": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "installedAt": { "type": ["string", "null"], "format": "date-time" }
+          }
+        }
+      }
+    }
+  }
 }

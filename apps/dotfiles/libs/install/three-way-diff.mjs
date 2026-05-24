@@ -15,18 +15,18 @@
  *   DELETED_LOCAL     — target 不存在
  */
 
-import crypto from "node:crypto";
-import fs from "node:fs";
+import crypto from 'node:crypto'
+import fs from 'node:fs'
 
 /** 衝突類型常數 */
 export const DiffType = {
-	SAME: "same",
-	LOCAL_ONLY_CHANGE: "local-only-change",
-	SOURCE_ONLY_CHANGE: "source-only-change",
-	BOTH_CHANGED: "both-changed",
-	NEW_FILE: "new-file",
-	DELETED_LOCAL: "deleted-local",
-};
+  SAME: 'same',
+  LOCAL_ONLY_CHANGE: 'local-only-change',
+  SOURCE_ONLY_CHANGE: 'source-only-change',
+  BOTH_CHANGED: 'both-changed',
+  NEW_FILE: 'new-file',
+  DELETED_LOCAL: 'deleted-local',
+}
 
 /**
  * 計算檔案 sha256（不存在時回傳 null）
@@ -34,12 +34,13 @@ export const DiffType = {
  * @returns {string|null}
  */
 export function sha256OfFile(filepath) {
-	try {
-		const buf = fs.readFileSync(filepath);
-		return crypto.createHash("sha256").update(buf).digest("hex");
-	} catch {
-		return null;
-	}
+  try {
+    const buf = fs.readFileSync(filepath)
+    return crypto.createHash('sha256').update(buf).digest('hex')
+  }
+  catch {
+    return null
+  }
 }
 
 /**
@@ -48,7 +49,7 @@ export function sha256OfFile(filepath) {
  * @returns {string}
  */
 export function sha256OfString(str) {
-	return crypto.createHash("sha256").update(str, "utf8").digest("hex");
+  return crypto.createHash('sha256').update(str, 'utf8').digest('hex')
 }
 
 /**
@@ -61,29 +62,29 @@ export function sha256OfString(str) {
  * @returns {{ type: string, sourceSha: string|null, targetSha: string|null }}
  */
 export function threeWayDiff({ sourcePath, targetPath, ancestorSha256 }) {
-	const sourceSha = sha256OfFile(sourcePath);
-	const targetSha = sha256OfFile(targetPath);
+  const sourceSha = sha256OfFile(sourcePath)
+  const targetSha = sha256OfFile(targetPath)
 
-	if (targetSha === null)
-		return { type: DiffType.DELETED_LOCAL, sourceSha, targetSha };
-	if (sourceSha === null)
-		return { type: DiffType.DELETED_LOCAL, sourceSha, targetSha };
+  if (targetSha === null)
+    return { type: DiffType.DELETED_LOCAL, sourceSha, targetSha }
+  if (sourceSha === null)
+    return { type: DiffType.DELETED_LOCAL, sourceSha, targetSha }
 
-	if (sourceSha === targetSha)
-		return { type: DiffType.SAME, sourceSha, targetSha };
+  if (sourceSha === targetSha)
+    return { type: DiffType.SAME, sourceSha, targetSha }
 
-	if (ancestorSha256 === null) {
-		return { type: DiffType.NEW_FILE, sourceSha, targetSha };
-	}
+  if (ancestorSha256 === null) {
+    return { type: DiffType.NEW_FILE, sourceSha, targetSha }
+  }
 
-	const sourceChanged = sourceSha !== ancestorSha256;
-	const targetChanged = targetSha !== ancestorSha256;
+  const sourceChanged = sourceSha !== ancestorSha256
+  const targetChanged = targetSha !== ancestorSha256
 
-	if (!sourceChanged && !targetChanged)
-		return { type: DiffType.SAME, sourceSha, targetSha };
-	if (!sourceChanged && targetChanged)
-		return { type: DiffType.LOCAL_ONLY_CHANGE, sourceSha, targetSha };
-	if (sourceChanged && !targetChanged)
-		return { type: DiffType.SOURCE_ONLY_CHANGE, sourceSha, targetSha };
-	return { type: DiffType.BOTH_CHANGED, sourceSha, targetSha };
+  if (!sourceChanged && !targetChanged)
+    return { type: DiffType.SAME, sourceSha, targetSha }
+  if (!sourceChanged && targetChanged)
+    return { type: DiffType.LOCAL_ONLY_CHANGE, sourceSha, targetSha }
+  if (sourceChanged && !targetChanged)
+    return { type: DiffType.SOURCE_ONLY_CHANGE, sourceSha, targetSha }
+  return { type: DiffType.BOTH_CHANGED, sourceSha, targetSha }
 }

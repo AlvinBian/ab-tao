@@ -1,20 +1,20 @@
 {
-	"name": "@ab-tao/share",
-	"version": "1.0.0",
-	"description": "共用工具庫 — paths、log、shell exec、JSON utils",
-	"type": "module",
-	"engines": {
-		"node": ">=18",
-		"pnpm": ">=9"
-	},
-	"exports": {
-		".": "./index.mjs",
-		"./utils": "./utils/index.mjs",
-		"./libs": "./libs/index.mjs"
-	},
-	"scripts": {
-		"build": "echo 'share build completed'",
-		"lint": "biome check .",
-		"test": "node --test __tests__/*.test.mjs 2>/dev/null || echo 'no tests'"
-	}
+  "name": "@ab-tao/share",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "共用工具庫 — paths、log、shell exec、JSON utils",
+  "exports": {
+    ".": "./index.mjs",
+    "./utils": "./utils/index.mjs",
+    "./libs": "./libs/index.mjs"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "echo 'share build completed'",
+    "lint": "eslint .",
+    "test": "node --test __tests__/*.test.mjs 2>/dev/null || echo 'no tests'"
+  }
 }

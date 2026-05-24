@@ -1,243 +1,243 @@
 <script setup lang="ts">
 // Requires: Vue 3.x / Element Plus
 
-import { ref } from "vue";
-import type { SectionTabConfig } from "@/components/SectionTabs.vue";
-import SectionTabs from "@/components/SectionTabs.vue";
+import type { SectionTabConfig } from '@/components/SectionTabs.vue'
+import { ref } from 'vue'
+import SectionTabs from '@/components/SectionTabs.vue'
 
 // ── 型別定義 ─────────────────────────────────────────────────────────────────
 
 interface IntentMapping {
-	intent: string;
-	command: string;
-	hits: number;
+  intent: string
+  command: string
+  hits: number
 }
 
 interface ProfileItem {
-	name: string;
-	label: string;
-	active: boolean;
+  name: string
+  label: string
+  active: boolean
 }
 
 interface FailurePattern {
-	id: number;
-	pattern: string;
-	category: string;
+  id: number
+  pattern: string
+  category: string
 }
 
 interface FederatedProject {
-	name: string;
-	path: string;
-	lastUpdated: string;
+  name: string
+  path: string
+  lastUpdated: string
 }
 
 interface ChainStep {
-	label: string;
-	type: "command" | "agent" | "result";
+  label: string
+  type: 'command' | 'agent' | 'result'
 }
 
 interface ChainItem {
-	name: string;
-	usage: string;
-	command: string;
-	steps: ChainStep[];
+  name: string
+  usage: string
+  command: string
+  steps: ChainStep[]
 }
 
 interface AiSource {
-	name: string;
-	icon: string;
-	installMode: "copy" | "plugin";
-	curated: string[];
-	type: string;
+  name: string
+  icon: string
+  installMode: 'copy' | 'plugin'
+  curated: string[]
+  type: string
 }
 
 // ── Tab 設定 ─────────────────────────────────────────────────────────────────
 
 const tabs: SectionTabConfig[] = [
-	{ key: "dispatcher", label: "Dispatcher" },
-	{ key: "profiles", label: "Profiles" },
-	{ key: "failure-patterns", label: "Failure Patterns" },
-	{ key: "federated-memory", label: "Federated Memory" },
-	{ key: "chains", label: "Chains" },
-	{ key: "ai-sources", label: "AI Sources" },
-];
+  { key: 'dispatcher', label: 'Dispatcher' },
+  { key: 'profiles', label: 'Profiles' },
+  { key: 'failure-patterns', label: 'Failure Patterns' },
+  { key: 'federated-memory', label: 'Federated Memory' },
+  { key: 'chains', label: 'Chains' },
+  { key: 'ai-sources', label: 'AI Sources' },
+]
 
 // ── Tab 1: Dispatcher mock data ───────────────────────────────────────────────
 
 const intentMappings: IntentMapping[] = [
-	{ intent: "PR review", command: "/verify", hits: 42 },
-	{ intent: "釐清需求", command: "/specify", hits: 31 },
-	{ intent: "TDD 流程", command: "/chain-tdd", hits: 18 },
-	{ intent: "切 profile", command: "d:profile", hits: 27 },
-	{ intent: "build 壞了", command: "/check", hits: 55 },
-	{ intent: "發 Slack", command: "/slack", hits: 14 },
-];
+  { intent: 'PR review', command: '/verify', hits: 42 },
+  { intent: '釐清需求', command: '/specify', hits: 31 },
+  { intent: 'TDD 流程', command: '/chain-tdd', hits: 18 },
+  { intent: '切 profile', command: 'd:profile', hits: 27 },
+  { intent: 'build 壞了', command: '/check', hits: 55 },
+  { intent: '發 Slack', command: '/slack', hits: 14 },
+]
 
 // ── Tab 2: Profiles mock data ─────────────────────────────────────────────────
 
 const profiles = ref<ProfileItem[]>([
-	{ name: "personal", label: "Personal", active: false },
-	{ name: "work", label: "Work", active: true },
-	{ name: "oss", label: "OSS", active: false },
-	{ name: "day-to-day", label: "Day-to-Day", active: false },
-	{ name: "spike", label: "Spike", active: false },
-	{ name: "production", label: "Production", active: false },
-	{ name: "frugal", label: "Frugal", active: false },
-]);
+  { name: 'personal', label: 'Personal', active: false },
+  { name: 'work', label: 'Work', active: true },
+  { name: 'oss', label: 'OSS', active: false },
+  { name: 'day-to-day', label: 'Day-to-Day', active: false },
+  { name: 'spike', label: 'Spike', active: false },
+  { name: 'production', label: 'Production', active: false },
+  { name: 'frugal', label: 'Frugal', active: false },
+])
 
-const switchPrompt = ref<string | null>(null);
+const switchPrompt = ref<string | null>(null)
 
 function handleSwitchProfile(profileName: string): void {
-	switchPrompt.value = `pnpm run d:profile ${profileName}`;
+  switchPrompt.value = `pnpm run d:profile ${profileName}`
 }
 
 // ── Tab 3: Failure Patterns mock data ─────────────────────────────────────────
 
 const failurePatterns: FailurePattern[] = [
-	{
-		id: 1,
-		pattern: "連續 3 次相同方向失敗未停下診斷",
-		category: "Loop 偵測",
-	},
-	{
-		id: 2,
-		pattern: "未確認版本即輸出版本特定 API",
-		category: "假設顯式化",
-	},
-	{
-		id: 3,
-		pattern: "靜默擴大 PR 範圍（超出原始 spec）",
-		category: "範圍漂移",
-	},
-	{
-		id: 4,
-		pattern: "工具輸出 empty/error 後盲推下一步",
-		category: "漸進驗證",
-	},
-	{
-		id: 5,
-		pattern: "交付含未說出前提的半成品",
-		category: "半成品禁止",
-	},
-];
+  {
+    id: 1,
+    pattern: '連續 3 次相同方向失敗未停下診斷',
+    category: 'Loop 偵測',
+  },
+  {
+    id: 2,
+    pattern: '未確認版本即輸出版本特定 API',
+    category: '假設顯式化',
+  },
+  {
+    id: 3,
+    pattern: '靜默擴大 PR 範圍（超出原始 spec）',
+    category: '範圍漂移',
+  },
+  {
+    id: 4,
+    pattern: '工具輸出 empty/error 後盲推下一步',
+    category: '漸進驗證',
+  },
+  {
+    id: 5,
+    pattern: '交付含未說出前提的半成品',
+    category: '半成品禁止',
+  },
+]
 
 // ── Tab 5: Chains mock data ───────────────────────────────────────────────────
 
 const chains: ChainItem[] = [
-	{
-		name: "Chain Product",
-		usage:
-			"將 feature 描述轉化為結構化 spec，並通過 reviewer agent 驗證後產出 ready-to-build 規格。",
-		command: "/chain-product <feature>",
-		steps: [
-			{ label: "/specify", type: "command" },
-			{ label: "reviewer agent", type: "agent" },
-			{ label: "/verify", type: "command" },
-			{ label: "✅ spec ready", type: "result" },
-		],
-	},
-	{
-		name: "Chain TDD",
-		usage:
-			"從 feature 描述出發，由 architect agent 建立測試骨架，再透過嚴格 TDD 流程驗證至測試就緒。",
-		command: "/chain-tdd <feature>",
-		steps: [
-			{ label: "/specify", type: "command" },
-			{ label: "architect agent（測試骨架）", type: "agent" },
-			{ label: "/check --tdd-strict", type: "command" },
-			{ label: "/verify", type: "command" },
-			{ label: "✅ tests ready", type: "result" },
-		],
-	},
-];
+  {
+    name: 'Chain Product',
+    usage:
+      '將 feature 描述轉化為結構化 spec，並通過 reviewer agent 驗證後產出 ready-to-build 規格。',
+    command: '/chain-product <feature>',
+    steps: [
+      { label: '/specify', type: 'command' },
+      { label: 'reviewer agent', type: 'agent' },
+      { label: '/verify', type: 'command' },
+      { label: '✅ spec ready', type: 'result' },
+    ],
+  },
+  {
+    name: 'Chain TDD',
+    usage:
+      '從 feature 描述出發，由 architect agent 建立測試骨架，再透過嚴格 TDD 流程驗證至測試就緒。',
+    command: '/chain-tdd <feature>',
+    steps: [
+      { label: '/specify', type: 'command' },
+      { label: 'architect agent（測試骨架）', type: 'agent' },
+      { label: '/check --tdd-strict', type: 'command' },
+      { label: '/verify', type: 'command' },
+      { label: '✅ tests ready', type: 'result' },
+    ],
+  },
+]
 
 // ── Tab 6: AI Sources mock data ───────────────────────────────────────────────
 
 const aiSources: AiSource[] = [
-	{
-		name: "ecc",
-		icon: "🌐",
-		installMode: "plugin",
-		curated: ["silent-failure-hunter", "performance-optimizer"],
-		type: "skills",
-	},
-	{
-		name: "anthropic",
-		icon: "📚",
-		installMode: "plugin",
-		curated: ["webapp-testing", "pdf", "xlsx"],
-		type: "skills",
-	},
-	{
-		name: "superpowers",
-		icon: "🚀",
-		installMode: "plugin",
-		curated: ["using-git-worktrees", "receiving-code-review"],
-		type: "skills",
-	},
-	{
-		name: "context-engineering",
-		icon: "🧠",
-		installMode: "plugin",
-		curated: ["memory-systems", "multi-agent-patterns"],
-		type: "skills",
-	},
-	{
-		name: "openskills",
-		icon: "🌍",
-		installMode: "copy",
-		curated: [],
-		type: "skills",
-	},
-	{
-		name: "gstack",
-		icon: "🎯",
-		installMode: "copy",
-		curated: ["builder", "reviewer", "researcher"],
-		type: "skills",
-	},
-	{
-		name: "spec-kit",
-		icon: "📐",
-		installMode: "copy",
-		curated: ["speckit.specify", "speckit.plan", "speckit.test"],
-		type: "commands",
-	},
-	{
-		name: "ai-sdlc",
-		icon: "🔄",
-		installMode: "copy",
-		curated: ["plan", "observe", "retro"],
-		type: "commands",
-	},
-	{
-		name: "bmad",
-		icon: "⚡",
-		installMode: "copy",
-		curated: [],
-		type: "agents",
-	},
-];
+  {
+    name: 'ecc',
+    icon: '🌐',
+    installMode: 'plugin',
+    curated: ['silent-failure-hunter', 'performance-optimizer'],
+    type: 'skills',
+  },
+  {
+    name: 'anthropic',
+    icon: '📚',
+    installMode: 'plugin',
+    curated: ['webapp-testing', 'pdf', 'xlsx'],
+    type: 'skills',
+  },
+  {
+    name: 'superpowers',
+    icon: '🚀',
+    installMode: 'plugin',
+    curated: ['using-git-worktrees', 'receiving-code-review'],
+    type: 'skills',
+  },
+  {
+    name: 'context-engineering',
+    icon: '🧠',
+    installMode: 'plugin',
+    curated: ['memory-systems', 'multi-agent-patterns'],
+    type: 'skills',
+  },
+  {
+    name: 'openskills',
+    icon: '🌍',
+    installMode: 'copy',
+    curated: [],
+    type: 'skills',
+  },
+  {
+    name: 'gstack',
+    icon: '🎯',
+    installMode: 'copy',
+    curated: ['builder', 'reviewer', 'researcher'],
+    type: 'skills',
+  },
+  {
+    name: 'spec-kit',
+    icon: '📐',
+    installMode: 'copy',
+    curated: ['speckit.specify', 'speckit.plan', 'speckit.test'],
+    type: 'commands',
+  },
+  {
+    name: 'ai-sdlc',
+    icon: '🔄',
+    installMode: 'copy',
+    curated: ['plan', 'observe', 'retro'],
+    type: 'commands',
+  },
+  {
+    name: 'bmad',
+    icon: '⚡',
+    installMode: 'copy',
+    curated: [],
+    type: 'agents',
+  },
+]
 
 // ── Tab 4: Federated Memory mock data ────────────────────────────────────────
 
 const federatedProjects: FederatedProject[] = [
-	{
-		name: "kkday-email-mjml",
-		path: "/Users/alvin/ab-projects/kkday-email-mjml/memory/MEMORY.md",
-		lastUpdated: "2026-04-25",
-	},
-	{
-		name: "ab-tao",
-		path: "/Users/alvin/ab-projects/ab-tao/memory/MEMORY.md",
-		lastUpdated: "2026-04-27",
-	},
-	{
-		name: "global",
-		path: "~/.claude/memory/MEMORY.md",
-		lastUpdated: "2026-04-27",
-	},
-];
+  {
+    name: 'kkday-email-mjml',
+    path: '/Users/alvin/ab-projects/kkday-email-mjml/memory/MEMORY.md',
+    lastUpdated: '2026-04-25',
+  },
+  {
+    name: 'ab-tao',
+    path: '/Users/alvin/ab-projects/ab-tao/memory/MEMORY.md',
+    lastUpdated: '2026-04-27',
+  },
+  {
+    name: 'global',
+    path: '~/.claude/memory/MEMORY.md',
+    lastUpdated: '2026-04-27',
+  },
+]
 </script>
 
 <template>
@@ -246,7 +246,9 @@ const federatedProjects: FederatedProject[] = [
     <template #dispatcher>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">意圖 Dispatcher</h3>
+          <h3 class="tab-title">
+            意圖 Dispatcher
+          </h3>
           <p class="tab-desc">
             intent-cache.json 意圖映射表（mock）：展示常用意圖與對應命令的命中次數。
           </p>
@@ -255,7 +257,9 @@ const federatedProjects: FederatedProject[] = [
           <el-table-column prop="intent" label="意圖" min-width="160" />
           <el-table-column prop="command" label="映射命令" min-width="140">
             <template #default="{ row }">
-              <el-tag type="primary" size="small">{{ row.command }}</el-tag>
+              <el-tag type="primary" size="small">
+                {{ row.command }}
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="hits" label="命中次數" min-width="100">
@@ -271,7 +275,9 @@ const federatedProjects: FederatedProject[] = [
     <template #profiles>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">Profiles</h3>
+          <h3 class="tab-title">
+            Profiles
+          </h3>
           <p class="tab-desc">
             7 個可用 profile，綠色高亮為當前 active profile。點擊「切換」取得對應指令。
           </p>
@@ -280,7 +286,7 @@ const federatedProjects: FederatedProject[] = [
           <el-card
             v-for="profile in profiles"
             :key="profile.name"
-            :class="['profile-card', { 'profile-card--active': profile.active }]"
+            class="profile-card" :class="[{ 'profile-card--active': profile.active }]"
             shadow="hover"
           >
             <div class="profile-card-content">
@@ -329,7 +335,9 @@ const federatedProjects: FederatedProject[] = [
     <template #failure-patterns>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">Failure Patterns</h3>
+          <h3 class="tab-title">
+            Failure Patterns
+          </h3>
           <p class="tab-desc">
             failure-patterns.md mock 內容（append-only，每月 dedupe）。
           </p>
@@ -343,7 +351,9 @@ const federatedProjects: FederatedProject[] = [
             type="danger"
           >
             <el-card shadow="never">
-              <p class="pattern-text">{{ item.pattern }}</p>
+              <p class="pattern-text">
+                {{ item.pattern }}
+              </p>
             </el-card>
           </el-timeline-item>
         </el-timeline>
@@ -354,7 +364,9 @@ const federatedProjects: FederatedProject[] = [
     <template #federated-memory>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">Federated Memory</h3>
+          <h3 class="tab-title">
+            Federated Memory
+          </h3>
           <p class="tab-desc">
             projects.json mock 數據：跨 project 的 memory 索引。
           </p>
@@ -367,7 +379,9 @@ const federatedProjects: FederatedProject[] = [
           </el-table-column>
           <el-table-column prop="path" label="Memory Path" min-width="320">
             <template #default="{ row }">
-              <el-text type="info" size="small" truncated>{{ row.path }}</el-text>
+              <el-text type="info" size="small" truncated>
+                {{ row.path }}
+              </el-text>
             </template>
           </el-table-column>
           <el-table-column prop="lastUpdated" label="Last Updated" min-width="120" />
@@ -379,7 +393,9 @@ const federatedProjects: FederatedProject[] = [
     <template #chains>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">Chains</h3>
+          <h3 class="tab-title">
+            Chains
+          </h3>
           <p class="tab-desc">
             串接多個 command / agent 的自動化流程，一鍵執行端對端工作流。
           </p>
@@ -394,15 +410,18 @@ const federatedProjects: FederatedProject[] = [
             <template #header>
               <div class="chain-card-header">
                 <span class="chain-name">{{ chain.name }}</span>
-                <el-tag type="primary" size="small" effect="plain">chain</el-tag>
+                <el-tag type="primary" size="small" effect="plain">
+                  chain
+                </el-tag>
               </div>
             </template>
-            <p class="chain-usage">{{ chain.usage }}</p>
+            <p class="chain-usage">
+              {{ chain.usage }}
+            </p>
             <div class="chain-steps">
               <template v-for="(step, index) in chain.steps" :key="index">
                 <div
-                  :class="[
-                    'chain-step',
+                  class="chain-step" :class="[
                     `chain-step--${step.type}`,
                   ]"
                 >
@@ -415,7 +434,9 @@ const federatedProjects: FederatedProject[] = [
               </template>
             </div>
             <div class="chain-command">
-              <el-text type="info" size="small">使用命令：</el-text>
+              <el-text type="info" size="small">
+                使用命令：
+              </el-text>
               <el-tag type="info" size="small" effect="plain" style="font-family: monospace">
                 {{ chain.command }}
               </el-tag>
@@ -429,7 +450,9 @@ const federatedProjects: FederatedProject[] = [
     <template #ai-sources>
       <div class="ai-section-tab">
         <div class="tab-header">
-          <h3 class="tab-title">AI Sources</h3>
+          <h3 class="tab-title">
+            AI Sources
+          </h3>
           <p class="tab-desc">
             c:ai-sync 可用來源清單（mock）：展示各 source 的 curated 資源與安裝模式。
           </p>
@@ -453,7 +476,9 @@ const federatedProjects: FederatedProject[] = [
               </el-tag>
             </div>
             <div class="source-meta">
-              <el-text type="secondary" size="small">{{ source.type }}</el-text>
+              <el-text type="secondary" size="small">
+                {{ source.type }}
+              </el-text>
             </div>
             <div class="source-curated">
               <el-tag

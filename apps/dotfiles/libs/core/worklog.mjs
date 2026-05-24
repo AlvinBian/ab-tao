@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { P } from "./paths.mjs";
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { P } from './paths.mjs'
 
 /**
  * @typedef {{
@@ -19,19 +19,22 @@ import { P } from "./paths.mjs";
 
 /** @returns {WorklogDraft[]} */
 export function readDrafts() {
-	if (!existsSync(P.worklogDrafts)) return [];
-	const lines = readFileSync(P.worklogDrafts, "utf8").split("\n");
-	/** @type {WorklogDraft[]} */
-	const out = [];
-	for (const line of lines) {
-		if (!line.trim()) continue;
-		try {
-			out.push(JSON.parse(line));
-		} catch {
-			// skip corrupt lines
-		}
-	}
-	return out;
+  if (!existsSync(P.worklogDrafts))
+    return []
+  const lines = readFileSync(P.worklogDrafts, 'utf8').split('\n')
+  /** @type {WorklogDraft[]} */
+  const out = []
+  for (const line of lines) {
+    if (!line.trim())
+      continue
+    try {
+      out.push(JSON.parse(line))
+    }
+    catch {
+      // skip corrupt lines
+    }
+  }
+  return out
 }
 
 /**
@@ -40,12 +43,12 @@ export function readDrafts() {
  * @returns {number} 移除筆數
  */
 export function dismissDrafts(ids) {
-	const drafts = readDrafts();
-	const idSet = new Set(ids);
-	const kept = drafts.filter((d) => !idSet.has(d.id));
-	const body = kept.map((d) => JSON.stringify(d)).join("\n");
-	writeFileSync(P.worklogDrafts, kept.length ? `${body}\n` : "");
-	return drafts.length - kept.length;
+  const drafts = readDrafts()
+  const idSet = new Set(ids)
+  const kept = drafts.filter(d => !idSet.has(d.id))
+  const body = kept.map(d => JSON.stringify(d)).join('\n')
+  writeFileSync(P.worklogDrafts, kept.length ? `${body}\n` : '')
+  return drafts.length - kept.length
 }
 
 /**
@@ -55,13 +58,14 @@ export function dismissDrafts(ids) {
  * @returns {boolean}
  */
 export function updateDraft(id, patch) {
-	const drafts = readDrafts();
-	const idx = drafts.findIndex((d) => d.id === id);
-	if (idx < 0) return false;
-	drafts[idx] = { ...drafts[idx], ...patch };
-	writeFileSync(
-		P.worklogDrafts,
-		`${drafts.map((d) => JSON.stringify(d)).join("\n")}\n`,
-	);
-	return true;
+  const drafts = readDrafts()
+  const idx = drafts.findIndex(d => d.id === id)
+  if (idx < 0)
+    return false
+  drafts[idx] = { ...drafts[idx], ...patch }
+  writeFileSync(
+    P.worklogDrafts,
+    `${drafts.map(d => JSON.stringify(d)).join('\n')}\n`,
+  )
+  return true
 }

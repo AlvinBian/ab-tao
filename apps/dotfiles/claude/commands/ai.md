@@ -27,7 +27,7 @@ description: "rule-based 意圖 dispatcher：自然語言輸入 → 對應命令
 
 未命中的意圖 append 到 `~/.claude/.ab-tao/runtime/unmatched-intents.jsonl`：
 ```json
-{"intent": "<input>", "ts": "<ISO8601>", "session": "<session-id>"}
+{ "intent": "<input>", "ts": "<ISO8601>", "session": "<session-id>" }
 ```
 
 當 `unmatched-intents.jsonl` 累積 ≥ 30 條時，執行 `/ai` 會顯示警告：

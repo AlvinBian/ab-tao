@@ -1,7 +1,6 @@
 add_newline = true
 command_timeout = 2000
 scan_timeout = 50
-
 format = """
 $directory[on](white) $git_branch$git_state$nodejs$python$golang$rust$php$java$docker_context$cmd_duration
 $git_status\
@@ -39,25 +38,25 @@ am_or_rebase = "🔀 REBASE/APPLY"
 [git_status]
 format = "$all_status$ahead_behind"
 conflicted = "[⚠️  ${count} conflicted](bold red)\n"
-modified   = "[📝 ${count} modified](bold yellow)\n"
-untracked  = "[❓ ${count} new](bold cyan)\n"
-staged     = "[✅ ${count} staged](bold green)\n"
-deleted    = "[🗑️  ${count} deleted](bold magenta)\n"
-renamed    = "[📋 ${count} renamed](bold blue)\n"
-stashed    = "[📦 ${count} stashed](bold white)\n"
-ahead      = "[⬆️  ${count} to push](bold green)\n"
-behind     = "[⬇️  ${count} to pull](bold yellow)\n"
-diverged   = "[⬆️  ${ahead_count} ⬇️  ${behind_count} diverged](bold yellow)\n"
+modified = "[📝 ${count} modified](bold yellow)\n"
+untracked = "[❓ ${count} new](bold cyan)\n"
+staged = "[✅ ${count} staged](bold green)\n"
+deleted = "[🗑️  ${count} deleted](bold magenta)\n"
+renamed = "[📋 ${count} renamed](bold blue)\n"
+stashed = "[📦 ${count} stashed](bold white)\n"
+ahead = "[⬆️  ${count} to push](bold green)\n"
+behind = "[⬇️  ${count} to pull](bold yellow)\n"
+diverged = "[⬆️  ${ahead_count} ⬇️  ${behind_count} diverged](bold yellow)\n"
 
 [nodejs]
 symbol = ""
 format = "via [node $version]($style) "
-style  = "bold green"
+style = "bold green"
 
 [python]
 symbol = ""
 format = "via [py $version]($style) "
-style  = "bold purple"
+style = "bold purple"
 
 [golang]
 symbol = ""
@@ -84,19 +83,23 @@ symbol = "🐳 "
 format = "via [$symbol$context]($style) "
 style = "bold blue"
 only_with_files = true
-detect_files = ["docker-compose.yml", "docker-compose.yaml", "Dockerfile"]
+detect_files = [
+  "docker-compose.yml",
+  "docker-compose.yaml",
+  "Dockerfile"
+]
 
 [cmd_duration]
 min_time = 5_000
-format   = "took [$duration]($style) "
-style    = "bold white"
+format = "took [$duration]($style) "
+style = "bold white"
 show_notifications = true
 min_time_to_notify = 45_000
 
 [character]
 success_symbol = "[❯](bold green)"
-error_symbol   = "[❯](bold red)"
-vimcmd_symbol  = "[❮](bold purple)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold purple)"
 vimcmd_replace_one_symbol = "[❮](bold yellow)"
 vimcmd_replace_symbol = "[❮](bold yellow)"
 vimcmd_visual_symbol = "[❮](bold cyan)"

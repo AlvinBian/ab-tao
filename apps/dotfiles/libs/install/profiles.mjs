@@ -8,29 +8,29 @@
  *   oss.yml            — 開源貢獻環境
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import { parse as parseYaml } from "yaml";
-import { P } from "../core/paths.mjs";
+import fs from 'node:fs'
+import path from 'node:path'
+import { parse as parseYaml } from 'yaml'
+import { P } from '../core/paths.mjs'
 
-const PROFILES_DIR = path.join(P.abTaoDir, "profiles");
-const ACTIVE_FILE = path.join(PROFILES_DIR, "active.json");
+const PROFILES_DIR = path.join(P.abTaoDir, 'profiles')
+const ACTIVE_FILE = path.join(PROFILES_DIR, 'active.json')
 
 export const BUILTIN_PROFILES = [
-	"personal",
-	"work",
-	"oss",
-	"day-to-day",
-	"spike",
-	"production",
-	"frugal",
-];
+  'personal',
+  'work',
+  'oss',
+  'day-to-day',
+  'spike',
+  'production',
+  'frugal',
+]
 
 /** 確保 profiles 目錄存在 */
 function ensureProfilesDir() {
-	if (!fs.existsSync(PROFILES_DIR)) {
-		fs.mkdirSync(PROFILES_DIR, { recursive: true });
-	}
+  if (!fs.existsSync(PROFILES_DIR)) {
+    fs.mkdirSync(PROFILES_DIR, { recursive: true })
+  }
 }
 
 /**
@@ -38,12 +38,13 @@ function ensureProfilesDir() {
  * @returns {string} profile 名稱（預設 "personal"）
  */
 export function loadActiveProfile() {
-	try {
-		const raw = fs.readFileSync(ACTIVE_FILE, "utf8");
-		return JSON.parse(raw).profile ?? "personal";
-	} catch {
-		return "personal";
-	}
+  try {
+    const raw = fs.readFileSync(ACTIVE_FILE, 'utf8')
+    return JSON.parse(raw).profile ?? 'personal'
+  }
+  catch {
+    return 'personal'
+  }
 }
 
 /**
@@ -51,12 +52,12 @@ export function loadActiveProfile() {
  * @param {string} name
  */
 export function setActiveProfile(name) {
-	ensureProfilesDir();
-	fs.writeFileSync(
-		ACTIVE_FILE,
-		JSON.stringify({ profile: name }, null, 2),
-		"utf8",
-	);
+  ensureProfilesDir()
+  fs.writeFileSync(
+    ACTIVE_FILE,
+    JSON.stringify({ profile: name }, null, 2),
+    'utf8',
+  )
 }
 
 /**
@@ -64,15 +65,15 @@ export function setActiveProfile(name) {
  * @returns {string[]}
  */
 export function listProfiles() {
-	ensureProfilesDir();
-	const existing = fs.existsSync(PROFILES_DIR)
-		? fs
-				.readdirSync(PROFILES_DIR)
-				.filter((f) => f.endsWith(".yml"))
-				.map((f) => f.replace(/\.yml$/, ""))
-		: [];
-	// 合併內建 + 自訂，去重
-	return [...new Set([...BUILTIN_PROFILES, ...existing])];
+  ensureProfilesDir()
+  const existing = fs.existsSync(PROFILES_DIR)
+    ? fs
+        .readdirSync(PROFILES_DIR)
+        .filter(f => f.endsWith('.yml'))
+        .map(f => f.replace(/\.yml$/, ''))
+    : []
+  // 合併內建 + 自訂，去重
+  return [...new Set([...BUILTIN_PROFILES, ...existing])]
 }
 
 /**
@@ -81,13 +82,15 @@ export function listProfiles() {
  * @returns {Record<string, unknown> | null}
  */
 export function loadProfile(name) {
-	const ymlPath = path.join(PROFILES_DIR, `${name}.yml`);
-	if (!fs.existsSync(ymlPath)) return null;
-	try {
-		return parseYaml(fs.readFileSync(ymlPath, "utf8")) ?? {};
-	} catch {
-		return null;
-	}
+  const ymlPath = path.join(PROFILES_DIR, `${name}.yml`)
+  if (!fs.existsSync(ymlPath))
+    return null
+  try {
+    return parseYaml(fs.readFileSync(ymlPath, 'utf8')) ?? {}
+  }
+  catch {
+    return null
+  }
 }
 
 /**
@@ -96,22 +99,23 @@ export function loadProfile(name) {
  * @param {string} templatesDir  ab-tao 的 profile templates 目錄
  */
 export function initDefaultProfiles(templatesDir) {
-	ensureProfilesDir();
+  ensureProfilesDir()
 
-	// 初始化 active.json（若不存在）
-	if (!fs.existsSync(ACTIVE_FILE)) {
-		setActiveProfile("personal");
-	}
+  // 初始化 active.json（若不存在）
+  if (!fs.existsSync(ACTIVE_FILE)) {
+    setActiveProfile('personal')
+  }
 
-	if (!fs.existsSync(templatesDir)) return;
+  if (!fs.existsSync(templatesDir))
+    return
 
-	for (const name of BUILTIN_PROFILES) {
-		const src = path.join(templatesDir, `${name}.yml`);
-		const dst = path.join(PROFILES_DIR, `${name}.yml`);
-		if (fs.existsSync(src) && !fs.existsSync(dst)) {
-			fs.copyFileSync(src, dst);
-		}
-	}
+  for (const name of BUILTIN_PROFILES) {
+    const src = path.join(templatesDir, `${name}.yml`)
+    const dst = path.join(PROFILES_DIR, `${name}.yml`)
+    if (fs.existsSync(src) && !fs.existsSync(dst)) {
+      fs.copyFileSync(src, dst)
+    }
+  }
 }
 
 /**
@@ -121,9 +125,9 @@ export function initDefaultProfiles(templatesDir) {
  * @returns {{ disable: string[], enable: string[] }}
  */
 export function getProfilePluginOverrides(profile, pluginsYml) {
-	const overrides = pluginsYml?.profile_overrides?.[profile] ?? {};
-	return {
-		disable: overrides.disable ?? [],
-		enable: overrides.enable ?? [],
-	};
+  const overrides = pluginsYml?.profile_overrides?.[profile] ?? {}
+  return {
+    disable: overrides.disable ?? [],
+    enable: overrides.enable ?? [],
+  }
 }

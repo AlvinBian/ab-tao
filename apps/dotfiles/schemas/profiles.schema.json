@@ -1,38 +1,38 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "profiles.schema.json",
-	"title": "ab-tao Profile",
-	"description": "~/.claude/.ab-tao/profiles/{name}.yml — per-profile config overrides",
-	"type": "object",
-	"required": ["name"],
-	"properties": {
-		"name": { "type": "string" },
-		"description": { "type": "string" },
-		"settings_overrides": {
-			"type": "object",
-			"description": "Merged into ~/.claude/settings.json when profile is active"
-		},
-		"plugins_enabled": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"plugins_disabled": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"mcp_servers": {
-			"type": "object",
-			"properties": {
-				"enabled": { "type": "array", "items": { "type": "string" } }
-			}
-		},
-		"memory_scope": {
-			"type": "array",
-			"items": { "type": "string" }
-		},
-		"hooks_disabled": {
-			"type": "array",
-			"items": { "type": "string" }
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "profiles.schema.json",
+  "title": "ab-tao Profile",
+  "description": "~/.claude/.ab-tao/profiles/{name}.yml — per-profile config overrides",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "settings_overrides": {
+      "type": "object",
+      "description": "Merged into ~/.claude/settings.json when profile is active"
+    },
+    "plugins_enabled": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "plugins_disabled": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "mcp_servers": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "memory_scope": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "hooks_disabled": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
 }

@@ -1,67 +1,73 @@
 <script setup lang="ts">
-import { ElMessage } from "element-plus";
-import { onMounted, ref } from "vue";
+import { ElMessage } from 'element-plus'
+import { onMounted, ref } from 'vue'
 
 interface ChromeStatus {
-	installed: boolean;
-	localStateExists: boolean;
-	experiments: string[];
+  installed: boolean
+  localStateExists: boolean
+  experiments: string[]
 }
 
 interface ZshStatus {
-	deployed: boolean;
-	path: string;
-	confDir: string;
+  deployed: boolean
+  path: string
+  confDir: string
 }
 
-const loading = ref(false);
-const applying = ref(false);
-const status = ref<ChromeStatus | null>(null);
-const zshStatus = ref<ZshStatus | null>(null);
-const error = ref("");
+const loading = ref(false)
+const applying = ref(false)
+const status = ref<ChromeStatus | null>(null)
+const zshStatus = ref<ZshStatus | null>(null)
+const error = ref('')
 
 async function fetchStatus() {
-	loading.value = true;
-	error.value = "";
-	try {
-		const [chromeRes, zshRes] = await Promise.all([
-			fetch("/api/chrome/status"),
-			fetch("/api/chrome/zsh-status"),
-		]);
-		const chromeJson = await chromeRes.json();
-		const zshJson = await zshRes.json();
-		if (chromeJson.code === 0) status.value = chromeJson.data;
-		if (zshJson.code === 0) zshStatus.value = zshJson.data;
-	} catch (e) {
-		error.value = e instanceof Error ? e.message : "載入失敗";
-	} finally {
-		loading.value = false;
-	}
+  loading.value = true
+  error.value = ''
+  try {
+    const [chromeRes, zshRes] = await Promise.all([
+      fetch('/api/chrome/status'),
+      fetch('/api/chrome/zsh-status'),
+    ])
+    const chromeJson = await chromeRes.json()
+    const zshJson = await zshRes.json()
+    if (chromeJson.code === 0)
+      status.value = chromeJson.data
+    if (zshJson.code === 0)
+      zshStatus.value = zshJson.data
+  }
+  catch (e) {
+    error.value = e instanceof Error ? e.message : '載入失敗'
+  }
+  finally {
+    loading.value = false
+  }
 }
 
-// biome-ignore lint/correctness/noUnusedVariables: used in template
 async function applyFlags() {
-	applying.value = true;
-	try {
-		const res = await fetch("/api/chrome/apply-flags", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-		});
-		const json = await res.json();
-		if (json.code === 0) {
-			ElMessage.success(json.message);
-			await fetchStatus();
-		} else {
-			ElMessage.error(json.message ?? "套用失敗");
-		}
-	} catch (e) {
-		ElMessage.error(e instanceof Error ? e.message : "套用失敗");
-	} finally {
-		applying.value = false;
-	}
+  applying.value = true
+  try {
+    const res = await fetch('/api/chrome/apply-flags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const json = await res.json()
+    if (json.code === 0) {
+      ElMessage.success(json.message)
+      await fetchStatus()
+    }
+    else {
+      ElMessage.error(json.message ?? '套用失敗')
+    }
+  }
+  catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '套用失敗')
+  }
+  finally {
+    applying.value = false
+  }
 }
 
-onMounted(fetchStatus);
+onMounted(fetchStatus)
 </script>
 
 <template>
@@ -125,7 +131,9 @@ onMounted(fetchStatus);
           >
             套用 Flags
           </el-button>
-          <el-button @click="fetchStatus">重新整理</el-button>
+          <el-button @click="fetchStatus">
+            重新整理
+          </el-button>
         </el-tab-pane>
 
         <!-- ── Tab: ZSH 工具 ── -->
@@ -157,7 +165,9 @@ onMounted(fetchStatus);
             style="margin-bottom:12px"
           />
 
-          <el-button @click="fetchStatus">重新整理</el-button>
+          <el-button @click="fetchStatus">
+            重新整理
+          </el-button>
         </el-tab-pane>
       </el-tabs>
     </el-card>

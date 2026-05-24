@@ -22,9 +22,9 @@
  *   throwOnError                    — true=錯誤時拋出（Listr2），false=warn 繼續（互動）
  */
 
-import * as p from "@clack/prompts";
-import pc from "picocolors";
-import { stripAnsi } from "./progress.mjs";
+import * as p from '@clack/prompts'
+import pc from 'picocolors'
+import { stripAnsi } from './progress.mjs'
 
 /**
  * 互動模式 Logger — 使用 @clack/prompts 直接輸出到 stdout
@@ -32,25 +32,25 @@ import { stripAnsi } from "./progress.mjs";
  * 用於 pnpm run d:setup 互動流程中，直接在終端機顯示帶色彩的訊息。
  */
 export const CLACK_LOGGER = {
-	throwOnError: false,
-	info: (msg) => p.log.info(msg),
-	success: (msg) => p.log.success(msg),
-	warn: (msg) => p.log.warn(msg),
-	progress(current, total, label) {
-		console.log(
-			`  ${pc.green("✔")} ${pc.dim(`[${current}/${total}]`)} ${label}`,
-		);
-	},
-	failure(current, total) {
-		console.log(
-			`  ${pc.red("✗")} ${pc.dim(`[${current}/${total}]`)} ${pc.red("失敗")}`,
-		);
-	},
-	done(total) {
-		console.log(`  ${pc.green("✔")} ${pc.dim(`[${total}/${total}]`)} 完成`);
-	},
-	createSpinner: () => p.spinner(),
-};
+  throwOnError: false,
+  info: msg => p.log.info(msg),
+  success: msg => p.log.success(msg),
+  warn: msg => p.log.warn(msg),
+  progress(current, total, label) {
+    console.log(
+      `  ${pc.green('✔')} ${pc.dim(`[${current}/${total}]`)} ${label}`,
+    )
+  },
+  failure(current, total) {
+    console.log(
+      `  ${pc.red('✗')} ${pc.dim(`[${current}/${total}]`)} ${pc.red('失敗')}`,
+    )
+  },
+  done(total) {
+    console.log(`  ${pc.green('✔')} ${pc.dim(`[${total}/${total}]`)} 完成`)
+  },
+  createSpinner: () => p.spinner(),
+}
 
 /**
  * Listr2 模式 Logger — 訊息寫入 subtask.output（Listr2 安全）
@@ -60,42 +60,42 @@ export const CLACK_LOGGER = {
  * 執行期間 subtask.output 會持續更新（顯示當前進度），
  * 任務結束後由 Listr2 任務本身設定最終摘要。
  *
- * @param {Object} subtask - Listr2 subtask 物件（含 output 屬性）
- * @returns {Object} Logger 介面
+ * @param {object} subtask - Listr2 subtask 物件（含 output 屬性）
+ * @returns {object} Logger 介面
  */
 export function listrLogger(subtask) {
-	return {
-		throwOnError: true,
-		info: (msg) => {
-			subtask.output = stripAnsi(msg);
-		},
-		success: (msg) => {
-			subtask.output = stripAnsi(msg);
-		},
-		warn: (msg) => {
-			subtask.output = `⚠️ ${stripAnsi(msg)}`;
-		},
-		progress(current, total, label) {
-			subtask.output = `[${current}/${total}] ${label}`;
-		},
-		failure(current, total) {
-			subtask.output = `✗ [${current}/${total}] 失敗`;
-		},
-		done(total) {
-			subtask.output = `[${total}/${total}] 完成`;
-		},
-		createSpinner() {
-			return {
-				start: (msg) => {
-					subtask.output = stripAnsi(msg);
-				},
-				message: (msg) => {
-					subtask.output = stripAnsi(msg);
-				},
-				stop: (msg) => {
-					subtask.output = stripAnsi(msg);
-				},
-			};
-		},
-	};
+  return {
+    throwOnError: true,
+    info: (msg) => {
+      subtask.output = stripAnsi(msg)
+    },
+    success: (msg) => {
+      subtask.output = stripAnsi(msg)
+    },
+    warn: (msg) => {
+      subtask.output = `⚠️ ${stripAnsi(msg)}`
+    },
+    progress(current, total, label) {
+      subtask.output = `[${current}/${total}] ${label}`
+    },
+    failure(current, total) {
+      subtask.output = `✗ [${current}/${total}] 失敗`
+    },
+    done(total) {
+      subtask.output = `[${total}/${total}] 完成`
+    },
+    createSpinner() {
+      return {
+        start: (msg) => {
+          subtask.output = stripAnsi(msg)
+        },
+        message: (msg) => {
+          subtask.output = stripAnsi(msg)
+        },
+        stop: (msg) => {
+          subtask.output = stripAnsi(msg)
+        },
+      }
+    },
+  }
 }
