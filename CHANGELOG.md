@@ -25,6 +25,10 @@
 
 - feat(skills): 新增 `skills/rules-stats/SKILL.md` — 讀 `rule-hits-*.jsonl` + `edit-failures-*.jsonl`（glob 跨機器 merge），輸出近 30 天觸發統計表 + Edit 失敗 Top 5，觸發詞：`/rules-stats`
 
+### 🐚 ZSH
+
+- chore(zsh): `30-aliases.zsh` GUI editor 偵測順序調整 — Kiro 優先級移至 Cursor 前
+
 ## [1.7.1] — 2026-05-18 — Security & Hook Hardening
 
 ### 🔒 Security Rules
