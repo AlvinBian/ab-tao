@@ -2,6 +2,43 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.8.1] — 2026-05-24 — d:setup 全面兜底 + AI Source 管理 + gstack 同步修復
+
+### 🔧 修復
+
+**d:setup null deref 全面兜底（v7 + v9）**
+
+- fix(preferences): `preferences.mjs` 四函式加 null/partial guard + PREF_DEFAULTS fallback（`getNerdFontHint` / `deployZshPrefs` / `deployHookPrefs` / `deployCacheTtlToEnv`）
+- fix(install): `install-modules.mjs` / `preview.mjs` step.selectable empty guard + early-return
+- fix(install): `index.mjs` runTarget def/def.steps 防護
+- fix(install): `plugin-manager.mjs` cfg null 防護
+- fix(install): `install-zsh.mjs` targets default + plan?.features guard
+- fix(phase): `phase-plan.mjs` plan 完整性兜底（`plan.repos || []` / `plan.global ||= {}`）
+- fix(setup): `setup.mjs` top-level try/catch — crash 時輸出完整 stack trace（定位 v9 真因的關鍵）
+- fix(setup): `setup.mjs:529` reinstall + 全部清除路徑 `prev?.features?.length` null deref（v9 修復）
+
+### ✨ 新功能
+
+**AI Source 掃描清除（v10）**
+
+- feat(upgrade): `detectLegacyInstallation` 新增 `aiSourceCommands` / `aiSourceAgents` 分桶（ecc / anthropic / ab-tao / custom）
+- feat(upgrade): d:setup 重入選單新增「🧹 清除 AI source 部署檔」選項
+- feat(upgrade): 新增 `doCleanAiSources()`，清除前備份至 `dist/backup/clean-ai/`
+
+**sync-sources `includePaths` / `excludePaths`**
+
+- feat(commons): 新增 `includePaths` allowlist 機制（`anthropic` source 設 `['skills']`，只同步 skills 目錄）
+- fix(commons): `gstack` 新增 `excludePaths: ['browse', 'test', 'docs/designs', 'CHANGELOG.md']` — 排除 28MB fixture 與 `Function()` 安全告警路徑，gstack 現可正常同步
+
+### 📋 Claude Rules 上推同步（v5-v6 upstream）
+
+- feat(claude-md): `15-self-correction.md` §6 補 3 條 — Edit 失敗禁止盲改重試 / source-citation / 假設疊加禁止
+- feat(claude-md): `08-state-system.md` 補 `[pending-curate]` 冷啟動處理規則
+- feat(claude-md): `13-agent-orchestration.md` Done-gate Critic 強制化（執行類 schema 加 `verdict` 欄位）
+- feat(settings): `settings.template.json` 新增 Serena LSP MCP 條目（`uvx` 啟動）+ OTEL telemetry env
+- feat(docs): `local-tools.md` §E Serena LSP 安裝指引（TS / Vue / Python LSP server）
+- feat(hooks): `pre-tool-bash.sh` hard deny pattern + telemetry hostname 分機化（`rule-hits-$(hostname -s).jsonl`）
+
 ## [1.8.0] — 2026-05-24 — omp Harness 哲學落地 + Hook 智能增強
 
 ### 🤖 Claude Rules — Stream-rule 細粒度觸發
