@@ -10,6 +10,16 @@ COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/nul
 NOTIFY="$HOME/.claude/hooks/hook-handler.sh"
 PATTERNS_FILE="$HOME/.claude/hooks/.dangerous-patterns"
 
+_log_rule_hit() {
+	local rule="${1:-unknown}"
+	local dir="$HOME/.claude/telemetry"
+	mkdir -p "$dir"
+	printf '{"ts":"%s","hook":"pre-tool-bash","rule":"%s","matched":true}\n' \
+		"$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" \
+		"$(printf '%s' "$rule" | head -c 60 | tr '"\\' '  ')" \
+		>> "$dir/rule-hits-${HOSTNAME%%.*}.jsonl" 2>/dev/null &
+}
+
 _block() {
 	local blocked_cmd
 	blocked_cmd=$(printf '%s' "$COMMAND" | head -c 100)
@@ -35,6 +45,11 @@ BUILTIN_PATTERNS=(
 	'wget[[:space:]].*\|[[:space:]]*(bash|sh)'
 	'eval[[:space:]].*base64'
 	'eval[[:space:]]*\$\('
+	# 破壞性 git 操作（stream-rule §6 的 hook 強制兜底）
+	'git[[:space:]].*reset[[:space:]].*(--hard|-hard)'
+	'git[[:space:]].*commit[[:space:]].*--no-verify'
+	'git[[:space:]].*push[[:space:]].*--no-verify'
+	'git[[:space:]].*merge[[:space:]].*--no-verify'
 	# gstack guard — 高風險操作（網路發布 / force-with-lease 變體）
 	'npm[[:space:]]+publish([[:space:]]|$)'
 	'yarn[[:space:]]+publish([[:space:]]|$)'
@@ -46,7 +61,10 @@ BUILTIN_PATTERNS=(
 	'chmod[[:space:]]+[0-7]*[2367][[:space:]]'
 )
 for pattern in "${BUILTIN_PATTERNS[@]}"; do
-	printf '%s' "$COMMAND" | grep -Eiq "$pattern" && _block
+	if printf '%s' "$COMMAND" | grep -Eiq "$pattern"; then
+		_log_rule_hit "$pattern"
+		_block
+	fi
 done
 
 # 自訂 pattern 檔案（擴充，不取代內建）

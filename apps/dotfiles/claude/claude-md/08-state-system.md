@@ -12,9 +12,7 @@
 
 ## Memory 三溫層
 
-**Hot**（MEMORY.md）：≤15 項，≤150 char/行，最近 30 天活躍 topic
-**Warm**（`{topic}/index.md`）：細節，按需載入
-**Cold**（`archive/`）：已封存，僅搜尋命中時提取
+**Hot**（MEMORY.md）：≤15 項，≤150 char/行 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
 
 ## 手動觸發（Memory）
 
@@ -23,39 +21,22 @@
 
 **禁止存入**：token / 密碼 / 個資、未經確認的推斷、demo 級代碼片段。
 
-## 資料夾組織
+## Mid-run 主動記憶（Curate > Wait）
 
-同一需求的記憶統一放一個資料夾：
-- 有票號：`{TICKET}-{short-desc}/`（例：`VM-1482-m-new-order-detail/`）
-- 無票號：`{short-desc}/`（例：`auth-refactor/`）
-- 每個資料夾建 `index.md` 作索引；根層 MEMORY.md 每個專案只佔一行指向 `{folder}/index.md`
+不等使用者說「記住這個」，以下情境立即寫入 memory 並在回覆末附「已記錄：[摘要]」：
+
+- 發現既有 pattern（composable / util / store）和預期不同 → 記錄實際 pattern 與位置
+- 確認了設計決策的「為什麼」（業務約束 / 歷史背景）→ 記錄動機，非結論
+- 踩到 non-obvious 坑且修復方式不在 commit message 可見 → 記錄坑 + 修復要點
+- 使用者明示偏好但未說「記住」（如「我們都用 pnpm」）→ 記錄為 feedback memory
+
+> 觸發判定標準 / 時序圖 / frontmatter 規範 → `~/.claude/docs/state-system-details.md`
 
 ## 冷啟動
 
-開新 session 先讀當前專案的 memory index 與 active plan（具體路徑由 ab-tao 的 `paths.mjs` 管理，不需手動拼）。
+開新 session 先讀當前專案的 memory index 與 active plan。Context 壓縮前掃描未入記憶的重要決策。
+若 MEMORY.md 含 `[pending-curate]` 標記 → 主動詢問「上次 session 有未處理的記憶建議，是否現在回顧有需記錄的決策？」確認後提示使用者刪除該段落。
 
-自動策略（session 中）：
-- Context 壓縮前：掃描未入記憶的重要決策立即寫入
-- Git 事件：新分支 → 更新 reference 欄；PR merge → 標記對應記憶狀態
-- 90 天未存取 project 記憶 → decay scan 提示歸檔
-
-## Plan Frontmatter Convention
-
-Plan 文件首部可加入 frontmatter 以控制歸位命名：
-
-```yaml
----
-ticket: VM-1482
-topic: pr-stack
-status: draft
-created: 2026-04-22
----
-```
-
-命名規則（優先級高到低）：
-- `ticket + topic` → `{ticket}-{topic}.md`
-- 僅 `topic` → `{topic}.md`
-- 僅 `ticket` → `{ticket}.md`
-- 全無 → 保留原隨機 slug（不加 timestamp 前綴）
+> 資料夾命名 / Plan Frontmatter Convention 細節 → `~/.claude/docs/state-system-details.md`
 
 </state_system>

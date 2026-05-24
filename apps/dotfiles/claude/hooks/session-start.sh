@@ -112,4 +112,27 @@ jq -nc \
 	'{sessionId:$sessionId,startedAt:$startedAt,cwd:$cwd,branch:$branch,headSha:$headSha}' \
 	> "$SESSION_STATE_FILE" 2>/dev/null || true
 
+# ── Part 6: Active plan staleness 警告（V3-5）──────────────────────
+_check_plan_staleness() {
+	local plans_dir="$HOME/.claude/plans"
+	[ -d "$plans_dir" ] || return
+	local stale_count=0
+	local threshold_secs=$((14 * 24 * 3600))
+	local now_secs
+	now_secs=$(date +%s 2>/dev/null) || return
+	while IFS= read -r plan_file; do
+		[ -f "$plan_file" ] || continue
+		grep -q '^status: done' "$plan_file" 2>/dev/null && continue
+		grep -q '^status:' "$plan_file" 2>/dev/null || continue
+		local mtime_secs
+		mtime_secs=$(stat -f %m "$plan_file" 2>/dev/null || stat -c %Y "$plan_file" 2>/dev/null) || continue
+		local age_secs=$(( now_secs - mtime_secs ))
+		[ "$age_secs" -gt "$threshold_secs" ] && stale_count=$((stale_count + 1))
+	done < <(find "$plans_dir" -maxdepth 1 -name '*.md' 2>/dev/null)
+	if [ "$stale_count" -gt 0 ]; then
+		printf '[冷啟動] ⚠️  %d 個 active plan 超過 14 天未更新，建議確認狀態\n' "$stale_count" >&2
+	fi
+}
+_check_plan_staleness
+
 exit 0
