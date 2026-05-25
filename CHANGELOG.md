@@ -2,6 +2,14 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.8.2] — 2026-05-25 — pnpm global bin PATH 修正
+
+### 🔧 修復
+
+- fix(zsh): `install.sh` PATH 補上 `$PNPM_HOME/bin`，pnpm global package binary（如 `gitnexus`）現可直接執行
+  - 根因：`PNPM_HOME`（`~/Library/pnpm`）加入 PATH 但 global binaries 實際放在 `~/Library/pnpm/bin`
+  - 影響：`_command_exists gitnexus` 判斷失敗 → `gna` 等 alias 未載入
+
 ## [1.8.1] — 2026-05-24 — d:setup 全面兜底 + AI Source 管理 + gstack 同步修復
 
 ### 🔧 修復
