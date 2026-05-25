@@ -57,7 +57,7 @@ typeset -U path
 [[ -d "$HOME/bin" ]]        && path=("$HOME/bin"        $path)
 [[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
 export PNPM_HOME="$HOME/Library/pnpm"
-path=("$PNPM_HOME" $path)
+path=("$PNPM_HOME" "$PNPM_HOME/bin" $path)
 
 # === 個人偏好（控制模組行為，優先於 .prefs.zsh 預設值）===
 # AB_* 變數由 pnpm run d:setup 配置，可在此處覆蓋預設值
