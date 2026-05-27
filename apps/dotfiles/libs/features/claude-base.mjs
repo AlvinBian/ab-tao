@@ -10,7 +10,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import * as p from '@clack/prompts'
-import { BACK, handleCancel } from '../cli/prompts.mjs'
+import { BACK, handleCancel, multiselectWithPrefs, selectWithPrefs } from '../cli/prompts.mjs'
 import { HOME, P } from '../core/paths.mjs'
 
 const CLAUDE_DIR = path.join(HOME, '.claude')
@@ -145,11 +145,16 @@ export default {
       }
 
       const selected = handleCancel(
-        await p.select({
-          message: '選擇 AI Model',
-          options: modelChoices,
-          initialValue: model,
-        }),
+        await selectWithPrefs(
+          'claudeBase.model',
+          ({ initialValue: prefModel }) =>
+            p.select({
+              message: '選擇 AI Model',
+              options: modelChoices,
+              // prefs 優先，fallback 到既有 model（settings.json 讀取值）
+              initialValue: prefModel ?? model,
+            }),
+        ),
       )
       if (selected === BACK)
         return null
@@ -170,56 +175,53 @@ export default {
 
     if (!ctx.flags?.all) {
       const selectedClaudeMd = handleCancel(
-        await p.select({
-          message: 'CLAUDE.md 處理方式',
-          options: [
-            {
-              value: 'install',
-              label: claudeMdExists
-                ? 'install — 覆蓋現有 CLAUDE.md（自動備份）'
-                : 'install — 安裝 CLAUDE.md',
-            },
-            {
-              value: 'merge',
-              label: 'merge 將缺少的 @import 行追加至現有 CLAUDE.md',
-            },
-            {
-              value: 'keep',
-              label: 'keep 跳過，保留現有 CLAUDE.md 不變',
-            },
-          ],
-          initialValue: claudeMdAction,
-        }),
+        await selectWithPrefs(
+          'claudeBase.claudeMd',
+          ({ initialValue }) => p.select({
+            message: 'CLAUDE.md 處理方式',
+            options: [
+              {
+                value: 'install',
+                label: claudeMdExists
+                  ? 'install — 覆蓋現有 CLAUDE.md（自動備份）'
+                  : 'install — 安裝 CLAUDE.md',
+              },
+              {
+                value: 'merge',
+                label: 'merge 將缺少的 @import 行追加至現有 CLAUDE.md',
+              },
+              {
+                value: 'keep',
+                label: 'keep 跳過，保留現有 CLAUDE.md 不變',
+              },
+            ],
+            initialValue: initialValue ?? claudeMdAction,
+          }),
+        ),
       )
       if (selectedClaudeMd === BACK)
         return null
       claudeMdAction = selectedClaudeMd
 
+      const catOptions = [
+        { value: 'commands', label: `commands（${ALL_COMMANDS.length} 個）` },
+        { value: 'agents', label: `agents（${ALL_AGENTS.length} 個）` },
+        { value: 'rules', label: `rules（${ALL_RULES.length} 個）` },
+        { value: 'hooks', label: `hooks（${ALL_HOOKS.length} 個）` },
+        { value: 'settings', label: 'settings settings.json + permissions' },
+        { value: 'claude-md', label: 'claude-md claude-md/ 子目錄模組' },
+      ]
       const selectedCats = handleCancel(
-        await p.multiselect({
-          message: '選擇要安裝的類別',
-          options: [
-            {
-              value: 'commands',
-              label: `commands（${ALL_COMMANDS.length} 個）`,
-            },
-            {
-              value: 'agents',
-              label: `agents（${ALL_AGENTS.length} 個）`,
-            },
-            { value: 'rules', label: `rules（${ALL_RULES.length} 個）` },
-            { value: 'hooks', label: `hooks（${ALL_HOOKS.length} 個）` },
-            {
-              value: 'settings',
-              label: 'settings settings.json + permissions',
-            },
-            {
-              value: 'claude-md',
-              label: 'claude-md claude-md/ 子目錄模組',
-            },
-          ],
-          initialValues: selectedCategories,
-        }),
+        await multiselectWithPrefs(
+          'claudeBase.categories',
+          catOptions,
+          ({ options: sortedOpts, initialValues }) =>
+            p.multiselect({
+              message: '選擇要安裝的類別',
+              options: sortedOpts,
+              initialValues: initialValues.length ? initialValues : selectedCategories,
+            }),
+        ),
       )
       if (selectedCats === BACK)
         return null
@@ -244,6 +246,8 @@ export default {
           /* 讀取失敗使用空物件 */
         }
         slackEnv = await setupSlackNotify(existingEnv)
+        if (slackEnv === BACK)
+          return BACK
       }
       catch {
         /* 非阻塞，Slack 設定失敗不影響主流程 */

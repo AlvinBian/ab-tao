@@ -11,7 +11,7 @@ import { readVersions } from '@ab-tao/commons/versions'
 import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
 import pc from 'picocolors'
-import { BACK, handleCancel } from '../cli/prompts.mjs'
+import { BACK, handleCancel, multiselectWithPrefs } from '../cli/prompts.mjs'
 
 /**
  * 互動式選擇 AI 來源
@@ -37,12 +37,17 @@ export async function selectAiSources() {
   })
 
   const selected = handleCancel(
-    await p.multiselect({
-      message: 'AI 來源（Space 切換，Enter 確認，直接 Enter 跳過）',
+    await multiselectWithPrefs(
+      'scan.aiSources',
       options,
-      initialValues: [],
-      required: false,
-    }),
+      ({ options: sortedOpts, initialValues }) =>
+        p.multiselect({
+          message: 'AI 來源（Space 切換，Enter 確認，直接 Enter 跳過）',
+          options: sortedOpts,
+          initialValues,
+          required: false,
+        }),
+    ),
   )
 
   if (selected === BACK)

@@ -21,6 +21,7 @@ import {
   BACK,
   handleCancel,
   multiselectWithAll,
+  multiselectWithPrefs,
   smartSelect,
 } from '../cli/prompts.mjs'
 import { pMap } from '../core/concurrency.mjs'
@@ -29,6 +30,7 @@ import {
   GH_CONCURRENCY,
   GH_PER_PAGE,
 } from '../core/constants.mjs'
+import { prefsGet } from '../core/preferences-store.mjs'
 import {
   getAuthorCommitCount,
   ghPaginate,
@@ -131,11 +133,16 @@ export async function interactiveRepoSelect(session = null) {
 
   if (!selectedSources?.length) {
     const chosen = handleCancel(
-      await p.multiselect({
-        message: '👥 選擇 GitHub 帳號/組織（可多選）  Space 切換 · Enter 確認',
-        options: sources,
-        required: true,
-      }),
+      await multiselectWithPrefs(
+        'scan.sources',
+        sources,
+        ({ options: sortedOpts, initialValues }) => p.multiselect({
+          message: '👥 選擇 GitHub 帳號/組織（可多選）  Space 切換 · Enter 確認',
+          options: sortedOpts,
+          initialValues: initialValues.length ? initialValues : undefined,
+          required: true,
+        }),
+      ),
     )
     if (chosen === BACK)
       return BACK
@@ -262,11 +269,14 @@ export async function interactiveRepoSelect(session = null) {
   const contributed = sorted.filter(r => r.commits > 0)
   const multiOrg = repoOrgs.length > 1
 
-  // 預選：session 有就用 session，否則用有貢獻的
+  // 預選：session > prefs > 有貢獻的
+  const prefsRepos = prefsGet('scan.repos')
   const preselected
     = sessionRepoSet.size > 0
       ? session.repos.filter(r => allRepos.some(x => x.fullName === r))
-      : contributed.map(r => r.fullName)
+      : Array.isArray(prefsRepos) && prefsRepos.length
+        ? prefsRepos.filter(r => allRepos.some(x => x.fullName === r))
+        : contributed.map(r => r.fullName)
 
   const allItems = sorted.map(r => repoOpt(r, multiOrg))
   const preLabel

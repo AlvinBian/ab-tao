@@ -11,7 +11,7 @@
 import * as p from '@clack/prompts'
 import { isEmpty, union } from 'lodash-es'
 import pc from 'picocolors'
-import { handleCancel, multiselectWithAll } from '../cli/prompts.mjs'
+import { BACK, confirmWithPrefs, handleCancel, multiselectWithAll, selectWithPrefs } from '../cli/prompts.mjs'
 import { CATEGORY_ORDER } from '../config/npm-classify.mjs'
 
 /**
@@ -153,23 +153,29 @@ export async function selectTechStacks(
 
   // 三選一
   const action = handleCancel(
-    await p.select({
-      message: '🧬 技術棧操作',
-      options: [
-        { value: 'accept', label: `✅ 確認預選 (${preCount}) 推薦` },
-        {
-          value: 'supplement',
-          label: `✅ 確認預選 + 補充 預選 + 手動加`,
-        },
-        { value: 'custom', label: '✏️ 自訂選擇 逐分類調整' },
-        {
-          value: 'skip',
-          label: '⏭️ 跳過技術棧 不分析技術棧，直接下一步',
-        },
-      ],
-    }),
+    await selectWithPrefs(
+      'scan.techAction',
+      ({ initialValue }) => p.select({
+        message: '🧬 技術棧操作',
+        options: [
+          { value: 'accept', label: `✅ 確認預選 (${preCount}) 推薦` },
+          {
+            value: 'supplement',
+            label: `✅ 確認預選 + 補充 預選 + 手動加`,
+          },
+          { value: 'custom', label: '✏️ 自訂選擇 逐分類調整' },
+          {
+            value: 'skip',
+            label: '⏭️ 跳過技術棧 不分析技術棧，直接下一步',
+          },
+        ],
+        initialValue,
+      }),
+    ),
   )
 
+  if (action === BACK)
+    return BACK
   if (action === 'skip')
     return []
 
@@ -270,11 +276,16 @@ export async function selectTechStacks(
       `✅ 技術棧：${selected.length} 個\n${techLines.join('\n')}${more}`,
     )
     const finalOk = handleCancel(
-      await p.confirm({
-        message: `✅ 確認 ${selected.length} 個技術棧？`,
-        initialValue: true,
-      }),
+      await confirmWithPrefs(
+        'scan.techConfirm',
+        ({ initialValue }) => p.confirm({
+          message: `✅ 確認 ${selected.length} 個技術棧？`,
+          initialValue: initialValue ?? true,
+        }),
+      ),
     )
+    if (finalOk === BACK)
+      return BACK
     if (!finalOk) {
       return selectTechStacks(
         categorizedTechs,

@@ -93,6 +93,8 @@
     ├── state.json               # unified manifest（managed + choices + sync）
     ├── state.schema.json        # JSON Schema
     ├── state.lock               # 寫入互斥鎖
+    ├── preferences.json         # d:setup 用戶偏好（17 promptId · 永久 · ⚠️ user-private · 不 sync 至 iCloud）
+    ├── preferences.lock         # 偏好寫入互斥鎖
     └── metrics.jsonl            # Observability（Phase 17）
 ```
 

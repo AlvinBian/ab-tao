@@ -5,6 +5,10 @@
  *           ~/.claude/hooks/.prefs · ~/.claude/hooks/.protected-files
  *           ~/.claude/hooks/.dangerous-patterns
  *
+ * 刻意排除：~/.claude/.ab-tao/preferences.json（含 Slack Channel ID + 私有 repo 名稱，
+ *           隱私資料，user-private，不參與 iCloud 同步）
+ *           → 多機需各自跑 d:setup 重建偏好，或手動複製。
+ *
  * iCloud 路徑：~/Library/Mobile Documents/com~apple~CloudDocs/ab-async/prefs/
  * 同步狀態：~/.claude/.ab-sync.json（v2 per-file 追蹤）
  */

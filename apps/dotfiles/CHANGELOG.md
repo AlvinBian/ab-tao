@@ -1,5 +1,39 @@
 # @ab-tao/dotfiles
 
+## 1.9.0
+
+### Minor Changes
+
+- feat(d:setup): preferences 持久化系統 + BACK Symbol 全鏈路修補
+
+  **preferences-store（新模組）**
+
+  - 新增 `libs/core/preferences-store.mjs`：`~/.claude/.ab-tao/preferences.json` 永久偏好存儲
+  - 支援 17 個 promptId，覆蓋 9 個接線檔（scan / features / zsh / plugins / claude-base / repos / project-install / slack / tech-select）
+  - 原子寫入（tmp→rename）+ 獨立 preferences.lock 防並發損壞
+  - `prefsRead / prefsWrite / prefsPatch / prefsGet / prefsRecordChoice / prefsReset / prefsMigrateFromSession`
+  - 隱私聲明：含 Slack Channel ID + 私有 repo 名稱，user-private，不參與 iCloud 同步
+
+  **BACK Symbol 全鏈路修補**
+
+  - `libs/pipeline/tech-select-ui.mjs`：補 BACK import + 2 處 BACK 短路（首輪審查遺漏的接線檔）
+  - `libs/phases/phase-adjust.mjs`：`adjustGlobalSettings` 補 `if (slackEnv === BACK) return`
+  - `libs/features/claude-base.mjs`：`configure` 補 `if (slackEnv === BACK) return BACK`
+  - 確保 ESC 不因 try/catch 靜默吞噬或 truthy 比較推進錯誤分支
+
+  **測試基礎建設**
+
+  - 新增 `__tests__/preferences-store.test.mjs`（7 個測試）
+  - 新增 `__tests__/prompts-wrappers.test.mjs`（4 個 wrapper × 多情境）
+  - 12 個既有測試檔：`from 'vitest'` → `from 'node:test'`（零修改通過）
+  - `rules-whitelist.test.mjs` whitelist 更新為 7 個規則檔（含 barrel-exports）
+
+  **文件同步**
+
+  - `claude/docs/config-map.md`：.ab-tao/ 樹狀圖補 preferences.json + preferences.lock（⚠️ user-private）
+  - `docs/sync-setup.md`：.chezmoiignore 補隱私說明，注意事項補 preferences.json 禁止 sync 規則
+  - `libs/core/preferences-store.mjs` / `libs/external/ab-async.mjs`：頭部文件完整化
+
 ## 1.7.2
 
 ### Patch Changes

@@ -92,10 +92,27 @@ export function applyMcpServers({ profile = 'personal', dryRun = false } = {}) {
       }
     }
 
-    newServers[name] = {
-      command: cfg.command,
-      args: cfg.args ?? [],
-      ...(Object.keys(env).length > 0 ? { env } : {}),
+    if (cfg.type === 'http' || cfg.type === 'streamable-http') {
+      const headers = {}
+      if (cfg.headers) {
+        for (const [key, template] of Object.entries(cfg.headers)) {
+          headers[key] = String(template).replace(/\$\{([^}]+)\}/g, (_, varName) => {
+            return process.env[varName] ?? ''
+          })
+        }
+      }
+      newServers[name] = {
+        type: 'http',
+        url: cfg.url,
+        ...(Object.keys(headers).length > 0 ? { headers } : {}),
+      }
+    }
+    else {
+      newServers[name] = {
+        command: cfg.command,
+        args: cfg.args ?? [],
+        ...(Object.keys(env).length > 0 ? { env } : {}),
+      }
     }
     results.applied.push(name)
   }

@@ -40,6 +40,8 @@ export const P = {
   pluginsLock: path.join(CLAUDE, '.ab-tao', 'plugins.lock'),
   pluginsInstalledJson: path.join(CLAUDE, 'plugins', 'installed_plugins.json'),
   metrics: path.join(CLAUDE, '.ab-tao', 'metrics.jsonl'),
+  prefs: path.join(CLAUDE, '.ab-tao', 'preferences.json'),
+  prefsLock: path.join(CLAUDE, '.ab-tao', 'preferences.lock'),
   sessionState: path.join(CLAUDE, '.ab-tao', 'session-state.json'),
   worklogDrafts: path.join(CLAUDE, '.ab-tao', 'worklog-drafts.jsonl'),
   claudeHudPluginDir: path.join(CLAUDE, 'plugins', 'claude-hud'),

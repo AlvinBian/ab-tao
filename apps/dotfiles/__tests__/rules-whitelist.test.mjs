@@ -9,6 +9,7 @@ const RULES_DIR = resolve(
 )
 const EXPECTED = [
   'api-and-data',
+  'barrel-exports',
   'git-and-pr',
   'migrations',
   'testing',
@@ -16,7 +17,7 @@ const EXPECTED = [
   'vue-nuxt',
 ].sort()
 
-it('rules/ 只含預期的 6 個規則檔', () => {
+it('rules/ 只含預期的 7 個規則檔', () => {
   const actual = readdirSync(RULES_DIR)
     .filter(f => f.endsWith('.md'))
     .map(f => f.replace('.md', ''))

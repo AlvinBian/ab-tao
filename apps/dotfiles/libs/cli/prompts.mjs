@@ -10,6 +10,7 @@
 import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
 import pc from 'picocolors'
+import { prefsGet, prefsRecordChoice } from '../core/preferences-store.mjs'
 
 /** 回退信號 — phase 收到此值應回退到上一步 */
 export const BACK = Symbol('back')
@@ -146,6 +147,76 @@ export async function multiselectWithAll({
   if (result.includes(ALL_VALUE))
     return safeOptions.map(o => o.value)
   return result
+}
+
+// ── Preferences 整合 Wrapper ────────────────────────────────────────────────
+// 以下 4 個函式封裝「讀 prefs → 排序/預填 → 顯示 prompt → 寫回 prefs」的標準流程。
+// 每個 prompt 站點只需改用這些 wrapper，不需自行呼叫 prefsGet / prefsRecordChoice。
+
+/**
+ * multiselect 的偏好 wrapper — 上次選擇排前 + 預勾 + 自動寫回
+ *
+ * @param {string} promptId - preferences.json 的 key
+ * @param {Array<{value: string, label: string, hint?: string}>} options - 原始選項陣列
+ * @param {(opts: {options: Array, initialValues: string[]}) => Promise<unknown>} promptFn - 呼叫 @clack prompt 的函式
+ * @returns {Promise<string[]|symbol>} 使用者選擇，取消回 BACK
+ */
+export async function multiselectWithPrefs(promptId, options, promptFn) {
+  const prev = prefsGet(promptId) ?? []
+  const { sortedOptions, initialValues } = applyPreviousSelection(
+    options,
+    Array.isArray(prev) ? prev : [],
+  )
+  const value = await promptFn({ options: sortedOptions, initialValues })
+  if (!p.isCancel(value) && value !== BACK)
+    prefsRecordChoice(promptId, value)
+  return value
+}
+
+/**
+ * select（單選）的偏好 wrapper — 上次選擇作為 initialValue + 寫回
+ *
+ * @param {string} promptId - preferences.json 的 key
+ * @param {(opts: {initialValue?: string}) => Promise<unknown>} promptFn - 呼叫 @clack prompt 的函式
+ * @returns {Promise<string|symbol>}
+ */
+export async function selectWithPrefs(promptId, promptFn) {
+  const prev = prefsGet(promptId)
+  const safe = (typeof prev === 'string' || typeof prev === 'number') ? prev : undefined
+  const value = await promptFn({ initialValue: safe })
+  if (!p.isCancel(value) && value !== BACK)
+    prefsRecordChoice(promptId, value)
+  return value
+}
+
+/**
+ * text input 的偏好 wrapper — 上次輸入作為 initialValue + 寫回
+ *
+ * @param {string} promptId - preferences.json 的 key
+ * @param {(opts: {initialValue?: string}) => Promise<unknown>} promptFn - 呼叫 @clack prompt 的函式
+ * @returns {Promise<string|symbol>}
+ */
+export async function textWithPrefs(promptId, promptFn) {
+  const prev = prefsGet(promptId)
+  const value = await promptFn({ initialValue: typeof prev === 'string' ? prev : undefined })
+  if (!p.isCancel(value) && value !== BACK)
+    prefsRecordChoice(promptId, value)
+  return value
+}
+
+/**
+ * confirm（boolean）的偏好 wrapper — 上次結果作為 initialValue + 寫回
+ *
+ * @param {string} promptId - preferences.json 的 key
+ * @param {(opts: {initialValue?: boolean}) => Promise<unknown>} promptFn - 呼叫 @clack prompt 的函式
+ * @returns {Promise<boolean|symbol>}
+ */
+export async function confirmWithPrefs(promptId, promptFn) {
+  const prev = prefsGet(promptId)
+  const value = await promptFn({ initialValue: typeof prev === 'boolean' ? prev : undefined })
+  if (!p.isCancel(value) && value !== BACK)
+    prefsRecordChoice(promptId, value)
+  return value
 }
 
 /**

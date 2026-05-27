@@ -48,6 +48,10 @@ chezmoi add ~/.claude/settings.json
 ```
 # 本機狀態（不 sync）
 .ab-tao/
+# └─ 特別注意：.ab-tao/preferences.json 與 .ab-tao/preferences.lock
+#    含 Slack Channel ID + 私有 repo 名稱，屬 user-private 隱私資料。
+#    即使改用 chezmoi sync，此兩個檔案仍必須排除。
+#    多機設置需各自跑 d:setup 重建偏好（或手動複製，不走 chezmoi）。
 projects/
 plugins/cache/
 plugins/data/
@@ -106,4 +110,5 @@ recipients = [ "age1..." ] # 你的 age public key
 
 - `memory/` 個人記憶由使用者自管，ab-tao **絕不覆蓋**
 - `projects/` 是每機器獨立的 session state，不 sync
+- `.ab-tao/preferences.json` 含 Slack Channel ID + 私有 repo 名稱，**user-private**，禁止納入任何 sync 方案（chezmoi / iCloud / git）；多機需各自跑 `d:setup` 重建
 - 切換 sync.tool 後 `d:setup` 會偵測並跳過已由 chezmoi 管理的檔案

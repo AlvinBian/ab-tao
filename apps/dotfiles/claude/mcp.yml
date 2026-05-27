@@ -91,3 +91,13 @@ servers:
     # 無 env_ref — context7 不需要 token
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
     description: 最新套件文件注入（自動更新）
+
+  # ── Web 搜尋 ─────────────────────────────────────────────────────────
+  anysearch:
+    type: http
+    url: https://api.anysearch.com/mcp
+    headers:
+      Authorization: 'Bearer ${ANYSEARCH_API_KEY}'
+    env_ref: ANYSEARCH_API_KEY
+    enabled_in_profiles: [] # 空 = 全 profile 均啟用
+    description: Web 搜尋 + 垂直領域搜尋（search / batch_search / extract / list_domains）

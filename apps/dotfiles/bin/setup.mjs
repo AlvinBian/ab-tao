@@ -129,6 +129,7 @@ async function main() {
   let flagQuick = args.includes('--quick')
   const flagFromIcloud = args.includes('--from-icloud')
   const flagDryRun = args.includes('--dry-run')
+  const flagResetPrefs = args.includes('--reset-preferences')
 
   // 非 TTY 環境（console 呼叫）：強制使用 Quick 模式，避免互動式 prompt 掛死
   if (!process.stdin.isTTY && !flagQuick && !flagAll && !flagFromIcloud) {
@@ -195,6 +196,23 @@ async function main() {
   catch (err) {
     // lock 寫入失敗不阻斷流程，僅警告
     p.log.warn(`⚠ 無法寫入 state.lock: ${err.message}`)
+  }
+
+  // ── 偏好管理 ──
+  const { prefsMigrateFromSession, prefsReset } = await import(
+    '../libs/core/preferences-store.mjs',
+  )
+
+  if (flagResetPrefs) {
+    prefsReset()
+    p.log.success('已重置用戶偏好（~/.claude/.ab-tao/preferences.json）')
+    p.outro('偏好已清除，下次 d:setup 從空白開始')
+    process.exit(0)
+  }
+
+  const _mig = prefsMigrateFromSession()
+  if (_mig.migrated) {
+    p.log.info(`已從歷史 session 遷移偏好：${_mig.fields.join(', ')}`)
   }
 
   // 確保退出時清理 lock

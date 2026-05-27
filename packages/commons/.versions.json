@@ -1,8 +1,8 @@
 {
   "ecc": {
-    "sha": "1e8c7e7994223e0ff337d1626cd08e04a1ae67ed",
+    "sha": "928076cc08cbb31e8549cea2883b4f51811de1c8",
     "source": "https://github.com/affaan-m/everything-claude-code",
-    "date": "2026-05-24",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   },
@@ -21,33 +21,39 @@
     "type": "ai"
   },
   "context-engineering": {
-    "sha": "61f38ffc0ff3ae83adcf2fe011f3b751105add6d",
+    "sha": "25e1fa79a33f0985793bcab3c64dde8d020c5132",
     "source": "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering",
-    "date": "2026-05-24",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   },
   "spec-kit": {
-    "sha": "a08af08415432db2ae15b70e82400eaad9dbfd2f",
-    "date": "2026-05-24",
+    "sha": "7556fc7fe735431c79453a135af3b7cadfdcf0d7",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   },
   "ai-sdlc": {
-    "sha": "d61fdb16c9520139fde63d737fbb960064f3c9eb",
-    "date": "2026-05-24",
+    "sha": "7938650ad7ff37e7851711ecbaa77804061640ca",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   },
   "bmad": {
-    "sha": "ee47e30cf6bffb00eddfba4f4943df40071a3388",
-    "date": "2026-05-24",
+    "sha": "3bcd6c3cce6e381b759e23185b099081496567a5",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   },
   "awesome-ai-pedia": {
-    "sha": "a66da87afe776d108848abf8880ecdac431c93e3",
-    "date": "2026-05-01",
+    "sha": "aa419efd791ba4e3884db3a32ff1f8b781396862",
+    "date": "2026-05-27",
+    "locked": false,
+    "type": "ai"
+  },
+  "gstack": {
+    "sha": "a6fb31726cece1d1bba401fde593db7cb96bc738",
+    "date": "2026-05-27",
     "locked": false,
     "type": "ai"
   }

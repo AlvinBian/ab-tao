@@ -9,7 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
-import { BACK, handleCancel } from '../cli/prompts.mjs'
+import { BACK, handleCancel, multiselectWithPrefs } from '../cli/prompts.mjs'
 import { HOME } from '../core/paths.mjs'
 
 const MODULE_DESCRIPTIONS = {
@@ -128,12 +128,16 @@ export default {
     }
 
     const selected = handleCancel(
-      await p.multiselect({
-        message: '選擇要安裝的 ZSH 模組',
-        options: items,
-        initialValues: selectableModules,
-        required: false,
-      }),
+      await multiselectWithPrefs(
+        'zsh.modules',
+        items,
+        ({ options: sortedOpts, initialValues }) => p.multiselect({
+          message: '選擇要安裝的 ZSH 模組',
+          options: sortedOpts,
+          initialValues: initialValues.length ? initialValues : selectableModules,
+          required: false,
+        }),
+      ),
     )
 
     if (selected === BACK || isEmpty(selected)) {

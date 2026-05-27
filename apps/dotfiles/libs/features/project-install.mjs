@@ -17,7 +17,7 @@ import {
   formatTechStacks,
   formatUnifiedAiResources,
 } from '../cli/plan-view.mjs'
-import { BACK, handleCancel, smartSelect } from '../cli/prompts.mjs'
+import { BACK, handleCancel, selectWithPrefs, smartSelect } from '../cli/prompts.mjs'
 import { generateInstallPlan } from '../config/auto-plan.mjs'
 import { getDescription, getRating } from '../config/descriptions.mjs'
 import { HOME } from '../core/paths.mjs'
@@ -185,11 +185,14 @@ export default {
     ]
 
     const minStars = handleCancel(
-      await p.select({
-        message: '◆ AI 資源預選門檻（按星級篩選）',
-        options: thresholdOptions,
-        initialValue: 5,
-      }),
+      await selectWithPrefs(
+        'projectInstall.minStars',
+        ({ initialValue }) => p.select({
+          message: '◆ AI 資源預選門檻（按星級篩選）',
+          options: thresholdOptions,
+          initialValue: initialValue ?? 5,
+        }),
+      ),
     )
 
     if (minStars === BACK)
@@ -314,23 +317,27 @@ export default {
 
     // ── Step 5: 安裝方式選擇 ──
     const action = handleCancel(
-      await p.select({
-        message: '◆ AI 資源安裝方式',
-        options: [
-          {
-            value: 'confirm',
-            label: '確認安裝預選項目（推薦）',
-          },
-          {
-            value: 'adjust',
-            label: '調整選擇 按分類微調',
-          },
-          {
-            value: 'skip',
-            label: '跳過 AI 資源',
-          },
-        ],
-      }),
+      await selectWithPrefs(
+        'projectInstall.action',
+        ({ initialValue }) => p.select({
+          message: '◆ AI 資源安裝方式',
+          options: [
+            {
+              value: 'confirm',
+              label: '確認安裝預選項目（推薦）',
+            },
+            {
+              value: 'adjust',
+              label: '調整選擇 按分類微調',
+            },
+            {
+              value: 'skip',
+              label: '跳過 AI 資源',
+            },
+          ],
+          initialValue,
+        }),
+      ),
     )
 
     if (action === BACK)

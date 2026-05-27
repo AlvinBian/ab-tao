@@ -16,6 +16,7 @@ import path from 'node:path'
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
 import { CLACK_LOGGER } from '../cli/logger.mjs'
+import { BACK } from '../cli/prompts.mjs'
 
 import { getDirname, HOME } from '../core/paths.mjs'
 import { loadSession, patchSession } from '../core/session.mjs'
@@ -209,6 +210,8 @@ export async function adjustGlobalSettings() {
   try {
     const { setupSlackNotify } = await import('../install/slack-setup.mjs')
     const slackEnv = await setupSlackNotify(finalConfig.env ?? {})
+    if (slackEnv === BACK)
+      return
     if (slackEnv) {
       finalConfig.env = { ...(finalConfig.env ?? {}), ...slackEnv }
     }

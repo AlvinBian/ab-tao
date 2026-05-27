@@ -7,6 +7,7 @@
  *   - 回傳 { SLACK_NOTIFY_CHANNEL } 或 null（跳過）
  */
 import * as p from '@clack/prompts'
+import { BACK, confirmWithPrefs, handleCancel, selectWithPrefs, textWithPrefs } from '../cli/prompts.mjs'
 
 const CHANNEL_RE = /\b(C[A-Z0-9]{8,})\b/
 
@@ -20,24 +21,35 @@ export async function setupSlackNotify(existingEnv = {}) {
   // 已設定 → 確認是否保持
   if (currentChannel) {
     p.log.info(`Slack 目前設定 Channel = ${currentChannel}`)
-    const keep = await p.confirm({
-      message: '保持現有 Slack 設定不變？',
-      initialValue: true,
-    })
-    if (p.isCancel(keep) || keep === true)
+    const keep = handleCancel(await confirmWithPrefs(
+      'slack.keepExisting',
+      ({ initialValue }) => p.confirm({
+        message: '保持現有 Slack 設定不變？',
+        initialValue: initialValue ?? true,
+      }),
+    ))
+    if (keep === BACK)
+      return BACK
+    if (keep === true)
       return null
   }
 
-  const mode = await p.select({
-    message: 'Slack 通知模式',
-    options: [
-      { value: 'channel', label: 'Channel 指定頻道（推薦）' },
-      { value: 'dm', label: 'DM 私發給自己' },
-      { value: 'off', label: '關閉（清除設定）' },
-      { value: 'skip', label: '稍後手動設定' },
-    ],
-  })
-  if (p.isCancel(mode) || mode === 'skip')
+  const mode = handleCancel(await selectWithPrefs(
+    'slack.mode',
+    ({ initialValue }) => p.select({
+      message: 'Slack 通知模式',
+      options: [
+        { value: 'channel', label: 'Channel 指定頻道（推薦）' },
+        { value: 'dm', label: 'DM 私發給自己' },
+        { value: 'off', label: '關閉（清除設定）' },
+        { value: 'skip', label: '稍後手動設定' },
+      ],
+      initialValue,
+    }),
+  ))
+  if (mode === BACK)
+    return BACK
+  if (mode === 'skip')
     return null
 
   if (mode === 'off') {
@@ -49,19 +61,22 @@ export async function setupSlackNotify(existingEnv = {}) {
   }
 
   // channel 模式
-  const link = await p.text({
-    message: '貼上 Channel Link 或 Channel ID',
-    placeholder: 'https://xxx.slack.com/archives/C07XXXXXX 或 C07XXXXXX',
-    initialValue: currentChannel.startsWith('C') ? currentChannel : '',
-    validate: (v) => {
-      if (!v)
-        return '不能為空'
-      if (!CHANNEL_RE.test(v))
-        return '找不到有效 Channel ID（應含 C 開頭 9+ 字元英數字串）'
-    },
-  })
-  if (p.isCancel(link))
-    return null
+  const link = handleCancel(await textWithPrefs(
+    'slack.channel',
+    ({ initialValue }) => p.text({
+      message: '貼上 Channel Link 或 Channel ID',
+      placeholder: 'https://xxx.slack.com/archives/C07XXXXXX 或 C07XXXXXX',
+      initialValue: initialValue ?? (currentChannel.startsWith('C') ? currentChannel : ''),
+      validate: (v) => {
+        if (!v)
+          return '不能為空'
+        if (!CHANNEL_RE.test(v))
+          return '找不到有效 Channel ID（應含 C 開頭 9+ 字元英數字串）'
+      },
+    }),
+  ))
+  if (link === BACK)
+    return BACK
 
   const channelId = (link.match(CHANNEL_RE) ?? [])[1] ?? link.trim()
   return { SLACK_NOTIFY_CHANNEL: channelId }

@@ -89,7 +89,7 @@ const SOURCES_CONFIG = {
     icon: '🎯',
     description: 'Garry Tan 角色化 slash commands（60+ skills）',
     validatePaths: [],
-    excludePaths: ['browse', 'test', 'docs/designs', 'CHANGELOG.md'],
+    excludePaths: ['browse', 'test', 'docs/designs', 'scripts', 'CHANGELOG.md'],
     optional: true,
     resourcePaths: { skills: '.' },
     installMode: 'copy',

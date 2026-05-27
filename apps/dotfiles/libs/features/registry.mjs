@@ -11,7 +11,7 @@
 import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
 import pc from 'picocolors'
-import { BACK, handleCancel } from '../cli/prompts.mjs'
+import { BACK, handleCancel, multiselectWithPrefs } from '../cli/prompts.mjs'
 
 // ── Feature 定義 ─────────────────────────────────────────────────
 // 動態 import 避免未選擇的 feature 載入不必要的依賴
@@ -29,22 +29,13 @@ const FEATURE_DEFS = [
     order: 10,
   },
   {
-    id: 'chrome',
-    label: '🌐 Chrome 優化配置',
-    hint: 'flags · 搜尋引擎 · 記憶體優化 · ZSH 工具',
-    load: () => import('./chrome.mjs'),
-    dependsOn: [],
-    visible: true,
-    order: 20,
-  },
-  {
     id: 'claude-base',
     label: '🤖 Claude Code 配置',
     hint: 'commands · agents · rules · hooks · settings',
     load: () => import('./claude-base.mjs'),
     dependsOn: [],
     visible: true,
-    order: 30,
+    order: 20,
   },
   {
     id: 'plugins',
@@ -53,7 +44,7 @@ const FEATURE_DEFS = [
     load: () => import('./plugins.mjs'),
     dependsOn: [],
     visible: true,
-    order: 40,
+    order: 30,
   },
   {
     id: 'project-install',
@@ -62,7 +53,7 @@ const FEATURE_DEFS = [
     load: () => import('./project-install.mjs'),
     dependsOn: ['repos', 'tech-analysis'],
     visible: true,
-    order: 50,
+    order: 40,
   },
   {
     id: 'claude-context',
@@ -71,7 +62,7 @@ const FEATURE_DEFS = [
     load: () => import('./integrations/claude-context.mjs'),
     dependsOn: [],
     visible: true,
-    order: 51,
+    order: 50,
   },
   {
     id: 'browser-harness',
@@ -80,7 +71,7 @@ const FEATURE_DEFS = [
     load: () => import('./integrations/browser-harness.mjs'),
     dependsOn: [],
     visible: true,
-    order: 52,
+    order: 60,
   },
   {
     id: 'awesome-ai-pedia',
@@ -89,7 +80,16 @@ const FEATURE_DEFS = [
     load: () => import('./integrations/awesome-ai-pedia.mjs'),
     dependsOn: [],
     visible: true,
-    order: 53,
+    order: 70,
+  },
+  {
+    id: 'anysearch',
+    label: '🔎 AnySearch',
+    hint: 'Web 搜尋 + 垂直領域搜尋（finance / travel / academic…）— 需設定 API key',
+    load: () => import('./integrations/anysearch.mjs'),
+    dependsOn: [],
+    visible: true,
+    order: 80,
   },
 
   // ── 內部功能（依賴鏈自動拉入，不在選單中顯示）────────
@@ -122,16 +122,22 @@ export async function selectFeatures() {
   const visibleDefs = FEATURE_DEFS.filter(f => f.visible !== false).sort(
     (a, b) => (a.order ?? 99) - (b.order ?? 99),
   )
+  const baseOptions = visibleDefs.map(f => ({
+    value: f.id,
+    label: `${f.label} ${pc.dim(f.hint)}`,
+  }))
   const selected = handleCancel(
-    await p.multiselect({
-      message: '選擇安裝功能  Space 選擇 · Enter 確認（直接 Enter 取消）',
-      options: visibleDefs.map(f => ({
-        value: f.id,
-        label: `${f.label} ${pc.dim(f.hint)}`,
-      })),
-      initialValues: [],
-      required: false,
-    }),
+    await multiselectWithPrefs(
+      'features',
+      baseOptions,
+      ({ options, initialValues }) =>
+        p.multiselect({
+          message: '選擇安裝功能  Space 選擇 · Enter 確認（直接 Enter 取消）',
+          options,
+          initialValues,
+          required: false,
+        }),
+    ),
   )
 
   if (selected === BACK || !selected || isEmpty(selected))

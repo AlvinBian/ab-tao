@@ -14,7 +14,8 @@ import { execSync } from 'node:child_process'
 import * as p from '@clack/prompts'
 import { countBy, isEmpty } from 'lodash-es'
 import pc from 'picocolors'
-import { BACK, handleCancel, smartSelect } from '../cli/prompts.mjs'
+import { BACK, handleCancel, selectWithPrefs, smartSelect } from '../cli/prompts.mjs'
+import { prefsRecordChoice } from '../core/preferences-store.mjs'
 
 /** 角色排序權重 */
 const ROLE_ORDER = { main: 0, temp: 1, tool: 2 }
@@ -114,6 +115,8 @@ export default {
       return null
     }
 
+    prefsRecordChoice('scan.repos', repos.map(r => r.fullName ?? r))
+
     // — b) 自動角色分類（session 優先） —
     const roles = {}
     for (const r of repos) {
@@ -174,25 +177,29 @@ export default {
 
       // 角色調整選單
       const action = handleCancel(
-        await p.select({
-          message: '角色分配',
-          options: [
-            { value: 'confirm', label: '✅ 確認 繼續安裝' },
-            {
-              value: 'main',
-              label: '⭐ 調整主力 完整 CLAUDE.md + AI 生成',
-            },
-            {
-              value: 'temp',
-              label: '🔄 調整臨時 精簡 CLAUDE.md',
-            },
-            {
-              value: 'tool',
-              label: '🔧 調整工具 最小配置',
-            },
-            { value: 'back', label: '← 上一步' },
-          ],
-        }),
+        await selectWithPrefs(
+          'repos.role.action',
+          ({ initialValue }) => p.select({
+            message: '角色分配',
+            options: [
+              { value: 'confirm', label: '✅ 確認 繼續安裝' },
+              {
+                value: 'main',
+                label: '⭐ 調整主力 完整 CLAUDE.md + AI 生成',
+              },
+              {
+                value: 'temp',
+                label: '🔄 調整臨時 精簡 CLAUDE.md',
+              },
+              {
+                value: 'tool',
+                label: '🔧 調整工具 最小配置',
+              },
+              { value: 'back', label: '← 上一步' },
+            ],
+            initialValue,
+          }),
+        ),
       )
 
       if (action === BACK || action === 'back') {

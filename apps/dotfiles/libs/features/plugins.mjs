@@ -10,7 +10,7 @@ import { promisify } from 'node:util'
 
 import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
-import { BACK, handleCancel } from '../cli/prompts.mjs'
+import { BACK, handleCancel, multiselectWithPrefs } from '../cli/prompts.mjs'
 import { getCliBin } from '../external/claude-cli.mjs'
 
 const execFileAsync = promisify(execFile)
@@ -111,16 +111,23 @@ export default {
       return { plugins: missing.map(pl => pl.name) }
     }
 
+    const pluginOptions = missing.map(pl => ({
+      value: pl.name,
+      label: pl.desc ? `${pl.name} ${pl.desc}` : pl.name,
+    }))
     const selected = handleCancel(
-      await p.multiselect({
-        message: `推薦 Plugins（${missing.length} 個未安裝）`,
-        options: missing.map(pl => ({
-          value: pl.name,
-          label: pl.desc ? `${pl.name} ${pl.desc}` : pl.name,
-        })),
-        initialValues: missing.map(pl => pl.name),
-        required: false,
-      }),
+      await multiselectWithPrefs(
+        'plugins.list',
+        pluginOptions,
+        ({ options: sortedOpts, initialValues }) =>
+          p.multiselect({
+            message: `推薦 Plugins（${missing.length} 個未安裝）`,
+            options: sortedOpts,
+            // 首次（無偏好）預勾全部 missing；有偏好時以偏好排序為準
+            initialValues: initialValues.length ? initialValues : pluginOptions.map(o => o.value),
+            required: false,
+          }),
+      ),
     )
 
     if (selected === BACK || isEmpty(selected))
