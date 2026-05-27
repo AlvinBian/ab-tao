@@ -1,43 +1,23 @@
 {
   "model": "opusplan",
   "effortLevel": "high",
-  "autoMemoryEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "autoUpdatesChannel": "latest",
-  "cleanupPeriodDays": 30,
-  "showThinkingSummaries": true,
-  "enableAllProjectMcpServers": true,
-  "showToolOutputs": true,
-  "showProgress": true,
-  "includeCoAuthoredBy": false,
-  "feedbackSurveyRate": 0,
-  "includeGitInstructions": false,
-  "statusLine": {
-    "type": "command",
-    "command": "$HOME/.claude/hooks/statusline.sh"
+
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "deny": [
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr review --approve *)",
+      "Bash(git commit --no-verify *)",
+      "Bash(git push --no-verify *)",
+      "Bash(npm publish *)",
+      "Bash(pnpm publish *)",
+      "Bash(claude plugin uninstall *)"
+    ]
   },
-  "extraKnownMarketplaces": {
-    "claude-hud": {
-      "source": {
-        "source": "github",
-        "repo": "jarrodwatts/claude-hud"
-      }
-    }
-  },
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        "${PWD}"
-      ]
-    }
-  },
+
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "USE_BUILTIN_RIPGREP": "1",
@@ -56,6 +36,19 @@
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "OTEL_METRICS_INCLUDE_SESSION_ID": "true"
   },
+
+  "autoMemoryEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
+  "autoUpdatesChannel": "latest",
+  "cleanupPeriodDays": 30,
+  "showThinkingSummaries": true,
+  "enableAllProjectMcpServers": true,
+  "showToolOutputs": true,
+  "showProgress": true,
+  "includeCoAuthoredBy": false,
+  "feedbackSurveyRate": 0,
+  "includeGitInstructions": false,
+
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
@@ -64,21 +57,33 @@
     "session-report@claude-plugins-official": true,
     "claude-hud@claude-hud": true
   },
-  "permissions": {
-    "defaultMode": "bypassPermissions",
-    "deny": [
 
-      "Bash(git reset --hard *)",
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)",
-      "Bash(gh pr merge *)",
-      "Bash(gh pr review --approve *)",
-      "Bash(git commit --no-verify *)",
-      "Bash(git push --no-verify *)",
-      "Bash(npm publish *)",
-      "Bash(pnpm publish *)",
-      "Bash(claude plugin uninstall *)"
-    ]
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "${PWD}"
+      ]
+    }
+  },
+
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/hooks/statusline.sh"
+  },
+  "extraKnownMarketplaces": {
+    "claude-hud": {
+      "source": {
+        "source": "github",
+        "repo": "jarrodwatts/claude-hud"
+      }
+    }
   },
   "_abTao": {
     "version": "1.7.1",
