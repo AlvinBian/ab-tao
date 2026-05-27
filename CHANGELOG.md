@@ -2,6 +2,25 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.9.0] — 2026-05-27 — preferences 持久化系統 + BACK Symbol 全鏈路修補
+
+### 新增
+
+- `libs/core/preferences-store.mjs`：d:setup 用戶偏好永久存儲（17 promptId · 9 接線檔）
+- `__tests__/preferences-store.test.mjs` + `__tests__/prompts-wrappers.test.mjs`：113/113 通過
+
+### 修復
+
+- `tech-select-ui.mjs` / `phase-adjust.mjs` / `claude-base.mjs`：BACK Symbol 全鏈路修補，ESC 不再靜默推進錯誤分支
+
+### 改善
+
+- 12 個測試檔從 vitest 遷移至 node:test；`rules-whitelist` 白名單更新為 7 個規則檔
+
+### 安全
+
+- preferences.json 隱私宣告：含 Slack Channel ID + 私有 repo 名稱，user-private，禁止納入任何 sync 方案
+
 ## [1.8.2] — 2026-05-25 — pnpm global bin PATH 修正
 
 ### 🔧 修復
