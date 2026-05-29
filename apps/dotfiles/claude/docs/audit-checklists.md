@@ -1,6 +1,6 @@
 # Audit Checklists
 
-三種審查模式的完整檢查項。審查模式由 `11-audit-system.md` 定義。
+四種審查模式的完整檢查項。審查模式由 `11-audit-system.md` 定義。
 
 ---
 
@@ -16,7 +16,7 @@
 - [ ] `claude-md/` 14 個 section 檔全部存在（00–08, 10–13, 15；09/14 已合併，16–18 已移 docs/）
 - [ ] `rules/` 7 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / testing / migrations / barrel-exports / git-and-pr）
 - [ ] `rules/barrel-exports.md` 含 7 條 sub-rule（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
-- [ ] `docs/` 9 個參考文件存在（rtk / audit-checklists / config-map / slack-principles / slack-audience-profiles / ai-dispatcher / federated-memory / self-evolution / local-tools）
+- [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；29 個 docs/ 檔完整清單見 config-map.md
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
 - [ ] `slack-principles.md` 含 6 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns）

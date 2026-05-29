@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.6.1)
+# ~/.claude/ 結構全圖 (v1.7.0)
 
 ```
 ~/.claude/
@@ -10,7 +10,7 @@
 │   ├── 00-identity.md           首錨定
 │   ├── 01-language.md
 │   ├── 02-response-format.md
-│   ├── 03-code-standards.md     技術傾向 + 版本管理 + 程式碼規範
+│   ├── 03-code-standards.md     技術傾向 + 程式碼規範
 │   ├── 04-verification.md       查證規則 + Figma MCP + i18n 缺項
 │   ├── 05-security.md           安全規範 + bypassPermissions + Git 操作紅線
 │   ├── 06-quality-targets.md
@@ -20,53 +20,91 @@
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
 │   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則 + DAG 並行，取代 13+14）
-│   └── 15-self-correction.md    尾錨群（8 條自我糾正 + 數值估算驗算）
+│   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
-├── rules/                       # 條件載入（paths: frontmatter）
+├── rules/                       # 條件載入（paths: frontmatter）7 檔
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
-│   ├── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
-│   ├── typescript.md            paths: *.ts *.tsx
-│   ├── testing.md               paths: *.test.* *.spec.* __tests__/
+│   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
+│   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
-│   └── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
+│   ├── testing.md               paths: *.test.* *.spec.* __tests__/
+│   ├── typescript.md            paths: *.ts *.tsx
+│   └── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
 │
-├── docs/                        # 參考文件（可 @import，非規則）
+├── docs/                        # 參考文件（可 @import，非規則）29 檔
+│   │
+│   │   # ── CLAUDE.md @import 目標（4）──
 │   ├── rtk.md                   RTK 工具 + token 預算影響
-│   ├── audit-checklists.md      三模式 checklist 完整版
-│   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns（commands/slack.md 動態載入）
-│   ├── slack-audience-profiles.md   7 種 audience（reader mental model + 決策原則）+ channel 建議 + permalink 解析
-│   ├── ai-dispatcher.md         /ai dispatcher 30+ intent 映射表 + 使用說明
-│   ├── federated-memory.md      第四溫層跨專案記憶設定與使用（projects.json 格式）
+│   ├── audit-checklists.md      四種審查模式 checklist 完整版
+│   ├── config-map.md            本文件
+│   ├── local-tools.md           LM Studio + Milvus + browser-harness + Serena 安裝指引
+│   │
+│   │   # ── Slack 叢集（2）──
+│   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns
+│   ├── slack-audience-profiles.md   7 種 audience（rd/pm/mkt/qa/ops/ued/multi）
+│   │
+│   │   # ── 系統參考（按需，9）──
+│   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
+│   ├── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
 │   ├── self-evolution.md        failure-patterns append-only 自我演進 + ADR-002 invariants
-│   ├── local-tools.md           LM Studio + Milvus + browser-harness + Awesome-AI-Pedia 本地工具安裝指引
-│   └── config-map.md            本文件
+│   ├── STRUCTURE.md             ~/.claude/ 結構快照
+│   ├── agent-dag-parallel.md    多 phase 並行排程（DAG 切分 / Wave gate）引用: 13-agent-orchestration
+│   ├── agent-typed-result.md    Subagent 回傳 schema 範例 + prompt 模板  引用: 13-agent-orchestration
+│   ├── gitnexus-integration.md  GitNexus MCP 工具速查 + Hook 行為       引用: 13-agent-orchestration
+│   ├── self-correction-details.md  串流中斷觸發細節 + 歷史案例          引用: 15-self-correction
+│   ├── state-system-details.md  Plan Frontmatter / 資料夾命名規範        引用: 08-state-system
+│   │
+│   │   # ── 評估 / 指標（2）──
+│   ├── lsp-mcp-evaluation.md    LSP MCP 評估紀錄
+│   ├── metrics-fields.md        Observability 指標欄位定義
+│   │
+│   │   # ── 版本封存（2）──
+│   ├── audit-checklists-v160.md（archive）
+│   └── config-map-v160.md       （archive）
+│   │
+│   │   # ── 研究 / 未分類（10）──
+│   │   adversarial-review / attribution / chains / cost-routing / cross-ide-export /
+│   │   failure-catalog / plugin-audit / profile-system / source-discovery / voice-trigger
 │
-├── agents/                      # 4 agents（2 核心 + 2 角色化）
-│   ├── architect.md             架構設計 + 5 維審查
-│   ├── debugger.md              根因定位 + 最小 diff
+├── agents/                      # 9 agents
+│   ├── architect.md             架構設計 + 5 維審查（唯讀）
+│   ├── code-reviewer.md         程式碼審查專家
+│   ├── debugger.md              根因定位 + 最小 diff（可寫）
+│   ├── planner.md               複雜功能 / 重構計畫
 │   ├── pm.md                    產品需求釐清 + 6 逼問框架（唯讀）
-│   └── reviewer.md              第二意見 code review（唯讀）
+│   ├── pr-test-analyzer.md      PR 測試覆蓋率 + 行為覆蓋分析
+│   ├── reviewer.md              第二意見 code review（唯讀）
+│   ├── silent-failure-hunter.md 無聲失敗 / 錯誤吞噬專項
+│   └── type-design-analyzer.md  型別設計分析（不變量 + 封裝）
 │
-├── commands/                    # 8 unique commands
+├── commands/                    # 17 commands
+│   ├── ai.md
+│   ├── chain-product.md
+│   ├── chain-tdd.md
 │   ├── check.md                 Build Fix + Quality Gate + 9-gate --gates
+│   ├── code-review.md           PR 代碼審查入口（自動分流 quick/standard/deep）
 │   ├── db-migration.md
+│   ├── feature-dev.md
+│   ├── plan.md
 │   ├── pr-stack.md
+│   ├── quality-gate.md
+│   ├── review-pr.md
+│   ├── santa-loop.md
 │   ├── slack.md
 │   ├── specify.md               需求 → 結構化 spec（AC + non-goals）
 │   ├── test.md
 │   ├── verify.md                spec AC 反向覆蓋驗證
 │   └── worklog.md
 │
-├── skills/                      # 24+ skills（按需載入）
+├── skills/                      # 32+ skills（按需載入）
 │
-├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
+├── hooks/                       # 8 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
 │   │   ├── session-start.json        ab-tao:session:start
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
 │   │   ├── pre-tool-edit.json        ab-tao:pre:edit
 │   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）
 │   │   ├── pre-compact.json          ab-tao:pre-compact
-│   │   ├── post-tool.json            ab-tao:post-tool
 │   │   ├── post-tool-failure.json    ab-tao:post:tool:failure（工具失敗日誌 + 告警）
 │   │   ├── stop.json                 ab-tao:stop
 │   │   └── session-end.json          ab-tao:session:end
@@ -86,15 +124,14 @@
 ├── tasks/                       # 原生 Claude Code tasks（Jan 2025+）
 ├── plans/                       # 原生 plansDirectory（Feb 2026+）
 │
-├── settings.json                # 主配置：hooks（7條合併）+ mcpServers + model + env
+├── settings.json                # 主配置：hooks（8 條合併）+ mcpServers + model + env
 ├── settings.local.json          # 機器獨立（不 sync，gitignored）
 │
 └── .ab-tao/                     # ab-tao 運行時資料夾
     ├── state.json               # unified manifest（managed + choices + sync）
     ├── state.schema.json        # JSON Schema
     ├── state.lock               # 寫入互斥鎖
-    ├── preferences.json         # d:setup 用戶偏好（17 promptId · 永久 · ⚠️ user-private · 不 sync 至 iCloud）
-    ├── preferences.lock         # 偏好寫入互斥鎖
+    ├── preferences.json         # d:setup 用戶偏好（永久 · ⚠️ user-private · 不 sync 至 iCloud）
     └── metrics.jsonl            # Observability（Phase 17）
 ```
 

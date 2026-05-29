@@ -27,6 +27,17 @@ paths:
   - `[VM-1482][M] 新訂單明細頁 - PR-3 業務邏輯 + 單元測試`
 - PR description 須註明：依賴 `#PR-N`、合併順序、是否含 DB migration
 
+### 分支建立流程（強制）
+
+❗ **新 branch 必須從 `origin/<base>` 建出，禁止從本地 base branch 狀態建立**：
+
+```bash
+git fetch origin
+git checkout -b <new-branch> origin/<base-branch>
+```
+
+**Why:** 本地 base branch 可能落後 origin，直接從本地建會導致 base 缺少他人最新提交，產生多餘 merge commit 或衝突。
+
 ### 分支命名
 - trunk：`feat/<TICKET>-<slug>/main`（例：`feat/VM-1482-m-new-order-detail/main`）
 - leaves：`feat/<TICKET>/{N}-<slug>`（例：`feat/VM-1482/1-bff-base`）
