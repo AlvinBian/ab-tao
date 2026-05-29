@@ -23,6 +23,7 @@
 | spec AC 反向驗證 | `/verify` command |
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 | **GitNexus 知識圖譜** | 見下方「GitNexus 整合」章節 |
+| **Understand-Anything（語義層）** | 見下方「融合工作流」章節 |
 
 ## GitNexus 知識圖譜整合
 
@@ -41,6 +42,28 @@ GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook �
 | Tool / schema 查閱 | `gitnexus-guide` | "What GitNexus tools are available?" |
 
 > MCP 工具速查 / Hook 行為 / Index 管理 → Read `~/.claude/docs/gitnexus-integration.md`（架構探索、blast radius 任務時）
+
+## GitNexus × Understand-Anything 融合工作流
+
+兩層互補：**技術層**（GitNexus，符號圖 + blast radius，Claude 推理用）+ **語義層**（Understand-Anything，業務流程可視化，人類理解用）。
+
+### 任務 → 雙層工具映射
+
+| 任務 | 語義層（先） | 技術層（後） |
+|---|---|---|
+| 理解新 repo / 陌生模組 | Understand-Anything 生成業務 diagram | `gitnexus-exploring` 確認符號依賴 |
+| 改動安全性確認 | 確認業務流程無斷點 | `gitnexus-impact-analysis` blast radius |
+| Debug 根因追蹤 | 從 diagram 定位業務層失效點 | `gitnexus-debugging` trace 技術符號鏈 |
+| Refactor / Rename | 確認業務邊界不被破壞 | `gitnexus-refactoring` 符號安全重命名 |
+| PR 改動影響 | 確認 user flow 完整性 | `gitnexus-pr-review` 技術依賴影響 |
+
+### 三條使用原則
+
+1. **新 repo / 陌生模組**：先跑 Understand-Anything 建立業務心智模型，再用 GitNexus 深入符號層
+2. **改動後雙層確認**：semantic diagram 確認業務流完整 → impact analysis 確認技術依賴無斷鏈
+3. **Debug 入口**：從語義層定位「哪個業務流失效」→ GitNexus 追蹤「哪個符號鏈斷了」
+
+> Understand-Anything 安裝：Claude Code 插件，`claude plugin install understand-anything` 或 VS Code marketplace 搜尋。
 
 ## 調度規則（強制）
 
