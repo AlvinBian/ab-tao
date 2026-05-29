@@ -63,7 +63,7 @@ GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook �
 2. **改動後雙層確認**：semantic diagram 確認業務流完整 → impact analysis 確認技術依賴無斷鏈
 3. **Debug 入口**：從語義層定位「哪個業務流失效」→ GitNexus 追蹤「哪個符號鏈斷了」
 
-> Understand-Anything 安裝：Claude Code 插件，`claude plugin install understand-anything` 或 VS Code marketplace 搜尋。
+> Understand-Anything 安裝：Claude Code 內執行 `/plugin marketplace add Lum1104/Understand-Anything`，再執行 `/plugin install understand-anything`。
 
 ## 調度規則（強制）
 
