@@ -36,8 +36,16 @@ DEST_DIR="$HOME/.zshrc.d/conf"
 mkdir -p "$DEST_DIR"
 
 # 部署模組（symlink）
+# 先清除舊版架構遺留的非 symlink 檔案或 " N.zsh" 重複 symlink，確保等冪
 for f in "$MODULES_DIR"/*.zsh; do
   [[ -f "$f" ]] || continue
+  base="$(basename "$f" .zsh)"
+  # 移除 "<name> N.zsh" 重複 symlink（空格 + 數字命名，由舊版 ln 行為產生）
+  find "$DEST_DIR" -maxdepth 1 -name "${base} [0-9].zsh" -delete 2>/dev/null || true
+  # 若目標為非 symlink 的實體檔案（舊版複製遺留），先刪再建
+  if [[ -e "$DEST_DIR/$(basename "$f")" && ! -L "$DEST_DIR/$(basename "$f")" ]]; then
+    rm -f "$DEST_DIR/$(basename "$f")"
+  fi
   ln -sf "$f" "$DEST_DIR/"
   echo "  → $(basename "$f")"
 done
