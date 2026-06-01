@@ -65,6 +65,12 @@ GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook �
 
 > Understand-Anything 安裝：Claude Code 內執行 `/plugin marketplace add Lum1104/Understand-Anything`，再執行 `/plugin install understand-anything`。
 
+### 索引新鮮度自動維護
+
+- **GitNexus**：ab-tao `ab-tao:gitnexus:sync` SessionStart hook 自動偵測落後（`lastCommit` ≠ HEAD）→ 背景 `gitnexus analyze --index-only`，三道節流（並發鎖 + 10 min debounce + SHA 比對），**100% 無感**。部署：`pnpm run d:setup`。
+- **Understand-Anything**：每個目標 repo 手動跑一次 `/understand --auto-update`（寫 `config.json {autoUpdate:true}`），之後 plugin 自帶 hook 在 session 內 auto-prompt 更新（**半無感**）。注意：plugin 需先 build（`cd ~/.claude/plugins/cache/understand-anything/understand-anything/<version> && pnpm install && pnpm --filter @understand-anything/core build`）。
+- `/understand --auto-update` 是 Claude Code slash command，**不是 shell 命令**，無法 zsh alias；gitnexus CLI 已有 `gna='gitnexus analyze --index-only'` alias（`30-aliases.zsh`）。
+
 ## 調度規則（強制）
 
 **1. 併發優先**：多個獨立任務必須 parallel 同時啟動，禁止串行等待。

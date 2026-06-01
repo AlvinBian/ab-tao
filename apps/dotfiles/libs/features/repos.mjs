@@ -15,7 +15,7 @@ import * as p from '@clack/prompts'
 import { countBy, isEmpty } from 'lodash-es'
 import pc from 'picocolors'
 import { BACK, handleCancel, selectWithPrefs, smartSelect } from '../cli/prompts.mjs'
-import { prefsRecordChoice } from '../core/preferences-store.mjs'
+import { prefsGet, prefsRecordChoice } from '../core/preferences-store.mjs'
 
 /** 角色排序權重 */
 const ROLE_ORDER = { main: 0, temp: 1, tool: 2 }
@@ -93,8 +93,19 @@ export default {
       // 從 session 重建 repos
       const prevRepos = ctx.prev?.repos
       const prevRoles = ctx.prev?.roles || {}
-      if (!prevRepos?.length)
-        return null
+      if (!prevRepos?.length) {
+        // session 為空（例：全部清除後），從 preferences.json 回補
+        const prefsRepos = prefsGet('scan.repos')
+        if (!Array.isArray(prefsRepos) || !prefsRepos.length)
+          return null
+        const repos = prefsRepos.map(r => ({
+          fullName: typeof r === 'string' ? r : (r?.fullName || ''),
+          commits: 10,
+          pct: 0,
+          _roleOverride: 'temp',
+        }))
+        return { repos, roles: {} }
+      }
       const repos = prevRepos.map(r => ({
         fullName: typeof r === 'string' ? r : (r?.fullName || ''),
         commits: 10,

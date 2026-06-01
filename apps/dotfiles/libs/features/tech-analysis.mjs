@@ -7,6 +7,9 @@
  * 生命週期：envCheck → backup → configure → plan → confirm → install → verify → complete
  */
 
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
 import { BACK, handleCancel } from '../cli/prompts.mjs'
@@ -22,6 +25,42 @@ import {
 import { runAnalysisPipeline } from '../pipeline/pipeline-runner.mjs'
 import { generateProfile } from '../pipeline/profile-generator.mjs'
 import { withSpinner } from '../ui/with-spinner.mjs'
+
+// ── 分析快取常數 ──
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+
+/**
+ * 計算快取 key（sha1 of sorted repo names + selected AI sources）
+ *
+ * @param {object[]} repos - repo 物件陣列（含 fullName）
+ * @param {string[]} selectedAiSources - 已選 AI 來源
+ * @returns {string} 16 字元 hex key
+ */
+function computeCacheKey(repos, selectedAiSources) {
+  const repoNames = repos.map(r => r.fullName).sort().join(',')
+  const sources = [...(selectedAiSources || [])].sort().join(',')
+  return crypto.createHash('sha1').update(`${repoNames}|${sources}`).digest('hex').slice(0, 16)
+}
+
+// JSON replacer：Map → {__m, e}；Set → {__s, e}；Promise → undefined（已 await，可安全丟棄）
+function replacer(_key, value) {
+  if (value instanceof Map)
+    return { __m: true, e: [...value.entries()] }
+  if (value instanceof Set)
+    return { __s: true, e: [...value] }
+  if (value instanceof Promise)
+    return undefined
+  return value
+}
+
+// JSON reviver：{__m, e} → Map；{__s, e} → Set（bottom-up 確保 nested 物件正確還原）
+function reviver(_key, value) {
+  if (value && typeof value === 'object' && value.__m === true)
+    return new Map(value.e)
+  if (value && typeof value === 'object' && value.__s === true)
+    return new Set(value.e)
+  return value
+}
 
 export default {
   id: 'tech-analysis',
@@ -93,6 +132,27 @@ export default {
       return null
 
     const { repos, sources, selectedAiSources } = config
+
+    // ── 分析快取重用 ──
+    const cacheKey = computeCacheKey(repos, selectedAiSources)
+    const cacheDir = path.join(ctx.repoDir, '.cache', 'analysis')
+    const cachePath = path.join(cacheDir, `${cacheKey}.json`)
+
+    if (!ctx.flags?.refresh && !ctx.flags?.noCache) {
+      try {
+        if (fs.existsSync(cachePath)) {
+          const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'), reviver)
+          const ageMs = Date.now() - new Date(cached.analyzedAt).getTime()
+          if (Number.isFinite(ageMs) && ageMs < CACHE_TTL_MS) {
+            p.log.info(`♻️  使用快取分析結果（${Math.round(ageMs / 60000)} 分鐘前）`)
+            return cached.plan
+          }
+        }
+      }
+      catch {
+        // 快取讀取失敗，繼續全量分析
+      }
+    }
 
     /** 嘗試執行分析（支援重試） */
     const attemptAnalysis = async () => {
@@ -202,7 +262,21 @@ export default {
     // ── 錯誤處理迴圈（重試 / 跳過 / 返回）──
     while (true) {
       try {
-        return await attemptAnalysis()
+        const result = await attemptAnalysis()
+        // 寫入快取（只在有有效技術棧且未停用快取時寫入）
+        if (!ctx.flags?.noCache && result?.techStacks?.length) {
+          try {
+            fs.mkdirSync(cacheDir, { recursive: true })
+            fs.writeFileSync(
+              cachePath,
+              JSON.stringify({ analyzedAt: new Date().toISOString(), plan: result }, replacer),
+            )
+          }
+          catch {
+            // 快取寫入失敗不中斷主流程
+          }
+        }
+        return result
       }
       catch (err) {
         p.log.error(

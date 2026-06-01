@@ -24,6 +24,21 @@
 
 > 版本管理 / 程式碼規範細節（禁 any、三態、barrel exports 等）→ 編輯 .vue/.ts 時 `rules/code-quality.md` 自動注入。
 
+## Design System Token 規範
+
+使用 KKday DS token 時，`var(--kk-xxx)` **禁止**附加 fallback 預設值：
+
+```css
+/* ❌ 禁止 */
+background: var(--kk-color-background-surface-lighter, #f9f9f9);
+
+/* ✅ 正確 */
+background: var(--kk-color-background-surface-lighter);
+```
+
+DS token 由全域統一管理；補 fallback 會靜默遮蔽 DS 更新，導致 UI 與設計規格脫節。
+適用範圍：所有 `.vue` / `.css` / `.scss` 的 style 區塊與 inline style。
+
 ## JSDoc 規範
 
 開發時盡量補全完整 JSDoc 註釋：

@@ -25,6 +25,13 @@ import { getDirname, HOME } from '../libs/core/paths.mjs'
 import { checkIncompleteSession, loadSession } from '../libs/core/session.mjs'
 import { ensureEnvironment } from '../libs/detect/doctor.mjs'
 import { warmupCli } from '../libs/external/claude-cli.mjs'
+import {
+  beginTransaction,
+  commitTransaction,
+  isCommitted,
+  isTransactionActive,
+  rollbackTransaction,
+} from '../libs/install/transaction.mjs'
 import { withSpinner } from '../libs/ui/with-spinner.mjs'
 
 // 並發 clack 操作會加多個 stdin/SIGINT listener，提高上限避免 MaxListenersExceeded
@@ -37,6 +44,10 @@ p.updateSettings({ withGuide: false })
 const __dirname = getDirname(import.meta)
 const REPO = path.resolve(__dirname, '..')
 const PREVIEW_DIR = path.join(REPO, 'dist', 'preview')
+
+// C 分級：核心本地 feature 的 verify missing 才觸發回滾詢問；
+// plugins/repos/tech-analysis 的 missing 是正常狀態，永遠只 warn。
+const CRITICAL_FEATURES = new Set(['claude-base', 'zsh', 'project-install'])
 
 /**
  * 檢查指定 pid 的程序是否仍在執行
@@ -130,6 +141,9 @@ async function main() {
   const flagFromIcloud = args.includes('--from-icloud')
   const flagDryRun = args.includes('--dry-run')
   const flagResetPrefs = args.includes('--reset-preferences')
+  const flagResetChoices = args.includes('--reset-choices')
+  const flagRefresh = args.includes('--refresh')
+  const flagNoCache = args.includes('--no-cache')
 
   // 非 TTY 環境（console 呼叫）：強制使用 Quick 模式，避免互動式 prompt 掛死
   if (!process.stdin.isTTY && !flagQuick && !flagAll && !flagFromIcloud) {
@@ -208,6 +222,14 @@ async function main() {
     p.log.success('已重置用戶偏好（~/.claude/.ab-tao/preferences.json）')
     p.outro('偏好已清除，下次 d:setup 從空白開始')
     process.exit(0)
+  }
+
+  if (flagResetChoices) {
+    const { stateResetChoices } = await import('../libs/state/state.mjs')
+    stateResetChoices()
+    p.log.success('已重置檔案層級選擇覆寫，將走完整互動重選（上次選擇為預設）')
+    // 強制互動模式，不退出
+    flagQuick = false
   }
 
   const _mig = prefsMigrateFromSession()
@@ -294,14 +316,22 @@ async function main() {
     p.intro(` ab-tao v${APP_VERSION} 安裝精靈 `)
   }
 
+  // 用於 --quick / reinstall 的 selectedIds，後續共用 Feature Registry lifecycle
+  let selectedIds
+  // 標記「全部清除」已執行，用於阻止 reinstall / --quick 靜默重放
+  let cleaned = false
+
   // 舊版安裝偵測（延後到用戶選擇安裝/調整後再執行）
   async function runLegacyCheckIfNeeded() {
     const legacyInfo = detectLegacyInstallation()
     if (legacyInfo.hasLegacy) {
+      if (!flagDryRun)
+        await withSpinner('📸 建立配置快照（防止失敗時本地失效）', async () => beginTransaction(), { hint: 'transaction' })
       const upgradeResult = await runUpgrade(legacyInfo)
       if (upgradeResult === 'cleaned') {
         prev = null
         projectFolders = []
+        cleaned = true
       }
     }
   }
@@ -310,9 +340,6 @@ async function main() {
   if (flagQuick && flagDryRun) {
     p.log.warn('⚠️ --quick 和 --dry-run 不能同時使用，已忽略 --dry-run')
   }
-
-  // 用於 --quick / reinstall 的 selectedIds，後續共用 Feature Registry lifecycle
-  let selectedIds
 
   // --from-icloud：從 iCloud 拉取偏好並快速重建 ZSH 環境
   if (flagFromIcloud) {
@@ -375,10 +402,16 @@ async function main() {
     )
     await runLegacyCheckIfNeeded()
 
-    // 從 session 的 features 清單重建，fallback 基礎功能
-    selectedIds = prev.features?.length
-      ? prev.features
-      : ['claude-base', 'zsh', 'project-install']
+    if (cleaned) {
+      // 全部清除後語義上不應靜默重放，改走完整互動（preferences.json 當預設）
+      flagQuick = false
+    }
+    else {
+      // 從 session 的 features 清單重建，fallback 基礎功能
+      selectedIds = prev?.features?.length
+        ? prev.features
+        : ['claude-base', 'zsh', 'project-install']
+    }
   }
 
   // 重入
@@ -543,11 +576,15 @@ async function main() {
     }
     if (action === 'reinstall') {
       await runLegacyCheckIfNeeded()
-      // 從 session 重建 features，等同 --quick fall-through
-      selectedIds = prev.features?.length
-        ? prev.features
-        : ['claude-base', 'zsh', 'project-install']
-      flagQuick = true
+      if (!cleaned) {
+        // 從 session 重建 features，等同 --quick fall-through
+        selectedIds = prev?.features?.length
+          ? prev.features
+          : ['claude-base', 'zsh', 'project-install']
+        flagQuick = true
+      }
+      // 若剛執行全部清除（cleaned=true），不設 selectedIds / flagQuick，
+      // 讓流程落到 selectFeatures() 完整互動（preferences.json 當預設值）
     }
   }
 
@@ -561,6 +598,8 @@ async function main() {
     selectedIds = await selectFeatures()
     if (isEmpty(selectedIds)) {
       p.log.warn('未選擇任何功能')
+      if (isTransactionActive() && !isCommitted())
+        rollbackTransaction('cancel: 未選功能')
       p.outro('已取消')
       return
     }
@@ -583,6 +622,8 @@ async function main() {
       }),
     )
     if (ok === BACK || !ok) {
+      if (isTransactionActive() && !isCommitted())
+        rollbackTransaction('cancel: 風險確認取消')
       p.outro('已取消')
       return
     }
@@ -615,9 +656,14 @@ async function main() {
   if (fs.existsSync(PREVIEW_DIR))
     fs.rmSync(PREVIEW_DIR, { recursive: true })
 
+  // 確保快照在任何 mutation 前已建立（覆蓋未經 runLegacyCheckIfNeeded 的路徑）
+  if (!flagDryRun)
+    await withSpinner('📸 建立配置快照（防止失敗時本地失效）', async () => beginTransaction(), { hint: 'transaction' })
+
   const loaded = topoSort(await loadFeatures(selectedIds))
   const startTime = Date.now()
   const featureResults = {}
+  const criticalMissing = []
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
 
   const rootCtx = {
@@ -633,6 +679,8 @@ async function main() {
       quick: flagQuick,
       manual: flagManual,
       dryRun: flagDryRun,
+      refresh: flagRefresh,
+      noCache: flagNoCache,
     },
     _path: path,
   }
@@ -722,6 +770,9 @@ async function main() {
           `驗證：${verification.passed}/${verification.total} 全部就位 ✓`,
         )
       }
+      // C 分級：核心本地 feature 缺檔才納入回滾決策
+      if (CRITICAL_FEATURES.has(feature.id) && verification.missing?.length)
+        criticalMissing.push({ id: feature.id, missing: verification.missing })
     }
     else {
       p.log.info(`[DRY RUN] ${feature.label} — 跳過安裝`)
@@ -735,6 +786,25 @@ async function main() {
     // 單一 feature 耗時
     const featureElapsed = ((Date.now() - featureStart) / 1000).toFixed(1)
     p.log.success(`  ${step} 完成（${featureElapsed}s）`)
+  }
+
+  // ── C 分級：核心缺檔詢問 ──
+  if (criticalMissing.length) {
+    console.log()
+    p.log.warn('⚠️ 以下核心 feature 的配置檔未完整就位：')
+    for (const { id, missing } of criticalMissing)
+      p.log.warn(`  ${id}：${missing.join('、')}`)
+    const keep = handleCancel(
+      await p.confirm({
+        message: '保留已安裝結果，或回滾還原至安裝前狀態？  Y 保留 · n 回滾',
+        initialValue: true,
+      }),
+    )
+    if (keep === BACK || !keep) {
+      rollbackTransaction(`verify-missing: ${criticalMissing.map(c => c.id).join(',')}`)
+      p.outro('已回滾，本地配置還原至安裝前狀態')
+      return
+    }
   }
 
   // ── 彙總結果 ──
@@ -889,10 +959,17 @@ async function main() {
   if (fontHint)
     p.log.warn(fontHint)
 
+  if (!flagDryRun)
+    commitTransaction()
   p.outro('設定完成')
 }
 
 main().catch((e) => {
+  if (isTransactionActive() && !isCommitted()) {
+    console.error(pc.yellow('\n🔄 安裝失敗，正在還原本地配置至安裝前狀態...'))
+    rollbackTransaction(`crash: ${e?.message || String(e)}`)
+    console.error(pc.green('✓ 本地配置已還原'))
+  }
   console.error(pc.red('\n❌ d:setup 異常退出'))
   console.error(pc.dim(`錯誤類型: ${e?.name || 'Unknown'}`))
   console.error(pc.dim(`訊息: ${e?.message || String(e)}`))

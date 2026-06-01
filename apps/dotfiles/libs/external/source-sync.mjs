@@ -561,8 +561,11 @@ export function buildSyncResult(fetched, selectedNames) {
     const finalRules = src.allFiles.rules.filter(f =>
       selectedNames.rules.has(f.name),
     )
+    const localNamesSet = fetched.localNames instanceof Set
+      ? fetched.localNames
+      : new Set(Array.isArray(fetched.localNames) ? fetched.localNames : [])
     const finalHooks
-      = !fetched.localNames.has('hooks.json') && src.allFiles.hooks
+      = !localNamesSet.has('hooks.json') && src.allFiles.hooks
         ? src.allFiles.hooks
         : null
 

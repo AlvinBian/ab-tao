@@ -29,7 +29,7 @@ export default {
   id: 'claude-base',
   label: '🤖 Claude Code 配置',
   hint: 'commands · agents · rules · hooks · settings',
-  dependsOn: [],
+  dependsOn: ['tech-analysis'],
   conflicts: [],
 
   /**
@@ -247,7 +247,7 @@ export default {
         }
         slackEnv = await setupSlackNotify(existingEnv)
         if (slackEnv === BACK)
-          return BACK
+          return null
       }
       catch {
         /* 非阻塞，Slack 設定失敗不影響主流程 */
@@ -329,9 +329,20 @@ export default {
     if (!plan)
       return null
 
-    const { deployGlobalConfig } = await import(
+    const { deployGlobalConfig, generateStackFragments } = await import(
       '../phases/execute/claude-tasks.mjs',
     )
+
+    // 從 tech-analysis 取得技術棧，生成規則片段供 mergeSkillFragments 注入
+    const techStacks = ctx.deps?.['tech-analysis']?.techStacks || []
+    if (techStacks.length) {
+      try {
+        await generateStackFragments(ctx.repoDir, techStacks)
+      }
+      catch {
+        // 片段生成失敗不中斷部署（退化為無片段行為）
+      }
+    }
 
     const result = await deployGlobalConfig({
       repoDir: ctx.repoDir,
@@ -340,6 +351,7 @@ export default {
       model: plan.model,
       isManual: ctx.flags?.manual || false,
       targetKeys: plan.targets || [],
+      techStacks,
       preferences: ctx.preferences ?? null,
       slackEnv: plan.slackEnv ?? null,
     })
