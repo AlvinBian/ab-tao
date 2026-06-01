@@ -1,5 +1,25 @@
 # @ab-tao/dotfiles
 
+## 1.10.1
+
+### Patch Changes
+
+- fix(zsh): 修復模組重複載入 — symlink 清理 + module guard
+
+  **問題根因**：舊版架構（`zsh/.zshrc.d/conf/` 實體檔）升級為 symlink 架構後，`d:setup` 多次執行導致 `conf/` 出現 ` 2.zsh` / ` 3.zsh` 重複 symlink，各模組被 source 三次，fnm `chpwd` hook 累積三份，換目錄時出現三行 `Using Node xxx`。
+
+  **`install.sh`**：
+
+  - 部署前清除 `<name> [0-9].zsh` 重複 symlink（空格 + 數字命名，由舊版 `ln` 行為產生）
+  - 清除非 symlink 實體檔（舊版複製遺留），確保 `ln -sf` 等冪
+
+  **zsh modules（4 個）加 module-level guard**，防重複 source：
+
+  - `00-env.zsh`：避免重複 `eval fnm env`（fork 子進程）
+  - `10-history.zsh`：避免重複呼叫 `_update_project_history`
+  - `60-tools.zsh`：避免重複 `eval zoxide init`（fork 子進程）
+  - `90-plugins.zsh`：避免重複 `eval starship init`（fork 子進程）
+
 ## 1.10.0
 
 ### Minor Changes
