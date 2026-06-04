@@ -143,8 +143,3 @@ export async function patchSession(patch) {
   })
   return _writeQueue
 }
-
-/**
- * 取得 repos 快取路徑（給 scan.mjs 讀取）
- */
-export const REPOS_CACHE_PATH = path.join(REPO, '.cache', 'repos.json')

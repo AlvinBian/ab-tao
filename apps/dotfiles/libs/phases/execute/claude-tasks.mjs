@@ -655,6 +655,34 @@ export async function installAiResources(opts) {
   return { installSelections, syncResult, commonsSummary }
 }
 
+/**
+ * 生成技術棧規則片段 — 呼叫 scan.mjs --init --no-ai --skills
+ *
+ * 產出：`REPO_DIR/.cache/stacks/{tech}/` 供 mergeSkillFragments 讀取注入。
+ * 空清單時直接 return（防禦）。
+ *
+ * @param {string} repoDir - dotfiles repo 根目錄（apps/dotfiles）
+ * @param {string[]} techStacks - 技術棧 ID 清單
+ */
+export async function generateStackFragments(repoDir, techStacks) {
+  if (!techStacks?.length)
+    return
+  await new Promise((resolve, reject) => {
+    const child = spawn(
+      'node',
+      ['bin/scan.mjs', '--init', '--no-ai', '--skills', techStacks.join(',')],
+      { cwd: repoDir },
+    )
+    child.on('close', (code) => {
+      if (code === 0)
+        resolve()
+      else
+        reject(new Error(`scan.mjs exit ${code}`))
+    })
+    child.on('error', reject)
+  })
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Listr 包裝層（向後相容）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

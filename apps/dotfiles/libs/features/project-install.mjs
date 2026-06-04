@@ -26,7 +26,7 @@ export default {
   id: 'project-install',
   label: '📁 專案配置',
   hint: 'repos + AI 資源 + 技術棧 + CLAUDE.md',
-  dependsOn: ['tech-analysis'],
+  dependsOn: ['repos', 'tech-analysis'],
   conflicts: [],
 
   /**

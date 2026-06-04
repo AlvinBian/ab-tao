@@ -159,6 +159,8 @@ export default {
   },
 
   complete(_result) {
+    if (!_result)
+      return []
     return [
       '✅ browser-harness 安裝完成',
       `   venv 路徑：${VENV_DIR}`,

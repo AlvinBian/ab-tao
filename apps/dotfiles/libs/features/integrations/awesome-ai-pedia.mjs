@@ -143,6 +143,8 @@ export default {
   },
 
   complete(_result) {
+    if (!_result)
+      return []
     return [
       '✅ awesome-ai-pedia 安裝完成',
       `   路徑：${INSTALL_PATH}`,

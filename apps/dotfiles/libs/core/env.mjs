@@ -67,6 +67,39 @@ export function loadEnv() {
 }
 
 /**
+ * 寫入 / 更新 .env.local 的單一 key（upsert），並同步至 process.env。
+ *
+ * 因 loadEnv 的 _loaded flag 使其只讀一次，寫檔後必須手動同步 process.env，
+ * 否則當前 process 讀不到新值。
+ *
+ * @param {string} key - 環境變數名
+ * @param {string} value - 值（原樣寫入，不加引號）
+ * @returns {void}
+ */
+export function setEnvLocal(key, value) {
+  const content = fs.existsSync(ENV_LOCAL_PATH)
+    ? fs.readFileSync(ENV_LOCAL_PATH, 'utf8')
+    : ''
+  const lines = content.split('\n')
+  const idx = lines.findIndex((l) => {
+    const t = l.trim()
+    if (!t || t.startsWith('#'))
+      return false
+    const eq = t.indexOf('=')
+    return eq !== -1 && t.slice(0, eq).trim() === key
+  })
+  if (idx !== -1) {
+    lines[idx] = `${key}=${value}`
+    fs.writeFileSync(ENV_LOCAL_PATH, `${lines.join('\n').trimEnd()}\n`)
+  }
+  else {
+    const trimmed = content.trimEnd()
+    fs.writeFileSync(ENV_LOCAL_PATH, trimmed ? `${trimmed}\n${key}=${value}\n` : `${key}=${value}\n`)
+  }
+  process.env[key] = value
+}
+
+/**
  * 讀取環境變數，帶型別轉換
  * @param {string} key
  * @param {*} fallback - 預設值（也決定型別轉換：number → parseInt, boolean → 'true'）

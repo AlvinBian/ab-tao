@@ -1,4 +1,5 @@
 # ── 現代 CLI 工具 + FZF 環境變數 ──────────────────────────────────
+[[ -n "$_AB_60_TOOLS_LOADED" ]] && return; _AB_60_TOOLS_LOADED=1
 
 # bat（cat / less 替代）— 語法高亮 + 行號 + git 標記
 if _command_exists bat; then

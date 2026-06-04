@@ -58,7 +58,7 @@ export default {
     if (missingEnv.length > 0) {
       return {
         ok: false,
-        message: `claude-context 缺少環境變數：${missingEnv.join(', ')}（參考 .env.example）`,
+        message: `claude-context 缺少環境變數：${missingEnv.join(', ')}（請填入 apps/dotfiles/.env.local，參考 .env.example）`,
       }
     }
 
@@ -74,7 +74,7 @@ export default {
         .join(', ')
       return {
         ok: false,
-        message: `claude-context 本地服務未啟動：${missing}（參考 docs/local-tools.md）`,
+        message: `claude-context 本地服務未啟動：${missing}\n  → Milvus：pnpm run c:locals --start\n  → LM Studio：開啟 GUI 並按下 "Start Server"（port 1234）`,
       }
     }
 
@@ -126,6 +126,8 @@ export default {
   },
 
   complete(_result) {
+    if (!_result)
+      return []
     return [
       '✅ claude-context 安裝完成',
       '   → 在 session 中說「初始化代碼索引」觸發首次索引（約 1–5 分鐘）',

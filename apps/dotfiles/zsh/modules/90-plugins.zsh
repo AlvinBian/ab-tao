@@ -1,4 +1,5 @@
 # ── 插件載入（sheldon）+ 補全 + Prompt ────────────────────────────
+[[ -n "$_AB_90_PLUGINS_LOADED" ]] && return; _AB_90_PLUGINS_LOADED=1
 
 # sheldon source 快取（只在 plugins.toml 變動時重新生成）
 _sheldon_cache="$HOME/.zshrc.d/sheldon/cache.zsh"

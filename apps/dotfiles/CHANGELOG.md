@@ -1,5 +1,58 @@
 # @ab-tao/dotfiles
 
+## 1.10.2
+
+### Patch Changes
+
+- a99129c: feat(claude): 新增復用/分層/解耦工程原則規則 + 配置一致性修復
+
+  - 新增 `rules/reuse-and-decoupling.md`（條件載入，編輯程式碼檔時注入）：復用優先搜尋鏈、DRY 分層抽取（Rule of Three + 職責去處表）、解耦原則（單一職責 / 依賴方向單向 / 元件薄 / 面向介面 / 副作用隔離 / 最小公開面）、反向氣味清單
+  - `claude-md/03-code-standards.md`：新增「復用 · 分層 · 解耦」核心原則小節（always-on 高層心智模型）；修復失效的 `rules/code-quality.md` 斷鏈指標 → 改指向實際存在的 typescript / vue-nuxt / barrel-exports / reuse-and-decoupling
+  - `commands/plan.md`：回填 runtime 較新版本（含 `EXECUTE_COMMAND:` 自動派發 + Mandatory Post-Execution Hooks + Done When）
+  - docs 同步：`config-map.md` rules 7→8 檔、`audit-checklists.md` 審查清單同步；個人規則版本標記統一 v1.7.2
+
+## 1.10.1
+
+### Patch Changes
+
+- fix(zsh): 修復模組重複載入 — symlink 清理 + module guard
+
+  **問題根因**：舊版架構（`zsh/.zshrc.d/conf/` 實體檔）升級為 symlink 架構後，`d:setup` 多次執行導致 `conf/` 出現 ` 2.zsh` / ` 3.zsh` 重複 symlink，各模組被 source 三次，fnm `chpwd` hook 累積三份，換目錄時出現三行 `Using Node xxx`。
+
+  **`install.sh`**：
+
+  - 部署前清除 `<name> [0-9].zsh` 重複 symlink（空格 + 數字命名，由舊版 `ln` 行為產生）
+  - 清除非 symlink 實體檔（舊版複製遺留），確保 `ln -sf` 等冪
+
+  **zsh modules（4 個）加 module-level guard**，防重複 source：
+
+  - `00-env.zsh`：避免重複 `eval fnm env`（fork 子進程）
+  - `10-history.zsh`：避免重複呼叫 `_update_project_history`
+  - `60-tools.zsh`：避免重複 `eval zoxide init`（fork 子進程）
+  - `90-plugins.zsh`：避免重複 `eval starship init`（fork 子進程）
+
+## 1.10.0
+
+### Minor Changes
+
+- 93ecb15: feat: d:setup 交易化安裝 — 快照+全量回滾防配置失效
+
+  新增 `libs/install/transaction.mjs` 交易模組，讓 d:setup 在任何 mutation 前先快照
+  mutable roots（~/.claude 配置目錄、zsh 模組、settings.json 等），全部成功才 commit，
+  中途 crash 或取消則自動還原至安裝前狀態。
+
+  **核心改動**
+
+  - `transaction.mjs`：`beginTransaction / commitTransaction / rollbackTransaction` 狀態包裝 +
+    `snapshotTargets / restoreFromSnapshot / removeCreated` 純函式（可注入 targets 供測試）
+  - `backup.mjs` `cpDir`：新增 `opts.skipNames`（`Set<string>`），命中 basename 整支 subtree 跳過；
+    解決 `sheldon/repos/**/.git/objects` 數千小檔觸發 macOS `ETIMEDOUT` 的問題
+  - `DEFAULT_TARGETS`：`~/.zshrc.d` 由整 dir 改為 per-file（`conf/` + `.prefs.zsh` + `sheldon/plugins.toml`），
+    sheldon repos git cache 完全排除於快照範圍
+  - `setup.mjs`：`beginTransaction()` 包 `withSpinner`，消除 UI hang；8 個接線點覆蓋
+    crash / 取消 / 核心缺檔詢問 / commit 全路徑
+  - 17 個單元測試（含 skipNames、per-file zshrc.d、best-effort rollback）
+
 ## 1.9.0
 
 ### Minor Changes

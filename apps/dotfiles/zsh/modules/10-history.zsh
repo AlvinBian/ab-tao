@@ -1,4 +1,5 @@
 # ── 歷史記錄設定（guard：用戶已設定則跳過）────────────────────────
+[[ -n "$_AB_10_HISTORY_LOADED" ]] && return; _AB_10_HISTORY_LOADED=1
 
 (( HISTSIZE > 1 )) || HISTSIZE=50000
 (( SAVEHIST > 1 )) || SAVEHIST=50000

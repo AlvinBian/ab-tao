@@ -33,7 +33,7 @@ const FEATURE_DEFS = [
     label: '🤖 Claude Code 配置',
     hint: 'commands · agents · rules · hooks · settings',
     load: () => import('./claude-base.mjs'),
-    dependsOn: [],
+    dependsOn: ['tech-analysis'],
     visible: true,
     order: 20,
   },
@@ -112,6 +112,35 @@ const FEATURE_DEFS = [
 ]
 
 /**
+ * 展開 feature id 清單，遞迴補齊所有 transitive dependsOn，並按 FEATURE_DEFS 宣告順序排序。
+ * loadFeatures / selectFeatures 皆透過此函式展開，確保所有路徑（互動 / quick / reinstall）
+ * 都帶齊 transitive deps，避免內部 feature（visible:false）被略過。
+ *
+ * @param {string[]} ids - 初始 feature id 陣列（可能未含依賴）
+ * @returns {string[]} 含所有依賴、去重且排序後的 id 陣列
+ */
+export function expandFeatureIds(ids) {
+  const allIds = new Set(ids)
+  const expand = (id) => {
+    const def = FEATURE_DEFS.find(f => f.id === id)
+    for (const dep of def?.dependsOn || []) {
+      if (!allIds.has(dep)) {
+        allIds.add(dep)
+        expand(dep)
+      }
+    }
+  }
+  for (const id of ids) expand(id)
+
+  const defOrder = FEATURE_DEFS.map(f => f.id)
+  return [...allIds].sort((a, b) => {
+    const ia = defOrder.indexOf(a)
+    const ib = defOrder.indexOf(b)
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+  })
+}
+
+/**
  * 功能選擇（setup 的第一步）
  *
  * 僅顯示 visible !== false 的功能，選擇後自動遞迴展開依賴。
@@ -143,36 +172,21 @@ export async function selectFeatures() {
   if (selected === BACK || !selected || isEmpty(selected))
     return []
 
-  // 展開依賴：遞迴加入所有 dependsOn
-  const allIds = new Set(selected)
-  const expand = (id) => {
-    const def = FEATURE_DEFS.find(f => f.id === id)
-    for (const dep of def?.dependsOn || []) {
-      if (!allIds.has(dep)) {
-        allIds.add(dep)
-        expand(dep)
-      }
-    }
-  }
-  for (const id of selected) expand(id)
-
-  const defOrder = FEATURE_DEFS.map(f => f.id)
-  return [...allIds].sort((a, b) => {
-    const ia = defOrder.indexOf(a)
-    const ib = defOrder.indexOf(b)
-    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
-  })
+  return expandFeatureIds(selected)
 }
 
 /**
- * 載入選擇的 feature 模組
+ * 載入選擇的 feature 模組（含依賴展開）
  *
- * @param {string[]} ids - 選擇的 feature id 陣列
- * @returns {Promise<object[]>} feature 物件陣列
+ * 展開 transitive dependsOn 後再載入，確保 quick / reinstall 路徑與互動路徑行為一致。
+ *
+ * @param {string[]} ids - 選擇的 feature id 陣列（可能未含依賴）
+ * @returns {Promise<object[]>} feature 物件陣列（含所有依賴 feature）
  */
 export async function loadFeatures(ids) {
+  const expandedIds = expandFeatureIds(ids)
   const features = []
-  for (const id of ids) {
+  for (const id of expandedIds) {
     const def = FEATURE_DEFS.find(f => f.id === id)
     if (!def)
       continue

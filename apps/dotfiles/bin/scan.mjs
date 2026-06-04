@@ -28,6 +28,7 @@ import path from 'node:path'
 import { isEmpty } from 'lodash-es'
 // ── lib 模組匯入 ────────────────────────────────────────────────
 // repo 分析引擎：GitHub API 掃描、deps 提取、路徑常量
+import { prefsGet } from '../libs/core/preferences-store.mjs'
 import {
   analyzeRepo,
   parseRepoEntry,
@@ -121,7 +122,12 @@ function getRepos() {
     }
   }
 
-  // 來源 2：.cache/repos.json（setup 產生的快取）
+  // 來源 2：preferences.json scan.repos（d:setup 的 canonical 寫入點）
+  const prefsRepos = prefsGet('scan.repos')
+  if (Array.isArray(prefsRepos) && prefsRepos.length)
+    return prefsRepos.map(e => parseRepoEntry(e).repo)
+
+  // 來源 3：.cache/repos.json（legacy fallback，保留向後相容）
   const cacheRepos = path.join(REPO_DIR, '.cache', 'repos.json')
   if (fs.existsSync(cacheRepos)) {
     try {
@@ -134,7 +140,7 @@ function getRepos() {
     }
   }
 
-  // 來源 3：config.json（向後相容）
+  // 來源 4：config.json（向後相容）
   const configPath = path.join(REPO_DIR, 'config.json')
   if (fs.existsSync(configPath)) {
     try {
@@ -147,7 +153,11 @@ function getRepos() {
     }
   }
 
-  console.error('找不到 repos 設定。請先執行 pnpm run setup')
+  console.error(
+    '找不到 repos 設定。請任一：\n'
+    + '  1. pnpm run d:setup → 勾選「📁 專案配置」並選擇 repos\n'
+    + '  2. pnpm run d:scan -- --org <org-name>（直接掃描 GitHub org）',
+  )
   process.exit(1)
 }
 

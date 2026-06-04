@@ -8,15 +8,14 @@
 - 使用者輸入 `/ai "釐清需求"` → 映射至 `/specify`，進入需求結構化流程
 - 使用者輸入 `/ai "unit test"` → 映射至 `/test`，自動偵測框架並生成測試
 
-## 30+ Intent 映射表
+## 40+ Intent 映射表
 
 | 輸入意圖 | 映射命令 | 說明 |
 |---------|---------|------|
 | PR review / 審查 PR | `/verify` | spec AC 反向覆蓋驗證 |
 | 釐清需求 / spec / 寫 spec | `/specify` | 需求 → 結構化 Spec |
 | unit test / 寫測試 / 補測試 | `/test` | 測試生成與覆蓋率分析 |
-| build 壞了 / 編譯錯誤 / build fix | `/check` | 構建修復 |
-| 品質閘門 / quality gate | `/check --gates` | 9-gate 完整審查 |
+| build 壞了 / 編譯錯誤 / build fix | `debugger` agent | 根因定位 + 最小 diff 修復 |
 | PR stack / stack 狀態 | `/pr-stack` | 堆疊 PR 狀態 |
 | 部署計劃 / deploy plan | `/deploy-plan` | 部署計劃生成 |
 | 發 Slack / Slack 草稿 | `/slack` | Slack 訊息助手 |
@@ -24,7 +23,7 @@
 | db migration / 資料庫遷移 | `/db-migration` | 資料庫遷移全流程 |
 | 監控 / SLO / alert | `/observe` | SLO + Dashboard + Alert |
 | 安全審查 / security review | `/security-review` | 安全審查 |
-| 代碼審查 / code review | `/review` | PR 代碼審查 |
+| 代碼審查 / code review | `/code-review` | PR 代碼審查（自動分流 quick/standard/deep） |
 | 初始化 / init CLAUDE.md | `/init` | 初始化 CLAUDE.md |
 | 需求功能開發 / feature | `/chain-product` | 三步功能開發 chain |
 | TDD / test-driven | `/chain-tdd` | 四步 TDD chain |
@@ -33,7 +32,7 @@
 | 並行任務 / parallel | `dispatching-parallel-agents` skill | 並行 agent 調度 |
 | 記憶搜尋 / 找記憶 | `memory-search` skill | 記憶語義搜尋 |
 | 找 skill | `find-skills` skill | 搜尋社群 skill |
-| 簡化代碼 / refactor | `simplify` skill | 代碼簡化審查 |
+| 簡化代碼 / refactor | `/code-review` | 代碼簡化審查 |
 | 後端架構 / API 設計 | `backend-patterns` skill | 後端架構 pattern |
 | Vue / Nuxt / SSR | `nuxt4-patterns` skill | Nuxt 4 pattern |
 | Laravel / PHP | `laravel-patterns` skill | Laravel pattern |
@@ -43,16 +42,26 @@
 | 狀態快照 / session 狀態 | `status-anchor` skill | Session 狀態快照 |
 | SLO / observability | `observe` skill | 可觀測性設計 |
 | 腦力激盪 / brainstorm | `brainstorming` skill | 創意發想 |
+| **blast radius / 什麼會 break / 改了有什麼影響** | `gitnexus-impact-analysis` skill | GitNexus 符號依賴 blast radius（d=1/2/3）|
+| **trace bug / 為何報錯 / 追蹤錯誤** | `gitnexus-debugging` skill | GitNexus query → context → process trace |
+| **rename / 安全改名 / extract module** | `gitnexus-refactoring` skill | GitNexus 多檔協調 rename + detect_changes 驗證 |
+| **架構探索 / 代碼理解 / how does X work** | `gitnexus-exploring` skill | GitNexus query + context + process resource |
+| **PR 影響範圍 / PR blast radius** | `gitnexus-pr-review` skill | detect_changes → impact per symbol → risk report |
+| **gitnexus index / reindex / 建圖** | `gitnexus-cli` skill | `npx gitnexus analyze / status / clean` |
+| **gitnexus 工具 / gitnexus 怎麼用** | `gitnexus-guide` skill | 工具速查 + MCP resource 導航 |
 
 ## Usage
 
 ```bash
 # 基本意圖觸發（在 Claude Code 中直接使用）
 /ai "PR review"         # → /verify
+/ai "blast radius"      # → gitnexus-impact-analysis skill
+/ai "trace this bug"    # → gitnexus-debugging skill
+/ai "rename safely"     # → gitnexus-refactoring skill
 /ai "釐清需求"          # → /specify
 /ai "unit test"         # → /test
 /ai "stack PR 狀態"     # → /pr-stack
-/ai "build 壞了"        # → /check
+/ai "build 壞了"        # → debugger agent
 /ai "部署計劃"          # → /deploy-plan
 /ai "發 Slack"          # → /slack
 

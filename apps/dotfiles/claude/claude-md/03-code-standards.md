@@ -10,37 +10,42 @@
 有明確上下文時以實際代碼為準；無上下文時以此為預設傾向，並於輸出前確認。
 需求超出上述技術棧時，先列出棧內最接近替代方案，確認後再輸出跨棧方案。
 
-## 版本管理
-
-涉及 Vue 2/3、Vuex/Pinia、Options/Composition API、PHP/Laravel 版本差異時：
-- 優先從 `package.json`、`nuxt.config.ts` 等自動判斷
-- 無法判斷時**停止並詢問**，禁止假設
-- 禁止版本未確認即輸出版本特定 API，禁止混用不同版本語法
-- 推斷時標註：「以下基於上下文推斷，請確認是否符合實際專案」
-- 版本特定 API 代碼頂部標註：`// Requires: Vue 3.x / Nuxt 3.x`
-
-## 程式碼規範
-
-1. 完整性：完整可運行代碼，含 import、interface、類型定義，不丟失上下文
-2. 類型安全：TypeScript 嚴格 interface/type，禁用 any，優先泛型
-3. 異常處理：內建完整錯誤處理與 loading / empty / error 三態
-4. 依賴管理：不隨意引入新套件；若必須引入，需說明版本、理由、優缺點與風險
-5. 禁止輸出：demo 代碼、過時 API、有安全漏洞的實現、邏輯不完整的片段
-6. API 規範：統一回傳 `{ code, message, data }`；分頁統一使用 cursor-based
-7. 模組導出 / 引入：資料夾統一以 barrel 入口檔 re-export，外部禁止 deep import — 詳見 `rules/barrel-exports.md`
-
 ## Simplicity First
 
-<!-- 來源：Karpathy LLM Coding Principles 缺項補充（Think Before Coding / Goal-Driven Execution 已內建於 15-§2/§5）-->
 - 拒絕 over-engineering：解決當下需求，不為假設性未來需求設計抽象
 - 3 行相似代碼可接受；4+ 行才考慮抽取，且確認複用機會真實存在
 - 優先複用 codebase 中已有的元件 / composable / util，新引入前先搜尋既有實現
-·- 新增套件前問：既有工具能否完成？能則不加依賴
+- 新增套件前問：既有工具能否完成？能則不加依賴
+
+## 復用 · 分層 · 解耦（核心原則）
+
+- **不造輪子**：寫共用邏輯前先搜尋既有 composable / util / store；既有方案 ~80% 符合 → 擴充而非另起爐灶
+- **按職責分層抽取**：純函式進 utils、響應式邏輯進 composable、共享狀態進 store、可複用 UI 進 component、常數進 config、文案進 i18n
+- **解耦**：單一職責 + 依賴方向單向（禁循環依賴）+ 元件薄（API 請求集中 service 層）+ 面向介面而非實作 + 副作用隔離到邊界層
+
+> 完整判準（Rule of Three、抽取去處表、反向氣味清單）→ 編輯 .vue/.ts/.js 時 `rules/reuse-and-decoupling.md` 自動注入。
 
 ## 收到代碼的工作流
 
 - **既有代碼**：先分析（說明問題或改進點）→ 確認意圖（修復 / 重構 / 擴充）→ 輸出；禁止直接覆蓋
 - **新需求**：確認意圖與範圍 → 需求模糊時主動追問，禁止自行填補假設 → 確認後進入實作
+
+> 程式碼規範細節於編輯對應檔案時自動注入：禁 any / 型別 → `rules/typescript.md`；SSR / 三態 → `rules/vue-nuxt.md`；barrel exports → `rules/barrel-exports.md`；復用 / 解耦 → `rules/reuse-and-decoupling.md`。
+
+## Design System Token 規範
+
+使用 KKday DS token 時，`var(--kk-xxx)` **禁止**附加 fallback 預設值：
+
+```css
+/* ❌ 禁止 */
+background: var(--kk-color-background-surface-lighter, #f9f9f9);
+
+/* ✅ 正確 */
+background: var(--kk-color-background-surface-lighter);
+```
+
+DS token 由全域統一管理；補 fallback 會靜默遮蔽 DS 更新，導致 UI 與設計規格脫節。
+適用範圍：所有 `.vue` / `.css` / `.scss` 的 style 區塊與 inline style。
 
 ## JSDoc 規範
 
@@ -64,5 +69,18 @@
 **規則**：`@param` 與 `@returns` 每個都要補；TS 類型已宣告時可省略類型括號 `{Type}`；優先說明「為什麼 / 什麼時候用」，不重複函式名稱已表達的資訊。
 
 **可省略**：自說明的簡單 getter/setter、框架生命週期鉤子、單行 arrow function。
+
+## 響應式參數設計（Vue composable / hook / helper）
+
+- composable / hook / 共用 helper 的參數若可能是響應式資料，**盡量同時接受 ref / computed / getter / 純值**，內部統一解包，呼叫端免寫 `.value` / `unref()`。
+- 解包工具：**Vue 3（3.3+）用 `toValue()`**（同時解 ref / getter / 純值，對應 `MaybeRefOrGetter`）；**Vue 2.7 用 `unref()`**（只解 ref / 純值，無 `toValue`）。
+- 型別標註：Vue 3 用 `MaybeRefOrGetter<T>` / `MaybeRef<T>`；Vue 2.7 無穩定匯出時用 union `T | import('vue').Ref<T>`。
+- `toValue()` / `unref()` 在 `computed` / `watchEffect` 內存取仍被依賴追蹤，響應性不受影響。
+- 例外：純展示元件 props、明確只吃快照的純資料工具；勿為支援響應式而把非 Vue 純函式強行耦合 `vue`。
+
+## 新增方法位置
+
+- 在**既有檔案**新增 function / method 時，一律**追加到檔案最後面**（既有 export 之後），不插入中段，降低 diff 噪音與 review 成本。
+- 例外：barrel / `index` re-export 依既有分組擺放；class 內方法依該 class 既有組織慣例。
 
 </code_standards>

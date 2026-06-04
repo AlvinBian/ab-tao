@@ -84,15 +84,19 @@ export async function backupIfExists(targetPath, label) {
  *
  * @param {string} src - 來源目錄絕對路徑
  * @param {string} dest - 目標目錄絕對路徑
+ * @param {{ skipNames?: Set<string> }} [opts] - skipNames：命中 basename 即整支 subtree 跳過
  * @returns {void}
  */
-export function cpDir(src, dest) {
+export function cpDir(src, dest, opts = {}) {
+  const { skipNames } = opts
   fs.mkdirSync(dest, { recursive: true })
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (skipNames?.has(entry.name))
+      continue
     const s = path.join(src, entry.name)
     const d = path.join(dest, entry.name)
     if (entry.isDirectory()) {
-      cpDir(s, d)
+      cpDir(s, d, opts)
     }
     else {
       // 跳過 broken symlink（目標不存在）
