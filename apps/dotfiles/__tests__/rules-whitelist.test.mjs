@@ -12,12 +12,13 @@ const EXPECTED = [
   'barrel-exports',
   'git-and-pr',
   'migrations',
+  'reuse-and-decoupling',
   'testing',
   'typescript',
   'vue-nuxt',
 ].sort()
 
-it('rules/ 只含預期的 7 個規則檔', () => {
+it('rules/ 只含預期的 8 個規則檔', () => {
   const actual = readdirSync(RULES_DIR)
     .filter(f => f.endsWith('.md'))
     .map(f => f.replace('.md', ''))

@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.7.0)
+# ~/.claude/ 結構全圖 (v1.7.2)
 
 ```
 ~/.claude/
@@ -22,11 +22,12 @@
 │   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則 + DAG 並行，取代 13+14）
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
-├── rules/                       # 條件載入（paths: frontmatter）7 檔
+├── rules/                       # 條件載入（paths: frontmatter）8 檔
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
 │   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
+│   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/
 │   ├── typescript.md            paths: *.ts *.tsx
 │   └── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
