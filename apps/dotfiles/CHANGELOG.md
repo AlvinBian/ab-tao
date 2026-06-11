@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.10.4
+
+### Patch Changes
+
+- feat(claude): 規則內容統一下沉 rules/ — git-and-pr 補 commit 工作流/git 操作授權/push tracking/不標對齊；typescript 補 JSDoc-as-types Object 陷阱+boolean equality 並擴 paths 含 .js；新增 php-codeigniter.md；對應 memory 瘦身
+
 ## 1.10.3
 
 ### Patch Changes
