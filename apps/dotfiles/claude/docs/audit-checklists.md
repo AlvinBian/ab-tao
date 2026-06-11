@@ -16,10 +16,10 @@
 - [ ] `claude-md/` 14 個 section 檔全部存在（00–08, 10–13, 15；09/14 已合併，16–18 已移 docs/）
 - [ ] `rules/` 9 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / testing / migrations / barrel-exports / git-and-pr / reuse-and-decoupling / php-codeigniter）
 - [ ] `rules/barrel-exports.md` 含 7 條 sub-rule（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
-- [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；29 個 docs/ 檔完整清單見 config-map.md
+- [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；28 個 docs/ 檔完整清單見 config-map.md
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
-- [ ] `slack-principles.md` 含 6 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns）
+- [ ] `slack-principles.md` 含 8 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns / 視覺節奏 / 場景 Icon 快查）
 - [ ] `slack-principles.md` Icon 語義字典含 3 組（嚴重度 · 動作 · Audience 區塊）
 - [ ] `slack-principles.md` 無殘留 T01~T15 模板（grep `T0[1-9]\|T1[0-5]` 應為 0）
 - [ ] `slack-principles.md` 含 Anti-Patterns section
@@ -28,7 +28,7 @@
 - [ ] `commands/slack.md` Step A2.5 含 multi 模式區塊拼裝邏輯
 - [ ] `commands/slack.md` Step A4.2 為 [d]/[m]/[c:]/[t:] 4 選一，無 [y] 預設
 - [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / ued / multi），無 `exec`
-- [ ] `slack-audience-profiles.md` 7 個 profile 均含 reader mental model + 決策原則 3 條上限
+- [ ] `slack-audience-profiles.md` 6 個實體 profile（rd/pm/mkt/qa/ops/ued）含 reader mental model + 決策原則 3 條上限；`multi` 為組合器（區塊化拼裝，無獨立 mental model）
 - [ ] `slack-audience-profiles.md` 無「完全保留 / 壓縮為 1 句 / 完全移除」舊表格（grep 應為 0）
 - [ ] 全 repo 無 `exec` audience 殘留（grep 應為 0）
 

@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.11.2
+
+### Patch Changes
+
+- chore(claude): 配置整合優化(3/n) — 清 GitNexus 廢棄 hook（刪 session-start-gitnexus-sync.json def + gitnexus-sync.sh script，hooks defs 9→8）；audit-checklists 自審項同步（docs 29→28、slack-principles 6→8 節、multi profile 改標為組合器非缺漏）
+
 ## 1.11.1
 
 ### Patch Changes
