@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.12.0
+
+### Minor Changes
+
+- docs(claude): 個人規則版本 v1.7.2→v1.8.0 里程碑 + 說明文件全面更新 — CLAUDE.md/config-map/STRUCTURE 版本標記統一；STRUCTURE.md 大幅同步（rules 7→9 表重寫、docs 22→28、清除廢棄 GitNexus skills/hooks、api-and-data offset 修正、commands 14→17、移除過時 config-map v1.6.1 引用）；根 CHANGELOG 補 [1.10.0] 配置整合優化條目；README 補最新版本指引
+
 ## 1.11.2
 
 ### Patch Changes

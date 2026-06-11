@@ -1,6 +1,6 @@
 # `~/.claude/` 配置架構說明
 
-> **版本**：v1.7.0 ｜ **最後更新**：2026-05-21
+> **版本**：v1.8.0 ｜ **最後更新**：2026-06-11
 >
 > 本文件說明 `~/.claude/` 各目錄與檔案的職責，以及整體設計邏輯。
 
@@ -37,15 +37,14 @@
 ├── .plans-relocated           📦 plans 目錄搬遷標記
 │
 ├── claude-md/                 ✅ 規則模組（14 個 .md，透過 @import 常駐載入）
-├── rules/                     ⚙️ 條件規則（paths: frontmatter 觸發，7 個 .md）
-├── docs/                      📖 參考文件（按需 @import 或手動查閱，22 個 .md）
+├── rules/                     ⚙️ 條件規則（paths: frontmatter 觸發，9 個 .md）
+├── docs/                      📖 參考文件（按需 @import 或手動查閱，28 個 .md）
 ├── agents/                    🤖 子代理定義（9 個，Task tool 呼叫時啟用）
-├── commands/                  ⌨️ 斜線命令（14 個，/command 語法觸發）
+├── commands/                  ⌨️ 斜線命令（17 個，/command 語法觸發）
 ├── skills/                    🛠️ 技能模組（38 個，pattern 匹配或 Skill tool 呼叫）
 │
-├── hooks/                     🔔 事件驅動腳本（8 個 def + 10 個 .sh + gitnexus hook）
+├── hooks/                     🔔 事件驅動腳本（8 個 def + .sh）
 │   ├── defs/                  ⚙️ Hook 定義（source of truth，已合併進 settings.json）
-│   ├── gitnexus/              🔔 GitNexus graph hook（PreToolUse 增強 + PostToolUse 過期偵測）
 │   └── *.sh                   📦 Hook 執行腳本
 │
 ├── projects/                  🔒 專案隔離記憶與計畫（10 個 <encoded> 子目錄）
@@ -104,7 +103,7 @@
 # 參考文件（按需查閱）
 @docs/rtk.md              → 輸出壓縮工具（-89% token）
 @docs/audit-checklists.md → 四模式 checklist 完整版
-@docs/config-map.md       → 目錄結構全圖 v1.6.1
+@docs/config-map.md       → 目錄結構全圖
 @docs/local-tools.md      → 本地工具安裝指引
 ```
 
@@ -135,17 +134,19 @@
 
 ## 5. `rules/` 條件載入規則
 
-7 個規則檔只在 Claude Code 偵測到正在編輯符合 `paths:` glob 的檔案時才注入上下文。設計目的是讓與 Vue 無關的任務不載入 Vue SSR 規則，避免污染 context。
+9 個規則檔只在 Claude Code 偵測到正在編輯符合 `paths:` glob 的檔案時才注入上下文。設計目的是讓與 Vue 無關的任務不載入 Vue SSR 規則，避免污染 context。
 
 | 規則檔 | 觸發 paths | 核心內容 |
 |---|---|---|
-| `api-and-data.md` | `src/api/**`, `routes/**`, `*.sql`, `migrations/**` | API 錯誤格式、Schema 設計、cursor 分頁、可觀測性 |
+| `api-and-data.md` | `src/api/**`, `routes/**`, `*.sql`, `migrations/**` | API 錯誤格式、Schema 設計、offset 分頁、可觀測性（Node/Prisma 範本）|
 | `barrel-exports.md` | `*.vue`, `*.ts`, `*.tsx`, `*.js`, `*.mjs`, `*.cjs` | barrel re-export 規範、禁止 deep import |
-| `git-and-pr.md` | `.github/**`, `CHANGELOG*` | stacked PR 工作流、force push 規則、`gh pr merge` 禁令 |
+| `git-and-pr.md` | `.github/**`, `CHANGELOG*`, `COMMIT_EDITMSG` | commit 工作流、stacked PR、force push、`gh pr merge` 禁令、git 操作授權 |
 | `migrations.md` | `migrations/**`, `prisma/**`, `drizzle/**`, `knex/**` | 不停機變更策略、回滾設計、Expand-Contract 模式 |
-| `testing.md` | `*.test.*`, `*.spec.*`, `__tests__/**`, `vitest.config.*` | 測試命名、mock 原則、覆蓋率目標 |
-| `typescript.md` | `*.ts`, `*.tsx`, `tsconfig*.json` | 嚴格模式、禁用 any、型別 guard 慣例 |
-| `vue-nuxt.md` | `*.vue`, `nuxt.config.*`, `composables/**`, `pages/**` | SSR/Hydration 安全、useCookie、`import.meta.client` |
+| `php-codeigniter.md` | `application/**/*.php`, `src/**/*.php` | PHP controller PHPDoc、internal API 搬移規範 |
+| `reuse-and-decoupling.md` | `*.vue`, `*.ts`, `*.js`, `composables/**`, `stores/**` | 復用優先、Rule of Three、分層抽取、解耦原則 |
+| `testing.md` | `*.test.*`, `*.spec.*`, `__tests__/**` | 測試命名、mock 原則、覆蓋率目標 |
+| `typescript.md` | `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.mjs`, `*.cjs` | 嚴格模式、禁用 any、JSDoc 撰寫 + as-types 陷阱、boolean equality |
+| `vue-nuxt.md` | `*.vue`, `*.css`, `*.scss`, `composables/**`, `pages/**` | SSR/Hydration、三態、DS token、響應式參數設計 |
 
 每個規則檔頂部有 frontmatter：
 
@@ -209,7 +210,8 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 | 領域知識 | `api-design`, `backend-patterns`, `nuxt4-patterns`, `laravel-patterns` |
 | 整合 / 工具 | `mcp-builder`, `integration-recommender`, `browser-automation-router`, `brainstorming` |
 | 初始化 | `claude-context-init`, `observe` |
-| **GitNexus 圖譜** | `gitnexus-guide`（工具速查）, `gitnexus-exploring`（架構探索）, `gitnexus-impact-analysis`（blast radius）, `gitnexus-debugging`（根因追蹤）, `gitnexus-refactoring`（安全改名/提取）, `gitnexus-pr-review`（PR 影響範圍）, `gitnexus-cli`（index/status/clean）|
+
+> 知識圖譜（符號依賴 / blast radius / 業務流程）改由 **code-review-graph** MCP（`mcp__code-review-graph__*`）提供，取代已停用的 GitNexus skills；見 `13-agent-orchestration.md`。
 
 ## 7. `hooks/` 事件驅動系統
 
@@ -249,8 +251,6 @@ hooks/
 | PreToolUse(Edit/Write) | `pre-tool-edit.sh` | 保護檔案紅線檢查、file-history 記錄 |
 | PreToolUse(Edit/Write) | `pre-tool-edit-tdd.sh` | TDD 強制（按需啟用）|
 | PreToolUse（任意）| `pre-tool-context-budget.sh` | Context 使用率警示 |
-| PreToolUse(Grep/Glob/Bash) | `gitnexus-hook.cjs` | 從知識圖譜取回相關符號，注入 additionalContext |
-| PostToolUse(Bash git-op) | `gitnexus-hook.cjs` | 比對 HEAD vs meta.json lastCommit，偵測 index 過期 |
 | PreCompact | `pre-compact.sh` | 壓縮前掃描未存記憶的重要決策 |
 | SessionEnd | `session-end.sh` | metrics 寫入、worklog draft flush、清理 snapshot |
 | Stop | `stop.sh` | 任務中斷時寫入 corrections 信號 |
@@ -380,4 +380,4 @@ hooks/
 
 Claude Code 本身也會在其他位置儲存資料：`~/Library/Application Support/Claude/` 存放應用層設定；MCP server 的 auth token 另行儲存，不在 `~/.claude/` 內。
 
-**最後更新**：2026-05-21 ｜ Claude Sonnet 4.6
+**最後更新**：2026-06-11 ｜ Claude Opus 4.8
