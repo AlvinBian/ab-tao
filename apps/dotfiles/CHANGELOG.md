@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.10.6
+
+### Patch Changes
+
+- docs(claude): config-map / audit-checklists 同步 rules 8→9（新增 php-codeigniter.md）+ typescript paths 補 .js
+
 ## 1.10.5
 
 ### Patch Changes
