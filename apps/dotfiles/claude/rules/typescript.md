@@ -20,6 +20,11 @@ paths:
 - Discriminated union 優先於 optional 欄位 + runtime check
 - `satisfies` 運算子用於確認字面量型別同時保留推斷精確度
 
+## JSDoc 撰寫規範
+- **必須加**：公開函式 / composable / utility、複雜邏輯、公開 `interface` / `type`、回傳值語義不明確者
+- **標準格式**：一句話用途（繁中）+ `@param`（每個都補）/ `@returns` / `@throws {ErrorType}`（會拋錯時）/ `@example`；TS 類型已宣告時可省略類型括號 `{Type}`；優先說明「為什麼 / 何時用」，不重複函式名已表達的資訊
+- **可省略**：自說明的 getter/setter、框架生命週期鉤子、單行 arrow function
+
 ## JSDoc-as-types（checkJs / JSDoc-typed `.js`）
 - **回傳禁標 `@returns {Object}`**：會被推成無具名屬性的 boxed `Object`，呼叫端解構具名屬性報 `ts(2339)`。移除型別括號、只留描述文字，讓 TS 從 `return { ... }` 自動推斷精確物件字面型別。所有「回傳物件」的 composable / hook 同理。
 - **參數需具名型別**：`@param {Object} x` 後存取 `x.prop` 同樣報 `ts(2339)`。修法是建 `<Component>.types.ts` 定義 `interface`、檔頂 `@import` bare 使用；形狀不固定的動態 API 物件才退用 `@param {*}`。

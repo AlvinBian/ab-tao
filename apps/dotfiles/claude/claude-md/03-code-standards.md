@@ -30,53 +30,7 @@
 - **既有代碼**：先分析（說明問題或改進點）→ 確認意圖（修復 / 重構 / 擴充）→ 輸出；禁止直接覆蓋
 - **新需求**：確認意圖與範圍 → 需求模糊時主動追問，禁止自行填補假設 → 確認後進入實作
 
-> 程式碼規範細節於編輯對應檔案時自動注入：禁 any / 型別 → `rules/typescript.md`；SSR / 三態 → `rules/vue-nuxt.md`；barrel exports → `rules/barrel-exports.md`；復用 / 解耦 → `rules/reuse-and-decoupling.md`。
-
-## Design System Token 規範
-
-使用 KKday DS token 時，`var(--kk-xxx)` **禁止**附加 fallback 預設值：
-
-```css
-/* ❌ 禁止 */
-background: var(--kk-color-background-surface-lighter, #f9f9f9);
-
-/* ✅ 正確 */
-background: var(--kk-color-background-surface-lighter);
-```
-
-DS token 由全域統一管理；補 fallback 會靜默遮蔽 DS 更新，導致 UI 與設計規格脫節。
-適用範圍：所有 `.vue` / `.css` / `.scss` 的 style 區塊與 inline style。
-
-## JSDoc 規範
-
-開發時盡量補全完整 JSDoc 註釋：
-
-**必須加**：公開函式 / composable / utility、複雜邏輯、公開 `interface` / `type`、回傳值語義不明確的函式
-
-**標準格式**：
-```ts
-/**
- * 一句話說明函式用途（繁體中文）。
- *
- * @param paramName - 參數說明
- * @returns 回傳值說明
- * @throws {ErrorType} 觸發條件（若會拋錯）
- * @example
- * const result = myFn('input') // => 'output'
- */
-```
-
-**規則**：`@param` 與 `@returns` 每個都要補；TS 類型已宣告時可省略類型括號 `{Type}`；優先說明「為什麼 / 什麼時候用」，不重複函式名稱已表達的資訊。
-
-**可省略**：自說明的簡單 getter/setter、框架生命週期鉤子、單行 arrow function。
-
-## 響應式參數設計（Vue composable / hook / helper）
-
-- composable / hook / 共用 helper 的參數若可能是響應式資料，**盡量同時接受 ref / computed / getter / 純值**，內部統一解包，呼叫端免寫 `.value` / `unref()`。
-- 解包工具：**Vue 3（3.3+）用 `toValue()`**（同時解 ref / getter / 純值，對應 `MaybeRefOrGetter`）；**Vue 2.7 用 `unref()`**（只解 ref / 純值，無 `toValue`）。
-- 型別標註：Vue 3 用 `MaybeRefOrGetter<T>` / `MaybeRef<T>`；Vue 2.7 無穩定匯出時用 union `T | import('vue').Ref<T>`。
-- `toValue()` / `unref()` 在 `computed` / `watchEffect` 內存取仍被依賴追蹤，響應性不受影響。
-- 例外：純展示元件 props、明確只吃快照的純資料工具；勿為支援響應式而把非 Vue 純函式強行耦合 `vue`。
+> 程式碼規範細節於編輯對應檔案時自動注入：禁 any / 型別 / JSDoc → `rules/typescript.md`；SSR / 三態 / DS token / 響應式參數 → `rules/vue-nuxt.md`；barrel exports → `rules/barrel-exports.md`；復用 / 解耦 → `rules/reuse-and-decoupling.md`。
 
 ## 新增方法位置
 

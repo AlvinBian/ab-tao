@@ -29,10 +29,7 @@ paths:
 
 ## Migration 安全
 
-- 新增 NOT NULL 分三步：nullable → 回填 → 約束
-- 重命名分步：加新欄位 → 雙寫 → 切讀 → 刪舊
-- 刪除欄位：先確認代碼已不讀取，再刪
-- 大表（> 100 萬行）：用 `CONCURRENTLY` 或 `pt-online-schema-change`
+→ 見 `rules/migrations.md`（NOT NULL 三步 / 重命名四步 / 大表策略 / 回滾設計，編輯 migration 檔時自動注入，避免兩處重複）
 
 ## 可觀測性
 

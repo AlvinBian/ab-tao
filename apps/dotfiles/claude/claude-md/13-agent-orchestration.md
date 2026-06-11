@@ -22,54 +22,32 @@
 | 需求結構化 / spec | `/specify` command |
 | spec AC 反向驗證 | `/verify` command |
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
-| **GitNexus 知識圖譜** | 見下方「GitNexus 整合」章節 |
-| **Understand-Anything（語義層）** | 見下方「融合工作流」章節 |
+| **code-review-graph 知識圖譜** | 見下方「code-review-graph 整合」章節（符號依賴 + blast radius + 業務流程）|
 
-## GitNexus 知識圖譜整合
+## code-review-graph 知識圖譜整合
 
-GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook 自動增強 Grep/Glob/Bash 搜尋結果。
+code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，單一工具同時涵蓋**符號級依賴**（取代 GitNexus）與**業務流程可視化**（取代 Understand-Anything）。
 
-### 任務 → Skill 映射
+### 任務 → 工具映射
 
-| 任務 | Skill | 典型觸發語 |
+| 任務 | 工具（`mcp__code-review-graph__*`）| 典型場景 |
 |---|---|---|
-| 架構探索 / 理解代碼 | `gitnexus-exploring` | "How does X work?", "Show me the auth flow" |
-| **Blast radius / 改了什麼會 break** | `gitnexus-impact-analysis` | "Is it safe to change X?", "What depends on this?" |
-| Trace bug / 錯誤根因 | `gitnexus-debugging` | "Why is X failing?", "Trace this error" |
-| Rename / Extract / Split | `gitnexus-refactoring` | "Rename this safely", "Extract to module" |
-| PR 改動影響範圍 | `gitnexus-pr-review` | "Review PR #N", "Blast radius of this PR?" |
-| Index / reindex / CLI | `gitnexus-cli` | "Index this repo", "Reanalyze codebase" |
-| Tool / schema 查閱 | `gitnexus-guide` | "What GitNexus tools are available?" |
+| 架構探索 / 理解代碼 | `get_architecture_overview` / `semantic_search_nodes` / `traverse_graph` | "How does X work?" |
+| **Blast radius / 改動影響** | `get_impact_radius` / `get_affected_flows` | "改 X 會 break 什麼？" |
+| Trace bug / 根因 | `traverse_graph` / `query_graph` | "Why is X failing?" |
+| Refactor / Rename | `refactor` / `apply_refactor` | "Rename this safely" |
+| PR 審查 context | `get_review_context` / `get_minimal_context` | "Review PR #N" |
+| 業務流程可視化 | `list_flows` / `get_flow` / `generate_wiki` | "這個 repo 的業務流程" |
+| 建 / 更新圖譜 | `build_or_update_graph` / `detect_changes` | 初次索引 / reindex |
+| 跨 repo 搜尋 | `cross_repo_search` | 多專案符號查找 |
 
-> MCP 工具速查 / Hook 行為 / Index 管理 → Read `~/.claude/docs/gitnexus-integration.md`（架構探索、blast radius 任務時）
+### 使用原則
 
-## GitNexus × Understand-Anything 融合工作流
+1. **新 repo / 陌生模組**：先 `get_architecture_overview` + `generate_wiki` 建心智模型，再 `semantic_search_nodes` 深入符號層
+2. **改動後確認**：`get_impact_radius` + `get_affected_flows` 一併確認技術依賴 + 業務流程無斷鏈
+3. **Debug 入口**：`get_affected_flows` 定位失效業務流 → `traverse_graph` 追技術符號鏈
 
-兩層互補：**技術層**（GitNexus，符號圖 + blast radius，Claude 推理用）+ **語義層**（Understand-Anything，業務流程可視化，人類理解用）。
-
-### 任務 → 雙層工具映射
-
-| 任務 | 語義層（先） | 技術層（後） |
-|---|---|---|
-| 理解新 repo / 陌生模組 | Understand-Anything 生成業務 diagram | `gitnexus-exploring` 確認符號依賴 |
-| 改動安全性確認 | 確認業務流程無斷點 | `gitnexus-impact-analysis` blast radius |
-| Debug 根因追蹤 | 從 diagram 定位業務層失效點 | `gitnexus-debugging` trace 技術符號鏈 |
-| Refactor / Rename | 確認業務邊界不被破壞 | `gitnexus-refactoring` 符號安全重命名 |
-| PR 改動影響 | 確認 user flow 完整性 | `gitnexus-pr-review` 技術依賴影響 |
-
-### 三條使用原則
-
-1. **新 repo / 陌生模組**：先跑 Understand-Anything 建立業務心智模型，再用 GitNexus 深入符號層
-2. **改動後雙層確認**：semantic diagram 確認業務流完整 → impact analysis 確認技術依賴無斷鏈
-3. **Debug 入口**：從語義層定位「哪個業務流失效」→ GitNexus 追蹤「哪個符號鏈斷了」
-
-> Understand-Anything 安裝：Claude Code 內執行 `/plugin marketplace add Lum1104/Understand-Anything`，再執行 `/plugin install understand-anything`。
-
-### 索引新鮮度自動維護
-
-- **GitNexus**：ab-tao `ab-tao:gitnexus:sync` SessionStart hook 自動偵測落後（`lastCommit` ≠ HEAD）→ 背景 `gitnexus analyze --index-only`，三道節流（並發鎖 + 10 min debounce + SHA 比對），**100% 無感**。部署：`pnpm run d:setup`。
-- **Understand-Anything**：每個目標 repo 手動跑一次 `/understand --auto-update`（寫 `config.json {autoUpdate:true}`），之後 plugin 自帶 hook 在 session 內 auto-prompt 更新（**半無感**）。注意：plugin 需先 build（`cd ~/.claude/plugins/cache/understand-anything/understand-anything/<version> && pnpm install && pnpm --filter @understand-anything/core build`）。
-- `/understand --auto-update` 是 Claude Code slash command，**不是 shell 命令**，無法 zsh alias；gitnexus CLI 已有 `gna='gitnexus analyze --index-only'` alias（`30-aliases.zsh`）。
+> 環境：需 Python 3.11+；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已批量部署至 KKday 專案（取代非商用禁用的 GitNexus + 已卸載的 Serena/CGC）。
 
 ## 調度規則（強制）
 

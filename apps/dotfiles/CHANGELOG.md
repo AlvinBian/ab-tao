@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.11.0
+
+### Minor Changes
+
+- refactor(claude): 配置整合優化(1/n) — always-on 規則歸屬下沉條件載入：DS token/JSDoc/響應式/三態 從 03-code-standards 移至 rules/vue-nuxt+typescript（省常駐 context）；13-agent GitNexus+Understand-Anything 改寫為 code-review-graph（單一工具涵蓋符號依賴+業務流程，移除廢棄工具引用）；api-and-data Migration 段去重引用 migrations.md
+
 ## 1.10.7
 
 ### Patch Changes
