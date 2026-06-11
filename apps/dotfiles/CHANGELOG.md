@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.11.1
+
+### Patch Changes
+
+- refactor(claude): 配置整合優化(2/n) — 刪過時 gitnexus-integration.md（GitNexus 廢棄+無引用）；修矛盾：08 MEMORY hot index ≤10→≤15 行對齊 config-map、audit-checklists API 格式/分頁改「依專案契約」消除與 api-and-data 衝突；config-map 同步 vue-nuxt paths(+css/scss)/docs 29→28/系統參考 9→8
+
 ## 1.11.0
 
 ### Minor Changes

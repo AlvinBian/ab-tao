@@ -80,8 +80,8 @@
 - [ ] 環境變數不 hardcode
 
 ### API 規範
-- [ ] 回傳格式統一 `{ code, message, data }`
-- [ ] 分頁使用 cursor-based（非 offset）
+- [ ] 回傳格式統一（依專案實際契約；Node / Prisma 範本見 `rules/api-and-data.md`）
+- [ ] 分頁策略一致（cursor 或 offset，依專案契約統一，勿混用）
 - [ ] 無過時 API、無 demo 代碼
 
 ### 代碼品質

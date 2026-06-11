@@ -12,7 +12,7 @@
 
 ## Memory 三溫層
 
-**Hot**（MEMORY.md）：純 index，≤10 行，永不直接寫入內容 → 利於 prompt cache ｜ **Stable**（`system-patterns.md`）：偏好 / feedback / 永久參考 ｜ **Volatile**（`active-context.md`）：進行中 ticket / mid-run 記錄 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
+**Hot**（MEMORY.md）：純 index，≤15 行，永不直接寫入內容 → 利於 prompt cache ｜ **Stable**（`system-patterns.md`）：偏好 / feedback / 永久參考 ｜ **Volatile**（`active-context.md`）：進行中 ticket / mid-run 記錄 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
 
 **寫入規則**：stable feedback / 工具偏好 → `system-patterns.md` ｜ 進行中票號 / pending-curate → `active-context.md` ｜ 禁止直接 append 到 MEMORY.md（僅允許修改 index 指向）
 

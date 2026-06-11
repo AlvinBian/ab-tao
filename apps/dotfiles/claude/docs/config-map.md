@@ -31,9 +31,9 @@
 │   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
-│   └── vue-nuxt.md              paths: *.vue nuxt.config.* composables/
+│   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
 │
-├── docs/                        # 參考文件（可 @import，非規則）29 檔
+├── docs/                        # 參考文件（可 @import，非規則）28 檔
 │   │
 │   │   # ── CLAUDE.md @import 目標（4）──
 │   ├── rtk.md                   RTK 工具 + token 預算影響
@@ -45,14 +45,13 @@
 │   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns
 │   ├── slack-audience-profiles.md   7 種 audience（rd/pm/mkt/qa/ops/ued/multi）
 │   │
-│   │   # ── 系統參考（按需，9）──
+│   │   # ── 系統參考（按需，8）──
 │   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
 │   ├── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
 │   ├── self-evolution.md        failure-patterns append-only 自我演進 + ADR-002 invariants
 │   ├── STRUCTURE.md             ~/.claude/ 結構快照
 │   ├── agent-dag-parallel.md    多 phase 並行排程（DAG 切分 / Wave gate）引用: 13-agent-orchestration
 │   ├── agent-typed-result.md    Subagent 回傳 schema 範例 + prompt 模板  引用: 13-agent-orchestration
-│   ├── gitnexus-integration.md  GitNexus MCP 工具速查 + Hook 行為       引用: 13-agent-orchestration
 │   ├── self-correction-details.md  串流中斷觸發細節 + 歷史案例          引用: 15-self-correction
 │   ├── state-system-details.md  Plan Frontmatter / 資料夾命名規範        引用: 08-state-system
 │   │
