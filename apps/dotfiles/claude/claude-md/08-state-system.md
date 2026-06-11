@@ -36,7 +36,7 @@
 
 ## 冷啟動
 
-開新 session 先讀當前專案 `system-patterns.md`（永久偏好）→ 再讀 `active-context.md`（進行中項目）→ 最後讀 active plan。Context 壓縮前掃描未入記憶的重要決策。
+開新 session 先讀當前專案 `system-patterns.md`（永久偏好，**檔不存在則跳過**，勿視為錯誤）→ 再讀 `active-context.md`（進行中項目）→ 最後讀 active plan。Context 壓縮前掃描未入記憶的重要決策。
 若 `active-context.md` 含 `[pending-curate]` 標記 → 主動詢問「上次 session 有未處理的記憶建議，是否現在回顧有需記錄的決策？」確認後提示使用者刪除該段落。
 
 > 資料夾命名 / Plan Frontmatter Convention 細節 → `~/.claude/docs/state-system-details.md`

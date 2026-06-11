@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.10.5
+
+### Patch Changes
+
+- fix(claude): 08-state-system 冷啟動讀 system-patterns.md 改條件式（檔不存在則跳過，勿視為錯誤）
+
 ## 1.10.4
 
 ### Patch Changes
