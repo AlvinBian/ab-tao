@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.10.3
+
+### Patch Changes
+
+- feat(claude): 新增巢狀 sub-agent 條件式優先編排規則（13-agent-orchestration 調度規則第 5 條）
+
 ## 1.10.2
 
 ### Patch Changes

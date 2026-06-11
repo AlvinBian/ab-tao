@@ -86,6 +86,8 @@ GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook �
 
 **4. Subagent 分層**：搜索密集、重 I/O 工作下放 subagent；主對話專注決策與整合。
 
+**5. 巢狀展開（條件式優先）**：可深度分解 / 可平行的任務，優先用 sub-agent 巢狀展開（Claude Code 2.1.172+ 起 sub-agent 可再生成 sub-agent，最深 5 層）——上層 supervisor fan-out 下層 worker，提升吞吐。**僅在可分解性明確時展開**：淺任務、1–2 工具能解決的（見下方「何時不要 spawn agent」）仍走主對話。巢狀放大平行度的同時也指數放大 token / 協調成本、降低可觀測性，受 simplicity-first 與範圍爆炸防禦約束，禁止藉巢狀能力過度編排。
+
 ## 何時**不要** spawn agent
 
 - 使用者問題 1–2 個工具能直接回答 → 主對話自己做
