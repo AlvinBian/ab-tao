@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.10.7
+
+### Patch Changes
+
+- ci(release): pnpm run release 末段自動補 git tag + GitHub Release（post-release.mjs，private package changeset tag no-op 的補償；冪等 + execFileSync 防注入）
+
 ## 1.10.6
 
 ### Patch Changes
