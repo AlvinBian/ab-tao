@@ -1,5 +1,16 @@
 # @ab-tao/dotfiles
 
+## 1.14.2
+
+### Patch Changes
+
+- GitNexus 100% 移除（功能性殘留全清）
+
+  - **zsh**：移除 30-aliases.zsh 整個 GitNexus alias 區塊（25 個 gn\* alias）
+  - **README**：60-tools 工具列表移除 gitnexus
+  - 同步清理（非 source，本機）：~/.claude/settings.json 移除 3 個 gitnexus hook group（PreToolUse/PostToolUse/SessionStart）、刪 hook 腳本（gitnexus-sync.sh + gitnexus/ 目錄）、刪 16 專案 .gitnexus 圖譜資料（2.3GB）
+  - 保留：CHANGELOG / lsp-mcp-evaluation（歷史紀錄）、「取代非商用 GitNexus」說明（rationale context）
+
 ## 1.14.1
 
 ### Patch Changes

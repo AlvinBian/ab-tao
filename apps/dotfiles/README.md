@@ -29,7 +29,7 @@ docs/         — 流程圖（Mermaid）、整合指南
 | `40-git` | git 別名、stacked PR 工具（gh-stack / git-spice）|
 | `50-claude` | Claude Code iCloud symlink 自動修復、`cc` 系列 alias |
 | `50-functions` | 通用 shell 函式 |
-| `60-tools` | 現代 CLI 替代工具（bat / eza / zoxide / fzf / gitnexus…）|
+| `60-tools` | 現代 CLI 替代工具（bat / eza / zoxide / fzf…）|
 | `90-plugins` | sheldon 插件延遲載入 |
 
 本機專屬設定（API key、私有 alias）請寫入 `~/.zshrc.local`，不受 ab-tao 管控。
