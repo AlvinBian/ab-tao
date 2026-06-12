@@ -30,6 +30,8 @@ code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知�
 
 ### 任務 → 工具映射
 
+> **工具名規則**：MCP 完整工具名為 `mcp__code-review-graph__<name>_tool`（**所有工具皆有 `_tool` 後綴**，v3.4.0 共 30 個）。下表 `<name>` 省略前後綴，呼叫時補上，例：`get_architecture_overview` → `mcp__code-review-graph__get_architecture_overview_tool`。
+
 | 任務 | 工具（`mcp__code-review-graph__*`）| 典型場景 |
 |---|---|---|
 | 架構探索 / 理解代碼 | `get_architecture_overview` / `semantic_search_nodes` / `traverse_graph` | "How does X work?" |
@@ -47,7 +49,7 @@ code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知�
 2. **改動後確認**：`get_impact_radius` + `get_affected_flows` 一併確認技術依賴 + 業務流程無斷鏈
 3. **Debug 入口**：`get_affected_flows` 定位失效業務流 → `traverse_graph` 追技術符號鏈
 
-> 環境：需 Python 3.11+；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已批量部署至 KKday 專案（取代非商用禁用的 GitNexus + 已卸載的 Serena/CGC）。
+> 環境：需 Python 3.11+；CLI 於 `~/.local/bin/code-review-graph`（v3.4.0）；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已接入 KKday 13 專案（daemon 背景增量更新 + launchd 開機自啟）；取代非商用禁用的 GitNexus。**serena（LSP）並存互補，未卸載**。
 
 ## 調度規則（強制）
 

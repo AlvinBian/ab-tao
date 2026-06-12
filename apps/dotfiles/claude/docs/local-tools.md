@@ -258,3 +258,59 @@ Serena 需知道 project 路徑。d:setup 使用 `${PWD}` 作為動態值；若�
 **LSP 報錯** → 確認對應 language server 已全局安裝：`which typescript-language-server`
 
 **symbol 找不到** → Serena 依賴 LSP index 建立，新開 session 後等 ~10-30s LSP warmup
+
+## F. code-review-graph（知識圖譜 MCP，符號依賴 + blast radius + 業務流程）
+
+持久增量知識圖譜（MIT，SQLite，支援 PHP / Vue / TS / JS 等 30+ 語言），透過 MCP 暴露 30 個工具，涵蓋符號級依賴、blast radius、業務流程可視化。取代非商用禁用的 GitNexus；與 serena（LSP）、claude-context（向量）三範式互補。
+
+### 前置需求
+- Python 3.11+
+- CLI：`~/.local/bin/code-review-graph`（v3.4.0）；首次 `pip install code-review-graph`
+
+### 1. MCP server（已寫入 settings.template.json）
+```json
+"code-review-graph": {
+  "command": "${HOME}/.local/bin/code-review-graph",
+  "args": ["mcp", "--repo", "${PWD}"]
+}
+```
+d:setup 自動寫入 `~/.claude/settings.json`；**需在專案目錄開 Claude（`${PWD}` 動態）+ 重啟 session** 才載入。
+
+### 2. 建圖譜（每個專案首次）
+```bash
+cd <repo> && code-review-graph build          # 含 postprocess（flows + communities + FTS）
+code-review-graph status                       # 確認 nodes/edges
+```
+
+### 3. daemon 自動增量更新（不再變 dead data）
+```bash
+code-review-graph daemon add "$PWD" --alias <name> --watch-mode both  # 檔案 + git 事件
+code-review-graph daemon start                 # launchd 開機自啟見下
+```
+切 branch / commit 自動 update（秒級），不需 git hooks。
+
+### 4. launchd 開機自啟
+`~/Library/LaunchAgents/com.code-review-graph.daemon.plist`（RunAtLoad，登入拉起 daemon）。
+
+### 5. 語義搜尋（選用）
+```bash
+pip install 'code-review-graph[embeddings]'    # sentence_transformers
+code-review-graph embed --repo <repo>          # 啟用 semantic_search_nodes_tool
+```
+
+### 6. 視覺化
+```bash
+code-review-graph visualize                    # 生成 graph.html（D3.js 互動圖）
+```
+
+### 7. 多機
+配置（settings / CLAUDE.md）跨機同步；**圖譜 graph.db 不同步**（~2GB + SQLite 鎖衝突）。新機各自 `build` + `daemon add`。
+
+### 8. 排錯
+| 症狀 | 解 |
+|---|---|
+| Claude 沒調用、走 grep | 在專案目錄開 Claude + 重啟 session；`/mcp` 確認 connected |
+| 工具 404 | 完整名含 `_tool` 後綴（`get_architecture_overview_tool`）|
+| build 卡住 | daemon 在 watch → 先 `daemon stop` |
+| 圖譜過期 | `daemon status` 查 alive；`update --brief` |
+| 驗證是否生效 | 問「用 get_hub_nodes_tool 列最多依賴的 5 個符號」→ 看調用 `mcp__code-review-graph__*` 還是 grep |

@@ -42,22 +42,22 @@
 | 狀態快照 / session 狀態 | `status-anchor` skill | Session 狀態快照 |
 | SLO / observability | `observe` skill | 可觀測性設計 |
 | 腦力激盪 / brainstorm | `brainstorming` skill | 創意發想 |
-| **blast radius / 什麼會 break / 改了有什麼影響** | `gitnexus-impact-analysis` skill | GitNexus 符號依賴 blast radius（d=1/2/3）|
-| **trace bug / 為何報錯 / 追蹤錯誤** | `gitnexus-debugging` skill | GitNexus query → context → process trace |
-| **rename / 安全改名 / extract module** | `gitnexus-refactoring` skill | GitNexus 多檔協調 rename + detect_changes 驗證 |
-| **架構探索 / 代碼理解 / how does X work** | `gitnexus-exploring` skill | GitNexus query + context + process resource |
-| **PR 影響範圍 / PR blast radius** | `gitnexus-pr-review` skill | detect_changes → impact per symbol → risk report |
-| **gitnexus index / reindex / 建圖** | `gitnexus-cli` skill | `npx gitnexus analyze / status / clean` |
-| **gitnexus 工具 / gitnexus 怎麼用** | `gitnexus-guide` skill | 工具速查 + MCP resource 導航 |
+| **blast radius / 什麼會 break / 改了有什麼影響** | `code-review-graph` MCP `get_impact_radius_tool` | 符號依賴 blast radius + affected flows |
+| **trace bug / 為何報錯 / 追蹤錯誤** | `code-review-graph` MCP `traverse_graph_tool` / `query_graph_tool` | 符號鏈 + 業務流程追蹤 |
+| **rename / 安全改名 / extract module** | `code-review-graph` MCP `refactor_tool` | 多檔協調 rename + detect_changes 驗證 |
+| **架構探索 / 代碼理解 / how does X work** | `code-review-graph` MCP `get_architecture_overview_tool` | 架構總覽 + community 分群 |
+| **PR 影響範圍 / PR blast radius** | `code-review-graph` MCP `detect_changes_tool` + `get_review_context_tool` | 改動符號 + impact + risk |
+| **建圖 / reindex / 索引** | `code-review-graph build` CLI | 初次索引 / 重建（daemon 自動增量）|
+| **code-review-graph 工具 / 怎麼用** | `code-review-graph` MCP（30 tools）| 見 13-agent-orchestration 任務→工具映射 |
 
 ## Usage
 
 ```bash
 # 基本意圖觸發（在 Claude Code 中直接使用）
 /ai "PR review"         # → /verify
-/ai "blast radius"      # → gitnexus-impact-analysis skill
-/ai "trace this bug"    # → gitnexus-debugging skill
-/ai "rename safely"     # → gitnexus-refactoring skill
+/ai "blast radius"      # → code-review-graph get_impact_radius_tool
+/ai "trace this bug"    # → code-review-graph traverse_graph_tool
+/ai "rename safely"     # → code-review-graph refactor_tool
 /ai "釐清需求"          # → /specify
 /ai "unit test"         # → /test
 /ai "stack PR 狀態"     # → /pr-stack

@@ -2,7 +2,7 @@
 
 **繁體中文** | [简体中文](README-zh-CN.md) | [English](README-en.md)
 
-ab-tao 是 Turborepo monorepo — 開發環境統一管理 + 共用 Claude AI 資源。v1.6.0 為 greenfield 首次正式發布，不維護 v1.5 相容性。最新版本與完整變更見 [CHANGELOG.md](CHANGELOG.md)（個人規則當前 v1.8.0）。
+ab-tao 是 Turborepo monorepo — 開發環境統一管理 + 共用 Claude AI 資源。v1.6.0 為 greenfield 首次正式發布，不維護 v1.5 相容性。最新版本與完整變更見 [CHANGELOG.md](CHANGELOG.md)（個人規則當前 v1.8.1）。
 
 ## v1.6.0 標誌特色
 

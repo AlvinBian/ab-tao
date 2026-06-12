@@ -1,5 +1,17 @@
 # @ab-tao/dotfiles
 
+## 1.14.0
+
+### Minor Changes
+
+- 說明文件全面同步：GitNexus 殘清 + code-review-graph 工具名修正 + 安裝章節
+
+  - **README**：個人規則版號 v1.8.0 → v1.8.1
+  - **13-agent-orchestration**：code-review-graph 工具名補 `_tool` 後綴規則（修 404 隱患）；修正「已卸載 Serena」不實陳述（serena 並存互補）
+  - **ai-dispatcher**：7 條 `gitnexus-*` skill 映射 → code-review-graph MCP 工具（gitnexus skills 已不存在）
+  - **local-tools**：新增「F. code-review-graph」安裝/daemon/embed/視覺化/排錯章節
+  - 保留：STRUCTURE.md（已正確）、lsp-mcp-evaluation.md（2026-05-24 歷史評估報告，不竄改）
+
 ## 1.13.0
 
 ### Minor Changes
