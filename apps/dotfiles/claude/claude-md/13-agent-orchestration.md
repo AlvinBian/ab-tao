@@ -107,16 +107,48 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 > 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
 
-## Review 入口決策表
+## PR / Code Review 工作流（降噪優先）
 
-| 需求 | 工具 | 備註 |
-|---|---|---|
-| **PR review（預設入口）** | **`/code-review`** | 自動分流 quick/standard/deep；`--effort` flag 覆寫；見下方分流規格 |
-| 第二意見 / quick 單獨呼叫 | `reviewer` agent | quick 模式固定組件；亦可獨立呼叫取第二意見 |
-| PR 測試覆蓋率 | `pr-test-analyzer` agent | 行為覆蓋 + 漏洞防護 |
-| 無聲失敗 / 錯誤吞噬 | `silent-failure-hunter` agent | 專項分析 |
-| 型別設計 | `type-design-analyzer` agent | 不變量 + 封裝 |
-| 架構深度審查 | `architect` agent | 5 維度評分 |
+### 最高原則：Signal > Volume
+評論是成本不是產出。每條評論先問「不發會怎樣」。能不發就不發、能合併就不散落、別人提過的絕不重提。
+
+### 第零段：狀態偵測（review 前必跑）
+讀 PR 既有 comments/reviews（入口 A 另讀 Slack thread 進度）→ 建「已覆蓋問題清單」→ 分流：
+| 偵測到 | 模式 |
+|---|---|
+| 無評論 | 全新 review |
+| 已有評論（含他人）| 增量：只補 net-new，已覆蓋禁重提 |
+| 多 reviewer 並行 | 補位：交叉驗證既有，只加沒人提的 |
+| Slack thread 已討論 | 回應最新討論點，禁重發總結 |
+
+### 第一段：入口
+- PR 連結 → 直接取，needSlack=false
+- Slack 連結 → 讀 thread 抓 PR 連結（無則停下問，禁臆測），needSlack=true
+
+### 第二段：Review + 降噪閘門
+1. `/code-review` 分析（tier 見下方 Review 深淺分流規格；`--effort` 覆寫）
+2. 去重：每個 finding 比對「已覆蓋清單」→ 重複者丟棄（不發 / 不提 / 不附和）
+3. 嚴重度閘門：P0/P1 → inline；P2/P3 → 彙整進 1 條 summary 末段「次要」清單；正確碼 → 不評論（禁 per-line LGTM 噪音）
+4. 聚合：同類問題多處 → 1 條評論列點，不每處一條
+5. 產出 = 最多 1 條 summary + N 條 P0/P1 inline（N 盡量小）
+
+### 第三段：外發（全部草稿先行）
+- PR 評論草稿 + Slack 草稿一併呈現 → 確認 → 才發
+- Slack（needSlack）走 `/slack` 區塊化（結論 → 風險 → PR 連結）
+
+### 專項工具（pipeline 按 tier 自動掛載 / 手動單呼）
+| 工具 | 觸發 |
+|---|---|
+| `reviewer` agent | always / 第二意見 |
+| `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
+| `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
+| `pr-test-analyzer` | prod code 改 ＆ test 未改 |
+| `architect` agent | deep tier / 架構深度審查（5 維度評分）|
+
+### 紅線（引用既有，不重述）
+- PR：comment / inline 可；approve / merge 見 §05 deny list
+- i18n 缺項：見 §04，不自創文案
+- 外發：草稿先行（§05 + Preview > Apply）
 
 ## Review 深淺分流規格
 

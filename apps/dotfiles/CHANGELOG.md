@@ -1,5 +1,15 @@
 # @ab-tao/dotfiles
 
+## 1.13.0
+
+### Minor Changes
+
+- PR review 工作流降噪重構 + code-review-graph MCP 接入
+
+  - **13-agent-orchestration**：`Review 入口決策表` 重構為「PR / Code Review 工作流（降噪優先）」——新增第零段狀態偵測（已 review 偵測 + 去重）、嚴重度閘門（P2/P3 彙整單條 summary）、雙入口（PR / Slack 連結）、外發草稿先行；保留 Review 深淺分流規格
+  - **settings.template.json**：mcpServers 新增 `code-review-graph` 條目（knowledge graph MCP，符號依賴 + blast radius + 業務流程）
+  - 個人規則 v1.8.0 → v1.8.1
+
 ## 1.12.0
 
 ### Minor Changes

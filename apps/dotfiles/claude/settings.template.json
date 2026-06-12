@@ -70,6 +70,14 @@
         "--project",
         "${PWD}"
       ]
+    },
+    "code-review-graph": {
+      "command": "${HOME}/.local/bin/code-review-graph",
+      "args": [
+        "mcp",
+        "--repo",
+        "${PWD}"
+      ]
     }
   },
 
