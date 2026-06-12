@@ -1,5 +1,13 @@
 # @ab-tao/dotfiles
 
+## 1.14.3
+
+### Patch Changes
+
+- 移除說明文件中 GitNexus 點名描述
+
+  13-agent-orchestration / local-tools / STRUCTURE 的「取代 GitNexus」rationale 描述移除（保留語意，去點名）。剩餘 GitNexus 字樣僅存於 CHANGELOG 與 lsp-mcp-evaluation 歷史紀錄（不竄改）。
+
 ## 1.14.2
 
 ### Patch Changes

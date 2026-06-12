@@ -211,7 +211,7 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 | 整合 / 工具 | `mcp-builder`, `integration-recommender`, `browser-automation-router`, `brainstorming` |
 | 初始化 | `claude-context-init`, `observe` |
 
-> 知識圖譜（符號依賴 / blast radius / 業務流程）改由 **code-review-graph** MCP（`mcp__code-review-graph__*`）提供，取代已停用的 GitNexus skills；見 `13-agent-orchestration.md`。
+> 知識圖譜（符號依賴 / blast radius / 業務流程）改由 **code-review-graph** MCP（`mcp__code-review-graph__*`）提供；見 `13-agent-orchestration.md`。
 
 ## 7. `hooks/` 事件驅動系統
 

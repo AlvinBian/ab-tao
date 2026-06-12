@@ -26,7 +26,7 @@
 
 ## code-review-graph 知識圖譜整合
 
-code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，涵蓋**符號級依賴**（取代非商用 GitNexus）與**業務流程**（`list_flows` / `get_flow` / `generate_wiki`）。
+code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，涵蓋**符號級依賴**與**業務流程**（`list_flows` / `get_flow` / `generate_wiki`）。
 >
 > **與 Understand-Anything 互補（非取代）**：兩者按 audience 分工——**Claude 查** → code-review-graph MCP（review/debug 即時取依賴）；**人視覺探索** → Understand-Anything plugin（React dashboard / 導覽 tour / onboarding，見 `docs/local-tools.md §G`）。各自原生 auto-update，不衝突。
 
@@ -51,7 +51,7 @@ code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知�
 2. **改動後確認**：`get_impact_radius` + `get_affected_flows` 一併確認技術依賴 + 業務流程無斷鏈
 3. **Debug 入口**：`get_affected_flows` 定位失效業務流 → `traverse_graph` 追技術符號鏈
 
-> 環境：需 Python 3.11+；CLI 於 `~/.local/bin/code-review-graph`（v3.4.0）；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已接入 KKday 13 專案（daemon 背景增量更新 + launchd 開機自啟）；取代非商用禁用的 GitNexus。**serena（LSP）並存互補，未卸載**。
+> 環境：需 Python 3.11+；CLI 於 `~/.local/bin/code-review-graph`（v3.4.0）；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已接入 KKday 13 專案（daemon 背景增量更新 + launchd 開機自啟）。**serena（LSP）並存互補**。
 
 ## 調度規則（強制）
 

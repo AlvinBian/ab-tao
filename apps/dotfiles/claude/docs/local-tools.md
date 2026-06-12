@@ -261,7 +261,7 @@ Serena 需知道 project 路徑。d:setup 使用 `${PWD}` 作為動態值；若�
 
 ## F. code-review-graph（知識圖譜 MCP，符號依賴 + blast radius + 業務流程）
 
-持久增量知識圖譜（MIT，SQLite，支援 PHP / Vue / TS / JS 等 30+ 語言），透過 MCP 暴露 30 個工具，涵蓋符號級依賴、blast radius、業務流程可視化。取代非商用禁用的 GitNexus；與 serena（LSP）、claude-context（向量）三範式互補。
+持久增量知識圖譜（MIT，SQLite，支援 PHP / Vue / TS / JS 等 30+ 語言），透過 MCP 暴露 30 個工具，涵蓋符號級依賴、blast radius、業務流程可視化。與 serena（LSP）、claude-context（向量）三範式互補。
 
 ### 前置需求
 - Python 3.11+
