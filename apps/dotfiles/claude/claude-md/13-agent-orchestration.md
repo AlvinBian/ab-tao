@@ -26,7 +26,9 @@
 
 ## code-review-graph 知識圖譜整合
 
-code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，單一工具同時涵蓋**符號級依賴**（取代 GitNexus）與**業務流程可視化**（取代 Understand-Anything）。
+code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，涵蓋**符號級依賴**（取代非商用 GitNexus）與**業務流程**（`list_flows` / `get_flow` / `generate_wiki`）。
+>
+> **與 Understand-Anything 互補（非取代）**：兩者按 audience 分工——**Claude 查** → code-review-graph MCP（review/debug 即時取依賴）；**人視覺探索** → Understand-Anything plugin（React dashboard / 導覽 tour / onboarding，見 `docs/local-tools.md §G`）。各自原生 auto-update，不衝突。
 
 ### 任務 → 工具映射
 

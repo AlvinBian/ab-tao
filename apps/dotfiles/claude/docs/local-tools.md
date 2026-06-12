@@ -314,3 +314,38 @@ code-review-graph visualize                    # 生成 graph.html（D3.js 互�
 | build 卡住 | daemon 在 watch → 先 `daemon stop` |
 | 圖譜過期 | `daemon status` 查 alive；`update --brief` |
 | 驗證是否生效 | 問「用 get_hub_nodes_tool 列最多依賴的 5 個符號」→ 看調用 `mcp__code-review-graph__*` 還是 grep |
+
+## G. Understand-Anything（業務流程視覺化 dashboard，互補 code-review-graph）
+
+Claude Code plugin（MIT，[Lum1104/Understand-Anything](https://github.com/Lum1104/Understand-Anything)，已裝 v2.7.5），把 codebase 變互動知識圖譜 + React dashboard，主打**業務流程可視化**與**新人導覽**。與 code-review-graph **互補非取代**。
+
+### 定位：按 audience 分工（與 code-review-graph 零冗餘）
+| | code-review-graph | Understand-Anything |
+|---|---|---|
+| 給誰 | **Claude**（MCP 查依賴 / blast radius）| **人**（dashboard 視覺探索）|
+| 介面 | MCP 工具 `*_tool` | React dashboard（domain view / tour）|
+| 儲存 | `.code-review-graph/` SQLite | `.understand-anything/knowledge-graph.json` |
+| auto-update | daemon `--watch-mode both`（免費背景）| commit hook → Claude 增量（fingerprint，**耗 token**）|
+
+> 口訣：**Claude 要查 → crg ｜ 你要看 → UA**。
+
+### 命令（8 skills）
+- `/understand` — 建知識圖譜（`--auto-update` 開 commit 自動更新；`--language zh-TW` 中文）
+- `/understand-domain` — 抽業務領域（domains / flows / steps）
+- `/understand-chat "How does X flow work?"` — 自然語言問流程
+- `/understand-dashboard` — 開互動 dashboard
+- `/understand-diff` — 改動影響 ｜ `/understand-explain` — 深入檔案 ｜ `/understand-onboard` — 新人導覽
+
+### 啟用 auto-update（選定專案，注意成本）
+```bash
+cd <repo>
+# Claude 說：/understand --auto-update --language zh-TW
+# → 建 .understand-anything/knowledge-graph.json + autoUpdate:true
+# → 之後 git commit 自動增量更新（plugin hooks.json PostToolUse 偵測 commit）
+```
+
+### ⚠️ 成本策略
+UA auto-update 跑 LLM agents 做語義分析，**結構變更時花 token**（cosmetic 改動 fingerprint 偵測零成本）。建議：**只在常做 onboarding / 需視覺探索的專案開 `--auto-update`**（如 member-ci）；其他專案要看時手動 `/understand`。crg 則 13 專案全開（免費背景）。
+
+### worktree 注意
+PROJECT_ROOT 在 git worktree 時，UA 自動把輸出重導向主 repo root（worktree 是臨時的，`.understand-anything/` 寫那會隨 session 銷毀）。

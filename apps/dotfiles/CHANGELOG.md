@@ -1,5 +1,14 @@
 # @ab-tao/dotfiles
 
+## 1.14.1
+
+### Patch Changes
+
+- code-review-graph 與 Understand-Anything 改為互補定位（非取代）
+
+  - **13-agent-orchestration**：移除「取代 Understand-Anything」，改為 audience 分工互補（Claude 查 → crg MCP ｜ 人視覺探索 → UA dashboard）
+  - **local-tools**：新增「G. Understand-Anything」章節（定位對照 / 8 skills / auto-update + 成本策略 / worktree 注意）
+
 ## 1.14.0
 
 ### Minor Changes
