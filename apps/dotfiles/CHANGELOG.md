@@ -1,5 +1,11 @@
 # @ab-tao/dotfiles
 
+## 1.14.4
+
+### Patch Changes
+
+- 修正 local-tools code-review-graph daemon 文檔：`daemon add` 無 `--watch-mode` 旗標（位置參數語法），移除錯誤標註（預設即監看檔案 + git 事件）
+
 ## 1.14.3
 
 ### Patch Changes

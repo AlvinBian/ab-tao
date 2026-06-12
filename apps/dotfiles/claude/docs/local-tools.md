@@ -284,7 +284,7 @@ code-review-graph status                       # 確認 nodes/edges
 
 ### 3. daemon 自動增量更新（不再變 dead data）
 ```bash
-code-review-graph daemon add "$PWD" --alias <name> --watch-mode both  # 檔案 + git 事件
+code-review-graph daemon add "$PWD" --alias <name>  # 檔案 + git 事件
 code-review-graph daemon start                 # launchd 開機自啟見下
 ```
 切 branch / commit 自動 update（秒級），不需 git hooks。
@@ -325,7 +325,7 @@ Claude Code plugin（MIT，[Lum1104/Understand-Anything](https://github.com/Lum1
 | 給誰 | **Claude**（MCP 查依賴 / blast radius）| **人**（dashboard 視覺探索）|
 | 介面 | MCP 工具 `*_tool` | React dashboard（domain view / tour）|
 | 儲存 | `.code-review-graph/` SQLite | `.understand-anything/knowledge-graph.json` |
-| auto-update | daemon `--watch-mode both`（免費背景）| commit hook → Claude 增量（fingerprint，**耗 token**）|
+| auto-update | daemon（免費背景，檔案+git 自動）| commit hook → Claude 增量（fingerprint，**耗 token**）|
 
 > 口訣：**Claude 要查 → crg ｜ 你要看 → UA**。
 
