@@ -43,7 +43,6 @@ const commands = [
   { cmd: 'pnpm run d:status', desc: '配置儀表板與健康度報告' },
   { cmd: 'pnpm run d:restore', desc: '還原備份（Claude 配置 / ZSH）' },
   { cmd: 'pnpm run d:hooks', desc: 'Hook 管理（啟停 / 部署）' },
-  { cmd: 'pnpm run d:prefs-sync', desc: 'iCloud 偏好檔同步' },
   { cmd: 'pnpm run cs:dev', desc: '啟動後台控制台（Vite + API）' },
   { cmd: 'pnpm run cs:open', desc: '構建後以 file:// 開啟（離線）' },
 ]

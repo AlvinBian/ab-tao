@@ -60,7 +60,6 @@ export const PREF_DEFAULTS = {
   },
   protectedFiles: ['.env*', '*.lock', 'pnpm-lock.yaml', 'package-lock.json'],
   dangerousPatterns: DEFAULT_DANGEROUS_PATTERNS,
-  sync99Local: false,
   doctorExtraTools: [],
   cacheTtl: {
     sourceSync: 3600000,
@@ -313,15 +312,6 @@ export async function collectPreferences(prevPrefs) {
     ? DEFAULT_DANGEROUS_PATTERNS
     : current.dangerousPatterns
 
-  const sync99Local = handleCancel(
-    await p.confirm({
-      message: '同步 99-local.zsh 至 iCloud？（本機專屬設定，預設不同步）',
-      initialValue: current.sync99Local ?? false,
-    }),
-  )
-  if (sync99Local === BACK)
-    return null
-
   return {
     ...current,
     guiEditorOrder,
@@ -334,7 +324,6 @@ export async function collectPreferences(prevPrefs) {
     notifyFlushSecs,
     protectedFiles,
     dangerousPatterns,
-    sync99Local,
   }
 }
 
@@ -475,7 +464,6 @@ export function getNerdFontHint(prefs) {
 
 /**
  * 從已部署的偏好檔案反向解析為 JS 偏好物件
- * 用於 d:setup --from-icloud：iCloud pull 後直接讀取，跳過互動精靈
  * 每個欄位獨立解析，失敗時使用 PREF_DEFAULTS 補齊，不會拋出例外
  * @returns {object} 解析後的偏好物件
  */

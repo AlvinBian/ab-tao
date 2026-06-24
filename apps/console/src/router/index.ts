@@ -33,7 +33,6 @@ const REDIRECT_MAP: Record<string, { path: string, tab: string }> = {
   '/config/chrome': { path: '/configuration', tab: 'chrome' },
   '/actions/setup': { path: '/actions', tab: 'setup' },
   '/actions/scan': { path: '/actions', tab: 'scan' },
-  '/actions/sync': { path: '/actions', tab: 'sync' },
   '/actions/restore': { path: '/actions', tab: 'restore' },
 }
 

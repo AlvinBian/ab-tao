@@ -8,7 +8,6 @@ const session = ref<Record<string, unknown> | null>(null)
 const loadingSession = ref(false)
 const dryRun = ref(false)
 const mode = ref<'quick' | 'manual' | 'all'>('quick')
-const fromIcloud = ref(false)
 const cancelling = ref(false)
 const selectedStep = ref(0)
 const userInteracted = ref(false)
@@ -88,7 +87,6 @@ async function execute() {
     flags: [],
     dryRun: dryRun.value,
     mode: mode.value,
-    fromIcloud: fromIcloud.value,
   })
 }
 
@@ -272,9 +270,6 @@ async function clearProgress() {
         </SettingRow>
         <SettingRow label="Dry-run" description="只預覽變更，不實際寫入；確認無誤後再正式執行。">
           <el-switch v-model="dryRun" :disabled="sse.running.value" />
-        </SettingRow>
-        <SettingRow label="從 iCloud" description="從 iCloud 快速重建配置，適合換機或重裝後恢復個人設定。">
-          <el-switch v-model="fromIcloud" :disabled="sse.running.value" />
         </SettingRow>
       </el-form>
     </el-card>

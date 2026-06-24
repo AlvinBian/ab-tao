@@ -8,7 +8,7 @@
 
 - `pnpm install` 已完成，ab-tao monorepo 正常運作
 - `pnpm run d:scan` 已執行，技術棧已掃描（確保篩選結果準確）
-- 有 iCloud / 網路連線（部分 source 需遠端拉取）
+- 有網路連線（部分 source 需遠端拉取）
 
 ## 3. 步驟
 

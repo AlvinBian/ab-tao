@@ -17,7 +17,6 @@
     "status": "node bin/status.mjs",
     "hooks": "node bin/hooks.mjs",
     "uninstall": "node bin/uninstall.mjs",
-    "prefs-sync": "node bin/prefs-sync.mjs",
     "restore": "node bin/restore.mjs",
     "scan": "node bin/scan.mjs",
     "chrome": "node bin/chrome.mjs",

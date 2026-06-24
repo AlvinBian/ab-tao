@@ -120,13 +120,6 @@ function getDefault(key: string): unknown {
         <SettingRow label="UV Override Pip" description="使用 uv 取代 pip，提升 Python 套件安裝速度。">
           <el-switch v-model="(form as Record<string, boolean>).uvOverridePip" @change="onChange" />
         </SettingRow>
-
-        <SettingRow
-          label="Sync 99-local"
-          description="啟用後將 ~/.claude/settings.local.json 同步至 iCloud；內含個人 token 與本機路徑等敏感資訊，僅在受信任的個人環境啟用。"
-        >
-          <el-switch v-model="(form as Record<string, boolean>).sync99Local" @change="onChange" />
-        </SettingRow>
       </el-form>
 
       <div style="text-align:right; margin-top:16px; display:flex; gap:8px; justify-content:flex-end">

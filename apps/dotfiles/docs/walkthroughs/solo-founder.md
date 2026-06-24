@@ -6,7 +6,6 @@
 
 1. ab-tao `d:setup` 已完成
 2. 建議選擇 `day-to-day` 或 `spike` profile
-3. iCloud 同步已啟用（`d:prefs-sync` 跑過一次）
 
 ## 完整步驟
 
@@ -98,9 +97,6 @@ A：簡單任務（生成 README、格式調整）幾乎無影響。複雜架構
 
 **Q：spike profile 下 `/check --gates` 還能跑嗎？**
 A：可以，但 tddStrictMode 閘會跳過。需要嚴格閘時手動加 `--force-strict`。
-
-**Q：iCloud 同步失敗怎麼辦？**
-A：執行 `pnpm run d:prefs-sync --debug` 查看同步詳情，確認 iCloud Drive 掛載正常。
 
 **Q：memory 太多怎麼快速清理？**
 A：在 Claude Code 輸入「幫我做 memory decay scan，90 天未存取的條目列出來」。

@@ -36,7 +36,6 @@ pnpm run d:status          # 配置儀表板
 pnpm run d:restore         # 還原備份
 pnpm run d:hooks           # Hook 管理
 pnpm run d:doctor          # 環境診斷（ghost entries / drift SHA / dead sync paths）
-pnpm run d:prefs-sync      # iCloud 偏好檔同步
 pnpm run d:uninstall       # 移除 ab-tao
 
 pnpm run c:ai-sync         # 列出 AI 來源（預設不同步）
