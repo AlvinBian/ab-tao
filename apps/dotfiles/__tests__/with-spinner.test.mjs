@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { it } from 'vitest'
+import { it } from 'node:test'
 
 // 注意：@clack/prompts 的 spinner 在非 TTY 環境下可能行為不同
 // 直接測試 logic，mock spinner

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { describe, it } from 'vitest'
+import { describe, it } from 'node:test'
 
 // 直接測試純邏輯函式（不依賴 P，避免模組快取問題）
 function parseFrontmatter(content) {

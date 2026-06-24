@@ -37,6 +37,18 @@ export default antfu(
       'node/prefer-global/buffer': 'off',
     },
   },
+  // CLI / 工具庫採 Node.js 內建 test runner（node --test，零依賴，見 rules/testing.md），
+  // 非 vitest；關閉 antfu 預設「強制從 vitest import」規則。console 走 vitest，不在此範圍。
+  {
+    files: [
+      'apps/dotfiles/**/__tests__/**/*.mjs',
+      'packages/commons/**/__tests__/**/*.mjs',
+      'packages/share/**/__tests__/**/*.mjs',
+    ],
+    rules: {
+      'test/no-import-node-test': 'off',
+    },
+  },
   // dotfiles 特定規則：含 ANSI escape 的 regex 是合法的
   {
     files: ['apps/dotfiles/**/*.mjs', 'apps/dotfiles/**/*.js'],

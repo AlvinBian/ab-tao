@@ -3,7 +3,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { it } from 'vitest'
+import { it } from 'node:test'
 import {
   getPath,
   hasPath,

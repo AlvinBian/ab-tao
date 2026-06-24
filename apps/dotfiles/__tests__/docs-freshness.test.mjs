@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { it } from 'vitest'
+import { it } from 'node:test'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '../../..')
 

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { after, before, describe, it } from 'vitest'
+import { after, before, describe, it } from 'node:test'
 
 // 依賴注入版本的 verifyManaged，不讀真實 state.json
 function verifyManagedFromPath(statePath, claudeBaseDir) {
