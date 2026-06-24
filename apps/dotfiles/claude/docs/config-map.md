@@ -1,4 +1,4 @@
-# ~/.claude/ 結構全圖 (v1.8.1)
+# ~/.claude/ 結構全圖 (v1.15.0)
 
 ```
 ~/.claude/
@@ -97,11 +97,12 @@
 │   ├── verify.md                spec AC 反向覆蓋驗證
 │   └── worklog.md
 │
-├── skills/                      # 32+ skills（按需載入）
+├── skills/                      # 31 skills（按需載入）
 │
-├── hooks/                       # 8 hook defs（事件驅動，零 context cost）
+├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
 │   │   ├── session-start.json        ab-tao:session:start
+│   │   ├── user-prompt-submit.json   ab-tao:prompt:enrich（Jira/Confluence/破壞性命令注入）
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
 │   │   ├── pre-tool-edit.json        ab-tao:pre:edit
 │   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）
@@ -125,14 +126,14 @@
 ├── tasks/                       # 原生 Claude Code tasks（Jan 2025+）
 ├── plans/                       # 原生 plansDirectory（Feb 2026+）
 │
-├── settings.json                # 主配置：hooks（8 條合併）+ mcpServers + model + env
+├── settings.json                # 主配置：hooks（9 條合併）+ mcpServers + model + env
 ├── settings.local.json          # 機器獨立（不 sync，gitignored）
 │
 └── .ab-tao/                     # ab-tao 運行時資料夾
     ├── state.json               # unified manifest（managed + choices + sync）
     ├── state.schema.json        # JSON Schema
     ├── state.lock               # 寫入互斥鎖
-    ├── preferences.json         # d:setup 用戶偏好（永久 · ⚠️ user-private · 不 sync 至 iCloud）
+    ├── preferences.json         # d:setup 用戶偏好（永久 · ⚠️ user-private，git 同步見 ab-config-sync）
     └── metrics.jsonl            # Observability（Phase 17）
 ```
 

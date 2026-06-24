@@ -142,7 +142,6 @@ pnpm run help              # 查看所有命令
 | `pnpm run d:status`         | 配置状态仪表板                  |
 | `pnpm run d:restore`        | 还原备份                        |
 | `pnpm run d:hooks`          | Hook 管理                       |
-| `pnpm run d:prefs-sync`     | iCloud 偏好档同步               |
 | `pnpm run d:chrome`         | Chrome 书签 / 设置同步          |
 | `pnpm run d:uninstall`      | 移除 ab-tao                     |
 

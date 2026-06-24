@@ -349,3 +349,18 @@ UA auto-update 跑 LLM agents 做語義分析，**結構變更時花 token**（c
 
 ### worktree 注意
 PROJECT_ROOT 在 git worktree 時，UA 自動把輸出重導向主 repo root（worktree 是臨時的，`.understand-anything/` 寫那會隨 session 銷毀）。
+
+## H. anysearch MCP（web 搜尋，token 走 env 不入 settings）
+
+`settings.template.json` 的 anysearch MCP 用 `"Authorization": "Bearer ${ANYSEARCH_TOKEN}"`，**token 不寫進任何 settings*.json**（避免明文同步）。每台機器須自行提供 `ANYSEARCH_TOKEN`：
+
+```bash
+# ~/.zshrc.local（machine-local，~/.zshrc 末行自動 source，不同步）
+export ANYSEARCH_TOKEN="as_sk_xxxxxxxx"
+chmod 600 ~/.zshrc.local
+```
+
+⚠️ **注意事項**：
+- CC 對 `settings.json`（非 `.mcp.json`）header 的 `${VAR}` 展開官方未明文保證（GH issue #4276）；改完**完全重啟 CC** → `/mcp` 確認 anysearch `Connected`。連不上先 `echo ${#ANYSEARCH_TOKEN}` 確認 shell 有 export。
+- **從 GUI（Spotlight/Dock）啟動 CC 不會 source `~/.zshrc`** → 變數缺失 → anysearch 斷。請從 terminal 啟動，或將 export 改放 `launchctl setenv` / `~/.zprofile`。
+- 變數未設時 CC 不降級回明文，直接連線失敗（parse error / 401）。

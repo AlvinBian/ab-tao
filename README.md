@@ -2,7 +2,7 @@
 
 **繁體中文** | [简体中文](README-zh-CN.md) | [English](README-en.md)
 
-ab-tao 是 Turborepo monorepo — 開發環境統一管理 + 共用 Claude AI 資源。v1.6.0 為 greenfield 首次正式發布，不維護 v1.5 相容性。最新版本與完整變更見 [CHANGELOG.md](CHANGELOG.md)（個人規則當前 v1.8.1）。
+ab-tao 是 Turborepo monorepo — 開發環境統一管理 + 共用 Claude AI 資源。v1.6.0 為 greenfield 首次正式發布，不維護 v1.5 相容性。最新版本與完整變更見 [CHANGELOG.md](CHANGELOG.md)（個人規則當前 v1.15.0）。
 
 ## v1.6.0 標誌特色
 
@@ -187,7 +187,6 @@ pnpm run help              # 查看所有指令
 | `pnpm run d:status`         | 配置狀態儀表板                  |
 | `pnpm run d:restore`        | 還原備份                        |
 | `pnpm run d:hooks`          | Hook 管理                       |
-| `pnpm run d:prefs-sync`     | iCloud 偏好檔同步               |
 | `pnpm run d:chrome`         | Chrome 書籤 / 設定同步          |
 | `pnpm run d:uninstall`      | 移除 ab-tao                     |
 

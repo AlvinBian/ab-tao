@@ -212,4 +212,19 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 > browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
 
+## Subagent 成本控制：Tool(param:value) 權限語法（CC 2.1.178+）
+
+**僅 deny / ask rules 支援** `Tool(param:value)` match 工具 input 參數（含 `*` wildcard）；**allow 不支援**此語法（allow 續用各工具自有 specifier，如 `Bash(npm run *)`）。可在不關閉整個工具的前提下精準封鎖特定參數值。
+
+| 目的 | deny 寫法 |
+|---|---|
+| 封鎖 Opus subagent（控 token 成本） | `"Agent(model:opus)"` |
+| 封鎖 worktree 隔離 subagent | `"Agent(isolation:worktree)"` |
+| 封鎖背景 Bash | `"Bash(run_in_background:true)"` |
+
+- **匹配規則**：值為精確匹配（`model:opus` 匹配別名 `opus`，不匹配完整 model ID）；`*` wildcard 如 `Agent(model:*)` 匹配「任何**顯式**指定 model 的呼叫」，但**不匹配省略 model 的呼叫**。每條規則只能限制一個 parameter（要同時擋 model + isolation 寫兩條）。
+- **與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` 互補**：env 設**預設值**（可被 prompt 顯式覆寫），`Agent(model:opus)` 設**硬封鎖**（擋死顯式升 opus）；env 已讓「未指定 model」走 sonnet，deny 補上「禁止顯式升級」這一缺口。
+- **陷阱**：`command` / `file_path` / `path` / `url` 等已有 canonicalizing 規則的參數**不能**用此語法，誤寫會被忽略並觸發 startup warning。
+- 落地於 `settings.template.json` `permissions.deny`（union 合併，跨機一致）。
+
 </agent_orchestration>

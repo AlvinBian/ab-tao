@@ -1,6 +1,6 @@
 # `~/.claude/` 配置架構說明
 
-> **版本**：v1.8.1 ｜ **最後更新**：2026-06-11
+> **版本**：v1.15.0 ｜ **最後更新**：2026-06-24
 >
 > 本文件說明 `~/.claude/` 各目錄與檔案的職責，以及整體設計邏輯。
 
@@ -41,9 +41,9 @@
 ├── docs/                      📖 參考文件（按需 @import 或手動查閱，28 個 .md）
 ├── agents/                    🤖 子代理定義（9 個，Task tool 呼叫時啟用）
 ├── commands/                  ⌨️ 斜線命令（17 個，/command 語法觸發）
-├── skills/                    🛠️ 技能模組（38 個，pattern 匹配或 Skill tool 呼叫）
+├── skills/                    🛠️ 技能模組（31 個，pattern 匹配或 Skill tool 呼叫）
 │
-├── hooks/                     🔔 事件驅動腳本（8 個 def + .sh）
+├── hooks/                     🔔 事件驅動腳本（9 個 def + .sh）
 │   ├── defs/                  ⚙️ Hook 定義（source of truth，已合併進 settings.json）
 │   └── *.sh                   📦 Hook 執行腳本
 │
@@ -172,11 +172,12 @@ paths:
 | **commands** | `/command` 斜線語法 | 主對話 context | 多步驟流程 orchestration |
 | **skills** | `Skill` tool 或 pattern 自動觸發 | 主對話 context | 特定 pattern 的標準化執行流程 |
 
-**8 個 Agents（`agents/`）**
+**9 個 Agents（`agents/`）**
 
 | Agent | 模型/權限 | 職責 |
 |---|---|---|
 | `architect` | inherit, 唯讀 | ADR 產出、5 維度評分、架構債識別 |
+| `code-reviewer` | inherit, 唯讀 | 程式碼品質 / 安全 / 可維護性審查 |
 | `debugger` | inherit, **可寫** | 根因定位 + 最小 diff 修復 |
 | `planner` | opus, 唯讀 | 複雜功能/重構規劃、實作藍圖 |
 | `pm` | inherit, 唯讀 | 6 問逼問釐清需求、User Story 拆解 |
@@ -185,7 +186,7 @@ paths:
 | `silent-failure-hunter` | sonnet, 唯讀 | 靜默失敗/swallowed errors 偵測 |
 | `type-design-analyzer` | sonnet, 唯讀 | 型別封裝、不變性、Enforcement 審查 |
 
-**14 個 Commands（`commands/`）** 按用途分組
+**17 個 Commands（`commands/`）** 按用途分組
 
 規格鏈：`/specify`（需求→spec）、`/verify`（spec AC 反查）、`/chain-product`（specify→review→verify）
 
@@ -199,7 +200,7 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 
 溝通工具：`/slack`（草稿 + mrkdwn 區塊）、`/ai`（意圖 dispatcher，路由至對應命令）
 
-**38 個 Skills（`skills/`）** 按主題分群
+**31 個 Skills（`skills/`）** 按主題分群
 
 | 主題 | Skills |
 |---|---|
@@ -223,9 +224,10 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 hooks/
 ├── defs/                         ← Hook 定義（source of truth）
 │   ├── session-start.json
+│   ├── user-prompt-submit.json   ← Jira/Confluence/破壞性命令 context 注入
 │   ├── pre-tool-bash.json
 │   ├── pre-tool-edit.json
-│   ├── pre-tool-edit-tdd.json   ← TDD 強制（預設 off）
+│   ├── post-tool-failure.json   ← 工具失敗日誌 + 告警
 │   ├── pre-tool-context-budget.json
 │   ├── pre-compact.json
 │   ├── session-end.json
@@ -380,4 +382,4 @@ hooks/
 
 Claude Code 本身也會在其他位置儲存資料：`~/Library/Application Support/Claude/` 存放應用層設定；MCP server 的 auth token 另行儲存，不在 `~/.claude/` 內。
 
-**最後更新**：2026-06-11 ｜ Claude Opus 4.8
+**最後更新**：2026-06-24 ｜ Claude Opus 4.8
