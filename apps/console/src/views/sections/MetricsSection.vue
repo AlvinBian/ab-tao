@@ -245,7 +245,7 @@ onUnmounted(() => {
           </el-table-column>
         </el-table>
         <div v-if="metricsRows.length === 0 && !metricsError" class="empty-hint">
-          <el-text type="secondary" size="small">
+          <el-text type="info" size="small">
             尚無指標資料，等待 metrics.jsonl 寫入…
           </el-text>
         </div>
