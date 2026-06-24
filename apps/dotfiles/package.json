@@ -12,7 +12,7 @@
   "scripts": {
     "build": "echo 'dotfiles build completed'",
     "lint": "eslint .",
-    "test": "node --test __tests__/*.test.mjs",
+    "test": "node --test __tests__/*.test.mjs libs/*/__tests__/*.test.mjs",
     "setup": "node bin/setup.mjs",
     "status": "node bin/status.mjs",
     "hooks": "node bin/hooks.mjs",

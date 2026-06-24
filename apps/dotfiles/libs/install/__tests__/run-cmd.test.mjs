@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { beforeEach, describe, it } from 'vitest'
+import { beforeEach, describe, it } from 'node:test'
 import { isDryRun, runCmd, runCmdAsync, setDryRun } from '../run-cmd.mjs'
 
 describe('run-cmd.mjs', () => {
