@@ -1,9 +1,12 @@
 {
   "pathLevels": 2,
   "gitStatus": {
-    "showAheadBehind": true
+    "showAheadBehind": true,
+    "showFileStats": true
   },
   "display": {
-    "showCost": true
+    "showCost": true,
+    "contextValue": "both",
+    "showPromptCache": true
   }
 }

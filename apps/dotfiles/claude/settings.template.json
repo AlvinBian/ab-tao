@@ -6,6 +6,10 @@
     "defaultMode": "bypassPermissions",
     "deny": [
       "Bash(git reset --hard *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean *)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
       "Bash(gh pr merge *)",
@@ -14,7 +18,15 @@
       "Bash(git push --no-verify *)",
       "Bash(npm publish *)",
       "Bash(pnpm publish *)",
-      "Bash(claude plugin uninstall *)"
+      "Bash(claude plugin uninstall *)",
+      "Bash(terraform destroy*)",
+      "Bash(pulumi destroy*)",
+      "Bash(cdk destroy*)",
+      "Bash(docker compose down -v*)",
+      "Bash(docker compose down --volumes*)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume rm *)",
+      "Bash(docker volume prune*)"
     ]
   },
 
@@ -48,6 +60,9 @@
   "includeCoAuthoredBy": false,
   "feedbackSurveyRate": 0,
   "includeGitInstructions": false,
+  "attribution": {
+    "sessionUrl": false
+  },
 
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
@@ -55,7 +70,8 @@
     "hookify@claude-plugins-official": true,
     "ralph-loop@claude-plugins-official": true,
     "session-report@claude-plugins-official": true,
-    "claude-hud@claude-hud": true
+    "claude-hud@claude-hud": true,
+    "warp@claude-code-warp": true
   },
 
   "mcpServers": {
@@ -78,6 +94,27 @@
         "--repo",
         "${PWD}"
       ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "anysearch": {
+      "type": "http",
+      "url": "https://api.anysearch.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ANYSEARCH_TOKEN}"
+      }
     }
   },
 
@@ -90,6 +127,12 @@
       "source": {
         "source": "github",
         "repo": "jarrodwatts/claude-hud"
+      }
+    },
+    "claude-code-warp": {
+      "source": {
+        "source": "github",
+        "repo": "warpdotdev/claude-code-warp"
       }
     }
   },
