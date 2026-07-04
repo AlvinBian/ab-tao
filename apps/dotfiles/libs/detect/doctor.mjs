@@ -129,65 +129,7 @@ export async function ensureEnvironment() {
       actionLabel: null,
       optional: true,
     },
-    // optional — 本地整合服務（claude-context / browser-harness / AI-Pedia）
-    {
-      name: 'Docker daemon',
-      ok: (() => {
-        try {
-          execSync('docker info', { stdio: 'pipe' })
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: ver('docker', '--version')?.match(/[\d.]+/)?.[0] ?? null,
-      failLabel: '未啟動（Milvus 需要，參考 docs/local-tools.md § A）',
-      actionLabel: null,
-      optional: true,
-    },
-    {
-      name: 'LM Studio',
-      ok: (() => {
-        try {
-          execFileSync(
-            'curl',
-            ['-sf', '--max-time', '2', 'http://127.0.0.1:1234/v1/models'],
-            { stdio: 'pipe' },
-          )
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: null,
-      failLabel:
-        '未啟動（claude-context 語義搜尋，參考 docs/local-tools.md § A）',
-      actionLabel: null,
-      optional: true,
-    },
-    {
-      name: 'Milvus',
-      ok: (() => {
-        try {
-          execFileSync(
-            'curl',
-            ['-sf', '--max-time', '2', 'http://127.0.0.1:19530/healthz'],
-            { stdio: 'pipe' },
-          )
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: null,
-      failLabel:
-        '未啟動（claude-context 向量資料庫，docker compose up milvus-standalone）',
-      actionLabel: null,
-      optional: true,
-    },
+    // optional — 本地整合服務（browser-harness / AI-Pedia）
     {
       name: 'browser-harness',
       ok: (() => {

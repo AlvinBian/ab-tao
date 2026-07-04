@@ -1,3 +1,10 @@
+---
+name: awesome-ai-search
+description: 搜尋 Awesome-AI-Pedia 知識庫，補充 ab-tao 本地 skills 未涵蓋的外部 AI 工具 / 模型 / 最佳實踐。
+version: 1.0.0
+category: meta
+---
+
 # awesome-ai-search
 
 搜尋 Awesome-AI-Pedia 知識庫，補充 ab-tao 本地 skills 未涵蓋的外部 AI 工具 / 模型 / 最佳實踐。

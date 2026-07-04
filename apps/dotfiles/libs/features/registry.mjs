@@ -56,15 +56,6 @@ const FEATURE_DEFS = [
     order: 40,
   },
   {
-    id: 'claude-context',
-    label: '🔍 語義代碼搜尋',
-    hint: 'LM Studio + Milvus Docker — 需先手動啟動本地服務',
-    load: () => import('./integrations/claude-context.mjs'),
-    dependsOn: [],
-    visible: true,
-    order: 50,
-  },
-  {
     id: 'browser-harness',
     label: '🌐 browser-harness',
     hint: 'Python uv + Playwright Chromium — 瀏覽器自動化（~300MB）',

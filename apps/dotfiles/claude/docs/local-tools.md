@@ -3,135 +3,29 @@
 本機需手動安裝的外部服務與工具。
 各服務狀態可透過 `pnpm run c:locals --status` 查看。
 
-## A. LM Studio + Milvus（claude-context 必需）
+## A. CodeRAG — 本地語義/向量代碼搜尋（取代已退役的 claude-context）
 
-> **⚡ 快速路徑**：完成 LM Studio + Milvus + `.env.local` 三項前置後，
-> 直接 `pnpm run d:setup` 勾選「🔍 語義代碼搜尋」即可全自動寫入 MCP；
-> 失敗時再回到下方手動逐步驟。
+`Neverdecel/CodeRAG`（231★）。本地優先、zero-key 的語義代碼搜尋，**無 Docker / 無 Milvus / 無 PyTorch / 無雲 API**（fastembed ONNX + Lance 嵌入式向量庫，全 in-process）。取代原 LMStudio+Milvus 那套 ~14GB 重方案。
 
-### 前置需求
-- macOS M1/M2/M3（RAM ≥ 16GB；LM Studio + Milvus + Claude Code 同跑約 14–15GB）
-- OrbStack（推薦）或 Docker Desktop 4.x+（Milvus standalone 必需）
-  ```bash
-  brew install orbstack   # 啟動後自動提供 docker / docker compose
-  ```
-- Node.js 20/22（`@zilliz/claude-context-mcp@latest`）
-
-### 1. 安裝 LM Studio
-
+### 安裝（一次）
 ```bash
-brew install --cask lm-studio
+brew install pipx   # 若無
+pipx install "coderag[mcp] @ git+https://github.com/Neverdecel/CodeRAG"
 ```
+MCP 已寫入 `settings.template.json` mcpServers（`coderag mcp --watched-dir ${PWD}`，cwd 動態，仿 serena/crg）→ `d:setup` 自動同步；重啟 CC 後 `/mcp` 見 coderag。
 
-啟動後：
-1. 搜尋並下載 `nomic-embed-text-v2-moe`（GGUF，約 600MB）
-2. 在 Local Server 頁面啟動 server → port 1234
-3. 確認：`curl http://127.0.0.1:1234/v1/models | jq '.data[].id'`
+### 用法
+- **MCP（Claude 自動用）**：session 內問「語義搜尋 X」→ 走 coderag MCP，回 file:line + 相似度
+- **CLI**：`coderag index --watched-dir <repo>`（首次建索引）｜`coderag search "query" --watched-dir <repo>`｜`coderag watch <repo>`（即時增量）
+- 索引存 `<repo>/.coderag/`（**記得加進 .gitignore**）；增量靠 content-hash + mtime 跳過未改檔
 
-> ⚠️ **LM Studio 為非官方路線**（官方只驗證 Ollama）。若 embedding 報錯，
-> 改 Ollama fallback：`brew install ollama && ollama pull nomic-embed-text`，
-> 同時把 `.env.local` 中 `CLAUDE_CONTEXT_PROVIDER=Ollama` 並移除 `CLAUDE_CONTEXT_BASE_URL`。
+### 能力與 caveat
+- Embedding：`BAAI/bge-small-en-v1.5`（本地 ONNX，首次下 ~130MB，CPU 即可，無 GPU）
+- symbol-aware chunking：**TS/TSX/JS/Go/Rust/Java 符號級** ✅；⚠️ **Vue / PHP 退化為 line-window**（仍可用，粒度較粗）
+- hybrid BM25 + 向量 → 補通用 embedder 在代碼精確 identifier 上的弱點
+- 隱私：全本地，KKday 私有碼**不出機**（勝過 claude-context 的雲 embedding 選項）
 
-### 2. 啟動 Milvus standalone（Docker Compose）
-
-```bash
-mkdir -p ~/.ab-tao/milvus && cd ~/.ab-tao/milvus
-curl -Lo docker-compose.yml \
-  https://github.com/milvus-io/milvus/releases/download/v2.4.0/milvus-standalone-docker-compose.yml
-docker compose up -d
-# 等待約 30s 後確認：
-curl -sf http://127.0.0.1:9091/healthz && echo "Milvus OK"
-```
-
-> Milvus standalone 端口：19530（gRPC）+ 9091（HTTP health）。
-> 多台機器各自需執行以上步驟；collection（索引）不會跨機器同步。
-
-### 3. 設定環境變數 + 寫入 MCP server
-
-複製 `apps/dotfiles/.env.example` → `.env.local`，填入實際值：
-
-```bash
-cp apps/dotfiles/.env.example apps/dotfiles/.env.local
-# 編輯 .env.local，填入以下 8 個變數：
-# CLAUDE_CONTEXT_PROVIDER=LMStudio
-# CLAUDE_CONTEXT_MODEL=nomic-embed-text-v2-moe
-# CLAUDE_CONTEXT_API_KEY=lm-studio
-# CLAUDE_CONTEXT_BASE_URL=http://127.0.0.1:1234/v1
-# CLAUDE_CONTEXT_EMBEDDING_DIM=768
-# CLAUDE_CONTEXT_MILVUS_ADDRESS=http://127.0.0.1:19530
-# CLAUDE_CONTEXT_COLLECTION_NAME=code_chunks
-# CUSTOM_EXTENSIONS=.vue,.svelte
-```
-
-然後執行：
-
-```bash
-pnpm run d:setup
-# → 在 feature 選單勾選「🔍 語義代碼搜尋」
-# → setup 會自動驗證 env、檢測 LM Studio + Milvus 可達、寫入 ~/.claude/settings.json mcpServers
-```
-
-驗證：
-
-```bash
-cat ~/.claude/settings.json | jq '.mcpServers."claude-context"'
-# 應顯示 command/args/env 完整 8 個 CLAUDE_CONTEXT_* 變數
-```
-
-### 4. 初次建立代碼索引
-
-首次裝完後，在當前 repo 的 Claude Code session 中說：
-
-```
-「初始化 claude-context」 / 「幫我建立代碼索引」
-```
-
-→ 觸發 `claude-context-init` skill 執行 `index_codebase(cwd)`
-→ 大型 repo 約 1–5 分鐘
-→ 進度查詢：在 session 中說「查 claude-context 索引狀態」
-
-> ⚠️ skill **不會**在 session-start 自動觸發（hooks 無法載 skill）；
-> 每次新 repo 第一次需顯式說「初始化代碼索引」。
-
-### 5. 多機設置
-
-每台機器需獨立：
-1. 安裝 LM Studio + 下載模型
-2. 執行 Milvus docker-compose up
-3. 說「初始化代碼索引」建立 collection（命名為 `code_chunks_<pathHash>`）
-
-### 6. 失敗排錯（claude-context 常見問題）
-
-**症狀 1：search_code 永遠回傳空陣列**
-→ 說「查 claude-context 索引狀態」確認 `get_indexing_status`：
-  - `not_indexed` → 沒跑過索引；說「初始化代碼索引」
-  - `indexing` → 還在跑，等
-  - `indexed` 但搜不到 → 進入症狀 2
-
-**症狀 2：embedding dim mismatch**
-→ Milvus collection 的 dim 與 LM Studio model 的 dim 不一致
-→ 解法：說「清除 claude-context 索引」後重建；確認 `.env.local` `CLAUDE_CONTEXT_EMBEDDING_DIM=768`（nomic-embed-text-v2-moe 是 768）
-→ 換 model 必須先 clear_index
-
-**症狀 3：search_code 報 "MILVUS connection refused"**
-→ Milvus 沒起：`docker ps | grep milvus-standalone`
-→ 健康確認：`curl -sf http://127.0.0.1:9091/healthz && echo "OK"`（注意是 9091 非 19530）
-→ 重啟：`pnpm run c:locals --start` 或 `cd ~/.ab-tao/milvus && docker compose restart`
-
-**症狀 4：LM Studio port 1234 連不上**
-→ LM Studio GUI 未啟動 server（要按下 "Start Server"）
-→ 或被別的程式佔用：`lsof -i :1234`
-
-**症狀 5：d:setup 勾選 🔍 語義代碼搜尋但被略過**
-→ envCheck 失敗；檢查順序：
-  1. `grep CLAUDE_CONTEXT_ apps/dotfiles/.env.local` — 8 個 var 是否齊全
-  2. `curl -sf http://127.0.0.1:1234/v1/models` — LM Studio 是否回應
-  3. `curl -sf http://127.0.0.1:9091/healthz` — Milvus 是否回應（HTTP port 9091）
-  4. 任一缺失 → d:setup log 顯示對應 missing message
-
-**症狀 6：多機 collection 不同步**
-→ 已知限制：collection 用 path hash 命名，每台機器各自 index
-→ 沒有跨機同步機制；每台機器獨立說「初始化代碼索引」
+> **三範式分工（claude-context 退役後）**：**serena**=LSP 精準符號/rename ｜ **code-review-graph**=依賴圖/blast-radius/業務流 ｜ **CodeRAG**=語義「按意思找代碼」。多機各自 `pipx install` + 首次 `coderag index`。
 
 ## B. browser-harness（瀏覽器自動化，預設啟用）
 
@@ -364,3 +258,60 @@ chmod 600 ~/.zshrc.local
 - CC 對 `settings.json`（非 `.mcp.json`）header 的 `${VAR}` 展開官方未明文保證（GH issue #4276）；改完**完全重啟 CC** → `/mcp` 確認 anysearch `Connected`。連不上先 `echo ${#ANYSEARCH_TOKEN}` 確認 shell 有 export。
 - **從 GUI（Spotlight/Dock）啟動 CC 不會 source `~/.zshrc`** → 變數缺失 → anysearch 斷。請從 terminal 啟動，或將 export 改放 `launchctl setenv` / `~/.zprofile`。
 - 變數未設時 CC 不降級回明文，直接連線失敗（parse error / 401）。
+
+## I. cc-connect（Claude Code ↔ 微信遠端遙控，配對 Notification hook）
+
+你的 fork（`AlvinBian/cc-connect`，原作 `chenhg5/cc-connect`）。把 CC session 綁到微信（或其他平台），**手機遠端查看/回覆 agent**。與 `Notification` hook 天作之合：hook 推「agent 待輸入/完成」→ 微信收到 → 手機直接遙控回覆。
+
+```bash
+brew install cc-connect          # 已裝於 /opt/homebrew/bin/cc-connect
+cc-connect weixin setup          # 掃碼連微信（或選其他平台）
+cc-connect daemon install        # 背景常駐
+```
+
+> 多機各自 `brew install cc-connect` + `weixin setup`（綁定不跨機同步）。與 `hooks/hook-handler.sh` 的 `Notification`（`agent_needs_input`/`agent_completed`）互補：桌面走 macOS 通知，遠端走 cc-connect。
+
+## J. beads（bd）— agent 跨 session 任務依賴圖記憶
+
+`steveyegge/beads`（Go 單檔，git-backed 4D graph issue tracker），解 agent「50 First Dates」失憶。補 ralph-loop / 多 agent **長任務跨 session** 缺口；與你的 markdown 三溫層記憶**互補**（beads=任務依賴圖 + 語意 memory decay 壓縮；memory=決策/偏好/踩坑）。
+
+```bash
+brew install beads               # 已裝 bd 1.0.5
+bd init                          # 於 repo 初始化（產生 git-backed 資料）
+bd create "任務描述"             # agent 可 JSON 輸出、依賴追蹤、auto-ready 偵測
+```
+
+> 圖資料隨 git 走，跨機/多 branch 用 hash-based ID（`bd-a1b2`）防合併衝突。與 code-review-graph（符號依賴）、memory（決策）三者不重疊：beads=**任務**層。
+
+## K. ccusage — 成本 / burn rate 分析（因應 2026-03 rate-limit 收緊）
+
+`ryoppippi/ccusage`（~16.1k★），讀本地 `~/.claude/projects/*.jsonl` 算跨 session 成本、燃燒率、活躍 block 剩餘時間。與 `claude-trace`（per-tool token 歸因，即時）**互補**：ccusage=歷史成本 + statusline。
+
+```bash
+npm install -g ccusage           # 已裝 20.0.14；或免裝 npx ccusage
+ccusage                          # 每日成本彙總
+ccusage blocks --live            # 即時 block 燃燒率
+ccusage statusline               # 可掛 statusLine / claude-hud
+```
+
+> ⚠️ 本地 JSONL 估算為近似（guessed limits）；精確用量以 OAuth API 回傳的 utilization% 為準。多機各自本地統計。
+
+## L. agnix — AI 配置檔 linter（SKILL.md / CLAUDE.md / hooks / MCP / agents）
+
+`agent-sh/agnix`（作者 avifenesh）。ESLint 配錯會尖叫，SKILL.md 配錯鴉雀無聲 → agnix 把「啞巴 bug」變可見診斷。432 條規則含 **53 條 CC 專屬**，驗 CLAUDE.md / SKILL.md / AGENTS.md / `.mdc` / MCP / hooks / agents / settings.json。零安裝 `npx agnix`。
+
+```bash
+# ⚠️ 必須 scoped 到 authored source，否則噪音爆炸（archive/plugins/CC 合法欄位）
+cd apps/dotfiles/claude && npx -y agnix .    # 只掃 ab-tao 你自己寫的配置
+npx -y agnix --fix-safe .                      # 自動修可安全修的（frontmatter/引號/斷鏈）
+```
+
+**實測抓到的真 bug 類型**（本 repo 已修）：SKILL.md 缺 YAML frontmatter、`description:` 含未跳脫冒號致 YAML 無效、危險 skill 未設 `disable-model-invocation`、斷掉的 markdown 連結 / `@import`。
+
+⚠️ **已知誤報（別當銀彈，單人專案）**：
+- 自訂語義 XML 標籤（如 `<slack_format_rules>`）被當未閉合 XML
+- command 的 `<feature-name>` / `<intent>` 佔位符被當 XML
+- `model` / `version` / `user-invocable` 等 **CC 合法欄位**被報 info（非通用 Agent Skills 規範）
+- **掃描範圍**：務必排除 `~/.claude/plugins/`（第三方）與 `.skills-archived-*/`（歸檔）；只對 `apps/dotfiles/claude/` 有意義。
+
+> 定位：pre-commit / quality-gate 的**配置 lint**層，與 `c:validate`（結構驗證）互補。掛法見 `commands/check.md` 的 config-lint gate。

@@ -51,6 +51,8 @@
 
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "askUserQuestionTimeout": "5m",
+  "fallbackModel": ["claude-sonnet-5", "claude-haiku-4-5"],
   "autoUpdatesChannel": "latest",
   "cleanupPeriodDays": 30,
   "showThinkingSummaries": true,
@@ -92,6 +94,14 @@
       "args": [
         "mcp",
         "--repo",
+        "${PWD}"
+      ]
+    },
+    "coderag": {
+      "command": "${HOME}/.local/bin/coderag",
+      "args": [
+        "mcp",
+        "--watched-dir",
         "${PWD}"
       ]
     },

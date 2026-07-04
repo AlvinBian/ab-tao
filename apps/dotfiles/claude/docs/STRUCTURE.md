@@ -210,7 +210,7 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 | 搜尋 / 記憶 | `find-skills`, `search-first`, `memory-search`, `memory-systems`, `awesome-ai-search`, `deep-research` |
 | 領域知識 | `api-design`, `backend-patterns`, `nuxt4-patterns`, `laravel-patterns` |
 | 整合 / 工具 | `mcp-builder`, `integration-recommender`, `browser-automation-router`, `brainstorming` |
-| 初始化 | `claude-context-init`, `observe` |
+| 初始化 | `observe` |
 
 > 知識圖譜（符號依賴 / blast radius / 業務流程）改由 **code-review-graph** MCP（`mcp__code-review-graph__*`）提供；見 `13-agent-orchestration.md`。
 

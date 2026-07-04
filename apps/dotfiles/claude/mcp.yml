@@ -65,22 +65,14 @@ servers:
     description: 'Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）'
 
   # ── 語義代碼搜尋 ──────────────────────────────────────────────────
-  claude-context:
-    command: npx
+  coderag:
+    command: coderag
     args:
-      - -y
-      - '@zilliz/claude-context-mcp@latest'
-    env_ref:
-      EMBEDDING_PROVIDER: CLAUDE_CONTEXT_PROVIDER
-      EMBEDDING_MODEL: CLAUDE_CONTEXT_MODEL
-      OPENAI_API_KEY: CLAUDE_CONTEXT_API_KEY
-      OPENAI_BASE_URL: CLAUDE_CONTEXT_BASE_URL
-      EMBEDDING_DIMENSION: CLAUDE_CONTEXT_EMBEDDING_DIM
-      MILVUS_ADDRESS: CLAUDE_CONTEXT_MILVUS_ADDRESS
-      MILVUS_TOKEN: CLAUDE_CONTEXT_MILVUS_TOKEN
-      CUSTOM_EXTENSIONS: CLAUDE_CONTEXT_CUSTOM_EXTENSIONS
+      - mcp
+      - --watched-dir
+      - '${PWD}'
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
-    description: '語義代碼搜尋（LM Studio + 本地 Milvus；先跑 claude-context-init skill 建立 index）'
+    description: 'CodeRAG 本地語義/向量代碼搜尋（fastembed ONNX，無 Milvus/雲/PyTorch）'
 
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:

@@ -1,3 +1,10 @@
+---
+name: integration-recommender
+description: 讀取 metrics.jsonl 使用記錄，推薦尚未啟用但可能有用的整合。
+version: 1.0.0
+category: meta
+---
+
 # integration-recommender
 
 讀取 metrics.jsonl 使用記錄，推薦尚未啟用但可能有用的整合。
@@ -18,7 +25,7 @@
 
    | 整合 | 建議訊息 |
    |---|---|
-   | claude-context | 「可用語義搜尋找代碼——說『初始化代碼索引』啟動（需 LM Studio + Milvus）」|
+   | coderag | 「可用語義搜尋找代碼——已裝 CodeRAG MCP，直接問『語義搜尋 X』（本地 zero-key，無需啟動服務）」|
    | browser-harness | 「需要瀏覽器自動化時，使用 browser-automation-router skill 分流」|
    | awesome-ai-pedia | 「問 AI 工具時可搜尋 AI-Pedia 知識庫——說『搜尋 AI 工具』」|
 

@@ -109,6 +109,18 @@ pnpm audit --audit-level=high 2>&1 | tail -10
 
 CVSS ≥ 7.0（high/critical）阻塞，moderate 記錄警告。
 
+### Gate 6 — Config Lint（AI 配置檔，條件式）
+
+**僅當偵測到 AI 配置檔時執行**（`.claude/` 目錄、`SKILL.md`、`CLAUDE.md`、`AGENTS.md`、`*.mcp.json`）。純前端/後端 repo 無這些檔 → SKIP 此 gate。
+
+```bash
+# scoped：只掃 authored 配置，排除 plugins/archive（見 docs/local-tools.md §L）
+npx -y agnix . 2>&1 | tail -6
+```
+
+error 級阻塞（缺 frontmatter / YAML 無效 / 斷鏈 / @import 失效）；warning/info 記錄不阻塞。
+⚠️ 已知誤報（自訂 XML 語義標籤、`<placeholder>`、`model`/`version` 等 CC 合法欄位）**不計入阻塞**，人工判讀。
+
 ### 輸出格式
 
 ```
@@ -119,6 +131,7 @@ Gate 2 Types    [PASS ✅ | FAIL ❌]
 Gate 3 Lint     [PASS ✅ | FAIL ❌]
 Gate 4 Tests    [PASS ✅ | FAIL ❌]  coverage: XX%
 Gate 5 Security [PASS ✅ | FAIL ❌]
+Gate 6 CfgLint  [PASS ✅ | SKIP ➖ | FAIL ❌]  (僅 AI 配置 repo)
 ────────────────────────────────────────
 GATE: PASS ✅ | FAIL ❌
 
@@ -126,7 +139,7 @@ GATE: PASS ✅ | FAIL ❌
 - [Gate N] <具體錯誤描述>
 ```
 
-所有 5 道 PASS 才輸出 `GATE: PASS ✅`，否則列出全部阻塞項目後輸出 `GATE: FAIL ❌`。
+所有**適用** gate PASS 才輸出 `GATE: PASS ✅`（Gate 6 於非 AI 配置 repo 標 SKIP，不影響結果），否則列出全部阻塞項目後輸出 `GATE: FAIL ❌`。
 
 ---
 

@@ -1,3 +1,10 @@
+---
+name: browser-automation-router
+description: 瀏覽器自動化工具決策路由 — 判斷當前任務應使用 chrome-devtools MCP 還是 browser-harness。
+version: 1.0.0
+category: meta
+---
+
 # browser-automation-router
 
 瀏覽器自動化工具決策路由 — 判斷當前任務應使用 chrome-devtools MCP 還是 browser-harness。

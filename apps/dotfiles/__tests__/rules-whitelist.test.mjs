@@ -14,12 +14,13 @@ const EXPECTED = [
   'migrations',
   'php-codeigniter',
   'reuse-and-decoupling',
+  'sql',
   'testing',
   'typescript',
   'vue-nuxt',
 ].sort()
 
-it('rules/ 只含預期的 9 個規則檔', () => {
+it('rules/ 只含預期的 10 個規則檔', () => {
   const actual = readdirSync(RULES_DIR)
     .filter(f => f.endsWith('.md'))
     .map(f => f.replace('.md', ''))

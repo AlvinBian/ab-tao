@@ -49,8 +49,7 @@ pnpm run cs:dev            # 啟動後台控制台（Vite + API server）
 pnpm run cs:build          # 構建 console SPA
 pnpm run cs:open           # 構建後以 file:// 開啟（離線使用）
 
-pnpm run c:locals --status   # 本地整合服務狀態（claude-context / browser-harness / AI-Pedia）
-pnpm run c:locals --start    # 啟動 Milvus
+pnpm run c:locals --status   # 本地整合服務狀態（browser-harness / AI-Pedia）
 pnpm run c:locals --doctor   # 診斷整合服務
 ```
 
@@ -76,10 +75,11 @@ pnpm run c:locals --doctor   # 診斷整合服務
 
 ## v1.4.x 整合擴展
 
-d:setup 中可選的三個整合（需本地服務就緒）：
-- **🔍 語義代碼搜尋**（claude-context）— LM Studio + Milvus Docker，語意搜尋 codebase
+d:setup 中可選的整合（需本地服務就緒）：
 - **🌐 browser-harness** — Python uv + Playwright Chromium，瀏覽器自動化
 - **📖 Awesome-AI-Pedia** — AI 工具知識庫，grep-based 本地搜尋
+
+語義代碼搜尋改用 **CodeRAG**（pipx 安裝，非 d:setup；本地 fastembed ONNX，無 Docker/Milvus），見 docs/local-tools.md § A。
 
 安裝指引：`apps/dotfiles/claude/docs/local-tools.md`
 

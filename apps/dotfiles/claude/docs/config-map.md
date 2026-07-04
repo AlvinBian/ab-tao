@@ -22,13 +22,14 @@
 │   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則 + DAG 並行，取代 13+14）
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
-├── rules/                       # 條件載入（paths: frontmatter）9 檔
+├── rules/                       # 條件載入（paths: frontmatter）10 檔
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
 │   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
 │   ├── php-codeigniter.md       paths: application/**/*.php src/**/*.php
 │   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
+│   ├── sql.md                   paths: *.sql queries/ sql/
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
@@ -97,7 +98,7 @@
 │   ├── verify.md                spec AC 反向覆蓋驗證
 │   └── worklog.md
 │
-├── skills/                      # 31 skills（按需載入）
+├── skills/                      # 31 skills 受 ab-tao 管理；live 另含社群安裝（數量依機器 c:skills / agnix 重整而定）
 │
 ├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）

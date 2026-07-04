@@ -57,6 +57,19 @@ _notify() {
 	fi
 }
 
+# ── Slack 通知（僅 background agent 事件；需 $CLAUDE_NOTIFY_SLACK_WEBHOOK）──
+# webhook 未設 → 靜默跳過，不報錯（僅 macOS 生效）
+_notify_slack() {
+	local text="$1"
+	[ -n "${CLAUDE_NOTIFY_SLACK_WEBHOOK:-}" ] || return 0
+	command -v curl &>/dev/null || return 0
+	command -v jq &>/dev/null || return 0
+	local payload
+	payload=$(printf '{"text":%s}' "$(printf '%s' "$text" | jq -Rs .)")
+	curl -sf -m 5 -X POST -H 'Content-type: application/json' \
+		--data "$payload" "$CLAUDE_NOTIFY_SLACK_WEBHOOK" >/dev/null 2>&1 || true
+}
+
 # ── 匯總佇列 ─────────────────────────────────────────────────────
 _flush_queue() {
 	[ -f "$QUEUE_FILE" ] && [ -s "$QUEUE_FILE" ] || { rm -f "$QUEUE_FILE" "$QUEUE_TIME"; return; }
@@ -133,9 +146,19 @@ case "$EVENT" in
 	Notification)
 		_level=$(_event_level "Notification")
 		[ "$_level" = "silent" ] && exit 0
+		_repo_tag="${TITLE#Claude Code}"
 		case "$NOTIF_TYPE" in
 			idle_prompt)         _notify "${MSG:-等待您的指令}" "⏳ 待輸入" ;;
 			permission_required) _notify "${MSG:-需要您確認操作}" "🔐 請確認" ;;
+			# 🆕 v2.1.198 background agent 事件 → macOS + Slack 雙通道
+			agent_needs_input)
+				_notify "${MSG:-背景代理等待輸入}" "🤖 待輸入"
+				_notify_slack "🤖 *背景代理待輸入*${_repo_tag}${MSG:+：$MSG}"
+				;;
+			agent_completed)
+				_notify "${MSG:-背景代理已完成}" "🤖 已完成"
+				_notify_slack "✅ *背景代理完成*${_repo_tag}${MSG:+：$MSG}"
+				;;
 		esac
 		;;
 	PermissionDenied)
