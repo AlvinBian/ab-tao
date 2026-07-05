@@ -1,7 +1,7 @@
 # 個人偏好範例
 
 這個資料夾提供偏好記憶的範例格式。
-使用者的實際偏好存放於 ~/.claude/memory/preferences/（ab-tao 不覆蓋）。
+使用者的實際偏好存放於 ~/.claude/memory/（flat 三溫層：穩定偏好進 system-patterns.md，ab-tao 不覆蓋）。
 
 ## 範例檔案格式
 

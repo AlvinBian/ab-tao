@@ -42,22 +42,21 @@
 | 狀態快照 / session 狀態 | `status-anchor` skill | Session 狀態快照 |
 | SLO / observability | `observe` skill | 可觀測性設計 |
 | 腦力激盪 / brainstorm | `brainstorming` skill | 創意發想 |
-| **blast radius / 什麼會 break / 改了有什麼影響** | `code-review-graph` MCP `get_impact_radius_tool` | 符號依賴 blast radius + affected flows |
-| **trace bug / 為何報錯 / 追蹤錯誤** | `code-review-graph` MCP `traverse_graph_tool` / `query_graph_tool` | 符號鏈 + 業務流程追蹤 |
-| **rename / 安全改名 / extract module** | `code-review-graph` MCP `refactor_tool` | 多檔協調 rename + detect_changes 驗證 |
-| **架構探索 / 代碼理解 / how does X work** | `code-review-graph` MCP `get_architecture_overview_tool` | 架構總覽 + community 分群 |
-| **PR 影響範圍 / PR blast radius** | `code-review-graph` MCP `detect_changes_tool` + `get_review_context_tool` | 改動符號 + impact + risk |
-| **建圖 / reindex / 索引** | `code-review-graph build` CLI | 初次索引 / 重建（daemon 自動增量）|
-| **code-review-graph 工具 / 怎麼用** | `code-review-graph` MCP（30 tools）| 見 13-agent-orchestration 任務→工具映射 |
+| **語義搜尋 / 按意思找代碼** | `codebase-memory-mcp` MCP `search_graph` | 符號級語義檢索 |
+| **blast radius / 什麼會 break / 改了有什麼影響** | `codebase-memory-mcp` MCP `detect_changes` / `query_graph` | git diff→影響符號 + 風險 |
+| **trace bug / 追蹤依賴鏈 / callers** | `codebase-memory-mcp` MCP `trace_path` / `query_graph` | 符號依賴鏈 + callers_of |
+| **架構探索 / 代碼理解 / how does X work** | `codebase-memory-mcp` MCP `get_architecture` | 架構總覽 + hub 熱點 |
+| **建 / 更新索引** | `codebase-memory-mcp cli index_repository` | 初次索引 2s 級 / reindex |
+| **codebase-memory 工具 / 怎麼用** | `codebase-memory-mcp` MCP（14 tools）| 見 13-agent-orchestration 任務→工具映射 |
 
 ## Usage
 
 ```bash
 # 基本意圖觸發（在 Claude Code 中直接使用）
 /ai "PR review"         # → /verify
-/ai "blast radius"      # → code-review-graph get_impact_radius_tool
-/ai "trace this bug"    # → code-review-graph traverse_graph_tool
-/ai "rename safely"     # → code-review-graph refactor_tool
+/ai "blast radius"      # → codebase-memory-mcp detect_changes
+/ai "trace this bug"    # → codebase-memory-mcp trace_path / query_graph
+/ai "語義搜尋 X"        # → codebase-memory-mcp search_graph
 /ai "釐清需求"          # → /specify
 /ai "unit test"         # → /test
 /ai "stack PR 狀態"     # → /pr-stack

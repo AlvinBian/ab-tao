@@ -19,7 +19,7 @@
 | `failure_pattern_added` | session-end-failure-collect.sh | `trigger`, `pattern_count` |
 | `adversarial_invocation` | c:adversarial CLI | `plan`, `models` |
 | `skill_invocation` | session-end hook 統計 | `skill`, `duration_ms` |
-| `coderag_search` | CodeRAG 語義搜尋觸發 | `query`, `results_count`, `duration_ms` |
+| `codebase_memory_search` | codebase-memory-mcp 語義/結構查詢 | `query`, `results_count`, `duration_ms` |
 | `browser_harness_run` | browser-harness 任務執行 | `task`, `success`, `duration_ms` |
 | `awesome_ai_pedia_search` | awesome-ai-search skill 觸發 | `query`, `results_count` |
 | `integration_used` | 任意整合被呼叫 | `integration`, `action` |

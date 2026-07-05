@@ -64,15 +64,12 @@ servers:
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
     description: 'Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）'
 
-  # ── 語義代碼搜尋 ──────────────────────────────────────────────────
-  coderag:
-    command: coderag
-    args:
-      - mcp
-      - --watched-dir
-      - '${PWD}'
+  # ── 代碼智能（語義 + 結構圖）──────────────────────────────────────
+  codebase-memory-mcp:
+    command: codebase-memory-mcp
+    args: []
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
-    description: 'CodeRAG 本地語義/向量代碼搜尋（fastembed ONNX，無 Milvus/雲/PyTorch）'
+    description: 'codebase-memory-mcp 代碼智能一把抓（語義+依賴圖+blast-radius,單 binary 零重依賴,取代 CodeRAG+crg+serena）'
 
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:

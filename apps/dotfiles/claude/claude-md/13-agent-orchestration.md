@@ -22,36 +22,33 @@
 | 需求結構化 / spec | `/specify` command |
 | spec AC 反向驗證 | `/verify` command |
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
-| **code-review-graph 知識圖譜** | 見下方「code-review-graph 整合」章節（符號依賴 + blast radius + 業務流程）|
+| **codebase-memory-mcp 代碼智能** | 見下方「codebase-memory-mcp 整合」章節（語義 + 依賴圖 + blast radius）|
 
-## code-review-graph 知識圖譜整合
+## codebase-memory-mcp 代碼智能整合
 
-code-review-graph（MIT，支援 PHP / Vue / TS）為 repo 建**持久增量知識圖譜**，透過 MCP（`mcp__code-review-graph__*`）暴露工具，涵蓋**符號級依賴**與**業務流程**（`list_flows` / `get_flow` / `generate_wiki`）。
->
-> **與 Understand-Anything 互補（非取代）**：兩者按 audience 分工——**Claude 查** → code-review-graph MCP（review/debug 即時取依賴）；**人視覺探索** → Understand-Anything plugin（React dashboard / 導覽 tour / onboarding，見 `docs/local-tools.md §G`）。各自原生 auto-update，不衝突。
+`codebase-memory-mcp`（MIT，26.4k★，158 語言，內建 code embedding）為 repo 建**持久知識圖譜 + 語義向量**，透過 MCP（`mcp__codebase-memory-mcp__*`，14 tools）**一個工具兼語義搜尋 + 結構依賴圖 + blast-radius**，取代 claude-context / CodeRAG / code-review-graph / serena（實測背書，見 `docs/local-tools.md §A`）。
+
+> **無感優先(預設行為)**：探索/理解/搜尋代碼時**預設走 codebase-memory**（`search_graph` 找代碼、`query_graph`/`detect_changes` 看影響），**取代 grep+Read 組合**；grep 僅用於精確字串比對。`auto_index=true` 已開 → MCP session 啟動自動建/更新索引,**無需手動 index**。
 
 ### 任務 → 工具映射
 
-> **工具名規則**：MCP 完整工具名為 `mcp__code-review-graph__<name>_tool`（**所有工具皆有 `_tool` 後綴**，v3.4.0 共 30 個）。下表 `<name>` 省略前後綴，呼叫時補上，例：`get_architecture_overview` → `mcp__code-review-graph__get_architecture_overview_tool`。
-
-| 任務 | 工具（`mcp__code-review-graph__*`）| 典型場景 |
+| 任務 | 工具（`mcp__codebase-memory-mcp__*`）| 典型場景 |
 |---|---|---|
-| 架構探索 / 理解代碼 | `get_architecture_overview` / `semantic_search_nodes` / `traverse_graph` | "How does X work?" |
-| **Blast radius / 改動影響** | `get_impact_radius` / `get_affected_flows` | "改 X 會 break 什麼？" |
-| Trace bug / 根因 | `traverse_graph` / `query_graph` | "Why is X failing?" |
-| Refactor / Rename | `refactor` / `apply_refactor` | "Rename this safely" |
-| PR 審查 context | `get_review_context` / `get_minimal_context` | "Review PR #N" |
-| 業務流程可視化 | `list_flows` / `get_flow` / `generate_wiki` | "這個 repo 的業務流程" |
-| 建 / 更新圖譜 | `build_or_update_graph` / `detect_changes` | 初次索引 / reindex |
-| 跨 repo 搜尋 | `cross_repo_search` | 多專案符號查找 |
+| 語義搜尋 / 按意思找代碼 | `search_graph` | "處理 X 的代碼在哪" |
+| **Blast radius / 改動影響** | `detect_changes`（git diff→影響+風險）/ `query_graph` | "改 X 會 break 什麼？" |
+| Trace / 依賴鏈 / callers | `trace_path` / `query_graph`（callers_of/callees_of）| "誰呼叫 X" |
+| 架構探索 / hub 熱點 | `get_architecture`（hotspots/fan-in）| "How does X work?" |
+| 讀符號源碼 / schema | `get_code_snippet` / `get_graph_schema` | 取源碼 / 圖結構 |
+| 建 / 更新索引 | `cli index_repository`（2s 級）| 初次索引 / reindex |
+
+⚠️ **能力邊界（誠實）**：不做**安全 rename**（LSP refactor，舊 crg/serena 有，現無替代 → 用 IDE）；「業務流程可視化」偏 **Understand-Anything**（人看 dashboard，見 §G）。
 
 ### 使用原則
+1. **新 repo**：`cli index_repository`（2s）→ `get_architecture` 建心智模型 → `search_graph` 深入
+2. **改動後**：`detect_changes` 確認 blast-radius
+3. **Debug**：`search_graph` 定位 → `trace_path` / `query_graph` 追依賴鏈
 
-1. **新 repo / 陌生模組**：先 `get_architecture_overview` + `generate_wiki` 建心智模型，再 `semantic_search_nodes` 深入符號層
-2. **改動後確認**：`get_impact_radius` + `get_affected_flows` 一併確認技術依賴 + 業務流程無斷鏈
-3. **Debug 入口**：`get_affected_flows` 定位失效業務流 → `traverse_graph` 追技術符號鏈
-
-> 環境：需 Python 3.11+；CLI 於 `~/.local/bin/code-review-graph`（v3.4.0）；vendor 已 commit 的專案需 `.code-review-graphignore`；MCP 需重啟 session 才載入。已接入 KKday 13 專案（daemon 背景增量更新 + launchd 開機自啟）。**serena（LSP）並存互補**。
+> 環境：node 套件（`npm i -g codebase-memory-mcp`），**零重依賴**（無 PyTorch/Docker/daemon）；MCP 於 `.claude.json` user scope（穩定 fnm default node bin），重啟 session 載入，每 repo 首次需 index。**Understand-Anything（人視覺）互補**。
 
 ## 調度規則（強制）
 
@@ -111,91 +108,10 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 > 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
 
-## PR / Code Review 工作流（降噪優先）
+## PR / Code Review 工作流 + Review 深淺分流
 
-### 最高原則：Signal > Volume
-評論是成本不是產出。每條評論先問「不發會怎樣」。能不發就不發、能合併就不散落、別人提過的絕不重提。
-
-### 第零段：狀態偵測（review 前必跑）
-讀 PR 既有 comments/reviews（入口 A 另讀 Slack thread 進度）→ 建「已覆蓋問題清單」→ 分流：
-| 偵測到 | 模式 |
-|---|---|
-| 無評論 | 全新 review |
-| 已有評論（含他人）| 增量：只補 net-new，已覆蓋禁重提 |
-| 多 reviewer 並行 | 補位：交叉驗證既有，只加沒人提的 |
-| Slack thread 已討論 | 回應最新討論點，禁重發總結 |
-
-### 第一段：入口
-- PR 連結 → 直接取，needSlack=false
-- Slack 連結 → 讀 thread 抓 PR 連結（無則停下問，禁臆測），needSlack=true
-
-### 第二段：Review + 降噪閘門
-1. `/code-review` 分析（tier 見下方 Review 深淺分流規格；`--effort` 覆寫）
-2. 去重：每個 finding 比對「已覆蓋清單」→ 重複者丟棄（不發 / 不提 / 不附和）
-3. 嚴重度閘門：P0/P1 → inline；P2/P3 → 彙整進 1 條 summary 末段「次要」清單；正確碼 → 不評論（禁 per-line LGTM 噪音）
-4. 聚合：同類問題多處 → 1 條評論列點，不每處一條
-5. 產出 = 最多 1 條 summary + N 條 P0/P1 inline（N 盡量小）
-
-### 第三段：外發（全部草稿先行）
-- PR 評論草稿 + Slack 草稿一併呈現 → 確認 → 才發
-- Slack（needSlack）走 `/slack` 區塊化（結論 → 風險 → PR 連結）
-
-### 專項工具（pipeline 按 tier 自動掛載 / 手動單呼）
-| 工具 | 觸發 |
-|---|---|
-| `reviewer` agent | always / 第二意見 |
-| `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
-| `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
-| `pr-test-analyzer` | prod code 改 ＆ test 未改 |
-| `architect` agent | deep tier / 架構深度審查（5 維度評分）|
-
-### 紅線（引用既有，不重述）
-- PR：comment / inline 可；approve / merge 見 §05 deny list
-- i18n 缺項：見 §04，不自創文案
-- 外發：草稿先行（§05 + Preview > Apply）
-
-## Review 深淺分流規格
-
-### 自動判定 Tier
-
-| 層級 | 觸發條件 | 耗時 |
-|---|---|---|
-| **quick** | 行數 ≤ 80（stacked +50%）＆ 檔案 ≤ 3 ＆ 無強制升級訊號 | < 90s |
-| **standard** | 80–300 行 / 4–10 檔 / 命中 standard 升級訊號 | ~5 min |
-| **deep** | > 300 行 / > 10 檔 / 命中 deep 升級訊號 | ~8 min |
-
-**stacked PR**：偵測 git-spice stack（base ≠ main）時，quick 上限 +50%（≤ 120 行）。
-
-### 強制升級訊號
-
-**→ deep**（path allowlist）：
-`**/migrations/**` / `**/schema.prisma` / `**/*.sql` / `**/middleware/auth*` / `**/guards/**` / `**/policies/**` / `**/permissions/**` / `**/payment/**` / `**/billing/**` / `**/charge*` / `**/.env*` / `**/config/secrets*` / `**/crypto*` / `**/hash*`
-
-**→ standard**（path allowlist）：
-`**/cron*` / `**/scheduler*` / `**/queue*` / `**/cors*` / `**/csp*` / `**/cookie*` / `package.json` dependencies|scripts 段
-
-**→ standard**（risk keyword scan）：
-`SECRET` / `SALT` / `PRIVATE_KEY` / `DROP TABLE` / 動態程式碼求值 / React raw HTML 注入屬性 / `child_process` / `bcrypt` / `jwt.sign` / `Math.random`（安全 context）/ diff 含 `^- *if ` 開頭位於 auth 路徑
-
-**→ standard**（diff 形狀）：純刪除 PR `+0/-N` / `.env.example` 改動 / featureFlag default 翻轉
-
-**行數計算排除**：`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock` / `*.snap` / `dist/**` / `*.generated.*` / `*.min.*`
-
-**優先級**：allowlist > keyword > shape > 行數。降級需 4 條全清。
-
-### Quick 模式能力組合
-
-| 能力 | 觸發條件 |
-|---|---|
-| Diff 正確性檢視 | always |
-| typecheck | always |
-| lint | always |
-| `reviewer` agent | always |
-| `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
-| `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
-| `pr-test-analyzer` lite | prod code 改 ＆ test 未改 |
-
-**覆寫**：`--effort=quick|standard|deep`；`--effort=quick --force` 需附 justification。
+> 降噪原則（Signal > Volume）、狀態偵測分流、needSlack 產物契約、tier 自動判定與升級訊號、Quick 能力組合 → Read `~/.claude/docs/agent-review-workflow.md`（執行 PR / code review 時）。
+> 速記：PR 連結→僅 PR review 不發 Slack；Slack 連結→需在原 thread 回覆。P0/P1 inline、P2/P3 併 summary、正確碼不評論。草稿先行。
 
 ## 多 session 監看
 
@@ -212,19 +128,8 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 > browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
 
-## Subagent 成本控制：Tool(param:value) 權限語法（CC 2.1.178+）
+## Subagent 成本控制：Tool(param:value) 權限語法
 
-**僅 deny / ask rules 支援** `Tool(param:value)` match 工具 input 參數（含 `*` wildcard）；**allow 不支援**此語法（allow 續用各工具自有 specifier，如 `Bash(npm run *)`）。可在不關閉整個工具的前提下精準封鎖特定參數值。
-
-| 目的 | deny 寫法 |
-|---|---|
-| 封鎖 Opus subagent（控 token 成本） | `"Agent(model:opus)"` |
-| 封鎖 worktree 隔離 subagent | `"Agent(isolation:worktree)"` |
-| 封鎖背景 Bash | `"Bash(run_in_background:true)"` |
-
-- **匹配規則**：值為精確匹配（`model:opus` 匹配別名 `opus`，不匹配完整 model ID）；`*` wildcard 如 `Agent(model:*)` 匹配「任何**顯式**指定 model 的呼叫」，但**不匹配省略 model 的呼叫**。每條規則只能限制一個 parameter（要同時擋 model + isolation 寫兩條）。
-- **與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` 互補**：env 設**預設值**（可被 prompt 顯式覆寫），`Agent(model:opus)` 設**硬封鎖**（擋死顯式升 opus）；env 已讓「未指定 model」走 sonnet，deny 補上「禁止顯式升級」這一缺口。
-- **陷阱**：`command` / `file_path` / `path` / `url` 等已有 canonicalizing 規則的參數**不能**用此語法，誤寫會被忽略並觸發 startup warning。
-- 落地於 `settings.template.json` `permissions.deny`（union 合併，跨機一致）。
+> 用 deny rule 精準封鎖特定參數值（`Agent(model:opus)` 擋 Opus subagent、`Bash(run_in_background:true)` 擋背景 Bash），與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` env 互補 → 完整語法、匹配規則、陷阱見 `~/.claude/docs/agent-review-workflow.md`（配 subagent 權限時）。
 
 </agent_orchestration>

@@ -25,7 +25,7 @@ category: meta
 
    | 整合 | 建議訊息 |
    |---|---|
-   | coderag | 「可用語義搜尋找代碼——已裝 CodeRAG MCP，直接問『語義搜尋 X』（本地 zero-key，無需啟動服務）」|
+   | codebase-memory-mcp | 「語義+結構一把抓——已裝 codebase-memory-mcp，問『語義搜尋 X』或『改 X 影響什麼(blast-radius)』（本地 zero-key）」|
    | browser-harness | 「需要瀏覽器自動化時，使用 browser-automation-router skill 分流」|
    | awesome-ai-pedia | 「問 AI 工具時可搜尋 AI-Pedia 知識庫——說『搜尋 AI 工具』」|
 

@@ -6,7 +6,7 @@ description: >
   Quality Gate — Use when: "merge 前", "上線前", "quality check", "品質檢查", "pre-release".
   Full Gates — Use when: "--gates", "9 gate", "完整審查", "production ready".
 metadata:
-  version: 1.2.0
+  version: 1.3.0
 ---
 
 # Check — 構建修復 + 品質閘門 + 9-Gate 完整審查
@@ -121,6 +121,23 @@ npx -y agnix . 2>&1 | tail -6
 error 級阻塞（缺 frontmatter / YAML 無效 / 斷鏈 / @import 失效）；warning/info 記錄不阻塞。
 ⚠️ 已知誤報（自訂 XML 語義標籤、`<placeholder>`、`model`/`version` 等 CC 合法欄位）**不計入阻塞**，人工判讀。
 
+### Gate 7 — Config Consistency（ab-tao 配置 repo 專屬，條件式）
+
+**僅當 repo 為 ab-tao dotfiles（存在 `apps/dotfiles/bin/verify-claude-sync.mjs`）時執行**。其他 repo → SKIP。
+
+驗證 source `claude/` 的改動部署到 live `~/.claude/` 後是否一致——用 ab-tao 自身 `buildSyncPlan`（與 d:setup 同邏輯），避免「改了 source 卻因 forbidden / additive / auto-skip 沒進 live」的隱形 drift：
+
+```bash
+node apps/dotfiles/bin/verify-claude-sync.mjs   # exit 1 = 有待處理 drift
+```
+
+- `blocking = 0` → PASS（source 與 live 一致，或僅預期內 forbidden 差異）
+- `blocking > 0` → FAIL：腳本已列出待部署項與所需動作
+  - `⚠️ drift（保護中）` → 互動式 `d:setup` 選「使用 ab-tao template」
+  - `🔒 additive` → `c:skills` 或手動 copy
+  - `⛔ state dead` → `d:doctor --fix`
+- `⛔ forbidden`（profiles/memory-templates/memory）為**預期差異，不計入阻塞**
+
 ### 輸出格式
 
 ```
@@ -132,6 +149,7 @@ Gate 3 Lint     [PASS ✅ | FAIL ❌]
 Gate 4 Tests    [PASS ✅ | FAIL ❌]  coverage: XX%
 Gate 5 Security [PASS ✅ | FAIL ❌]
 Gate 6 CfgLint  [PASS ✅ | SKIP ➖ | FAIL ❌]  (僅 AI 配置 repo)
+Gate 7 CfgSync  [PASS ✅ | SKIP ➖ | FAIL ❌]  (僅 ab-tao 配置 repo)
 ────────────────────────────────────────
 GATE: PASS ✅ | FAIL ❌
 
@@ -139,7 +157,7 @@ GATE: PASS ✅ | FAIL ❌
 - [Gate N] <具體錯誤描述>
 ```
 
-所有**適用** gate PASS 才輸出 `GATE: PASS ✅`（Gate 6 於非 AI 配置 repo 標 SKIP，不影響結果），否則列出全部阻塞項目後輸出 `GATE: FAIL ❌`。
+所有**適用** gate PASS 才輸出 `GATE: PASS ✅`（Gate 6/7 於非對應 repo 標 SKIP，不影響結果），否則列出全部阻塞項目後輸出 `GATE: FAIL ❌`。
 
 ---
 

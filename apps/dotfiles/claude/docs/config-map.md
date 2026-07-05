@@ -19,7 +19,7 @@
 │   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
-│   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則 + DAG 並行，取代 13+14）
+│   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則核心；PR review/tier/param 已拆 docs/agent-review-workflow.md）
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）10 檔
@@ -34,19 +34,20 @@
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
 │
-├── docs/                        # 參考文件（可 @import，非規則）28 檔
+├── docs/                        # 參考文件（可 @import，非規則）29 檔
 │   │
 │   │   # ── CLAUDE.md @import 目標（4）──
 │   ├── rtk.md                   RTK 工具 + token 預算影響
 │   ├── audit-checklists.md      四種審查模式 checklist 完整版
 │   ├── config-map.md            本文件
-│   ├── local-tools.md           LM Studio + Milvus + browser-harness + Serena 安裝指引
+│   ├── local-tools.md           codebase-memory-mcp + browser-harness + AI-Pedia 安裝指引
 │   │
 │   │   # ── Slack 叢集（2）──
 │   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns
 │   ├── slack-audience-profiles.md   7 種 audience（rd/pm/mkt/qa/ops/ued/multi）
 │   │
-│   │   # ── 系統參考（按需，8）──
+│   │   # ── 系統參考（按需，9）──
+│   ├── agent-review-workflow.md PR review 工作流 + Review 深淺分流 + Tool(param) 語法  引用: 13-agent-orchestration
 │   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
 │   ├── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
 │   ├── self-evolution.md        failure-patterns append-only 自我演進 + ADR-002 invariants
@@ -113,11 +114,12 @@
 │   │   └── session-end.json          ab-tao:session:end
 │   └── *.sh                     Hook 執行腳本
 │
-├── memory/                      # 全域記憶（所有 session 共享）
-│   ├── MEMORY.md                hot 索引（≤15 項）
-│   ├── preferences/             長期個人偏好
-│   ├── patterns/                可重用 pattern
-│   └── archive/                 cold layer
+├── memory/                      # 全域記憶（所有 session 共享）· 三溫層 flat 檔（見 08-state-system）
+│   ├── MEMORY.md                Hot：純 index（≤15 項）
+│   ├── system-patterns.md       Stable：偏好 / feedback / 永久參考（檔不存在則跳過）
+│   ├── active-context.md        Volatile：進行中 ticket / mid-run 記錄（檔不存在則跳過）
+│   ├── {topic}/index.md         Warm：細節按需
+│   └── archive/                 Cold：封存（sync excluded）
 │
 ├── projects/                    # 按專案隔離（ab-tao 絕不覆蓋）
 │   └── {encoded}/

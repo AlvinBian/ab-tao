@@ -212,7 +212,7 @@ TDD 流程：`/tdd`（legacy shim）、`/chain-tdd`（4 步 TDD chain）、`/tes
 | 整合 / 工具 | `mcp-builder`, `integration-recommender`, `browser-automation-router`, `brainstorming` |
 | 初始化 | `observe` |
 
-> 知識圖譜（符號依賴 / blast radius / 業務流程）改由 **code-review-graph** MCP（`mcp__code-review-graph__*`）提供；見 `13-agent-orchestration.md`。
+> 代碼智能（語義 + 符號依賴 / blast radius）改由 **codebase-memory-mcp** MCP（`mcp__codebase-memory-mcp__*`）提供；見 `13-agent-orchestration.md`。
 
 ## 7. `hooks/` 事件驅動系統
 

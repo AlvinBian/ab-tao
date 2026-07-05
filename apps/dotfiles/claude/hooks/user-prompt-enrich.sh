@@ -32,6 +32,14 @@ if printf '%s' "$PROMPT" | grep -Eiq '(rm[[:space:]]+-rf|--force|--no-verify)'; 
 	EXTRA="${EXTRA}[Enrich] Prompt 含破壞性命令關鍵字。依 §6 串流中斷：rm -rf / --force / --no-verify 需二次確認，明說「hotfix 緊急」才豁免。\n"
 fi
 
+# Rule 4: 概念代碼搜尋意圖 → 提示優先 codebase-memory（取代 grep+Read）
+# kill-switch: AB_PREFER_CODEBASE_MEMORY=0
+if [ "${AB_PREFER_CODEBASE_MEMORY:-1}" != "0" ] \
+	&& printf '%s' "$PROMPT" | grep -Eiq '(在哪|哪裡|哪些檔|哪個檔|分佈在|怎麼(實作|運作|處理|走)|如何(實作|運作)|邏輯在|代碼在|實作的|找出.*(代碼|邏輯|相關)|相關代碼|影響哪|會影響|blast.?radius|誰(呼叫|用了)|caller|依賴鏈|架構(總覽|圖)|where is|how does .* work|find .* (code|logic)|impact of)' \
+	&& ! printf '%s' "$PROMPT" | grep -Eiq '(^grep |commit|review|翻譯|解釋這|這段|這行|修掉|改成|寫一?個|加個)'; then
+	EXTRA="${EXTRA}[Enrich] 偵測到概念代碼搜尋意圖 → 優先用 codebase-memory-mcp（search_graph 找代碼 / query_graph,detect_changes 看影響 / get_architecture 架構），取代 grep+Read；grep 僅用於精確字串。\n"
+fi
+
 # 無注入 → 靜默退出（不影響 prompt 流程）
 [ -z "$EXTRA" ] && exit 0
 

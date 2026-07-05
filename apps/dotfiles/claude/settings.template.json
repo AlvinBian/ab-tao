@@ -1,7 +1,6 @@
 {
   "model": "opusplan",
   "effortLevel": "high",
-
   "permissions": {
     "defaultMode": "bypassPermissions",
     "deny": [
@@ -29,7 +28,6 @@
       "Bash(docker volume prune*)"
     ]
   },
-
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "USE_BUILTIN_RIPGREP": "1",
@@ -48,11 +46,13 @@
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "OTEL_METRICS_INCLUDE_SESSION_ID": "true"
   },
-
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "askUserQuestionTimeout": "5m",
-  "fallbackModel": ["claude-sonnet-5", "claude-haiku-4-5"],
+  "fallbackModel": [
+    "claude-sonnet-5",
+    "claude-haiku-4-5"
+  ],
   "autoUpdatesChannel": "latest",
   "cleanupPeriodDays": 30,
   "showThinkingSummaries": true,
@@ -65,7 +65,6 @@
   "attribution": {
     "sessionUrl": false
   },
-
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
@@ -73,61 +72,11 @@
     "ralph-loop@claude-plugins-official": true,
     "session-report@claude-plugins-official": true,
     "claude-hud@claude-hud": true,
-    "warp@claude-code-warp": true
+    "warp@claude-code-warp": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "codex@openai-codex": true
   },
-
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        "${PWD}"
-      ]
-    },
-    "code-review-graph": {
-      "command": "${HOME}/.local/bin/code-review-graph",
-      "args": [
-        "mcp",
-        "--repo",
-        "${PWD}"
-      ]
-    },
-    "coderag": {
-      "command": "${HOME}/.local/bin/coderag",
-      "args": [
-        "mcp",
-        "--watched-dir",
-        "${PWD}"
-      ]
-    },
-    "chrome-devtools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ]
-    },
-    "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ]
-    },
-    "anysearch": {
-      "type": "http",
-      "url": "https://api.anysearch.com/mcp",
-      "headers": {
-        "Authorization": "Bearer ${ANYSEARCH_TOKEN}"
-      }
-    }
-  },
-
+  "mcpServers": {},
   "statusLine": {
     "type": "command",
     "command": "$HOME/.claude/hooks/statusline.sh"
@@ -143,6 +92,12 @@
       "source": {
         "source": "github",
         "repo": "warpdotdev/claude-code-warp"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
       }
     }
   },

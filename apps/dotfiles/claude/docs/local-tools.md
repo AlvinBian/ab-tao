@@ -3,29 +3,34 @@
 本機需手動安裝的外部服務與工具。
 各服務狀態可透過 `pnpm run c:locals --status` 查看。
 
-## A. CodeRAG — 本地語義/向量代碼搜尋（取代已退役的 claude-context）
+## A. codebase-memory-mcp — 代碼智能一把抓（語義 + 結構圖，取代 CodeRAG + crg + serena）
 
-`Neverdecel/CodeRAG`（231★）。本地優先、zero-key 的語義代碼搜尋，**無 Docker / 無 Milvus / 無 PyTorch / 無雲 API**（fastembed ONNX + Lance 嵌入式向量庫，全 in-process）。取代原 LMStudio+Milvus 那套 ~14GB 重方案。
+`DeusData/codebase-memory-mcp`（26.4k★，MIT，arXiv:2603.27277）。**單一 node 套件、零重依賴**（內建 nomic-embed-code 向量，無 PyTorch/Docker/雲 API），一個工具同時提供**語義搜尋 + 完整依賴圖 + blast-radius + 複雜度 + route 追蹤**，158 語言。
 
-### 安裝（一次）
+### 為何取代三個工具（本 repo 實測背書）
+| 舊工具 | 職責 | codebase-memory 對應 |
+|---|---|---|
+| CodeRAG | 語義搜尋 | `search_graph`（**符號級**，勝過 CodeRAG 的 window 級）|
+| code-review-graph | 結構圖/blast-radius | `query_graph` / `get_architecture` / `trace_path` + CALLS/IMPORTS 邊 |
+| serena | LSP 找 caller | Hybrid LSP 型別解析 + CALLS 邊 ⚠️（安全 rename 不含）|
+
+實測（ab-tao/apps/dotfiles ~360 檔）：索引 **2s**（vs CodeRAG 450s / mvs 88s）、查詢 **0s**、5737 nodes/8360 edges + 795 function 向量、JS/.mjs 零 parse 錯。
+
+### 安裝 + MCP（每台機）
 ```bash
-brew install pipx   # 若無
-pipx install "coderag[mcp] @ git+https://github.com/Neverdecel/CodeRAG"
+npm install -g codebase-memory-mcp     # 或 curl 官方 installer / go install
+# MCP 已入 .claude.json user scope（穩定路徑 = fnm default node bin,避 multishell 臨時路徑）
+claude mcp add codebase-memory-mcp -s user -- "$(npm root -g)/../bin/codebase-memory-mcp"
 ```
-MCP 已寫入 `settings.template.json` mcpServers（`coderag mcp --watched-dir ${PWD}`，cwd 動態，仿 serena/crg）→ `d:setup` 自動同步；重啟 CC 後 `/mcp` 見 coderag。
+⚠️ **fnm 陷阱**：`command -v` 可能回 `fnm_multishells/…` 臨時路徑，新 session 失效 → MCP command 必須指 **fnm default node 的穩定 bin**（`~/.local/share/fnm/node-versions/<default>/installation/bin/`）。
 
 ### 用法
-- **MCP（Claude 自動用）**：session 內問「語義搜尋 X」→ 走 coderag MCP，回 file:line + 相似度
-- **CLI**：`coderag index --watched-dir <repo>`（首次建索引）｜`coderag search "query" --watched-dir <repo>`｜`coderag watch <repo>`（即時增量）
-- 索引存 `<repo>/.coderag/`（**記得加進 .gitignore**）；增量靠 content-hash + mtime 跳過未改檔
+- **MCP（Claude 自動用）**：問「語義搜尋 X」→ `search_graph`；「改 X 影響什麼」→ `query_graph`/`detect_changes`（blast-radius）；「架構總覽」→ `get_architecture`
+- **CLI**：`codebase-memory-mcp cli index_repository '{"repo_path":"<repo>"}'` 建索引（每 repo 首次，或 `config set auto_index true`）
+- 14 工具 · 索引存各 repo `.mcprules`/內部 · 多專案用 project 名區隔
 
-### 能力與 caveat
-- Embedding：`BAAI/bge-small-en-v1.5`（本地 ONNX，首次下 ~130MB，CPU 即可，無 GPU）
-- symbol-aware chunking：**TS/TSX/JS/Go/Rust/Java 符號級** ✅；⚠️ **Vue / PHP 退化為 line-window**（仍可用，粒度較粗）
-- hybrid BM25 + 向量 → 補通用 embedder 在代碼精確 identifier 上的弱點
-- 隱私：全本地，KKday 私有碼**不出機**（勝過 claude-context 的雲 embedding 選項）
+> 三範式分工終結：**codebase-memory=語義+結構一把抓** ｜ ripgrep=文字/正則 ｜ chrome-devtools=前端 debug。claude-context / CodeRAG / mcp-vector-search / code-review-graph / serena **皆已退役**（實測對比見 git 歷史）。
 
-> **三範式分工（claude-context 退役後）**：**serena**=LSP 精準符號/rename ｜ **code-review-graph**=依賴圖/blast-radius/業務流 ｜ **CodeRAG**=語義「按意思找代碼」。多機各自 `pipx install` + 首次 `coderag index`。
 
 ## B. browser-harness（瀏覽器自動化，預設啟用）
 
@@ -92,136 +97,27 @@ pnpm run c:ai-sync --source awesome-ai-pedia
 > **更新提示**：d:doctor 會檢查 awesome-ai-pedia 最後更新時間，超過 30 天會警告。
 > 多台機器各自執行 c:ai-sync 以取得最新版本。
 
-## E. Serena LSP MCP（Symbol-level 搜尋，取代 grep+Read）
+## E. ~~Serena LSP MCP~~（已退役 → 見 §A codebase-memory-mcp）
 
-Serena 透過 LSP（Language Server Protocol）提供 symbol-level 搜尋，可大幅削減 grep+Read 組合的 token 消耗（大 repo 預期 50-99%）。
+serena（LSP symbol search / find-callers）已於 2026-07 退役,其找 caller/references 能力併入 **codebase-memory-mcp**（§A,CALLS/IMPORTS 邊 + Hybrid LSP 型別解析）。⚠️ 唯一未覆蓋:**LSP 安全 rename**（willRenameFiles）—— 需 rename 改用 IDE。
 
-**資料依據**：單一 KKday session 實測 grep 362 次 + Read 511 次 = 884 次 search/read 呼叫，正是 Serena 的目標取代場景。
+## F. ~~code-review-graph~~（已退役 → 見 §A codebase-memory-mcp）
 
-### 前置需求
+crg（結構知識圖譜）已於 2026-07 退役,其能力（依賴圖 / blast-radius / 業務流程）併入 **codebase-memory-mcp**（§A,一個工具兼語義+結構,更快更輕）。daemon / launchd / 各 repo `.code-review-graph` graph DB 已全清。
 
-- uv（已隨 brew install uv 安裝，d:setup 前置步驟）
-- 至少一個語言的 LSP server（按需安裝，不需全部）
+## G. Understand-Anything（業務流程視覺化 dashboard，互補 codebase-memory-mcp）
 
-### 1. 安裝語言 LSP server（按專案語言安裝）
+Claude Code plugin（MIT，[Lum1104/Understand-Anything](https://github.com/Lum1104/Understand-Anything)，已裝 v2.7.5），把 codebase 變互動知識圖譜 + React dashboard，主打**業務流程可視化**與**新人導覽**。與 codebase-memory-mcp **互補非取代**。
 
-```bash
-# TypeScript / JavaScript（KKday 主要語言）
-npm i -g typescript-language-server typescript
-
-# Vue（Nuxt 3 / Vue 3 專案）
-npm i -g @vue/language-server
-
-# Python（選擇性）
-pip install python-lsp-server
-```
-
-### 2. MCP server 透過 d:setup 自動寫入
-
-`settings.template.json` 已加入 `serena` MCP 條目。執行 `pnpm run d:setup` 後，serena 會自動寫入 `~/.claude/settings.json`。
-
-無需手動安裝 serena package — `uvx` 會在首次呼叫時自動 fetch。
-
-### 3. 驗證
-
-```bash
-# 開新 KKday session 後，問：
-# 「找 useOrderDetail 這個 composable 的所有呼叫點」
-# 預期：Claude 走 Serena symbol search，非 grep + Read 組合
-```
-
-### 4. 使用方式
-
-Serena 在新 session 自動生效。主要能力：
-
-| 任務 | Serena tool | 替代 |
-|---|---|---|
-| 找 symbol 定義 | `find_symbol` | grep + Read 多個檔 |
-| 找所有 caller | `find_referencing_symbols` | grep -r + Read |
-| 重命名安全性確認 | `find_referencing_symbols` | 手動搜尋 |
-| 探索 class 成員 | `find_symbol` | Read + 手動解析 |
-
-### 5. 每個 session 需指定 project root
-
-Serena 需知道 project 路徑。d:setup 使用 `${PWD}` 作為動態值；若在多個 repo 間切換，重啟 Claude Code 時 Serena 會自動偵測當前 cwd。
-
-### 6. 排錯
-
-**Serena 未回應** → 確認 `uvx` 存在：`which uvx`；首次執行需 fetch（~30s）
-
-**LSP 報錯** → 確認對應 language server 已全局安裝：`which typescript-language-server`
-
-**symbol 找不到** → Serena 依賴 LSP index 建立，新開 session 後等 ~10-30s LSP warmup
-
-## F. code-review-graph（知識圖譜 MCP，符號依賴 + blast radius + 業務流程）
-
-持久增量知識圖譜（MIT，SQLite，支援 PHP / Vue / TS / JS 等 30+ 語言），透過 MCP 暴露 30 個工具，涵蓋符號級依賴、blast radius、業務流程可視化。與 serena（LSP）、claude-context（向量）三範式互補。
-
-### 前置需求
-- Python 3.11+
-- CLI：`~/.local/bin/code-review-graph`（v3.4.0）；首次 `pip install code-review-graph`
-
-### 1. MCP server（已寫入 settings.template.json）
-```json
-"code-review-graph": {
-  "command": "${HOME}/.local/bin/code-review-graph",
-  "args": ["mcp", "--repo", "${PWD}"]
-}
-```
-d:setup 自動寫入 `~/.claude/settings.json`；**需在專案目錄開 Claude（`${PWD}` 動態）+ 重啟 session** 才載入。
-
-### 2. 建圖譜（每個專案首次）
-```bash
-cd <repo> && code-review-graph build          # 含 postprocess（flows + communities + FTS）
-code-review-graph status                       # 確認 nodes/edges
-```
-
-### 3. daemon 自動增量更新（不再變 dead data）
-```bash
-code-review-graph daemon add "$PWD" --alias <name>  # 檔案 + git 事件
-code-review-graph daemon start                 # launchd 開機自啟見下
-```
-切 branch / commit 自動 update（秒級），不需 git hooks。
-
-### 4. launchd 開機自啟
-`~/Library/LaunchAgents/com.code-review-graph.daemon.plist`（RunAtLoad，登入拉起 daemon）。
-
-### 5. 語義搜尋（選用）
-```bash
-pip install 'code-review-graph[embeddings]'    # sentence_transformers
-code-review-graph embed --repo <repo>          # 啟用 semantic_search_nodes_tool
-```
-
-### 6. 視覺化
-```bash
-code-review-graph visualize                    # 生成 graph.html（D3.js 互動圖）
-```
-
-### 7. 多機
-配置（settings / CLAUDE.md）跨機同步；**圖譜 graph.db 不同步**（~2GB + SQLite 鎖衝突）。新機各自 `build` + `daemon add`。
-
-### 8. 排錯
-| 症狀 | 解 |
-|---|---|
-| Claude 沒調用、走 grep | 在專案目錄開 Claude + 重啟 session；`/mcp` 確認 connected |
-| 工具 404 | 完整名含 `_tool` 後綴（`get_architecture_overview_tool`）|
-| build 卡住 | daemon 在 watch → 先 `daemon stop` |
-| 圖譜過期 | `daemon status` 查 alive；`update --brief` |
-| 驗證是否生效 | 問「用 get_hub_nodes_tool 列最多依賴的 5 個符號」→ 看調用 `mcp__code-review-graph__*` 還是 grep |
-
-## G. Understand-Anything（業務流程視覺化 dashboard，互補 code-review-graph）
-
-Claude Code plugin（MIT，[Lum1104/Understand-Anything](https://github.com/Lum1104/Understand-Anything)，已裝 v2.7.5），把 codebase 變互動知識圖譜 + React dashboard，主打**業務流程可視化**與**新人導覽**。與 code-review-graph **互補非取代**。
-
-### 定位：按 audience 分工（與 code-review-graph 零冗餘）
-| | code-review-graph | Understand-Anything |
+### 定位：按 audience 分工（與 codebase-memory-mcp 零冗餘）
+| | codebase-memory-mcp | Understand-Anything |
 |---|---|---|
 | 給誰 | **Claude**（MCP 查依賴 / blast radius）| **人**（dashboard 視覺探索）|
 | 介面 | MCP 工具 `*_tool` | React dashboard（domain view / tour）|
-| 儲存 | `.code-review-graph/` SQLite | `.understand-anything/knowledge-graph.json` |
+| 儲存 | codebase-memory 內部 graph+向量 | `.understand-anything/knowledge-graph.json` |
 | auto-update | daemon（免費背景，檔案+git 自動）| commit hook → Claude 增量（fingerprint，**耗 token**）|
 
-> 口訣：**Claude 要查 → crg ｜ 你要看 → UA**。
+> 口訣：**Claude 要查 → codebase-memory ｜ 你要看 → UA**。
 
 ### 命令（8 skills）
 - `/understand` — 建知識圖譜（`--auto-update` 開 commit 自動更新；`--language zh-TW` 中文）
@@ -239,7 +135,7 @@ cd <repo>
 ```
 
 ### ⚠️ 成本策略
-UA auto-update 跑 LLM agents 做語義分析，**結構變更時花 token**（cosmetic 改動 fingerprint 偵測零成本）。建議：**只在常做 onboarding / 需視覺探索的專案開 `--auto-update`**（如 member-ci）；其他專案要看時手動 `/understand`。crg 則 13 專案全開（免費背景）。
+UA auto-update 跑 LLM agents 做語義分析，**結構變更時花 token**（cosmetic 改動 fingerprint 偵測零成本）。建議：**只在常做 onboarding / 需視覺探索的專案開 `--auto-update`**（如 member-ci）；其他專案要看時手動 `/understand`。codebase-memory 則各 repo 首次 `cli index_repository`（2s，本地）。
 
 ### worktree 注意
 PROJECT_ROOT 在 git worktree 時，UA 自動把輸出重導向主 repo root（worktree 是臨時的，`.understand-anything/` 寫那會隨 session 銷毀）。
@@ -281,7 +177,7 @@ bd init                          # 於 repo 初始化（產生 git-backed 資料
 bd create "任務描述"             # agent 可 JSON 輸出、依賴追蹤、auto-ready 偵測
 ```
 
-> 圖資料隨 git 走，跨機/多 branch 用 hash-based ID（`bd-a1b2`）防合併衝突。與 code-review-graph（符號依賴）、memory（決策）三者不重疊：beads=**任務**層。
+> 圖資料隨 git 走，跨機/多 branch 用 hash-based ID（`bd-a1b2`）防合併衝突。與 codebase-memory-mcp（語義+結構）、memory（決策）三者不重疊：beads=**任務**層。
 
 ## K. ccusage — 成本 / burn rate 分析（因應 2026-03 rate-limit 收緊）
 

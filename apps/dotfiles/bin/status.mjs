@@ -22,6 +22,7 @@ import {
   scanUsageStats,
 } from '../libs/core/usage-scanner.mjs'
 import { getRtkStatus } from '../libs/external/rtk.mjs'
+import { getZoxideStatus } from '../libs/external/zoxide.mjs'
 import { listProfiles, loadActiveProfile } from '../libs/install/profiles.mjs'
 
 const __dirname = getDirname(import.meta)
@@ -267,6 +268,15 @@ function showOverview(data) {
       rtkStatus.installed
         ? pc.cyan(`v${rtkStatus.version || '?'}`)
         + (rtkStatus.hookConfigured ? '' : pc.dim(' hook 未配置'))
+        : pc.dim('未安裝')
+    }`,
+  )
+  const zoxideStatus = getZoxideStatus()
+  console.log(
+    `  🧭 zoxide      ${
+      zoxideStatus.installed
+        ? pc.cyan(`v${zoxideStatus.version || '?'}`)
+        + (zoxideStatus.configured ? '' : pc.dim(' init 未配置'))
         : pc.dim('未安裝')
     }`,
   )

@@ -37,3 +37,9 @@ Thumbs.db
 
 # Claude Code project runtime (worktrees, session data)
 .claude/
+
+# MCP Vector Search index directory
+.mcp-vector-search/
+
+# CodeRAG local semantic index cache
+.coderag/

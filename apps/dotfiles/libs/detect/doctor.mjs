@@ -39,6 +39,17 @@ export async function ensureEnvironment() {
     /* 略 */
   }
 
+  let isZoxideInstalled = () => false
+  let getZoxideVersion = () => null
+  try {
+    ({ isZoxideInstalled, getZoxideVersion } = await import(
+      '../external/zoxide.mjs',
+    ))
+  }
+  catch {
+    /* 略 */
+  }
+
   const fnmOk = has('fnm')
   const nvmOk = checkNvm()
   const nOk = has('n')
@@ -116,6 +127,15 @@ export async function ensureEnvironment() {
       ok: isRtkInstalled(),
       ver: getRtkVersion(),
       failLabel: '未安裝（可選 — token 壓縮）',
+      actionLabel: null,
+      optional: true,
+    },
+    // optional — zsh tools 模組依賴，d:setup 安裝 tools 時會自動 brew install
+    {
+      name: 'zoxide',
+      ok: isZoxideInstalled(),
+      ver: getZoxideVersion(),
+      failLabel: '未安裝（可選 — 智能 cd，z xxx）',
       actionLabel: null,
       optional: true,
     },
