@@ -16,7 +16,7 @@
 - [ ] `claude-md/` 12 個 section 檔全部存在（00–05, 08, 10–13, 15；09/14 已合併，06→rules/vue-nuxt、07→hooks 已下放，16–18 已移 docs/）
 - [ ] `rules/` 10 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / testing / migrations / sql / barrel-exports / git-and-pr / reuse-and-decoupling / php-codeigniter）
 - [ ] `rules/barrel-exports.md` 含 7 條 sub-rule（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
-- [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；29 個 docs/ 檔完整清單見 config-map.md
+- [ ] CLAUDE.md「參考資源」為指針文字非 @import（@ 是硬載入；2026-07 修正），4 個指針目標存在（rtk / audit-checklists / config-map / local-tools）；30 個 docs/ 檔完整清單見 config-map.md
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
 - [ ] `slack-principles.md` 含 8 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns / 視覺節奏 / 場景 Icon 快查）
