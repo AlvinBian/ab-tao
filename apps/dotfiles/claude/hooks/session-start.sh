@@ -31,6 +31,8 @@ if [ -n "$REPO_NAME" ]; then
 fi
 
 # ── Part 2: 冷啟動 briefing（L1-L2）────────────────────────────────
+# ⚠️ briefing 必須走 stdout（SessionStart 官方特例：stdout 直注入 context）；
+#    stderr 只進 debug log，Claude 看不到（2026-07 實測修復，勿改回 >&2）
 ENCODED=$(printf '%s' "$CWD" | sed 's|/|-|g')
 PROJECT_DIR="$CLAUDE_DIR/projects/$ENCODED"
 MEMORY_INDEX="$PROJECT_DIR/memory/MEMORY.md"
@@ -42,18 +44,18 @@ PROJ_TASKS="$PROJECT_DIR/tasks"
 
 printf '\n'
 # 全局記憶（永遠提示路徑，讓 Claude 知道去哪讀）
-printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY" >&2
+printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY"
 # 專案記憶（有檔案才提示）
 if [ -f "$MEMORY_INDEX" ]; then
-	printf '[冷啟動] 📚 專案記憶：%s\n' "$MEMORY_INDEX" >&2
+	printf '[冷啟動] 📚 專案記憶：%s\n' "$MEMORY_INDEX"
 fi
 # 專案計畫（有檔案才提示）
 if [ -f "$PLANS_INDEX" ]; then
-	printf '[冷啟動] 📋 專案計畫：%s\n' "$PLANS_INDEX" >&2
+	printf '[冷啟動] 📋 專案計畫：%s\n' "$PLANS_INDEX"
 fi
 # 專案任務目錄（有目錄才提示）
 if [ -d "$PROJ_TASKS" ]; then
-	printf '[冷啟動] 🧭 專案任務：%s\n' "$PROJ_TASKS" >&2
+	printf '[冷啟動] 🧭 專案任務：%s\n' "$PROJ_TASKS"
 fi
 
 # ── Part 3: config drift 偵測 ──────────────────────────────────────
@@ -68,20 +70,20 @@ if [ -f "$STATE_FILE" ]; then
 		[ -z "$expected_sha" ] && continue
 		if [ ! -f "$full_path" ]; then
 			ghost_count=$((ghost_count + 1))
-			[ "$ghost_count" -le 5 ] && printf '[冷啟動] 👻 ghost: %s\n' "$rel_path" >&2
+			[ "$ghost_count" -le 5 ] && printf '[冷啟動] 👻 ghost: %s\n' "$rel_path"
 			continue
 		fi
 		actual_sha=$(shasum -a 256 "$full_path" 2>/dev/null | awk '{print $1}')
 		if [ -n "$actual_sha" ] && [ "$actual_sha" != "$expected_sha" ]; then
 			drift_count=$((drift_count + 1))
-			printf '[冷啟動] ⚠️  drift: %s\n' "$rel_path" >&2
+			printf '[冷啟動] ⚠️  drift: %s\n' "$rel_path"
 		fi
 	done < <(jq -r '.managed | keys[]' "$STATE_FILE" 2>/dev/null | head -50)
 
 	[ "$ghost_count" -gt 5 ] && \
-		printf '[冷啟動] 👻 ghost: ...（共 %d 個，執行 d:doctor 清理）\n' "$ghost_count" >&2
+		printf '[冷啟動] 👻 ghost: ...（共 %d 個，執行 d:doctor 清理）\n' "$ghost_count"
 	[ "$drift_count" -gt 0 ] && \
-		printf '[冷啟動] ⚠️  %d 個 managed 檔案有 drift，執行 d:status 檢視詳情\n' "$drift_count" >&2
+		printf '[冷啟動] ⚠️  %d 個 managed 檔案有 drift，執行 d:status 檢視詳情\n' "$drift_count"
 fi
 
 # ── Part 4: Telemetry ─────────────────────────────────────────────
@@ -130,7 +132,7 @@ _check_plan_staleness() {
 		[ "$age_secs" -gt "$threshold_secs" ] && stale_count=$((stale_count + 1))
 	done < <(find "$plans_dir" -maxdepth 1 -name '*.md' 2>/dev/null)
 	if [ "$stale_count" -gt 0 ]; then
-		printf '[冷啟動] ⚠️  %d 個 active plan 超過 14 天未更新，建議確認狀態\n' "$stale_count" >&2
+		printf '[冷啟動] ⚠️  %d 個 active plan 超過 14 天未更新，建議確認狀態\n' "$stale_count"
 	fi
 }
 _check_plan_staleness

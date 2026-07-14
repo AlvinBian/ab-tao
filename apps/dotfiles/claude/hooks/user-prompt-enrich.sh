@@ -11,9 +11,9 @@ PROMPT=$(printf '%s' "$INPUT" | jq -r '.prompt // empty' 2>/dev/null)
 
 EXTRA=""
 
-# Rule 1: Jira ticket 號（VM-xxxx / KD-xxxx）
-if printf '%s' "$PROMPT" | grep -Eq '(VM|KD)-[0-9]+'; then
-	TICKET=$(printf '%s' "$PROMPT" | grep -Eo '(VM|KD)-[0-9]+' | head -1)
+# Rule 1: Jira ticket 號（VM / KD / GT / KB2CW / B2CPM）
+if printf '%s' "$PROMPT" | grep -Eq '(VM|KD|GT|KB2CW|B2CPM)-[0-9]+'; then
+	TICKET=$(printf '%s' "$PROMPT" | grep -Eo '(VM|KD|GT|KB2CW|B2CPM)-[0-9]+' | head -1)
 	EXTRA="${EXTRA}[Enrich] 偵測到 Jira ticket ${TICKET}。如需詳情可用 Jira MCP (getJiraIssue / searchJiraIssuesUsingJql) 查詢後納入 context。\n"
 fi
 
