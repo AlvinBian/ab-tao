@@ -27,7 +27,7 @@
 | 偵測到 | 模式 |
 |---|---|
 | 無評論 | 全新 review |
-| 已有評論（含他人）| 增量：只補 net-new，已覆蓋禁重提 |
+| 已有評論（含他人）| 增量：只補 net-new（**net-new 仍須貼進 PR，不得只發 Slack**），已覆蓋禁重提 |
 | 多 reviewer 並行 | 補位：交叉驗證既有，只加沒人提的 |
 | Slack thread 已討論 | 回應最新討論點，禁重發總結 |
 
@@ -48,8 +48,13 @@
 - Slack（needSlack）走 `/slack` 區塊化（結論 → 風險 → PR 連結），**回覆位置 = 原 thread（thread_ts），非頻道 top-level 新訊息**
 
 ### 完成閘門（收尾必核，缺一不可標完成）
-- needSlack=true → **PR review ＋ Slack thread 回覆兩者皆已送出且取回連結**
-- needSlack=false → **僅 PR review；禁止額外發 Slack**
+- **【強制 · 最高權重】凡執行 review PR → PR 內必須至少留 1 條你貼的評論（summary 或 inline）並取回 comment 連結。** 這是 review 的**唯一不可省產物**：
+  - net-new / 增量 finding **一律先落 PR**；Slack thread 回覆僅為指向與總結，**嚴禁以 Slack 回覆取代 PR 內評論**（PR 才是持久審查記錄，Slack 會被洗掉）。
+  - 即使他人已 review、即使只補一項觀察、即使結論是 LGTM/APPROVE → 仍須在 PR 內留下對應評論。
+  - 唯一例外：使用者明確指示「只在 Slack / 只回報給我、不要動 PR」→ 才可略過，且須在回覆聲明「依指示未貼 PR」。
+- needSlack=true → **PR review（PR 內評論）＋ Slack thread 回覆兩者皆已送出且取回連結**
+- needSlack=false → **僅 PR review（PR 內評論）；禁止額外發 Slack**
+- **自動 approve（嚴格護欄，§05）**：完成閘門過後，若 verdict=LGTM ＆ 0 P0/P1 ＆ 非 deep-tier 敏感路徑 ＆ `mergeable≠CONFLICTING` → 自動 `gh pr review --approve`（免二次確認）；任一不符則退回人工並說明卡點。**只 approve、不 merge。**
 
 ### 專項工具（pipeline 按 tier 自動掛載 / 手動單呼）
 | 工具 | 觸發 |
@@ -61,7 +66,7 @@
 | `architect` agent | deep tier / 架構深度審查（5 維度評分）|
 
 ### 紅線（引用既有，不重述）
-- PR：comment / inline 可；approve / merge 見 §05 deny list
+- PR：comment / inline 可；**approve = 嚴格護欄自動**（§05「`gh pr review --approve`」5 條件全滿足才自動，否則退人工）；**merge 硬禁**（§05 deny，無豁免）
 - i18n 缺項：見 §04，不自創文案
 - 外發：草稿先行（§05 + Preview > Apply）
 

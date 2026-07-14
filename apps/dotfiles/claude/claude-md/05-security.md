@@ -39,6 +39,21 @@
 
 詳細規範見 `rules/git-and-pr.md`（stacked PR 工作流、metadata 同步等）。
 
+### `gh pr review --approve`（嚴格護欄自動 approve）
+
+review PR 收尾且**同時滿足全部條件**時，可自動執行 `gh pr review --approve`（免二次確認）：
+
+1. review verdict = **LGTM / SHIP**（無阻斷 finding）
+2. **0 個 P0/P1**（net-new 或未解決皆計）
+3. **非 deep-tier 敏感路徑**（auth / payment / billing / charge / migration / schema.prisma / *.sql / crypto / hash / permissions / guards / policies / .env / secrets —— 見 §13 deep allowlist）
+4. PR `mergeable ≠ CONFLICTING`（衝突未解不 approve）
+5. **完成閘門已過**（PR 內已留至少 1 條 review 評論並取回連結）
+
+任一條件不符 → **退回人工 approve**，並一句話說明卡在哪一條（禁靜默略過）。
+
+❌ **merge 仍為硬禁**：auto-approve 只給 approve，**絕不碰 merge**（`gh pr merge` deny 無豁免，merge 只走 GitHub UI）。
+❌ **禁止批次 approve**：一次只針對當前明確 review 的單一 PR，禁止對多 PR 迴圈自動 approve。
+
 ### Force push（必先 backup）
 
 ❌ Force push 前必先 `git branch backup/<original>`，禁直接覆蓋上游（任何模式皆不豁免）
