@@ -11,7 +11,9 @@
 含糊指令（「處理一下」「弄好它」）、task 完成後自行判斷 = **非授權** → 呈現 diff 問「是否 commit / push？[Y/N]」。完整反例清單 → security-details.md。
 
 ### `gh pr merge`（硬禁，無豁免）
-❌ 任何情境禁止 `gh pr merge` / 開啟 GitHub auto-merge（含 `autoCommit: true` 也不豁免）；merge 唯一方式 = GitHub UI 手動。stacked PR 細節見 `rules/git-and-pr.md`。
+❌ 任何情境禁止 `gh pr merge` / 開啟 GitHub auto-merge（含 `autoCommit: true` 也不豁免）；merge 唯一方式 = GitHub UI 手動。
+
+> commit / 發 PR / 開分支時 → Read `~/.claude/docs/git-pr-conventions.md`（Conventional Commits、PR title `[TICKET][SSR][PC][M]`、堆疊 PR、分支流程、Wave 串行）
 
 ### `gh pr review --approve`（嚴格護欄自動 approve）
 5 條件**全部滿足**才自動執行（免二次確認）：

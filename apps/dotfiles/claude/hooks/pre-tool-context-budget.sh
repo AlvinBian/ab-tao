@@ -25,10 +25,13 @@ fi
 COUNT=$((COUNT + 1))
 printf '%d' "$COUNT" > "$BUCKET_FILE"
 
-# 超過閾值時注入提示（stdout → Claude context）
-if [[ $COUNT -gt $THRESHOLD ]]; then
-	printf '\n[context-budget] 此 session 已讀取 %d 個檔案（閾值 %d）\n' "$COUNT" "$THRESHOLD"
-	printf '建議：改用 `pnpm run c:skills --synced --find <keyword>` 或呼叫 Explore subagent 集中查找\n\n'
+# 超過閾值時注入提示
+# ⚠️ PreToolUse 的 context 注入必須走 hookSpecificOutput.additionalContext JSON，
+#    裸 stdout 只進 debug log 不會注入（2026-07 實測修復，勿改回 printf 直印）
+if [[ $COUNT -gt $THRESHOLD ]] && command -v jq &>/dev/null; then
+	CTX=$(printf '[context-budget] 此 session 已讀取 %d 個檔案（閾值 %d）。建議：改用 codebase-memory search_graph 或 Explore subagent 集中查找，避免逐檔 Read。' "$COUNT" "$THRESHOLD")
+	jq -nc --arg ctx "$CTX" \
+		'{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}'
 fi
 
 exit 0
