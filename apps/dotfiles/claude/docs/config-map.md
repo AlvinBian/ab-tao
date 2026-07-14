@@ -80,10 +80,9 @@
 │   ├── silent-failure-hunter.md 無聲失敗 / 錯誤吞噬專項
 │   └── type-design-analyzer.md  型別設計分析（不變量 + 封裝）
 │
-├── commands/                    # 17 commands
+├── commands/                    # 16 commands（review-pr 併入 code-review；chain-* 歸檔 → commands-archive/）
 │   ├── ai.md
-│   ├── chain-product.md
-│   ├── chain-tdd.md
+│   ├── audit.md                 四種審查模式入口（原 claude-md/11）
 │   ├── check.md                 Build Fix + Quality Gate + 9-gate --gates
 │   ├── code-review.md           PR 代碼審查入口（自動分流 quick/standard/deep）
 │   ├── db-migration.md
@@ -91,7 +90,6 @@
 │   ├── plan.md
 │   ├── pr-stack.md
 │   ├── quality-gate.md
-│   ├── review-pr.md
 │   ├── santa-loop.md
 │   ├── slack.md
 │   ├── specify.md               需求 → 結構化 spec（AC + non-goals）
@@ -99,7 +97,7 @@
 │   ├── verify.md                spec AC 反向覆蓋驗證
 │   └── worklog.md
 │
-├── skills/                      # 31 skills 受 ab-tao 管理；live 另含社群安裝（數量依機器 c:skills / agnix 重整而定）
+├── skills/                      # 15 skills 受 ab-tao 管理（2026-07 盤點 47→20：重複/跨棧/失能歸檔 → skills-archive/ 與 live .skills-archived-*/）
 │
 ├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
