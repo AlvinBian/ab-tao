@@ -43,3 +43,18 @@ DS token 由全域統一管理；補 fallback 會靜默遮蔽 DS 更新，導致
 - 型別：Vue 3 用 `MaybeRefOrGetter<T>` / `MaybeRef<T>`；Vue 2.7 無穩定匯出時用 union `T | import('vue').Ref<T>`。
 - `toValue()` / `unref()` 在 `computed` / `watchEffect` 內存取仍被依賴追蹤。
 - 例外：純展示元件 props、明確只吃快照的純資料工具；勿為支援響應式把非 Vue 純函式強行耦合 `vue`。
+
+## i18n / 文案缺項（自 claude-md/04 下放）
+
+i18n key 缺項或翻譯不存在時，**禁止自創文案**填補：
+
+- ❌ 禁止：在程式碼中寫死中文 fallback、自行翻譯、用「待補」「TODO」當顯示文字
+- ✅ 必做：上報 PM / 翻譯團隊補譯；本地用 placeholder key（不是文案）標記
+- 同理適用：埋點 event name 未公布、API contract 未確定 → placeholder + 上報，禁止臆造
+
+## 前端品質目標（自 claude-md/06 下放）
+
+- Core Web Vitals：LCP < 2.5s、CLS < 0.1、INP < 200ms
+- 單一路由 JS bundle < 200KB（gzip 後）
+- 圖片必須附帶 lazy loading 與 WebP fallback 方案
+- 兼容基線：桌面 Chrome 最新兩版 / Safari 16+ / Firefox 最新版；移動端 iOS Safari 15+ / Android Chrome 最新兩版；不支援 IE、無需 polyfill

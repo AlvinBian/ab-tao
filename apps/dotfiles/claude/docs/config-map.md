@@ -5,7 +5,7 @@
 │
 ├── CLAUDE.md                    # ≤80 行，純 @import 索引
 │
-├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）14 檔（00–08, 10–13, 15）
+├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）12 檔（00–05, 08, 10–13, 15；06→rules/vue-nuxt、07→hooks 已下放）
 │   ├── README.md
 │   ├── 00-identity.md           首錨定
 │   ├── 01-language.md
@@ -167,3 +167,14 @@ Hook 定義存放於 repo 的 `apps/dotfiles/claude/hooks/defs/*.json`（每個 
 | settings.json (hooks) | apps/dotfiles/claude/hooks/defs/*.json | ab-tao d:setup / d:hooks |
 | memory/ | — | 使用者自管 |
 | projects/ | — | 使用者自管 |
+
+## /config 快速設定（自 claude-md/10 下放，CC 2.1.181+）
+
+session 內可用 `/config key=value` 直接設定任一 setting，免進選單；互動 / `-p` / Remote Control 皆支援。
+
+- 例：`/config thinking=false`、`/config effort=high`、`/config model=opusplan`
+- `/config --help` 列出所有可用 shorthand key（CC 2.1.183+）
+- `/config` 選單切換鍵行為（2.1.183+）：Enter 與 Space 都改值，Esc 為「儲存並關閉」（非還原）
+- 使用者跑 `d:setup` 出現選項 `[u/k/m/s]` 時，按字面意義回答即可
+
+> ⚠️ `/config` 改的是 **live `~/.claude/settings.json`**，非 ab-tao source template。要永久跨機保留須回寫 `apps/dotfiles/claude/settings.template.json` 並 `d:setup`，否則僅當機生效（且 `env` / `permissions.allow` / `model` 等 preserve path 由 local pin，template 不覆蓋）。

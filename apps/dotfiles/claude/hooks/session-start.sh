@@ -49,6 +49,14 @@ printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY"
 if [ -f "$MEMORY_INDEX" ]; then
 	printf '[冷啟動] 📚 專案記憶：%s\n' "$MEMORY_INDEX"
 fi
+# 冷啟動讀取順序指示（原 claude-md/08 冷啟動段，2026-07 下放至此）
+PROJ_MEMORY_DIR="$PROJECT_DIR/memory"
+printf '[冷啟動] 📖 讀取順序：system-patterns.md（不存在則跳過，勿視為錯誤）→ active-context.md → active plan\n'
+# pending-curate 偵測（active-context.md 含標記時主動詢問）
+if [ -f "$PROJ_MEMORY_DIR/active-context.md" ] && \
+   grep -q '\[pending-curate\]' "$PROJ_MEMORY_DIR/active-context.md" 2>/dev/null; then
+	printf '[冷啟動] 🔖 active-context.md 含 [pending-curate] → 主動詢問使用者是否回顧上次 session 未記錄的決策，確認後提示刪除該段落\n'
+fi
 # 專案計畫（有檔案才提示）
 if [ -f "$PLANS_INDEX" ]; then
 	printf '[冷啟動] 📋 專案計畫：%s\n' "$PLANS_INDEX"

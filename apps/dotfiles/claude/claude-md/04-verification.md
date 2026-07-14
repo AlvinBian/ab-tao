@@ -8,21 +8,10 @@
 查證來源優先級：官方文件 > 官方 GitHub > 官方 changelog > 社群驗證資源
 查證後仍無法確認時，必須明確告知：「此項目未找到官方依據，建議至 [來源] 自行確認」
 
-## Figma MCP 規格擷取
+## Figma / i18n（已下放，僅留判準）
 
-實作 Figma 設計時，**禁止單靠 `mcp__claude_ai_Figma__get_screenshot` 出代碼**——截圖只回圖片，無法取得 layer 名、尺寸、字體、顏色、design tokens、Code Connect 對映等具體規格。
-
-- ✅ 主要工具：`mcp__claude_ai_Figma__get_design_context`（回傳 React+Tailwind 結構 + 設計 hints + tokens）
-- ⚠️ 輔助工具：`get_screenshot` 僅作視覺參考，必須與 `get_design_context` 並用，禁止單獨實作
-- ❌ 禁止：只看截圖就推測像素值、字體大小、顏色 hex、間距
-
-## i18n / 文案缺項
-
-i18n key 缺項或翻譯不存在時，**禁止自創文案**填補：
-
-- ❌ 禁止：在程式碼中寫死中文 fallback、自行翻譯、用「待補」「TODO」當顯示文字
-- ✅ 必做：上報 PM / 翻譯團隊補譯；本地用 placeholder key（不是文案）標記
-- 同理適用：埋點 event name 未公布、API contract 未確定 → placeholder + 上報，禁止臆造
+- **Figma**：禁止單靠 `get_screenshot` 出代碼，必與 `get_design_context` 並用（細節由 PreToolUse hook 於呼叫截圖工具時自動注入）
+- **i18n / 埋點 / API contract 缺項**：禁止自創文案 / 臆造，placeholder + 上報（細節於編輯 .vue / i18n 檔時由 `rules/vue-nuxt.md` 注入）
 
 ## 何時不需要 web search
 

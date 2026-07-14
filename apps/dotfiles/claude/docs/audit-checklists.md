@@ -13,7 +13,7 @@
 - [ ] `settings.json` 無 phantom plugin（enabled 但未安裝）
 - [ ] `settings.json` hooks 區段所有 script 存在且有執行權限（hooks 由 settings.json 管理，源自 hooks/defs/*.json）
 - [ ] `memory/MEMORY.md` ≤ 200 行 / 25KB
-- [ ] `claude-md/` 14 個 section 檔全部存在（00–08, 10–13, 15；09/14 已合併，16–18 已移 docs/）
+- [ ] `claude-md/` 12 個 section 檔全部存在（00–05, 08, 10–13, 15；09/14 已合併，06→rules/vue-nuxt、07→hooks 已下放，16–18 已移 docs/）
 - [ ] `rules/` 10 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / testing / migrations / sql / barrel-exports / git-and-pr / reuse-and-decoupling / php-codeigniter）
 - [ ] `rules/barrel-exports.md` 含 7 條 sub-rule（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
 - [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；29 個 docs/ 檔完整清單見 config-map.md

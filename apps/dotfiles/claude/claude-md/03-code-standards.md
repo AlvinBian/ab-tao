@@ -30,11 +30,6 @@
 - **既有代碼**：先分析（說明問題或改進點）→ 確認意圖（修復 / 重構 / 擴充）→ 輸出；禁止直接覆蓋
 - **新需求**：確認意圖與範圍 → 需求模糊時主動追問，禁止自行填補假設 → 確認後進入實作
 
-> 程式碼規範細節於編輯對應檔案時自動注入：禁 any / 型別 / JSDoc → `rules/typescript.md`；SSR / 三態 / DS token / 響應式參數 → `rules/vue-nuxt.md`；barrel exports → `rules/barrel-exports.md`；復用 / 解耦 → `rules/reuse-and-decoupling.md`。
-
-## 新增方法位置
-
-- 在**既有檔案**新增 function / method 時，一律**追加到檔案最後面**（既有 export 之後），不插入中段，降低 diff 噪音與 review 成本。
-- 例外：barrel / `index` re-export 依既有分組擺放；class 內方法依該 class 既有組織慣例。
+> 程式碼規範細節於編輯對應檔案時自動注入：禁 any / 型別 / JSDoc → `rules/typescript.md`；SSR / 三態 / DS token / i18n 缺項 / 品質目標 → `rules/vue-nuxt.md`；barrel exports → `rules/barrel-exports.md`；復用 / 解耦 / 新增方法位置 → `rules/reuse-and-decoupling.md`。
 
 </code_standards>
