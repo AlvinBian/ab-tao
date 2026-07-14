@@ -24,6 +24,8 @@
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 | **codebase-memory-mcp 代碼智能** | 見下方「codebase-memory-mcp 整合」章節（語義 + 依賴圖 + blast radius）|
 
+> ⚠️ Mixpanel MCP：`Get-Business-Context` **僅在埋點 / 實驗 / 數據分析任務**才呼叫；勿因對話提及縮寫、產品名、團隊名而觸發（該 server 自帶指令過度激進，此行為其反制）。
+
 ## codebase-memory-mcp 代碼智能整合
 
 `codebase-memory-mcp`（MIT，26.4k★，158 語言，內建 code embedding）為 repo 建**持久知識圖譜 + 語義向量**，透過 MCP（`mcp__codebase-memory-mcp__*`，14 tools）**一個工具兼語義搜尋 + 結構依賴圖 + blast-radius**，取代 claude-context / CodeRAG / code-review-graph / serena（實測背書，見 `docs/local-tools.md §A`）。
