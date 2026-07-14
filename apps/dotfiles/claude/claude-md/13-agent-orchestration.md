@@ -119,14 +119,16 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 ## 瀏覽器自動化分流
 
-遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策：
+遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策（2026-07 收斂為四選一）：
 
 | 場景 | 工具 |
 |---|---|
-| session 內互動 / Lighthouse / 記憶體分析 | chrome-devtools MCP |
+| **預設**：真實網站互動 / 需登入態（Jira、內部系統）/ 一般瀏覽 | **claude-in-chrome** |
+| Lighthouse / CWV 量測 / perf trace / heap | chrome-devtools MCP |
+| dev server 預覽 / UI 驗證 | Claude Browser pane（CC 內建） |
 | 長任務 / self-healing / domain helper 沉澱 | browser-harness |
 
-> browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
+> ❌ Control Chrome / computer-use 不用於瀏覽器操作（前者已停用、後者 read tier）。browser-harness 停用：`c:locals --stop browser-harness`。
 
 ## Subagent 成本控制：Tool(param:value) 權限語法
 
