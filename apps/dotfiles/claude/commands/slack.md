@@ -11,10 +11,25 @@ description: >
   "pm + rd", "給 pm, qa, ued", "區塊化", "分區塊",
   "ued 看", "設計師看", "跨工種", "多身份", "各自區塊".
 metadata:
-  version: 4.0.0
+  version: 4.2.0
 ---
 
 # Slack 助手
+
+## 零 — 全域格式鐵律（適用一切 Slack 輸出，不限本 skill 流程）
+
+**任何寫入 Slack 的工具呼叫**依目的地分兩軌，**嚴禁 GitHub markdown**——即使使用者只說「放到編輯框」「起草」而未觸發本 skill 也適用（2026-07-15 實測定案）：
+
+| 工具 | 渲染機制 | 格式規則 |
+|---|---|---|
+| `slack_send_message` / `slack_schedule_message`（直接發送） | 內建 **standard markdown → mrkdwn 轉換器**（實測：`**double**`→粗體、`[文字](url)`→連結、`<url|文字>` 原樣保留；⚠️ `*single*` 會被轉成**斜體**） | 用 **standard markdown**：粗體 `**雙星號**`、連結 `[文字](url)` 或 `<url|文字>`；**禁單星號** |
+| `slack_send_message_draft`（編輯框草稿） | WYSIWYG **純文字**，任何標記皆不轉換（`**` 與 `*` 皆字面星號、`<url|text>` 字面尖括號，送出也原樣） | **禁一切標記符號**：無星號、無尖括號連結；連結用裸 URL 獨立一行；結構靠 icon＋縮排＋空行；要粗體請使用者框內手動加，或改用直發 |
+
+- **轉換器已知 bug（2026-07-15/16 實測）**：`**…**` 緊鄰全形標點會解析失敗、輸出字面 `**`，且**觸發不穩定**——實測 `｜` 與 `（` 均中招，但同訊息另一處 `**…**（` 卻正常 → **一律視為會壞：`**` 前後只放半形字元**（`L1 **98%** / L2 **96%**`），或一行只放一組粗體；list 與下一段之間的空行可能被吞，重要分段前後多留一空行
+- **發送後必回讀驗證**：`slack_read_thread` 讀回 stored mrkdwn，確認粗體已轉成單星號、無殘留字面 `**`；發現壞損 → 立即回報使用者（MCP 無編輯訊息工具，需人工修）
+- 兩軌皆禁：`---`、`## 標題`、markdown table、`_italic_`
+- 工具描述與實測不符時以實測為準；新 pattern 先發自己 DM（`U04B933M4G6`）試渲染再發正式頻道
+- **授權層（§05 分級制，2026-07-16）**：本 skill 產出屬**結論性訊息**——一律呈現草稿、經使用者親自確認（A4.2 選定目標）後才發送；使用者當前 turn 明確標示「**直接發送**」且目標明確 → 可跳過 A4.2 逐字直發（lint 照跑、發送後仍回讀驗證）。review 工作流的固定格式單行回報不走本 skill（見 `docs/agent-review-workflow.md`）
 
 ## 模式判斷
 
@@ -35,7 +50,8 @@ metadata:
 | 分類 | 場景 | 觸發詞 | 核心結構 |
 | ---- | ---- | ------ | -------- |
 | **開發日常** | 技術改進/效能 | 優化、效能、加速、降低 | 結論 → 數據 → 原因 → 後續 |
-| **開發日常** | PR / Code Review | PR、review、審查、merge | PR 資訊 → 摘要 → 重點 → Reviewer |
+| **開發日常** | PR Review 請求 | PR、review、審查、merge | PR 資訊 → 摘要 → 重點 → Reviewer |
+| **開發日常** | PR Review 結果回覆 | LGTM、findings、review 完、審查結果 | **單行**：`#PR號 ✅ LGTM 👍` / `#PR號 💬 N findings`＋PR 連結（細節全在 PR 評論；僅 P0/P1 各追加 1 行；**不套四層結構**）|
 | **開發日常** | Bug 修復通報 | bug、修復、hotfix、fix | 問題 → 影響 → 修法 → 狀態 |
 | **開發日常** | 技術分享 / TIL | 分享、學到、TIL、心得 | 主題 → 重點 → 示例 → 連結 |
 | **開發日常** | 請求協助 / Blocked | 幫忙、blocked、請問 | 問題 → 已試 → 需要 → 截止 |
@@ -155,31 +171,53 @@ metadata:
 
 禁止：audience = ask 時直接套任何 profile；audience 確定後憑記憶改寫；multi 模式跳過 TL;DR。
 
-### Step A3 — 格式檢查
+### Step A3 — 格式檢查（⚠️ 依發送軌分流，判準見「零」節；預設 = 直發軌）
 
-<slack_format_rules priority="must">
-  <bold>使用 *text* 而非 **text**</bold>
-  <italic>使用 _text_ 而非 *text*</italic>
+**直發軌（`slack_send_message`，經 MCP 轉換器）— standard markdown**：
+
+<slack_format_rules_direct priority="must">
+  <bold>使用 **text**（禁單星號——轉換器會轉成斜體）；`**` 前後只放半形字元</bold>
+  <italic>禁用斜體（各 client 渲染不一致）</italic>
+  <link>使用 [text](url) 或 &lt;url|text&gt;（兩者皆可）</link>
+  <list>使用 • 而非 - 或 *</list>
+  <code_inline>使用 `text` 反引號</code_inline>
+  <code_block>使用三重反引號 ```...```</code_block>
+  <emoji>使用 :emoji_name: 而非 unicode</emoji>
+  <forbidden>禁用 markdown table、`---`、`## 標題`</forbidden>
+</slack_format_rules_direct>
+
+**手貼軌（產出給使用者手動貼上 / Slack API 直呼）— mrkdwn**：
+
+<slack_format_rules_manual priority="must">
+  <bold>使用 *text* 而非 **text**；`*文字*` 前後無空白</bold>
+  <italic>禁用斜體（`_italic_` 各 client 渲染不一致，見 principles §1）</italic>
   <link>使用 &lt;url|text&gt; 而非 [text](url)</link>
   <list>使用 • 而非 - 或 *</list>
   <code_inline>使用 `text` 反引號</code_inline>
   <code_block>使用三重反引號 ```...```</code_block>
   <emoji>使用 :emoji_name: 而非 unicode</emoji>
   <forbidden>禁用 markdown table（替代：bullet list 或 code block）</forbidden>
-</slack_format_rules>
+</slack_format_rules_manual>
 
-其他規範：
+其他規範（兩軌通用）：
 - [ ] 頻道用 `<#CHANNELID|name>`（不是 `#name`）
 - [ ] 沒有 `---` 分隔線（用 `════` / `────` 或空行）
-- [ ] 沒有 `## 標題`（用 `*標題*` 單獨一行）
-- [ ] `*文字*` 前後無空白
+- [ ] 沒有 `## 標題`（用 `*標題*` 或 `**標題**` 單獨一行，按軌選）
 - [ ] 提及用 `<@USERID>`、`<!here>` 或 `<!channel>`
 - [ ] 第一行就是結論/重點
 - [ ] 縮排用兩個空格
 
-### Step A3.5 — 草稿 Lint（強制）
+### Step A3.5 — 草稿 Lint（強制，按軌二選一）
 
 呈現給使用者前，自我檢查：
+
+**直發軌（預設）**：
+- [ ] 無 `*單星*` 粗體意圖（會被轉成斜體；粗體應為 `**雙星**`）
+- [ ] 每組 `**` 前後皆為半形字元（緊鄰全形標點會輸出字面 `**`）
+- [ ] 無 `| col | col |` table 列、無 `---`、無 `## 標題`
+- [ ] 無 `- ` 開頭 bullet（應為 `• `）
+
+**手貼軌**：
 - [ ] 無 `**bold**`（應為 `*bold*`）
 - [ ] 無 `[text](url)`（應為 `<url|text>`）
 - [ ] 無 `| col | col |` table 列
@@ -249,7 +287,11 @@ FAIL → 必須修復後重 lint，禁止帶 FAIL 進入 A4。
 
 #### A4.3 發送 + 回報
 
-呼叫 `mcp__claude_ai_Slack__slack_send_message` 後回報：`✅ 已發送到 <#CXXX|name>`。
+呼叫 Slack MCP 的 `slack_send_message`（工具前綴依當前連接的 MCP server 而定，**勿寫死前綴**）：
+
+1. 發送 → 取回訊息連結
+2. **回讀驗證（強制）**：`slack_read_thread` 讀回 stored mrkdwn，確認粗體已轉單星號、無殘留字面 `**`、分段未被吞
+3. 回報：`✅ 已發送到 <#CXXX|name>`＋訊息連結；驗證發現壞損 → 指出壞損行＋修正建議（MCP 無編輯工具，需使用者人工修）
 
 若 `$DEFAULT_CHANNEL` 未設定且使用者語意 = default → 回退到 A4.2 詢問。
 
@@ -263,19 +305,21 @@ FAIL → 必須修復後重 lint，禁止帶 FAIL 進入 A4。
 
 ### Step B2 — 逐條審查
 
+先確認目的地軌（B1 追問「這則要直發還是手貼？」）；下表為**手貼軌 mrkdwn** 判準，**直發軌**判準改用「零」節（粗體 `**雙星**`、禁單星、`**` 前後半形）：
+
 | 項目 | 錯誤 | 正確 |
 | --- | --- | --- |
 | 粗體 | `**文字**` | `*文字*` |
 | 連結 | `[文字](url)` | `<url\|文字>` |
 | 分隔線 | `---` | 空行或 `────────` |
 | 標題 | `## 標題` | `*標題*` 單獨一行 |
-| 斜體 | `*文字*` | `_文字_` |
+| 斜體 | `_文字_` / `*文字*` 作斜體用 | 禁用斜體（各 client 渲染不一致）|
 | 刪除線 | `~~文字~~` | `~文字~` |
 | 符號空白 | `* 文字 *` | `*文字*` |
 | 頻道引用 | `#channel` | `<#CHANNELID\|name>` |
 | 提及 | `@名字` | `<@USERID>` |
 
-其他規範：清單用 `•` 或 `-`；引言 `>` 只支援單層；程式碼區塊內 mrkdwn 失效；超過 500 字考慮 Canvas。
+其他規範：清單用 `•`；引言 `>` 只支援單層；程式碼區塊內 mrkdwn 失效；超過 500 字考慮 Canvas。
 
 ### Step B3 — 輸出結果
 

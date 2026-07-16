@@ -36,6 +36,9 @@
 
 ## 外部通訊紅線（強規則）
 
-- ❗ **Slack**：嚴禁未經明確指示呼叫任何 Slack 傳送工具。明確指示 = 當前 turn 動作語義（「發送這條 Slack」）或 CLAUDE.md / plan 預先聲明；「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）→ 呈現完整草稿問「是否發送至 Slack？[Y/N]」。逐條定義與反例 → security-details.md。
+- ❗ **Slack / 任何對外發送——按內容性質分級（2026-07-16 拍板）**：
+  - **結論性／總結性訊息**（進度回報、結果總結、公告、任何自行組織的自由文本對外訊息）→ **發送前一律呈現完整草稿、由使用者親自確認無誤（[Y]）後才可發送**；「發送這條 Slack」「給出總結」等動作語義只授權進入草稿流程，**不豁免草稿確認**。**唯一豁免 = 當前 turn 明確標示「直接發送」** → 逐字照稿直發＋事後回讀驗證。
+  - **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的固定格式單行回報（`#PR號 ✅ LGTM` / `💬 N findings`＋連結）。
+  - 分類拿不準 → **一律當結論性處理**。「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）。逐條定義與反例 → security-details.md。
 - ❗ **/feedback**：嚴禁主動執行（預設附帶 24h/7d session transcript，含 KKday 內部敏感資料，有外洩風險）。使用者要回報問題 → 先說明附帶內容 → 明確確認後才執行。細節 → security-details.md。
 </security>

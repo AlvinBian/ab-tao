@@ -1,4 +1,4 @@
-# Claude 全域個人規則 v1.18.1
+# Claude 全域個人規則 v1.19.1
 
 <!-- 載入順序：首尾權重最高（identity + agent-routing），中段可被 /compact 犧牲 -->
 <!-- 來源管理：apps/dotfiles/claude/ 為 source of truth，由 ab-tao d:setup 部署 -->
