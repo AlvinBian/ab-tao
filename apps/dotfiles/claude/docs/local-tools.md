@@ -32,42 +32,9 @@ claude mcp add codebase-memory-mcp -s user -- "$(npm root -g)/../bin/codebase-me
 > 三範式分工終結：**codebase-memory=語義+結構一把抓** ｜ ripgrep=文字/正則 ｜ chrome-devtools=前端 debug。claude-context / CodeRAG / mcp-vector-search / code-review-graph / serena **皆已退役**（實測對比見 git 歷史）。
 
 
-## B. browser-harness（瀏覽器自動化，預設啟用）
+## B. browser-harness（已退役 2026-07-16）
 
-### 前置需求
-- Python 3.11+：`python3 --version`
-- uv（Python 套件管理，比 pip 快 10-100x）
-
-### 1. 安裝 uv
-
-```bash
-brew install uv
-```
-
-### 2. 建立 browser-harness venv
-
-```bash
-mkdir -p ~/.ab-tao/browser-harness
-cd ~/.ab-tao/browser-harness
-uv venv .venv --python 3.11
-source .venv/bin/activate
-pip install browser-use playwright
-playwright install chromium   # ~300MB，只需安裝一次
-```
-
-### 3. Chrome 隔離（避免與 chrome-devtools MCP 衝突）
-
-browser-harness 使用獨立 Chrome profile，不會干擾正常 Chrome 或 chrome-devtools MCP：
-
-```bash
-# browser-harness 啟動時自動帶入以下 args
-# --user-data-dir=$HOME/.ab-tao/browser-harness/profile
-# CDP port 隨機（不固定 9222）
-```
-
-### 4. 何時用 browser-harness vs chrome-devtools MCP
-
-→ 詳見 `skills/browser-automation-router/SKILL.md`
+瀏覽器調試 / 長任務 / 自動化迴圈**統一改用 claude-in-chrome**（真實 Chrome + 登入態）；量測仍走 chrome-devtools MCP、dev 預覽走 Browser pane（見 `skills/browser-automation-router/SKILL.md` 三選一）。殘留清理：`rm -rf ~/.ab-tao/browser-harness`（獨立 venv + Chrome profile）。
 
 ## C. claude-trace（Token 歸因觀測）
 
