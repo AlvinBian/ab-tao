@@ -1,108 +1,98 @@
-# ~/.claude/ 結構全圖 (v1.15.0)
+# ~/.claude/ 結構全圖 (v1.19.1 · 2026-07-16 對齊實際)
 
 ```
 ~/.claude/
 │
 ├── CLAUDE.md                    # ≤80 行，純 @import 索引
 │
-├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）12 檔（00–05, 08, 10–13, 15；06→rules/vue-nuxt、07→hooks 已下放）
+├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）13 檔（00–05, 08, 10–15；09 已併入 08、06→rules/vue-nuxt、07→hooks 已下放）
 │   ├── README.md
 │   ├── 00-identity.md           首錨定
 │   ├── 01-language.md
 │   ├── 02-response-format.md
 │   ├── 03-code-standards.md     技術傾向 + 程式碼規範
 │   ├── 04-verification.md       查證規則 + Figma MCP + i18n 缺項
-│   ├── 05-security.md           安全規範 + bypassPermissions + Git 操作紅線
-│   ├── 06-quality-targets.md
-│   ├── 07-context-hygiene.md    降噪四層策略
-│   ├── 08-state-system.md       Tasks/Plans/Memory 邊界 + 三溫層 + 冷啟動（取代 08+09）
+│   ├── 05-security.md           安全規範 + Git 操作紅線 + 外部通訊紅線（對外發送分級制）
+│   ├── 08-state-system.md       Tasks/Plans/Memory 邊界 + 溫層架構 + 冷啟動（09 已併入）
 │   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
 │   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則核心；PR review/tier/param 已拆 docs/agent-review-workflow.md）
+│   ├── 14-confirmation.md       確認機制（二值 [Y/N] / 多值 AskUserQuestion + 授權豁免 + 對外通訊硬例外）尾錨群
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
 ├── rules/                       # 條件載入（paths: frontmatter）10 檔
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
 │   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
+│   ├── html-report.md           paths: **/*.html（HTML 報告輸出規範）
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
 │   ├── php-codeigniter.md       paths: application/**/*.php src/**/*.php
 │   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
 │   ├── sql.md                   paths: *.sql queries/ sql/
-│   ├── testing.md               paths: *.test.* *.spec.* __tests__/
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
 │
-├── docs/                        # 參考文件（可 @import，非規則）29 檔
+├── docs/                        # 參考文件（指針載入，非規則）21 檔（2026-07-16 清退 10 個孤兒/過時檔）
 │   │
-│   │   # ── CLAUDE.md @import 目標（4）──
+│   │   # ── CLAUDE.md 指針目標（4）──
 │   ├── rtk.md                   RTK 工具 + token 預算影響
 │   ├── audit-checklists.md      四種審查模式 checklist 完整版
 │   ├── config-map.md            本文件
-│   ├── local-tools.md           codebase-memory-mcp + browser-harness + AI-Pedia 安裝指引
+│   ├── local-tools.md           codebase-memory-mcp + 本地工具安裝指引
 │   │
 │   │   # ── Slack 叢集（2）──
-│   ├── slack-principles.md      Slack 語法紅線 + Icon 語義字典 + 4 層骨架 + Anti-patterns
+│   ├── slack-principles.md      Slack 語法紅線（雙軌）+ Icon 語義字典 + 4 層骨架 + Anti-patterns
 │   ├── slack-audience-profiles.md   7 種 audience（rd/pm/mkt/qa/ops/ued/multi）
 │   │
 │   │   # ── 系統參考（按需，9）──
+│   ├── security-details.md      授權邊界逐條定義（Git 三豁免反例 + Slack 兩級授權 + /feedback）引用: 05-security
+│   ├── git-pr-conventions.md    Conventional Commits + PR title + 堆疊 PR + 分支流程      引用: 05-security
 │   ├── agent-review-workflow.md PR review 工作流 + Review 深淺分流 + Tool(param) 語法  引用: 13-agent-orchestration
-│   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
-│   ├── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
-│   ├── self-evolution.md        failure-patterns append-only 自我演進 + ADR-002 invariants
-│   ├── STRUCTURE.md             ~/.claude/ 結構快照
 │   ├── agent-dag-parallel.md    多 phase 並行排程（DAG 切分 / Wave gate）引用: 13-agent-orchestration
 │   ├── agent-typed-result.md    Subagent 回傳 schema 範例 + prompt 模板  引用: 13-agent-orchestration
 │   ├── self-correction-details.md  串流中斷觸發細節 + 歷史案例          引用: 15-self-correction
 │   ├── state-system-details.md  Plan Frontmatter / 資料夾命名規範        引用: 08-state-system
-│   │
-│   │   # ── 評估 / 指標（2）──
-│   ├── lsp-mcp-evaluation.md    LSP MCP 評估紀錄
-│   ├── metrics-fields.md        Observability 指標欄位定義
+│   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
+│   └── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
 │   │
 │   │   # ── 版本封存（2）──
 │   ├── audit-checklists-v160.md（archive）
 │   └── config-map-v160.md       （archive）
 │   │
-│   │   # ── 研究 / 未分類（10）──
-│   │   adversarial-review / attribution / chains / cost-routing / cross-ide-export /
-│   │   failure-catalog / plugin-audit / profile-system / source-discovery / voice-trigger
+│   │   # ── 研究 / 未分類（4）──
+│   │   attribution / cost-routing / failure-catalog / profile-system
 │
-├── agents/                      # 9 agents
+├── agents/                      # 7 agents（planner / reviewer 已移除：計畫用內建 Plan、審查用 code-reviewer）
 │   ├── architect.md             架構設計 + 5 維審查（唯讀）
 │   ├── code-reviewer.md         程式碼審查專家
 │   ├── debugger.md              根因定位 + 最小 diff（可寫）
-│   ├── planner.md               複雜功能 / 重構計畫
 │   ├── pm.md                    產品需求釐清 + 6 逼問框架（唯讀）
 │   ├── pr-test-analyzer.md      PR 測試覆蓋率 + 行為覆蓋分析
-│   ├── reviewer.md              第二意見 code review（唯讀）
 │   ├── silent-failure-hunter.md 無聲失敗 / 錯誤吞噬專項
 │   └── type-design-analyzer.md  型別設計分析（不變量 + 封裝）
 │
-├── commands/                    # 16 commands（review-pr 併入 code-review；chain-* 歸檔 → commands-archive/）
+├── commands/                    # 13 commands（review-pr 併入 code-review；plan/verify/quality-gate 已移除；chain-* 歸檔 → commands-archive/）
 │   ├── ai.md
 │   ├── audit.md                 四種審查模式入口（原 claude-md/11）
 │   ├── check.md                 Build Fix + Quality Gate + 9-gate --gates
-│   ├── code-review.md           PR 代碼審查入口（自動分流 quick/standard/deep）
+│   ├── code-review.md           PR 代碼審查入口（自動分流 quick/standard/deep；原 /review-pr 已併入）
 │   ├── db-migration.md
 │   ├── feature-dev.md
-│   ├── plan.md
+│   ├── handoff.md               清 context / compact 前交接班（與 /resume 成對）
 │   ├── pr-stack.md
-│   ├── quality-gate.md
 │   ├── santa-loop.md
-│   ├── slack.md
+│   ├── slack.md                 Slack 訊息助手 v4.2.0（雙軌 lint + 分級制授權）
 │   ├── specify.md               需求 → 結構化 spec（AC + non-goals）
 │   ├── test.md
-│   ├── verify.md                spec AC 反向覆蓋驗證
 │   └── worklog.md
 │
-├── skills/                      # 15 skills 受 ab-tao 管理（2026-07 盤點 47→20：重複/跨棧/失能歸檔 → skills-archive/ 與 live .skills-archived-*/）
+├── skills/                      # 22 skills 受 ab-tao 管理（c:skills 盤點；⚠️ skills/README.md 索引已知過時待重建）
 │
 ├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
 │   │   ├── session-start.json        ab-tao:session:start
-│   │   ├── user-prompt-submit.json   ab-tao:prompt:enrich（Jira/Confluence/破壞性命令注入）
+│   │   ├── session-start-gitnexus-sync.json  ab-tao:session:gitnexus-sync
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
 │   │   ├── pre-tool-edit.json        ab-tao:pre:edit
 │   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）
@@ -112,7 +102,7 @@
 │   │   └── session-end.json          ab-tao:session:end
 │   └── *.sh                     Hook 執行腳本
 │
-├── memory/                      # 全域記憶（所有 session 共享）· 三溫層 flat 檔（見 08-state-system）
+├── memory/                      # 全域記憶（所有 session 共享）· 溫層 flat 檔（五層，見 08-state-system）
 │   ├── MEMORY.md                Hot：純 index（≤15 項）
 │   ├── system-patterns.md       Stable：偏好 / feedback / 永久參考（檔不存在則跳過）
 │   ├── active-context.md        Volatile：進行中 ticket / mid-run 記錄（檔不存在則跳過）
