@@ -1,5 +1,46 @@
 # @ab-tao/dotfiles
 
+## 1.17.0
+
+### Minor Changes
+
+- e3ae386: 對外發送分級制 + 全域配置帳實對齊與清退
+
+  **對外發送分級制（2026-07-16 拍板）**
+
+  - 結論性／總結性訊息（進度回報、總結、公告、自由文本）：發送前一律呈現草稿、由使用者親自確認 [Y]；動作語義只授權進入草稿流程，plan 預先聲明與自動化迴圈不豁免；唯一跳過＝當前 turn 明確標示「直接發送」
+  - Review 工作流產物（PR 評論／`gh pr review`／固定格式 Slack 單行回報）直發免逐則確認；拿不準一律當結論性
+  - `commands/slack.md` v4.2.0：A3/A3.5 雙軌 lint（直發 standard markdown／手貼 mrkdwn）、A4.3 工具前綴泛化＋發送後回讀驗證、轉換器全形標點 bug 定案（`**` 前後只放半形）
+
+  **agent 工作流斷鏈修復**
+
+  - 幽靈 agent：reviewer→code-reviewer、planner→ 內建 Plan；執行類 schema／模板／對應表補 `verdict`（Done-gate Critic 恢復可判定）
+  - agent-review-workflow：approve「5 條件」→6 對齊 §05；`/review-pr` 指涉改 `/code-review --effort=deep`
+
+  **清退與帳實對齊**
+
+  - 刪 10 個孤兒／過時 docs（8 零引用 + STRUCTURE.md + self-evolution.md，逐檔驗證無依賴）
+  - browser-harness 退役：瀏覽器調試／長任務統一 claude-in-chrome，router skill v3.0.0 三選一
+  - 結構索引全面對齊實際：config-map（claude-md 13／agents 7／commands 13／skills 22／docs 21）、claude-md README 重寫、skills README v2.0.0、audit-checklists 修過時斷言＋新增分級制檢查項
+
+- f3d6512: PR review 嚴格護欄自動 approve 機制 + 用戶確認協議 + 常駐瘦身收尾
+
+  **PR review / auto-approve**
+
+  - `gh pr review --approve` 嚴格護欄：6 條件全滿足才自動執行（verdict 僅採信本輪自審、非 deep-tier 敏感路徑、mergeable 非衝突、CI 非失敗態、完成閘門綁定當前 head sha）+ 他人 CHANGES_REQUESTED 安全閥；只 approve 不 merge
+  - `13-agent-orchestration.md`：review PR 前先查 `~/Kkday/projects/` 對應本地倉庫，找到則 fetch + `git show` 讀 PR-head 實際 source 深度驗證，取代純讀 GitHub diff 的淺 review
+
+  **用戶確認協議（新 `claude-md/14-confirmation.md`）**
+
+  - 二值決策走 inline `[Y/N]`、多值（3+ 選項）走 AskUserQuestion 彈窗，禁止用連續 Y/N 疊問替代多值決策
+  - 全域觸發清單（對外通訊 / git-PR / 破壞性操作 / 程式碼品質偏離 / 範圍設定）+ 授權豁免邊界 + Preview>Apply 呈現規範
+
+  **其他收尾**
+
+  - 修復 §05 斷引用（「見 §13 deep allowlist」該清單實際不存在，改為 §05 自足定義）
+  - 瀏覽器工具路由收斂為四選一（claude-in-chrome 預設）；Mixpanel `Get-Business-Context` 反制規則（僅分析任務呼叫，避免對話提及縮寫誤觸發）
+  - always-on 常駐內容瘦身、context-budget hook JSON 化、skills 盤點整併、audit-checklists 結構對齊、3 個靜默失效的 context 注入修復
+
 ## 1.16.0
 
 ### Minor Changes
