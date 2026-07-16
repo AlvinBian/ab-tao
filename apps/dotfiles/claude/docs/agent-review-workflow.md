@@ -10,12 +10,12 @@
 | 入口 | 機制 | 何時用 | 備註 |
 |---|---|---|---|
 | **`/code-review`** | 本地 diff 或 PR，**auto-tier**（quick/standard/deep，見下方分流規格）| **日常預設**——絕大多數 review 走這條 | ab-tao 主入口（290 行），`--effort` 覆寫 |
-| `/review-pr` | **強制全 agent stack**（不 tier），`--focus=comments\|tests\|errors\|types\|code` | 要「不省略、跑滿專項 agent」的重點 PR | ≈ `code-review --effort=deep` + `comment-analyzer`；含 `--focus` 過濾 |
+| `/code-review --effort=deep` | **強制 deep tier**：全專項 agent stack 不省略 | 要「不省略、跑滿專項 agent」的重點 PR | 原獨立命令 `/review-pr` 已併入 code-review（2026-07 整併，`--focus` 隨之退役）|
 | `/santa-loop` | **對抗式雙模型收斂**（兩獨立 reviewer 皆須 approve 才 ship）| 高風險 / 要 ship gate 的關鍵改動 | 收斂 loop，非一次性 review |
 | codex `stop-review-gate` | **stop 時自動**觸發的 review 門 | 想在收尾自動攔一道（被動）| 由 codex plugin 掛 Stop hook |
 | `code-review:code-review`（plugin）| official plugin 的 PR review | — | **與 `/code-review` 功能重疊、較弱** → 建議忽略或停用該 plugin 以免混淆 |
 
-> 一句話：日常 `/code-review` ｜ 要跑滿 `/review-pr` ｜ 要 ship gate `/santa-loop` ｜ 自動兜底 codex gate。plugin 版可停用。
+> 一句話：日常 `/code-review` ｜ 要跑滿 `/code-review --effort=deep` ｜ 要 ship gate `/santa-loop` ｜ 自動兜底 codex gate。plugin 版可停用。
 
 ## PR / Code Review 工作流（降噪優先）
 
@@ -42,9 +42,9 @@
 4. 聚合：同類問題多處 → 1 條評論列點，不每處一條
 5. 產出 = 最多 1 條 summary + N 條 P0/P1 inline（N 盡量小）
 
-### 第三段：外發（全部草稿先行）
-- PR 評論草稿 +（needSlack 時）Slack 草稿一併呈現 → 確認 → 才發
-  - 例外：使用者當前 turn 帶明確動作語義（「發送」「commit」，§05）→ 免二次確認直接發
+### 第三段：外發（2026-07-16 分級制，對齊 §05「按內容性質分級」）
+- **Review 工作流產物 → 直接發送、免逐則確認**：PR 評論（inline / summary）、`gh pr review` 提交（approve 仍受 §05 六條件護欄）、下方固定格式 Slack 單行回報。發送後回報連結。
+- **超出固定格式的自由文本 Slack 訊息**（review 衍生的總結回報、公告等）＝結論性 → 呈現完整草稿、待使用者親自確認 `[Y]` 才發；唯一豁免 = 使用者當前 turn 明確標示「直接發送」（§05）。
 - **Slack review 回覆 = 單行極簡**（review-bot 慣例，**不套 `/slack` 四層區塊**），**回覆位置 = 原 thread（thread_ts），非頻道 top-level 新訊息**：
   - 無阻斷問題：`#<PR號> ✅ LGTM 👍 <PR連結>`
   - 有 finding：`#<PR號> 💬 N findings（一句 context，如「re-review：新 commit」）<PR連結>`
@@ -63,14 +63,14 @@
 ### 專項工具（pipeline 按 tier 自動掛載 / 手動單呼）
 | 工具 | 觸發 |
 |---|---|
-| `reviewer` agent | always / 第二意見 |
+| `code-reviewer` agent | always / 第二意見 |
 | `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
 | `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
 | `pr-test-analyzer` | prod code 改 ＆ test 未改 |
 | `architect` agent | deep tier / 架構深度審查（5 維度評分）|
 
 ### 紅線（引用既有，不重述）
-- PR：comment / inline 可；**approve = 嚴格護欄自動**（§05「`gh pr review --approve`」5 條件全滿足才自動，否則退人工）；**merge 硬禁**（§05 deny，無豁免）
+- PR：comment / inline 可；**approve = 嚴格護欄自動**（§05「`gh pr review --approve`」6 條件全滿足才自動，否則退人工）；**merge 硬禁**（§05 deny，無豁免）
 - i18n 缺項：見 §04，不自創文案
 - 外發：草稿先行（§05 + Preview > Apply）
 
@@ -110,7 +110,7 @@
 | Diff 正確性檢視 | always |
 | typecheck | always |
 | lint | always |
-| `reviewer` agent | always |
+| `code-reviewer` agent | always |
 | `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
 | `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
 | `pr-test-analyzer` lite | prod code 改 ＆ test 未改 |

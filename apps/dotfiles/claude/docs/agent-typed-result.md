@@ -100,7 +100,8 @@
       "verify": "在 /order/:id 頁面確認 error state 有正確顯示"
     }
   ],
-  "done": true
+  "done": true,
+  "verdict": "PASS"
 }
 ```
 
@@ -111,9 +112,10 @@
 完成後請以下列 JSON 結構回傳：
 {
   "changes": [{"file", "before": "改動前關鍵片段", "after": "改動後關鍵片段", "verify": "驗證方式"}],
-  "done": true|false
+  "done": true|false,
+  "verdict": "PASS|FAIL|NEEDS-REVIEW"
 }
-若 done=false 請在 changes 後補一行說明阻塞原因。
+done=true 必須伴隨 verdict，僅 PASS 可標完成（Done-gate Critic，見 claude-md/13）；若 done=false 請在 changes 後補一行說明阻塞原因。
 ```
 
 ## 與既有 agents/*.md 的對應表
@@ -121,12 +123,12 @@
 | Agent | 類型 | 用 typed result 時的 schema |
 |---|---|---|
 | `architect` | 審查類 | issues(P0-P3) + verdict |
-| `reviewer` | 審查類 | issues(P0-P3) + verdict |
+| `code-reviewer` | 審查類 | issues(P0-P3) + verdict |
 | `pr-test-analyzer` | 審查類 | issues(P0-P3) + verdict（test coverage）|
 | `silent-failure-hunter` | 審查類 | issues(P0-P3) + verdict |
 | `type-design-analyzer` | 審查類 | issues(P0-P3) + verdict |
-| `debugger` | 執行類 | changes + done |
-| `planner` | 執行類 | changes + done |
+| `debugger` | 執行類 | changes + done + verdict |
+| `Plan`（內建）| 執行類 | changes + done + verdict |
 | `pm` | 研究類 | findings + conclusion（需求釐清結果）|
 | Explore subagent | 研究類 | findings + conclusion |
 

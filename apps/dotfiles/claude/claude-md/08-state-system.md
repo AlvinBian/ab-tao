@@ -10,7 +10,7 @@
 
 **口訣**：下次對話還有用？→ Memory ｜ 當前步驟？→ Tasks ｜ 需與用戶對齊方案？→ Plan
 
-## Memory 三溫層
+## Memory 溫層（三溫層架構，現行五層）
 
 **Hot**（MEMORY.md）：純 index，≤15 行，永不直接寫入內容 → 利於 prompt cache ｜ **Stable**（`system-patterns.md`）：偏好 / feedback / 永久參考 ｜ **Volatile**（`active-context.md`）：進行中 ticket / mid-run 記錄 ｜ **Warm**（`{topic}/index.md`）：細節按需 ｜ **Cold**（`archive/`）：封存
 

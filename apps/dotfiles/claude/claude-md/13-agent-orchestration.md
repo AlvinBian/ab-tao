@@ -52,6 +52,23 @@
 
 > 環境：node 套件（`npm i -g codebase-memory-mcp`），**零重依賴**（無 PyTorch/Docker/daemon）；MCP 於 `.claude.json` user scope（穩定 fnm default node bin），重啟 session 載入，每 repo 首次需 index。**Understand-Anything（人視覺）互補**。
 
+## kkday 本地 skill 自動觸發（無感優先，預設先用不等點名）
+
+兩個 kkday 專用 skill 已裝於 `~/.claude/skills/`，遇對應情境**預設先用**（細節與踩坑見專案 memory `kkday-graph-and-ds-skills.md`）。
+
+### kk-graph-v2 — 跨 repo 全棧程式+資料關聯圖（`~/.claude/skills/kk-graph-v2/q.sh`）
+
+Ladybug 圖 DB，982k methods / 364 repos，涵蓋 PHP/Java/.NET/前端。
+
+> **無感優先**：問題牽涉**跨 repo / 跨服務「關係」**就先用它 → 誰呼叫/依賴某 method、呼叫鏈、繼承、改某處/某表/某欄的影響面、爆炸半徑、method 讀寫哪張表、API→表、表→RDS。**先 `./q.sh <cmd>` 定位再讀 source**（who-calls / calls / chain / table-writers / chain-to-table / api-to-table / rds-blast / who-owns / untested-writers…）。
+> **分工（解與 codebase-memory 的衝突，重要）**：`codebase-memory-mcp` = **當前單一 repo**（語義/依賴）；`kk-graph-v2` = **跨 repo + 含後端（PHP/Java/.NET）+ 改表爆炸半徑**。**跨 repo / 後端 / 資料層問題走 kk-graph，勿用 codebase-memory**（它查不到別 repo 與後端）。
+> **Absence Protocol（誠實）**：下「沒關聯 / 可安全刪 / 無依賴」否定結論前，先 `./q.sh coverage <repo>` 看 status/連通度/有無圖B；空結果可能是「未涵蓋」非「確認沒有」（precision 高、recall 不完整，PHP 動態派發會漏）。
+> ⚠️ python 坑：q.sh 走 skill 內建 `.venv`（pyenv 函式式初始化下 `python3` 會誤指 Homebrew py3.14、無 ladybug）；重下載該包需重套 q.sh 那行或設 `KKG_PY`。
+
+### kkday-design-system — DS token/component 規範（skill）
+
+> **產出前必用**：要產任何 **KKday UI**（mockup / HTML / CSS / Vue / 元件 / 樣式）前先用此 skill → 用正確 `$kk-*` token + `KkXxx` 元件 + `Layout*` 排版，**不自創 hex / px / 圓角 / 字級**。查 DS token 名稱、design review / QA 比對實作亦觸發。317 icons / 202 pictograms 資產內建於 skill 目錄可直接讀。
+
 ## 調度規則（強制）
 
 **1. 併發優先**：多個獨立任務必須 parallel 同時啟動，禁止串行等待。
@@ -90,13 +107,13 @@ findings: [{path, line, confidence: ✅|⚠️|❓, summary}]
 conclusion: 一句話結論
 ```
 
-**審查類**（reviewer / architect / pr-test-analyzer / silent-failure-hunter / type-design-analyzer）：
+**審查類**（code-reviewer / architect / pr-test-analyzer / silent-failure-hunter / type-design-analyzer）：
 ```
 issues: [{severity: P0|P1|P2|P3, confidence: high|medium|low, location, fix}]
 verdict: SHIP | BLOCK | NEEDS-DISCUSSION
 ```
 
-**執行類**（debugger / planner）：
+**執行類**（debugger / Plan 內建 agent）：
 ```
 changes: [{file, before, after, verify}]
 done: boolean
@@ -105,7 +122,7 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 **Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL 或 NEEDS-REVIEW 時：
 - 主對話**禁止**標 task complete
-- **必須** spawn `reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
+- **必須** spawn `code-reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
 - 僅 `verdict: PASS` 才可標完成
 
 > 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
@@ -122,16 +139,15 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 ## 瀏覽器自動化分流
 
-遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策（2026-07 收斂為四選一）：
+遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策（2026-07-16 收斂為三選一，瀏覽器調試 / 長任務統一 claude-in-chrome）：
 
 | 場景 | 工具 |
 |---|---|
-| **預設**：真實網站互動 / 需登入態（Jira、內部系統）/ 一般瀏覽 | **claude-in-chrome** |
+| **預設**：真實網站互動 / 需登入態（Jira、內部系統）/ 一般瀏覽 / 調試 / 長任務 | **claude-in-chrome** |
 | Lighthouse / CWV 量測 / perf trace / heap | chrome-devtools MCP |
 | dev server 預覽 / UI 驗證 | Claude Browser pane（CC 內建） |
-| 長任務 / self-healing / domain helper 沉澱 | browser-harness |
 
-> ❌ Control Chrome / computer-use 不用於瀏覽器操作（前者已停用、後者 read tier）。browser-harness 停用：`c:locals --stop browser-harness`。
+> ❌ Control Chrome / computer-use 不用於瀏覽器操作（前者已停用、後者 read tier）；browser-harness 已退役（2026-07-16）。
 
 ## Subagent 成本控制：Tool(param:value) 權限語法
 
