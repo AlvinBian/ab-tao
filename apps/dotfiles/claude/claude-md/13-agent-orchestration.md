@@ -113,7 +113,8 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 ## PR / Code Review 工作流 + Review 深淺分流
 
 > 降噪原則（Signal > Volume）、狀態偵測分流、needSlack 產物契約、tier 自動判定與升級訊號、Quick 能力組合 → Read `~/.claude/docs/agent-review-workflow.md`（執行 PR / code review 時）。
-> 速記：PR 連結→僅 PR review 不發 Slack；Slack 連結→需在原 thread 回覆。P0/P1 inline、P2/P3 併 summary、正確碼不評論。草稿先行。
+> 速記：PR 連結→僅 PR review 不發 Slack；Slack 連結→需在原 thread 回覆，**回覆單行極簡**（`#PR號 ✅ LGTM` / `💬 N findings`＋連結；細節全在 PR，僅 P0/P1 各追加 1 行）。P0/P1 inline、P2/P3 併 summary、正確碼不評論。草稿先行。
+> **本地倉庫優先（深度 review 強規則）**：review 任何 PR 前，先在 `~/Kkday/projects/` 找對應本地倉庫（依 repo 名，如 `kkday-b2c-web` / `kkday-member-ci`）。找到 → **深度 review**：`git fetch origin <PR分支>` 後用 `git show <PR-head-sha>:<path>` 讀 PR-head 實際 source，驗證呼叫鏈 / 契約 / 平行路徑（grep 構建點與 caller），勝過只讀 GitHub diff 的淺 review。找不到本地倉庫才退回 API-only（`get_pull_request_files` 讀 diff）淺 review，並在結論標明「未做本地深度驗證」。**禁止切換對方 working branch**（用 fetch + `git show`，不 `checkout`），避免動到其未提交變更；跨 repo 功能（如 SSR + 前端）務必雙邊契約對照。
 
 ## 多 session 監看
 

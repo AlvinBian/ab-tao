@@ -45,7 +45,11 @@
 ### 第三段：外發（全部草稿先行）
 - PR 評論草稿 +（needSlack 時）Slack 草稿一併呈現 → 確認 → 才發
   - 例外：使用者當前 turn 帶明確動作語義（「發送」「commit」，§05）→ 免二次確認直接發
-- Slack（needSlack）走 `/slack` 區塊化（結論 → 風險 → PR 連結），**回覆位置 = 原 thread（thread_ts），非頻道 top-level 新訊息**
+- **Slack review 回覆 = 單行極簡**（review-bot 慣例，**不套 `/slack` 四層區塊**），**回覆位置 = 原 thread（thread_ts），非頻道 top-level 新訊息**：
+  - 無阻斷問題：`#<PR號> ✅ LGTM 👍 <PR連結>`
+  - 有 finding：`#<PR號> 💬 N findings（一句 context，如「re-review：新 commit」）<PR連結>`
+  - 含 P0/P1：於上行後**每項追加 1 行**極簡描述（僅 P0/P1；P2/P3 只進 PR summary，不上 Slack）
+  - 具體問題 / 代碼細節 / 修法**一律只寫在 PR 評論**；Slack 禁展開細節、禁重述 PR 內容（PR 才是持久審查記錄）
 
 ### 完成閘門（收尾必核，缺一不可標完成）
 - **【強制 · 最高權重】凡執行 review PR → PR 內必須至少留 1 條你貼的評論（summary 或 inline）並取回 comment 連結。** 這是 review 的**唯一不可省產物**：
@@ -54,7 +58,7 @@
   - 唯一例外：使用者明確指示「只在 Slack / 只回報給我、不要動 PR」→ 才可略過，且須在回覆聲明「依指示未貼 PR」。
 - needSlack=true → **PR review（PR 內評論）＋ Slack thread 回覆兩者皆已送出且取回連結**
 - needSlack=false → **僅 PR review（PR 內評論）；禁止額外發 Slack**
-- **自動 approve（嚴格護欄，§05）**：完成閘門過後，若 verdict=LGTM ＆ 0 P0/P1 ＆ 非 deep-tier 敏感路徑 ＆ `mergeable≠CONFLICTING` → 自動 `gh pr review --approve`（免二次確認）；任一不符則退回人工並說明卡點。**只 approve、不 merge。**
+- **自動 approve（嚴格護欄，完整 6 條件 + 安全閥見 §05）**：完成閘門過後，若 verdict=LGTM（本輪自審，非 GitHub reviewDecision 聚合值）＆ 0 P0/P1 ＆ 非 deep-tier 敏感路徑 ＆ `mergeable≠CONFLICTING` ＆ CI 非失敗態 ＆ 留言 commit 對齊當前 head → 自動 `gh pr review --approve`（免二次確認）；他人留有未撤銷 `CHANGES_REQUESTED` 或任一條件不符 → 退回人工並說明卡點。**只 approve、不 merge。**
 
 ### 專項工具（pipeline 按 tier 自動掛載 / 手動單呼）
 | 工具 | 觸發 |
