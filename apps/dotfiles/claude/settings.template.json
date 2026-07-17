@@ -24,7 +24,8 @@
       "Bash(docker compose down --volumes*)",
       "Bash(docker system prune*)",
       "Bash(docker volume rm *)",
-      "Bash(docker volume prune*)"
+      "Bash(docker volume prune*)",
+      "Agent(model:opus)"
     ]
   },
   "env": {
@@ -54,7 +55,7 @@
   "autoUpdatesChannel": "latest",
   "cleanupPeriodDays": 30,
   "showThinkingSummaries": true,
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "showToolOutputs": true,
   "showProgress": true,
   "includeCoAuthoredBy": false,
@@ -102,10 +103,7 @@
   "_abTao": {
     "version": "1.7.1",
     "voiceTrigger": false,
-    "costRouting": "fixed",
-    "tddStrictMode": false,
     "contextBudgetFileCount": 12,
-    "skillCreatorEnabled": false,
-    "memoryLintEnabled": true
+    "skillCreatorEnabled": false
   }
 }
