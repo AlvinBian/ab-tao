@@ -74,6 +74,17 @@ export function getSourceInstallMode(sourceName) {
   return SOURCE_INSTALL_MODES[sourceName] ?? { installMode: 'copy' }
 }
 
+// Kkday 開發統一走 run-task skill，researching-code/planning-solutions/
+// implementing-code/reviewing-code 五件套（ai-sdlc 來源）歸檔停用（2026-07-17 裁定）
+const DENYLISTED_SKILLS_BY_SOURCE = {
+  'ai-sdlc': new Set([
+    'researching-code',
+    'planning-solutions',
+    'implementing-code',
+    'reviewing-code',
+  ]),
+}
+
 /**
  * 讀取 source 目錄內的 _ab-tao-paths.json manifest
  * @param {string} sourceDir - 來源目錄絕對路徑
@@ -158,6 +169,8 @@ function loadSource(sourceName) {
       continue
     for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
       if (!entry.isDirectory())
+        continue
+      if (DENYLISTED_SKILLS_BY_SOURCE[sourceName]?.has(entry.name))
         continue
       const skillMd = path.join(skillsDir, entry.name, 'SKILL.md')
       if (fs.existsSync(skillMd)) {

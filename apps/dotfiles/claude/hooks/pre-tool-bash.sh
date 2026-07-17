@@ -76,11 +76,12 @@ BUILTIN_PATTERNS=(
 	'git[[:space:]].*commit[[:space:]].*--no-verify'
 	'git[[:space:]].*push[[:space:]].*--no-verify'
 	'git[[:space:]].*merge[[:space:]].*--no-verify'
-	# gstack guard — 高風險操作（網路發布 / force-with-lease 變體）
+	# gstack guard — 高風險操作（網路發布）
+	# 註：--force-with-lease 不再攔截（W3）——上方 rewrite 規則已建議改用它，
+	# 若再硬擋形成「叫你用又擋你用」的自相矛盾；純 --force 攔截仍保留（見上）
 	'npm[[:space:]]+publish([[:space:]]|$)'
 	'yarn[[:space:]]+publish([[:space:]]|$)'
 	'pnpm[[:space:]]+publish([[:space:]]|$)'
-	'git[[:space:]].*push[[:space:]].*--force-with-lease'
 	'npx[[:space:]]+.*--yes[[:space:]].*exec'
 	'>[[:space:]]*/etc/'
 	'chmod[[:space:]]+[0-7]*[2367][[:space:]]'
@@ -102,6 +103,18 @@ if [ -f "$PATTERNS_FILE" ]; then
 		fi
 		printf '%s' "$COMMAND" | grep -Eiq "$pat" && _block
 	done < "$PATTERNS_FILE"
+fi
+
+# === Warn-only：裸 git commit / git push 三豁免提醒（W3）─────────────
+# 純提醒、不阻斷（exit 0）。走到這裡代表命令未被上方 deny/rewrite 規則攔截，
+# 即已排除 --no-verify（deny）與 git push --force（rewrite）等已處理的情境。
+# 注意：不誤傷 `git commit --help` 之類的查詢；字串中恰好含 "git commit/push"
+# 的其他無害命令可接受誤報（warn-only 無害）。
+if printf '%s' "$COMMAND" | grep -Eiq 'git[[:space:]]+(commit|push)([[:space:]]|$)' \
+	&& ! printf '%s' "$COMMAND" | grep -Eiq 'git[[:space:]]+(commit|push)[^|;&]*[[:space:]](--help|-h)([[:space:]]|$)'; then
+	CTX='git commit/push 三豁免檢查：①當前 turn 動作語義明示 ②plan frontmatter autoCommit ③自動化迴圈——皆不滿足時先呈現 diff 問 [Y/N]（§05-security）'
+	jq -nc --arg ctx "$CTX" \
+		'{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}'
 fi
 
 exit 0

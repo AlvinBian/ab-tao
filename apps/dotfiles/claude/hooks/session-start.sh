@@ -43,8 +43,13 @@ GLOBAL_MEMORY="$CLAUDE_DIR/memory/MEMORY.md"
 PROJ_TASKS="$PROJECT_DIR/tasks"
 
 printf '\n'
-# 全局記憶（永遠提示路徑，讓 Claude 知道去哪讀）
-printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY"
+# 全局記憶（僅在檔案存在且 >3 行才提示，避免空殼檔案洗版）
+if [ -f "$GLOBAL_MEMORY" ]; then
+	GLOBAL_MEMORY_LINES=$(wc -l < "$GLOBAL_MEMORY" 2>/dev/null || echo 0)
+	if [ "$GLOBAL_MEMORY_LINES" -gt 3 ]; then
+		printf '[冷啟動] 📚 全局記憶：%s\n' "$GLOBAL_MEMORY"
+	fi
+fi
 # 專案記憶（有檔案才提示）
 if [ -f "$MEMORY_INDEX" ]; then
 	printf '[冷啟動] 📚 專案記憶：%s\n' "$MEMORY_INDEX"

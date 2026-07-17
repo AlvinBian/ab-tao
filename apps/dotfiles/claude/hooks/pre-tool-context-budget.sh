@@ -14,8 +14,15 @@ fi
 HOUR=$(date +%Y%m%d%H)
 BUCKET_FILE="/tmp/ab-tao-ctx-${HOUR}"
 
-# 清理 2 小時前的舊 bucket（非阻塞）
-find /tmp -name "ab-tao-ctx-*" -mmin +120 -delete 2>/dev/null &
+# 清理 2 小時前的舊 bucket（非阻塞，節流：距上次清理 <3600 秒直接跳過）
+CLEANUP_MARKER="/tmp/ab-tao-ctx-cleanup-marker"
+LAST_CLEANUP=0
+[[ -f "$CLEANUP_MARKER" ]] && LAST_CLEANUP=$(cat "$CLEANUP_MARKER" 2>/dev/null || echo 0)
+NOW_EPOCH=$(date +%s)
+if [[ $(( NOW_EPOCH - LAST_CLEANUP )) -ge 3600 ]]; then
+	find /tmp -name "ab-tao-ctx-*" -mmin +120 -delete 2>/dev/null &
+	printf '%s' "$NOW_EPOCH" > "$CLEANUP_MARKER" 2>/dev/null
+fi
 
 # 讀取並遞增計數
 COUNT=0

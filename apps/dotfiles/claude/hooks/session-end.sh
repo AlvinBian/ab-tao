@@ -182,9 +182,13 @@ if [ -n "$CWD" ] && [ -d "$GLOBAL_TASKS" ]; then
 fi
 
 # ── Part 3: Memory decay scan（90 天未存取提示歸檔）────────────────
+# 輸出改寫入 decay-report.md（覆寫式，帶日期標頭），stderr 只留一行摘要，
+# 避免每次 session 結束都在終端洗版一長串 decay 清單
 THRESHOLD_SECS=$(( 90 * 86400 ))
 NOW=$(date +%s)
 decay_count=0
+DECAY_REPORT="$HOME/.claude/.ab-tao/decay-report.md"
+decay_body=""
 
 for proj_dir in "$PROJECTS_DIR"/*/memory/; do
 	[ -d "$proj_dir" ] || continue
@@ -194,13 +198,24 @@ for proj_dir in "$PROJECTS_DIR"/*/memory/; do
 	age=$(( NOW - last_mod ))
 	if [ "$age" -gt "$THRESHOLD_SECS" ]; then
 		proj_name=$(dirname "$proj_dir" | xargs basename 2>/dev/null)
-		printf '[session-end] ⏳ 超過 90 天未存取的記憶：%s\n' "$proj_name" >&2
+		decay_body="${decay_body}- ⏳ ${proj_name}（$(( age / 86400 )) 天未存取）"$'\n'
 		decay_count=$((decay_count + 1))
 	fi
 done
 
-[ "$decay_count" -gt 0 ] && \
-	printf '[session-end] 建議將以上 %d 個舊記憶歸檔至 archive/\n' "$decay_count" >&2
+mkdir -p "$(dirname "$DECAY_REPORT")" 2>/dev/null
+{
+	printf '# Memory Decay Report\n\n'
+	printf '生成時間：%s\n\n' "$(date '+%Y-%m-%d %H:%M')"
+	if [ "$decay_count" -gt 0 ]; then
+		printf '超過 90 天未存取的記憶（%d 個），建議歸檔至 archive/：\n\n' "$decay_count"
+		printf '%s' "$decay_body"
+	else
+		printf '目前無超過 90 天未存取的記憶。\n'
+	fi
+} > "$DECAY_REPORT" 2>/dev/null
+
+printf '[session-end] decay report 已更新\n' >&2
 
 # ── Part 4: 清理 30 天以上的 .bak 備份 ──────────────────────────
 BACKUP_SECS=$(( 30 * 86400 ))
@@ -213,6 +228,52 @@ find "$HOME/.claude" -maxdepth 1 -name "*.bak.*" 2>/dev/null | while IFS= read -
 			printf '[session-end] 已清理舊備份：%s\n' "$(basename "$bak")" >&2
 	fi
 done
+
+# ── Part 4b: security_warnings_state GC（30 天）──────────────────
+# 涵蓋 ~/.claude/security/ 與頂層 ~/.claude/ 兩處，json 與同名 .lock 一併清
+SEC_GC_SECS=$(( 30 * 86400 ))
+for sw in "$HOME/.claude/security/security_warnings_state_"*.json \
+          "$HOME/.claude/security/security_warnings_state_"*.lock \
+          "$HOME/.claude/security_warnings_state_"*.json \
+          "$HOME/.claude/security_warnings_state_"*.lock; do
+	[ -e "$sw" ] || continue
+	sw_mtime=$(stat -f %m "$sw" 2>/dev/null || stat -c %Y "$sw" 2>/dev/null || echo 0)
+	sw_age=$(( NOW - sw_mtime ))
+	if [ "$sw_age" -gt "$SEC_GC_SECS" ]; then
+		rm -f "$sw" 2>/dev/null && \
+			printf '[session-end] 已清理舊 security_warnings_state：%s\n' "$(basename "$sw")" >&2
+	fi
+done
+
+# ── Part 4c: race-condition 殘留檔清理 ───────────────────────────
+# 掃描 hooks/ 與 .ab-tao/ 內形如「<basename> <N>[.ext]」的殘留（如 .notify-queue 2、session-state 3.json）
+for rc_dir in "$HOME/.claude/hooks" "$HOME/.claude/.ab-tao"; do
+	[ -d "$rc_dir" ] || continue
+	find "$rc_dir" -maxdepth 1 -type f -name '* [0-9]*' 2>/dev/null | while IFS= read -r resid; do
+		resid_bn=$(basename "$resid")
+		if printf '%s' "$resid_bn" | grep -Eq '^.+ [0-9]+(\.[A-Za-z0-9]+)?$'; then
+			rm -f "$resid" 2>/dev/null && \
+				printf '[session-end] 已清理 race-condition 殘留檔：%s\n' "$resid_bn" >&2
+		fi
+	done
+done
+
+# ── Part 4d: backups/ 上限（僅保留最新 10 份 .claude.json.backup.*）──
+BACKUPS_DIR="$HOME/.claude/backups"
+if [ -d "$BACKUPS_DIR" ]; then
+	BK_TMP=$(mktemp 2>/dev/null || printf '/tmp/ab-tao-backups-%s' "$$")
+	: > "$BK_TMP"
+	while IFS= read -r bkfile; do
+		[ -f "$bkfile" ] || continue
+		bk_mtime=$(stat -f %m "$bkfile" 2>/dev/null || stat -c %Y "$bkfile" 2>/dev/null || echo 0)
+		printf '%s\t%s\n' "$bk_mtime" "$bkfile" >> "$BK_TMP"
+	done < <(find "$BACKUPS_DIR" -maxdepth 1 -name '.claude.json.backup.*' -type f 2>/dev/null)
+	sort -t $'\t' -k1,1rn "$BK_TMP" 2>/dev/null | awk -F'\t' 'NR>10{print $2}' | while IFS= read -r old_bk; do
+		rm -f "$old_bk" 2>/dev/null && \
+			printf '[session-end] 已清理超額 backups：%s\n' "$(basename "$old_bk")" >&2
+	done
+	rm -f "$BK_TMP"
+fi
 
 # ── Part 5: Worklog draft 寫入 ──────────────────────────────────
 WL_STATE="$HOME/.claude/.ab-tao/session-state.json"

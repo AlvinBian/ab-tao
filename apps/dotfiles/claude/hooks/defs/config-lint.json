@@ -1,0 +1,16 @@
+{
+  "event": "SessionStart",
+  "hooks": [
+    {
+      "id": "ab-tao:config:lint",
+      "description": "配置健檢（agnix-lite）：9 條規則偵測文件與實際配置的靜默失效，7 天節流，warn-only 不阻斷",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/config-lint.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
