@@ -130,4 +130,4 @@
 - **匹配規則**：值為精確匹配（`model:opus` 匹配別名 `opus`，不匹配完整 model ID）；`*` wildcard 如 `Agent(model:*)` 匹配「任何**顯式**指定 model 的呼叫」，但**不匹配省略 model 的呼叫**。每條規則只能限制一個 parameter（要同時擋 model + isolation 寫兩條）。
 - **與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` 互補**：env 設**預設值**（可被 prompt 顯式覆寫），`Agent(model:opus)` 設**硬封鎖**（擋死顯式升 opus）；env 已讓「未指定 model」走 sonnet，deny 補上「禁止顯式升級」這一缺口。
 - **陷阱**：`command` / `file_path` / `path` / `url` 等已有 canonicalizing 規則的參數**不能**用此語法，誤寫會被忽略並觸發 startup warning。
-- 落地於 `settings.template.json` `permissions.deny`（union 合併，跨機一致）。
+- 已落地：`Agent(model:opus)`（settings.template.json + 本地 settings.json，deny union 合併跨機一致）。`Agent(isolation:worktree)`／`Bash(run_in_background:true)` 為文件選項**未啟用**（會破壞 Workflow worktree 隔離與背景任務）。

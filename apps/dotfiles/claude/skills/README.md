@@ -1,6 +1,6 @@
 # Skills 索引 (v2.0.0 · 2026-07-16 對齊實際)
 
-22 個 skills，按需載入（L3 on-demand）。透過 `c:skills --list` 查看安裝狀態。
+按需載入（L3 on-demand）。透過 `c:skills --list` 查看安裝狀態；即時數量：`find ~/.claude/skills -name SKILL.md | wc -l`。
 
 ---
 
@@ -50,7 +50,7 @@
 
 ## 品質基準
 
-- frontmatter 規範：`name` + `description`（50–200 字元）+ `version` + `category`
+- frontmatter 規範：`name` + `description`（50–200 字元，由 config-lint R7 校驗；觸發密集型（無感優先類）允許超長，見 R7_LEN_ALLOW）+ `version` + `category`
 - 驗證：`pnpm run c:validate --skills`
 
 ## 更新方式

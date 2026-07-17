@@ -47,7 +47,7 @@
 - **敏感欄位 log**：即將輸出含 `token` / `userId` / `password` / `secret` 字樣的 `console.log` → 安全紅線（§ 05-security）
 - **範圍爆炸**：單次 Edit 將觸及 5+ 個無關檔案 → 三選一：縮小範圍 / 維持範圍 / 拆 PR（§4 前置防禦）
 - **`any` 型別**：即將宣告 `any` 作為 TS 型別且無 `// eslint-disable` 附理由 → 回問使用者允許範圍
-- **破壞性 Bash**：命令含 `rm -rf` / `--force` / `--no-verify` 且本 turn 無明說 hotfix 緊急 → 二次確認
+- **破壞性 Bash** → 已由 pre-tool-bash.sh hook 確定性攔截（§05）
 - **Edit 失敗重試**：Edit 工具回報 `String not found` / `Found N matches` → 禁止直接調整 `old_string` 重試，先 Read 檔案確認當前狀態
 - **Source-citation**：對程式碼行為 / 檔案結構 / API 簽名的主張，必須附 `file:line` 或 tool output 出處；無出處者降為 ❓ 等級，禁止以確定語氣輸出
 - **假設疊加禁止**：已標 ⚠️ / ❓ 的結論在驗證前，禁止以其為前提產出下一個結論；需先 Read / Bash 驗證或詢問使用者

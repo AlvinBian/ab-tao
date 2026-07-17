@@ -21,48 +21,7 @@
 - 收到明確確認前，禁止執行被 gate 的動作；禁止「先做再問」
 - 被否決（N）後：不重試同一方案，改問卡點或提**結構不同**的替代（呼應 §15 loop 偵測）
 
-## 必須觸發確認的情境（全域，不限 Slack）
-
-以下動作在**未預先授權**時一律先確認：
-
-**對外通訊**（⚠️ 結論性訊息**不適用**下方授權豁免，見「對外通訊硬例外」；review 工作流產物除外）
-- Slack 傳送結論性／總結性訊息（任何 send 工具）→ 呈現完整草稿 + `[Y/N]`
-- /feedback（附 session transcript，有外洩風險）→ 說明附帶內容後 `[Y/N]`
-- 對外 email / 任何發佈到外部服務的結論性內容 → 預覽 + `[Y/N]`（PR review 工作流產物除外）
-
-**Git / PR**
-- `git commit` / `git push` → 呈現 diff + `[Y/N]`
-- Force push → 先 `git branch backup/<original>` 再 `[Y/N]`
-- `gh pr merge` → **硬禁，無確認豁免**（唯一方式 = GitHub UI 手動）
-
-**破壞性 / 敏感操作**
-- 刪除、覆蓋「非本人建立或未讀過」的檔案 → 先看內容再 `[Y/N]`
-- Bash 含 `rm -rf` / `--force` / `--no-verify`（非明說 hotfix）→ `[Y/N]`
-- 支付、權限變更、資料刪除、DB migration → 二次確認
-
-**程式碼品質偏離**
-- 宣告 `any` 型別（無 `// eslint-disable` 附理由）→ 回問允許範圍
-- 跳過型別檢查 / lint / 測試
-
-**範圍與設定**
-- 單次 Edit 觸及 5+ 無關檔（範圍爆炸）→ **多值**：AskUserQuestion（縮小範圍 / 維持範圍 / 拆 PR）
-- 方案選型、技術棧取捨 → **多值**：AskUserQuestion，每選項附成本/風險
-- 修改設定檔禁改清單（`settings.json`、`memory/`、`projects/`、`state.json`）→ 需使用者明確點名
-
-## 授權豁免（已授權則不再問）
-
-滿足任一即視為已授權，直接執行、不重複確認：
-- 當前 turn 的動作語義已明示（「commit 這個」「刪掉它」）
-- plan frontmatter（`autoCommit: true` 等）/ CLAUDE.local.md 預先聲明
-- 自動化迴圈（/loop、ralph-loop、CI agent runs）
-
-⚠️ **對外通訊硬例外（2026-07-16 拍板，優先權高於上述三豁免）**：**結論性／總結性對外訊息**（進度回報、結果總結、公告、自行組織的自由文本；管道不限 Slack / email / …）**一律不適用**三豁免——必須呈現完整草稿、由使用者親自確認無誤（回覆 `[Y]`）後才可發送。**唯一跳過草稿確認的方式 = 使用者當前 turn 明確標示「直接發送」**（如「直接發送 slack 訊息」）；plan 預先聲明與自動化迴圈亦不得代替此標示。
-　**豁免類別——review 工作流產物可直接發送**（免逐則確認）：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受 §05 六條件護欄）、review 對應 Slack thread 的固定格式單行回報。分類拿不準 → 一律當結論性處理。
-
-**邊界**
-- 授權**僅限當前 context / 當前動作**，不外溢到下一個動作或下一個 context
-- 含糊指令（「弄好它」「處理一下」「順便」）≠ 授權
-- 起草 ≠ 發送；規劃 ≠ 執行
+> 觸發清單／授權豁免／對外通訊硬例外＝§05 security 為唯一權威來源；細節 → docs/security-details.md。
 
 ## 呈現規範（Preview > Apply）
 

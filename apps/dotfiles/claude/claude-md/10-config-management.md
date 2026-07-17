@@ -7,6 +7,9 @@
 - `~/.claude/settings.json` — 由 ab-tao d:setup 統一管理
 - `~/.claude/.ab-tao/state.json` — ab-tao runtime state
 
+> `memory/`、`projects/` 的禁改意圖＝禁止重整/刪除既有記憶樹，正常記憶寫入（§08 定義的流程）不在此限。
+> `settings.json` 已有 `pre-tool-edit.sh` 完整路徑攔截 backstop。
+
 ## 優先級
 
 衝突時：企業設定 > 使用者全域 > 專案 `.claude/` > plugin 預設。規則衝突時直接指出，不自行調和。

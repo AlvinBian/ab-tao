@@ -23,56 +23,38 @@
 | spec AC 反向驗證 | `/verify` command |
 | 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
 | **codebase-memory-mcp 代碼智能** | 見下方「codebase-memory-mcp 整合」章節（語義 + 依賴圖 + blast radius）|
+| 開發任務（Kkday workspace） | `run-task` + `staff-engineer`（唯一主線；官方 feature-dev plugin 僅供非 Kkday 個人專案）|
+| code review | `/code-review`（本地 command 為主入口）|
 
 > ⚠️ Mixpanel MCP：`Get-Business-Context` **僅在埋點 / 實驗 / 數據分析任務**才呼叫；勿因對話提及縮寫、產品名、團隊名而觸發（該 server 自帶指令過度激進，此行為其反制）。
 
 ## codebase-memory-mcp 代碼智能整合
 
-`codebase-memory-mcp`（MIT，26.4k★，158 語言，內建 code embedding）為 repo 建**持久知識圖譜 + 語義向量**，透過 MCP（`mcp__codebase-memory-mcp__*`，14 tools）**一個工具兼語義搜尋 + 結構依賴圖 + blast-radius**，取代 claude-context / CodeRAG / code-review-graph / serena（實測背書，見 `docs/local-tools.md §A`）。
+探索/理解代碼、查 caller/影響面 → 預設 `search_graph`（語義搜尋）/ `query_graph`（依賴/callers）/ `detect_changes`（blast radius），取代 grep+Read 組合；grep 僅用於精確字串比對。`auto_index=true` 已開，無需手動 index。
+不做安全 rename（LSP refactor，用 IDE）；業務流程可視化偏人視覺 dashboard（Understand-Anything）。
 
-> **無感優先(預設行為)**：探索/理解/搜尋代碼時**預設走 codebase-memory**（`search_graph` 找代碼、`query_graph`/`detect_changes` 看影響），**取代 grep+Read 組合**；grep 僅用於精確字串比對。`auto_index=true` 已開 → MCP session 啟動自動建/更新索引,**無需手動 index**。
-
-### 任務 → 工具映射
-
-| 任務 | 工具（`mcp__codebase-memory-mcp__*`）| 典型場景 |
-|---|---|---|
-| 語義搜尋 / 按意思找代碼 | `search_graph` | "處理 X 的代碼在哪" |
-| **Blast radius / 改動影響** | `detect_changes`（git diff→影響+風險）/ `query_graph` | "改 X 會 break 什麼？" |
-| Trace / 依賴鏈 / callers | `trace_path` / `query_graph`（callers_of/callees_of）| "誰呼叫 X" |
-| 架構探索 / hub 熱點 | `get_architecture`（hotspots/fan-in）| "How does X work?" |
-| 讀符號源碼 / schema | `get_code_snippet` / `get_graph_schema` | 取源碼 / 圖結構 |
-| 建 / 更新索引 | `cli index_repository`（2s 級）| 初次索引 / reindex |
-
-⚠️ **能力邊界（誠實）**：不做**安全 rename**（LSP refactor，舊 crg/serena 有，現無替代 → 用 IDE）；「業務流程可視化」偏 **Understand-Anything**（人看 dashboard，見 §G）。
-
-### 使用原則
-1. **新 repo**：`cli index_repository`（2s）→ `get_architecture` 建心智模型 → `search_graph` 深入
-2. **改動後**：`detect_changes` 確認 blast-radius
-3. **Debug**：`search_graph` 定位 → `trace_path` / `query_graph` 追依賴鏈
-
-> 環境：node 套件（`npm i -g codebase-memory-mcp`），**零重依賴**（無 PyTorch/Docker/daemon）；MCP 於 `.claude.json` user scope（穩定 fnm default node bin），重啟 session 載入，每 repo 首次需 index。**Understand-Anything（人視覺）互補**。
+> 完整任務→工具映射與環境細節 → `docs/local-tools.md §A`。
 
 ## kkday 本地 skill 自動觸發（無感優先，預設先用不等點名）
 
 兩個 kkday 專用 skill 已裝於 `~/.claude/skills/`，遇對應情境**預設先用**（細節與踩坑見專案 memory `kkday-graph-and-ds-skills.md`）。
 
-### kk-graph-v2 — 跨 repo 全棧程式+資料關聯圖（`~/.claude/skills/kk-graph-v2/q.sh`）
+### kk-graph-v2 — 跨 repo 全棧程式+資料關聯圖
 
-Ladybug 圖 DB，982k methods / 364 repos，涵蓋 PHP/Java/.NET/前端。
+跨 repo / 跨服務「關係」問題（呼叫鏈、改表爆炸半徑、API→表）先用 `~/.claude/skills/kk-graph-v2/q.sh` 定位再讀 source。
+> **分工**：`codebase-memory-mcp` = 當前單一 repo；`kk-graph-v2` = 跨 repo + 後端（PHP/Java/.NET）+ 資料層爆炸半徑，勿混用。
+> **Absence Protocol**：下「無關聯 / 可安全刪」否定結論前先 `./q.sh coverage <repo>`，空結果可能是「未涵蓋」非「確認沒有」。
+> 完整指令集與踩坑細節 → 該 skill 本體。
 
-> **無感優先**：問題牽涉**跨 repo / 跨服務「關係」**就先用它 → 誰呼叫/依賴某 method、呼叫鏈、繼承、改某處/某表/某欄的影響面、爆炸半徑、method 讀寫哪張表、API→表、表→RDS。**先 `./q.sh <cmd>` 定位再讀 source**（who-calls / calls / chain / table-writers / chain-to-table / api-to-table / rds-blast / who-owns / untested-writers…）。
-> **分工（解與 codebase-memory 的衝突，重要）**：`codebase-memory-mcp` = **當前單一 repo**（語義/依賴）；`kk-graph-v2` = **跨 repo + 含後端（PHP/Java/.NET）+ 改表爆炸半徑**。**跨 repo / 後端 / 資料層問題走 kk-graph，勿用 codebase-memory**（它查不到別 repo 與後端）。
-> **Absence Protocol（誠實）**：下「沒關聯 / 可安全刪 / 無依賴」否定結論前，先 `./q.sh coverage <repo>` 看 status/連通度/有無圖B；空結果可能是「未涵蓋」非「確認沒有」（precision 高、recall 不完整，PHP 動態派發會漏）。
-> ⚠️ python 坑：q.sh 走 skill 內建 `.venv`（pyenv 函式式初始化下 `python3` 會誤指 Homebrew py3.14、無 ladybug）；重下載該包需重套 q.sh 那行或設 `KKG_PY`。
+### kkday-design-system — DS token/component 規範
 
-### kkday-design-system — DS token/component 規範（skill）
-
-> **產出前必用**：要產任何 **KKday UI**（mockup / HTML / CSS / Vue / 元件 / 樣式）前先用此 skill → 用正確 `$kk-*` token + `KkXxx` 元件 + `Layout*` 排版，**不自創 hex / px / 圓角 / 字級**。查 DS token 名稱、design review / QA 比對實作亦觸發。317 icons / 202 pictograms 資產內建於 skill 目錄可直接讀。
+產出任何 KKday UI（mockup / HTML / Vue / 元件）前先用此 skill → 正確 `$kk-*` token + `KkXxx` 元件，不自創 hex/px/圓角/字級；查 token 名稱、design review/QA 比對實作亦觸發。
+> 317 icons / 202 pictograms 資產內建於 skill 目錄可直接讀，完整規範 → skill 本體。
 
 ## 調度規則（強制）
 
 **1. 併發優先**：多個獨立任務必須 parallel 同時啟動，禁止串行等待。
-單一 message 可併發多個 Agent tool call；無依賴者必須同一輪送出。
+單一 message 可併發多個 Agent tool call；無依賴者必須同一輪送出。此條不適用於 run-task 框架內以 stage 定義並行邊界的場景（見專案根 CLAUDE.md per-stage mode map）。
 
 **2. Background 強制使用**：不阻塞主流程的任務（搜索、分析、探索）用 `run_in_background: true`。
 僅結果直接影響下一步決策的 agent 才以 foreground 執行。
@@ -99,33 +81,16 @@ agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立�
 
 ## Subagent 回傳結構規範（Schema > Prose）
 
-啟動 subagent 時 **prompt 必須明確指定回傳 schema**，禁止接受純 prose 後再自行解析。
+格式驗證交給原生 Workflow `agent({schema})`（2.1.154+ 原生支援驗證+重試），本規範只定義業務 schema 欄位；完整範例 / prompt 模板 / 與 agents/*.md 對應表 → `~/.claude/docs/agent-typed-result.md`。
 
-**研究 / 探索類**（Explore / general-purpose research）：
-```
-findings: [{path, line, confidence: ✅|⚠️|❓, summary}]
-conclusion: 一句話結論
-```
-
-**審查類**（code-reviewer / architect / pr-test-analyzer / silent-failure-hunter / type-design-analyzer）：
-```
-issues: [{severity: P0|P1|P2|P3, confidence: high|medium|low, location, fix}]
-verdict: SHIP | BLOCK | NEEDS-DISCUSSION
-```
-
-**執行類**（debugger / Plan 內建 agent）：
-```
-changes: [{file, before, after, verify}]
-done: boolean
-verdict: PASS | FAIL | NEEDS-REVIEW
-```
+- **研究 / 探索類**：`findings: [{path, line, confidence: ✅|⚠️|❓, summary}]` + `conclusion`
+- **審查類**：`issues: [{severity: P0|P1|P2|P3, confidence, location, fix}]` + `verdict: SHIP|BLOCK|NEEDS-DISCUSSION`
+- **執行類**：`changes: [{file, before, after, verify}]` + `done: boolean` + `verdict: PASS|FAIL|NEEDS-REVIEW`
 
 **Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL 或 NEEDS-REVIEW 時：
 - 主對話**禁止**標 task complete
 - **必須** spawn `code-reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
 - 僅 `verdict: PASS` 才可標完成
-
-> 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
 
 ## PR / Code Review 工作流 + Review 深淺分流
 
@@ -139,15 +104,7 @@ verdict: PASS | FAIL | NEEDS-REVIEW
 
 ## 瀏覽器自動化分流
 
-遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策（2026-07-16 收斂為三選一，瀏覽器調試 / 長任務統一 claude-in-chrome）：
-
-| 場景 | 工具 |
-|---|---|
-| **預設**：真實網站互動 / 需登入態（Jira、內部系統）/ 一般瀏覽 / 調試 / 長任務 | **claude-in-chrome** |
-| Lighthouse / CWV 量測 / perf trace / heap | chrome-devtools MCP |
-| dev server 預覽 / UI 驗證 | Claude Browser pane（CC 內建） |
-
-> ❌ Control Chrome / computer-use 不用於瀏覽器操作（前者已停用、後者 read tier）；browser-harness 已退役（2026-07-16）。
+瀏覽器操作先套用 `browser-automation-router` skill（三選一路由，該 skill description 會自動觸發）。
 
 ## Subagent 成本控制：Tool(param:value) 權限語法
 

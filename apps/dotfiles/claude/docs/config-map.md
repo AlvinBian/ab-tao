@@ -52,13 +52,13 @@
 │   ├── agent-dag-parallel.md    多 phase 並行排程（DAG 切分 / Wave gate）引用: 13-agent-orchestration
 │   ├── agent-typed-result.md    Subagent 回傳 schema 範例 + prompt 模板  引用: 13-agent-orchestration
 │   ├── self-correction-details.md  串流中斷觸發細節 + 歷史案例          引用: 15-self-correction
-│   ├── state-system-details.md  Plan Frontmatter / 資料夾命名規範        引用: 08-state-system
+│   ├── state-system-details.md  資料夾命名規範                          引用: 08-state-system
 │   ├── ai-dispatcher.md         /ai dispatcher 40+ intent 映射表 + 使用說明
-│   └── federated-memory.md      第四溫層跨專案記憶設定（projects.json 格式）
+│   └── archive/federated-memory.md  第四溫層跨專案記憶構想（未部署，2026-07-17 封存）
 │   │
-│   │   # ── 版本封存（2）──
-│   ├── audit-checklists-v160.md（archive）
-│   └── config-map-v160.md       （archive）
+│   │   # ── 版本封存（2，位於 docs/archive/）──
+│   ├── archive/audit-checklists-v160.md
+│   └── archive/config-map-v160.md
 │   │
 │   │   # ── 研究 / 未分類（4）──
 │   │   attribution / cost-routing / failure-catalog / profile-system
@@ -92,7 +92,6 @@
 ├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
 │   │   ├── session-start.json        ab-tao:session:start
-│   │   ├── session-start-gitnexus-sync.json  ab-tao:session:gitnexus-sync
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
 │   │   ├── pre-tool-edit.json        ab-tao:pre:edit
 │   │   ├── pre-tool-context-budget.json  ab-tao:pre:context-budget（advisory）

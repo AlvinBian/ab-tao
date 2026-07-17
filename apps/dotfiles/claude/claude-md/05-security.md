@@ -16,6 +16,7 @@
 > commit / 發 PR / 開分支時 → Read `~/.claude/docs/git-pr-conventions.md`（Conventional Commits、PR title `[TICKET][SSR][PC][M]`、堆疊 PR、分支流程、Wave 串行）
 
 ### `gh pr review --approve`（嚴格護欄自動 approve）
+先跑 `scripts/pr-auto-approve-check.sh <PR>` 取得 `{eligible, blockers}`——false 直接退回人工；true 才由模型核對 ①⑥ 與安全閥。
 6 條件**全部滿足**才自動執行（免二次確認），任一不符 → 退回人工 approve 並說明卡點（禁靜默略過）：
 
 ① **verdict = LGTM / SHIP**（無阻斷 finding）—— 僅採信**本輪由自己完成**的 review 結論；禁止以 GitHub `reviewDecision` 聚合值判斷（該值可能來自其他人類 reviewer，不代表自己已審過或已 approve）
@@ -31,8 +32,8 @@
 - **只 approve 不 merge**；禁止批次 approve（一次僅限當前明確 review 的單一 PR）
 
 ### Force push / `--no-verify`
-❌ Force push 前必先 `git branch backup/<original>`，禁直接覆蓋上游（任何模式無豁免）
-❌ `--no-verify` 僅限使用者明說 hotfix 緊急；自動化迴圈不豁免
+❌ Force push 前必先 `git branch backup/<original>`，禁直接覆蓋上游；`--no-verify` 僅限使用者明說 hotfix 緊急，自動化迴圈不豁免。
+> `rm -rf` / force push / `--no-verify` 已由 `hooks/pre-tool-bash.sh` 確定性攔截；deny 僅鎖字面量 `rm -rf /` 與 `rm -rf ~`，廣義防護靠 hook 正則、可被改寫繞過，非強保證。
 
 ## 外部通訊紅線（強規則）
 
@@ -41,4 +42,6 @@
   - **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的固定格式單行回報（`#PR號 ✅ LGTM` / `💬 N findings`＋連結）。
   - 分類拿不準 → **一律當結論性處理**。「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）。逐條定義與反例 → security-details.md。
 - ❗ **/feedback**：嚴禁主動執行（預設附帶 24h/7d session transcript，含 KKday 內部敏感資料，有外洩風險）。使用者要回報問題 → 先說明附帶內容 → 明確確認後才執行。細節 → security-details.md。
+
+> `settings.json` `permissions.deny` 另有 infra-destroy／publish 類規則（`terraform/pulumi/cdk destroy`、`docker compose down -v`、`npm/pnpm publish` 等），完整清單直接讀 `settings.json`；deny 為 union 合併，移除須雙邊（template+本地）手動。
 </security>
