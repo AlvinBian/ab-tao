@@ -102,8 +102,6 @@
   },
   "_abTao": {
     "version": "1.7.1",
-    "voiceTrigger": false,
-    "contextBudgetFileCount": 12,
-    "skillCreatorEnabled": false
+    "contextBudgetFileCount": 12
   }
 }

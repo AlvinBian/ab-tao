@@ -178,8 +178,8 @@ _r4() {
 _r5() {
 	local settings="$TARGET_ROOT/settings.json"
 	[ -f "$settings" ] || return
-	# voiceTrigger/skillCreatorEnabled：2026-07-17 實測零消費者，暫列 allow 保留待決（棄用則清鍵並移出此清單）
-	local allow="${R5_ALLOW:-version,voiceTrigger,skillCreatorEnabled}"
+	# 2026-07-18：voiceTrigger/skillCreatorEnabled 確認棄用並清鍵（原暫列 allow 已移除）
+	local allow="${R5_ALLOW:-version}"
 	local keys key found
 	keys=$(jq -r '._abTao // {} | keys[]?' "$settings" 2>/dev/null)
 	[ -z "$keys" ] && return
