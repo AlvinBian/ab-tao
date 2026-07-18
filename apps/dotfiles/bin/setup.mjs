@@ -137,7 +137,8 @@ async function main() {
   const args = process.argv.slice(2)
   const flagAll = args.includes('--all')
   const flagManual = args.includes('--manual')
-  let flagQuick = args.includes('--quick')
+  const explicitQuick = args.includes('--quick')
+  let flagQuick = explicitQuick
   const flagDryRun = args.includes('--dry-run')
   const flagResetPrefs = args.includes('--reset-preferences')
   const flagResetChoices = args.includes('--reset-choices')
@@ -324,8 +325,15 @@ async function main() {
   async function runLegacyCheckIfNeeded() {
     const legacyInfo = detectLegacyInstallation()
     if (legacyInfo.hasLegacy) {
-      if (!flagDryRun)
-        await withSpinner('📸 建立配置快照（防止失敗時本地失效）', async () => beginTransaction(), { hint: 'transaction' })
+      // dry-run：只回報偵測結果，不進互動 select（避免非 TTY 掛死）、不寫任何檔案
+      if (flagDryRun) {
+        p.log.info(
+          `🔍 dry-run：偵測到舊配置（略過互動選擇與實際升級，僅預覽）。`
+          + `如需實際處理，移除 --dry-run 重跑，或用 --manual 逐步確認。`,
+        )
+        return
+      }
+      await withSpinner('📸 建立配置快照（防止失敗時本地失效）', async () => beginTransaction(), { hint: 'transaction' })
       const upgradeResult = await runUpgrade(legacyInfo)
       if (upgradeResult === 'cleaned') {
         prev = null
@@ -335,8 +343,10 @@ async function main() {
     }
   }
 
-  // --quick + --dry-run 衝突檢查
-  if (flagQuick && flagDryRun) {
+  // --quick + --dry-run 衝突檢查：僅使用者「明確」同時指定兩者才算真衝突。
+  // 非 TTY 環境會自動把 flagQuick 降級為 true（見上方），此時 flagQuick 不代表使用者意圖，
+  // dry-run 的顯式優先序必須高於這個自動降級——不能被誤判成「使用者自己衝突」而略過警告掩蓋掉。
+  if (explicitQuick && flagDryRun) {
     p.log.warn('⚠️ --quick 和 --dry-run 不能同時使用，已忽略 --dry-run')
   }
 
