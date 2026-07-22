@@ -4,4 +4,4 @@
 
 驗證項目：author 角色收到 review nit 後的自動修復鏈（Edit → lint/test → commit → push → 回覆 PR thread）。
 
-故意留的小瑕疵：下面這句話的的用字重複，等待被指出並修正。
+已修正：這句話原本「的的」重複用字的瑕疵已被 babysit-prs 閉環自動修好。
