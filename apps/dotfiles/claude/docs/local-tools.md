@@ -29,12 +29,19 @@ claude mcp add codebase-memory-mcp -s user -- "$(npm root -g)/../bin/codebase-me
 - **CLI**：`codebase-memory-mcp cli index_repository '{"repo_path":"<repo>"}'` 建索引（每 repo 首次，或 `config set auto_index true`）
 - 14 工具 · 索引存各 repo `.mcprules`/內部 · 多專案用 project 名區隔
 
-> 三範式分工終結：**codebase-memory=語義+結構一把抓** ｜ ripgrep=文字/正則 ｜ chrome-devtools=前端 debug。claude-context / CodeRAG / mcp-vector-search / code-review-graph / serena **皆已退役**（實測對比見 git 歷史）。
+> 三範式分工終結：**codebase-memory=語義+結構一把抓** ｜ ripgrep=文字/正則 ｜ chrome-devtools=前端 debug + 量測（互動 / console / network / Lighthouse / CWV / performance trace / heap snapshot，見下方 B）。claude-context / CodeRAG / mcp-vector-search / code-review-graph / serena **皆已退役**（實測對比見 git 歷史）。
 
 
-## B. browser-harness（已退役 2026-07-16）
+## B. 瀏覽器調試
 
-瀏覽器調試 / 長任務 / 自動化迴圈**統一改用 claude-in-chrome**（真實 Chrome + 登入態）；量測仍走 chrome-devtools MCP、dev 預覽走 Browser pane（見 `skills/browser-automation-router/SKILL.md` 三選一）。殘留清理：`rm -rf ~/.ab-tao/browser-harness`（獨立 venv + Chrome profile）。
+**目標瀏覽器一律 Google Chrome**（2026-08-04 拍板）。預設 chrome-devtools MCP（互動 / console / network / 量測全包）；需要「以本人身分」操作真實登入帳號才退回 claude-in-chrome；本專案 dev server 預覽走 Browser pane。三選一決策樹見 `skills/browser-automation-router/SKILL.md`。
+
+### 非 Chrome 瀏覽器（Tabbit 等）— 已完全退出（2026-08-04）
+
+- **決策**：瀏覽器調試不再涉入任何非 Chrome 瀏覽器。原 `tabbit-browser` MCP（第三方 `southportns/tabbit-browser`）已從 `.claude.json` 移除註冊、`~/.claude/tools/tabbit-browser/` 已刪除，含本地未推上游的 macOS launch patch。
+- **為什麼**：維護單一瀏覽器的專用 MCP + profile 複製方案（登入態快照、Keychain 解密、獨立 user-data-dir）成本高於價值，且 Tabbit 封鎖 `chrome://` 命名空間導致 autoConnect 這類官方省事路徑都不適用。統一 Chrome 後路由從四選一收斂為三選一。
+- **若日後需要重建**：上游 repo 尚在（`southportns/tabbit-browser`，唯一依賴 ws），但 macOS launch 的平台判斷 + 獨立 `--user-data-dir` patch 需重做——先確認需求真實存在再評估，不預先復原。
+- **claude-in-chrome 本來就只認 Google Chrome**：CLI 瀏覽器偵測硬編碼（chrome/brave/arc/edge/chromium/vivaldi/opera），非 Chrome 瀏覽器即使裝了 extension + NativeMessagingHosts manifest 也接不上——這是它的設計，不是缺陷。
 
 ## C. claude-trace（Token 歸因觀測）
 

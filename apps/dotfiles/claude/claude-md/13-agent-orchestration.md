@@ -104,10 +104,18 @@ agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立�
 
 ## 瀏覽器自動化分流
 
-瀏覽器操作先套用 `browser-automation-router` skill（三選一路由，該 skill description 會自動觸發）。
+**所有瀏覽器任務一律走 Google Chrome**（2026-08-04 拍板）——不涉入 Tabbit / Arc / Edge 等任何非 Chrome 瀏覽器，也不再有「調哪個瀏覽器」的分支。先套用 `browser-automation-router` skill（三選一路由，該 skill description 會自動觸發）：
+
+| 情境 | 工具 |
+|---|---|
+| **預設起點**：一般調試 / 互動 / console / network / 量測（Lighthouse、CWV、performance trace、heap snapshot） | **chrome-devtools MCP** |
+| 任務必須「以使用者本人身分」操作真實已登入帳號（Gmail / Notion / 內部系統），且 chrome-devtools 的 profile 沒有該登入態 | claude-in-chrome（真實 Chrome + 登入態；僅認 Google Chrome） |
+| 本專案 dev server 預覽 / 驗證自己剛寫的改動 | Browser pane（Claude Code 內建） |
+
+⚠️ **claude-in-chrome 不穩定性**：安全分類器離線時整個 `mcp__claude-in-chrome__*` 命名空間打不開（連 `tabs_context_mcp` 都失敗，2026-08-04 再次實測），屬後端暫時性故障，非本機配置問題——遇到時重試或等恢復，**不要**拿 chrome-devtools 硬做需要真實登入態的任務。細節 → `~/.claude/docs/local-tools.md §B`。
 
 ## Subagent 成本控制：Tool(param:value) 權限語法
 
-> 用 deny rule 精準封鎖特定參數值（`Agent(model:opus)` 擋 Opus subagent、`Bash(run_in_background:true)` 擋背景 Bash），與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` env 互補 → 完整語法、匹配規則、陷阱見 `~/.claude/docs/agent-review-workflow.md`（配 subagent 權限時）。
+> 用 deny rule 精準封鎖特定參數值（`Agent(model:opus)` 擋 Opus subagent、`Bash(run_in_background:true)` 擋背景 Bash）；`CLAUDE_CODE_SUBAGENT_MODEL` 已移除（實測是硬鎖，會讓 Agent 的 model 參數完全失效），改為 subagent 預設繼承 session model、搜尋密集型由呼叫端顯式帶 `model: "sonnet"` → 語法與實測依據見 `~/.claude/docs/agent-review-workflow.md`（配 subagent 權限時）。
 
 </agent_orchestration>

@@ -1,5 +1,19 @@
 # @ab-tao/dotfiles
 
+## 1.19.0
+
+### Minor Changes
+
+- 瀏覽器自動化路由收斂為 Chrome-only（四選一 → 三選一）
+
+  - **`claude-md/13-agent-orchestration.md`**：「瀏覽器自動化分流」整段重寫。所有瀏覽器任務一律走 Google Chrome，不再涉入 Tabbit / Arc / Edge 等非 Chrome 瀏覽器；預設起點改為 **chrome-devtools MCP**（互動 / console / network / 量測全包），僅「必須以使用者本人身分操作真實已登入帳號」才退回 claude-in-chrome，本專案 dev server 預覽維持 Browser pane。改以表格呈現三個情境。
+  - **`skills/browser-automation-router/SKILL.md`**：v5.0.0 → v6.0.0。Tabbit 從決策樹移除、改列入「禁用路徑」；description 同步收斂。
+  - **`docs/local-tools.md §B`**：刪除 Tabbit 安裝 / 啟動 / profile 複製細節，改為「非 Chrome 瀏覽器已完全退出」的決策記錄與日後重建前提。
+
+  **順帶修正既有矛盾**：13-agent 與 skill 兩份規則原本對「預設用哪個工具」講法相反（前者 claude-in-chrome、後者 chrome-devtools），本次統一為 chrome-devtools 預設。source 端的 skill / docs 原本落後部署檔，一併以較新者回填。
+
+  **動機**：維護單一瀏覽器的專用 MCP + profile 複製方案（登入態快照、Keychain 解密、獨立 user-data-dir、未推上游的 macOS patch）成本高於價值；且 claude-in-chrome 的安全分類器離線時整個工具命名空間不可用，預設改走 chrome-devtools 可避開此單點故障。
+
 ## 1.18.1
 
 ### Patch Changes
