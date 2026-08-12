@@ -13,6 +13,11 @@
 ### `gh pr merge`（硬禁，無豁免）
 ❌ 任何情境禁止 `gh pr merge` / 開啟 GitHub auto-merge（含 `autoCommit: true` 也不豁免）；merge 唯一方式 = GitHub UI 手動。
 
+### GitHub 存取：讀寫分離閉環（2026-08-06 建立）
+**讀**（查檔 / 搜尋 / 看 PR）→ 走 **GitHub MCP，且 server 必須帶 `--read-only`**。該 flag 優先級最高（官方：write tools are skipped even if explicitly requested via `--tools`），寫入工具**根本不會出現在 tool list** —— 比逐條 deny 可靠（`repos`+`pull_requests` toolset 共 115 個 tool，其中 43 個是寫入類，列舉必漏）。MCP 的 token 用 `gh auth token` 產生，**不另開 PAT**。
+**寫**（開 PR / push / commit）→ 走 **`gh` CLI**，受本節三豁免制 + `pre-tool-bash.sh` 管；寫入本來就該經過人確認。
+❗ **`gh api` 等效寫入已封**：`gh api -X|--method PUT/POST/DELETE/PATCH` 由 `pre-tool-bash.sh` 硬擋（`gh pr merge` 的 deny 擋不住這條繞道）；GraphQL 天生走 POST 故設例外（含 `graphql` 不攔）。`gh repo delete` 一併硬擋（token 帶 `delete_repo` scope）。
+
 > commit / 發 PR / 開分支時 → Read `~/.claude/docs/git-pr-conventions.md`（Conventional Commits、PR title `[TICKET][SSR][PC][M]`、堆疊 PR、分支流程、Wave 串行）
 
 ### `gh pr review --approve`（嚴格護欄自動 approve）
@@ -39,7 +44,7 @@
 
 - ❗ **Slack / 任何對外發送——按內容性質分級（2026-07-16 拍板）**：
   - **結論性／總結性訊息**（進度回報、結果總結、公告、任何自行組織的自由文本對外訊息）→ **發送前一律呈現完整草稿、由使用者親自確認無誤（[Y]）後才可發送**；「發送這條 Slack」「給出總結」等動作語義只授權進入草稿流程，**不豁免草稿確認**。**唯一豁免 = 當前 turn 明確標示「直接發送」** → 逐字照稿直發＋事後回讀驗證。
-  - **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的固定格式單行回報（`#PR號 ✅ LGTM` / `💬 N findings`＋連結）。
+  - **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的**四階段固定格式單行回報**——S1 接手 `#PR號 👀 已接手，開始 review`（收到 Slack review 請求、抓到 PR 連結後**立即發**，先於任何 review 動作）／ S2 阻塞 `⚠️ 卡點`／ S3 自動修 nit push `🔧`／ S4 結論 `✅ LGTM` `💬 N findings`＋連結。階段表與觸發條件 → docs/agent-review-workflow.md。
   - 分類拿不準 → **一律當結論性處理**。「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）。逐條定義與反例 → security-details.md。
 - ❗ **/feedback**：嚴禁主動執行（預設附帶 24h/7d session transcript，含 KKday 內部敏感資料，有外洩風險）。使用者要回報問題 → 先說明附帶內容 → 明確確認後才執行。細節 → security-details.md。
 

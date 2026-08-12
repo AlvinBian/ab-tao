@@ -93,6 +93,30 @@ for pattern in "${BUILTIN_PATTERNS[@]}"; do
 	fi
 done
 
+# === gh 寫入通道守門（2026-08-06）─────────────────────────────────────
+# 背景：settings.json 的 `Bash(gh pr merge *)` deny 擋得住子命令，卻擋不住
+#       `gh api -X PUT /repos/{o}/{r}/pulls/{n}/merge` 這種等效寫入。
+# 規則：`gh api` 帶明確寫入方法（-X/--method PUT|POST|DELETE|PATCH）一律 block。
+# 例外：GraphQL 查詢天生走 POST，且多為讀取 → 命令含 `graphql` 時不攔
+#       （真要用 GraphQL mutation 請改走對應的 gh 子命令，會受各自的 deny 規則管）。
+# ⚠️ 必須錨定「命令位置」（行首或 ; & | ( ` 之後）：否則會誤擋「命令字串裡剛好提到這些字」的
+#    情況，例如 heredoc 內的 python 字面量、寫文件、grep 自己的規則。
+_GH_POS='(^|[;&|(`])[[:space:]]*gh[[:space:]]+'
+if printf '%s' "$COMMAND" | grep -Eiq "${_GH_POS}api([[:space:]]|$)"; then
+	if ! printf '%s' "$COMMAND" | grep -Eiq 'graphql'; then
+		if printf '%s' "$COMMAND" | grep -Eiq -- '(-X|--method)[[:space:]]*=?[[:space:]]*"?(PUT|POST|DELETE|PATCH)'; then
+			_log_rule_hit 'gh-api-write-method'
+			_block
+		fi
+	fi
+fi
+
+# `gh repo delete` — 不可逆且 token 帶 delete_repo scope，硬擋
+if printf '%s' "$COMMAND" | grep -Eiq "${_GH_POS}repo[[:space:]]+delete([[:space:]]|$)"; then
+	_log_rule_hit 'gh-repo-delete'
+	_block
+fi
+
 # 自訂 pattern 檔案（擴充，不取代內建）
 if [ -f "$PATTERNS_FILE" ]; then
 	while IFS= read -r pat; do

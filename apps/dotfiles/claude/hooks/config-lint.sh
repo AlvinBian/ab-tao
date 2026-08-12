@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # config-lint.sh — SessionStart 配置健檢（agnix-lite）
-# 偵測「文件寫了但不存在/不生效」的靜默失效（9 條規則），warn-only 不阻斷（永遠 exit 0）。
+# 偵測「文件寫了但不存在/不生效」的靜默失效（10 條規則），warn-only 不阻斷（永遠 exit 0）。
 # 7 天節流：marker ~/.claude/.ab-tao/config-lint-last-run 存 epoch，--force 繞過節流。
 # 用法：config-lint.sh [--force] [--target-root <path>]（預設 $HOME/.claude）
 
@@ -156,7 +156,7 @@ _r4() {
 				fi
 			fi
 			[ "$mounted" = false ] && \
-				_add_finding "R4" "幽靈 def：$(basename "$def_file") 的 $hid（$event）未見於 settings.json.hooks"
+				_add_finding "R4" "幽靈 def：$(basename "$def_file") 的 ${hid}（${event}）未見於 settings.json.hooks"
 		done < <(jq -r '.hooks[]? | [(.id // ""), (.hooks[0].command // "")] | @tsv' "$def_file" 2>/dev/null | sort -u)
 	done
 
@@ -222,7 +222,7 @@ _r6() {
 		val=$(jq -r --arg f "$field" '._abTao[$f] // empty' "$settings" 2>/dev/null)
 		[ -z "$val" ] && continue
 		if ! printf '%s' "|$legal|" | grep -qF "|$val|"; then
-			_add_finding "R6" "_abTao.${field} 值非法：$val（合法值：${legal//|/, }）"
+			_add_finding "R6" "_abTao.${field} 值非法：${val}（合法值：${legal//|/, }）"
 		fi
 	done
 }
@@ -344,6 +344,36 @@ _r9() {
 	fi
 }
 
+# ── R10: settings.json.hooks 事件名合法性（反向對賬，補 R4 缺口）──
+# R4 只從 defs/ 單向反查 settings.json，事件名打錯（如 DirectoryAdd）會靜默失效——
+# hook 永不觸發且無任何報錯。此處反向枚舉 settings.json.hooks 的 key 比對合法事件表。
+# 白名單動態取自 VS Code extension 隨版本更新的 settings schema，不硬編碼（避免新版新增事件後誤報）；
+# 未裝 extension / 抽不到 enum 則整條跳過，維持 warn-only 不阻斷的慣例。
+_r10() {
+	local settings="$TARGET_ROOT/settings.json"
+	[ -f "$settings" ] || return
+
+	# 取版本號最大的一份 extension schema
+	local schema
+	schema=$(find "$HOME/.vscode/extensions" -maxdepth 2 \
+		-name 'claude-code-settings.schema.json' -path '*anthropic.claude-code-*' 2>/dev/null |
+		sort -V | tail -1)
+	[ -n "$schema" ] && [ -f "$schema" ] || return
+
+	# 合法事件表：properties.hooks.propertyNames 底下所有 enum（不寫死 anyOf 索引，防 schema 結構微調）
+	local valid
+	valid=$(jq -r '.properties.hooks.propertyNames? // {} | [.. | objects | .enum? // empty | .[]] | unique[]' \
+		"$schema" 2>/dev/null)
+	[ -z "$valid" ] && return
+
+	local ev
+	while IFS= read -r ev; do
+		[ -z "$ev" ] && continue
+		printf '%s\n' "$valid" | grep -qxF "$ev" || \
+			_add_finding "R10" "settings.json.hooks 事件名不在合法表：${ev}（該 hook 永不觸發；合法表取自 $(basename "$(dirname "$schema")")）"
+	done < <(jq -r '.hooks // {} | keys[]' "$settings" 2>/dev/null)
+}
+
 # ── 主流程 ──────────────────────────────────────────────────────
 _r1
 _r2
@@ -354,6 +384,7 @@ _r6
 _r7
 _r8
 _r9
+_r10
 
 if [ "${#FINDINGS[@]}" -eq 0 ]; then
 	echo "[config-lint] OK：0 項靜默失效"

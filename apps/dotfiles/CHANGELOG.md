@@ -1,5 +1,26 @@
 # @ab-tao/dotfiles
 
+## 1.19.1
+
+### Patch Changes
+
+- Slack review 通知四階段 + 既有 hook / 守門改動收斂
+
+  **Slack review 回報階段化（本次主體）**
+
+  - `docs/agent-review-workflow.md`：新增「Slack 通知階段」階段表（S1 接手 Ack / S2 阻塞需澄清 / S3 自動修 nit push / S4 review 結論），四階段皆為單行固定格式、發在原 `thread_ts`。S1 於抓到 PR 連結當下即發，先於任何 review 動作；明確排除「中途進度回報」與「approve 單獨一則」以避免洗版；pr-watch 自動偵測 `headChanged` 的自發 re-review 不發 S1。
+  - `claude-md/05-security.md`：外部通訊紅線的「Review 工作流產物免確認直發」清單由兩則擴充為四階段，讓 S1 Ack 不被草稿確認流程卡住（Ack 的價值在即時性）。
+
+  **一併收斂的既有未提交改動**
+
+  - `hooks/directory-added.sh` + `defs/directory-added.json`：`DirectoryAdded` 事件（CC 2.1.219+），`/add-dir` 中途掛入目錄時注入該目錄記憶 / 計畫 / in-repo 慣例，補 `session-start.sh` 只認 startup cwd 的缺口。
+  - `hooks/pre-tool-pg-prod-guard.sh` + def：PROD 查詢 harness 層守門（非唯讀語句 deny、危險查詢 deny、其餘 ask）。
+  - `hooks/session-start-kkday-mcp.sh` + def：kkday MCP stack 狀態偵測，12h 節流提示。
+  - `hooks/config-lint.sh`：新增 R10 反向枚舉 `settings.json.hooks` key，比對 schema 動態抽出的合法事件表，防事件名打錯靜默失效。
+  - `hooks/pre-tool-bash.sh`：補 `gh api` 等效寫入與 `gh repo delete` 攔截。
+  - `settings.template.json`：deny 補 `Bash(gh repo delete *)`；移除 `CLAUDE_CODE_SUBAGENT_MODEL`（實測為硬鎖，會使 Agent 的 model 參數失效）。
+  - `docs/config-map.md`：補 `DirectoryAdded` 輸出契約與 R10 說明。
+
 ## 1.19.0
 
 ### Minor Changes

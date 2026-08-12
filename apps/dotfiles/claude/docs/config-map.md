@@ -138,6 +138,10 @@ Hook 定義存放於 repo 的 `apps/dotfiles/claude/hooks/defs/*.json`（每個 
 `d:setup` 執行時讀取所有 defs → 合併進 `~/.claude/settings.json` 的 `hooks` 欄位（id-dedup，ECC hooks 不受影響）。
 `d:hooks` 管理啟用 / 停用，直接讀寫 `settings.json`，無需單獨的 `hooks.json`。
 
+**`DirectoryAdded`（2026-07-28 新增，CC 2.1.219+）**：`/add-dir` 中途掛入新工作目錄時，由 `directory-added.sh` 注入該目錄的記憶索引 / 計畫 / in-repo `CLAUDE.md` 指引，補上 `session-start.sh` 只認 startup 當下 cwd 的缺口。此事件的輸出契約與其他 hook 不同——走頂層 `systemMessage`（不支援 `hookSpecificOutput.additionalContext`，也非 SessionStart 的 stdout 直注入），且 `matcher` 比對的是 `source` 欄位（`slash_command` / `register_repo_root`）而非路徑；官方文件尚未收錄，規格取自 CLI 二進位。
+
+**事件名合法性由 `config-lint.sh` R10 把關**：R4 只從 defs/ 單向反查 settings.json，事件名打錯會靜默失效（hook 永不觸發且無報錯）；R10 反向枚舉 `settings.json.hooks` 的 key，比對 VS Code extension `claude-code-settings.schema.json` 動態抽出的合法事件表（不硬編碼，隨版本自動跟上）。
+
 **不再部署到 `~/.claude/` 的檔案**：`hooks.json`、`mcp.yml`、`plugins.yml`、`profiles/`、`memory-templates/`
 
 ## 來源對照

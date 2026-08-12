@@ -1,0 +1,17 @@
+{
+  "event": "PreToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:pre:pg-prod-guard",
+      "description": "PROD DB 查詢守門：非唯讀語句 / 無 WHERE / 無 LIMIT / 前綴萬用字 LIKE 一律 deny，其餘 ask 需明確授權",
+      "matcher": "mcp__pg-prod__.*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/pre-tool-pg-prod-guard.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}

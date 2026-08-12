@@ -33,7 +33,7 @@
 
 ### 第一段：入口（決定 needSlack 與產物契約）
 - **PR 連結（直連）** → needSlack=false → 產物 = **僅 PR review（inline + summary），不發任何 Slack**
-- **Slack 連結** → 讀 thread 抓 PR 連結（無則停下問，禁臆測）→ needSlack=true → 產物 = PR review ＋ **在原 thread（thread_ts）回覆** Slack 總結
+- **Slack 連結** → 讀 thread 抓 PR 連結（無則停下問，禁臆測）→ needSlack=true → **抓到 PR 連結後立刻回 S1 接手 Ack（見第三段階段表），再開始 review** → 產物 = PR review ＋ **在原 thread（thread_ts）回覆** Slack 總結
 
 ### 第二段：Review + 降噪閘門
 1. `/code-review` 分析（tier 見下方 Review 深淺分流規格；`--effort` 覆寫）
@@ -51,12 +51,26 @@
   - 含 P0/P1：於上行後**每項追加 1 行**極簡描述（僅 P0/P1；P2/P3 只進 PR summary，不上 Slack）
   - 具體問題 / 代碼細節 / 修法**一律只寫在 PR 評論**；Slack 禁展開細節、禁重述 PR 內容（PR 才是持久審查記錄）
 
+#### Slack 通知階段（needSlack=true 才適用，共 4 階段；needSlack=false 一律全不發）
+
+| 階段 | 觸發時機 | 固定格式（單行，發在原 thread_ts） |
+|---|---|---|
+| **S1 接手 Ack** | 判定 needSlack=true 且已抓到 PR 連結的**當下**，**先於任何 review 動作**（含開 agent / 拉分支） | `#<PR號> 👀 已接手，開始 review` |
+| **S2 阻塞 / 需澄清** | thread 內找不到 PR 連結、`mergeable=CONFLICTING`、CI 失敗態、auto-approve 6 條件不符退回人工、PR 內容與需求矛盾需作者回答 | `#<PR號> ⚠️ <一句卡點>，需 <對方要做的動作>`（無 PR 號時省略 `#<PR號>`） |
+| **S3 自動修 nit 並 push** | pr-watch 閉環自行改碼 push 到對方分支後（**push 完立即發**，不等下一輪 review 結論） | `#<PR號> 🔧 已修 N 項 nit 並 push <短 sha>` |
+| **S4 review 結論** | 每輪 review（含 re-review）完成、**PR 內評論已貼出並取回連結**之後 | `#<PR號> ✅ LGTM（已 approve）` ／ `#<PR號> 💬 N findings（P2×3 / P3×1，非阻斷）＋連結` |
+
+- **S1 每輪一次**：同一 thread **被人明確要求** re-review（對方 @ 你 / 說「再 re 一下」）＝新一輪，重發 S1；同一輪內禁重發。pr-watch 自動偵測 `headChanged` 而**無人開口**的自發 re-review → **不發 S1**（沒人在等回應，發了是噪音），直接走 S4。
+- **S1 不等 review 跑完**：Ack 的價值是即時性，「先回再做」；若 review 極快（quick tier 已出結論）仍照發 S1 再發 S4，不合併成一則。
+- **不開的階段（明確排除，避免洗版）**：review 中途進度回報、approve 單獨一則（approve 併入 S4 結論行的「（已 approve）」）。
+- 四階段皆屬 **review 工作流固定格式產物 → 直接發送、免逐則確認**（§05）；任何超出上表格式的自由文本仍走草稿確認。
+
 ### 完成閘門（收尾必核，缺一不可標完成）
 - **【強制 · 最高權重】凡執行 review PR → PR 內必須至少留 1 條你貼的評論（summary 或 inline）並取回 comment 連結。** 這是 review 的**唯一不可省產物**：
   - net-new / 增量 finding **一律先落 PR**；Slack thread 回覆僅為指向與總結，**嚴禁以 Slack 回覆取代 PR 內評論**（PR 才是持久審查記錄，Slack 會被洗掉）。
   - 即使他人已 review、即使只補一項觀察、即使結論是 LGTM/APPROVE → 仍須在 PR 內留下對應評論。
   - 唯一例外：使用者明確指示「只在 Slack / 只回報給我、不要動 PR」→ 才可略過，且須在回覆聲明「依指示未貼 PR」。
-- needSlack=true → **PR review（PR 內評論）＋ Slack thread 回覆兩者皆已送出且取回連結**
+- needSlack=true → **S1 接手 Ack 已於開工前發出** ＋ **PR review（PR 內評論）＋ S4 結論回覆兩者皆已送出且取回連結**（期間若命中 S2 / S3 觸發條件，對應單行亦須已發）
 - needSlack=false → **僅 PR review（PR 內評論）；禁止額外發 Slack**
 - **自動 approve（嚴格護欄，完整 6 條件 + 安全閥見 §05）**：完成閘門過後，若 verdict=LGTM（本輪自審，非 GitHub reviewDecision 聚合值）＆ 0 P0/P1 ＆ 非 deep-tier 敏感路徑 ＆ `mergeable≠CONFLICTING` ＆ CI 非失敗態 ＆ 留言 commit 對齊當前 head → 自動 `gh pr review --approve`（免二次確認）；他人留有未撤銷 `CHANGES_REQUESTED` 或任一條件不符 → 退回人工並說明卡點。**只 approve、不 merge。**
 
@@ -128,6 +142,7 @@
 | 封鎖背景 Bash | `"Bash(run_in_background:true)"` |
 
 - **匹配規則**：值為精確匹配（`model:opus` 匹配別名 `opus`，不匹配完整 model ID）；`*` wildcard 如 `Agent(model:*)` 匹配「任何**顯式**指定 model 的呼叫」，但**不匹配省略 model 的呼叫**。每條規則只能限制一個 parameter（要同時擋 model + isolation 寫兩條）。
-- **與 `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` 互補**：env 設**預設值**（可被 prompt 顯式覆寫），`Agent(model:opus)` 設**硬封鎖**（擋死顯式升 opus）；env 已讓「未指定 model」走 sonnet，deny 補上「禁止顯式升級」這一缺口。
+- **`CLAUDE_CODE_SUBAGENT_MODEL` 已於 2026-07-28 移除**（原設 `sonnet`）。移除理由是實測推翻了原本「env 只是預設值、可被 prompt 顯式覆寫」的假設：✅ 三個 subagent 的 transcript（`projects/*/subagents/agent-*.jsonl` 的 `.message.model`）證實，帶 `model:"fable"`、帶 `model:"haiku"`、與完全不帶 model 參數三種呼叫**全部被壓成 `claude-sonnet-5`**——env 是**硬鎖**，Agent 工具的 model 參數在其存在時完全失效。這使 2.1.218 起改走背景 subagent 的 `/code-review` 品質上限被鎖死且無從突破。
+- **現行慣例（取代 env）**：subagent 預設**繼承 session model**；成本由呼叫端顯式調節——搜尋密集 / 大量 I/O 的 Explore、general-purpose 一律顯式帶 `model: "sonnet"`（或 `haiku`）；深度 review、done-gate critic、架構判斷則不指定，讓它繼承。`Agent(model:opus)` deny 保留為顯式升級的硬封鎖（繼承而來的 model 不受 deny 影響）。
 - **陷阱**：`command` / `file_path` / `path` / `url` 等已有 canonicalizing 規則的參數**不能**用此語法，誤寫會被忽略並觸發 startup warning。
 - 已落地：`Agent(model:opus)`（settings.template.json + 本地 settings.json，deny union 合併跨機一致）。`Agent(isolation:worktree)`／`Bash(run_in_background:true)` 為文件選項**未啟用**（會破壞 Workflow worktree 隔離與背景任務）。
