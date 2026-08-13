@@ -42,17 +42,10 @@ matchWhen:
 
 ### 編寫規範
 
-- 測試描述用繁體中文：`it('當使用者點擊時應發送事件')`
-- 檔案放原始碼旁（同目錄或 `__tests__/`）
-- 每個 `describe` / test class 對應一個 export / method
+檔案放原始碼旁（同目錄或 `__tests__/`），每個 `describe` / test class 對應一個 export / method。
 
-### Mock 原則
-
-| ✅ 應 Mock | ❌ 不 Mock |
-|-----------|-----------|
-| 外部 API 呼叫 | 內部邏輯 |
-| 第三方套件 | 純函式 |
-| 資料庫 / 檔案系統 | 計算邏輯 |
+> 命名語言、覆蓋率條數（happy path + ≥2 edge case + 1 error path）、Mock 政策、runner 選型等完整規範
+> **不在此重述**：編輯 `*.test.*` / `*.spec.*` / `__tests__/` 時由 `rules/testing.md` 自動注入，且比本處完整。
 
 ### 執行驗證
 

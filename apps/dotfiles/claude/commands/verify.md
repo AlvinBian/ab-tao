@@ -1,3 +1,8 @@
+---
+description: Spec 反向驗證：逐條確認 spec 的 Acceptance Criteria 是否真正被實作覆蓋，防止 spec drift
+argument-hint: [spec 檔路徑]
+---
+
 # /verify — Spec 反向驗證
 
 逐條確認 spec 的 Acceptance Criteria 是否真正被實作覆蓋，防止 spec drift。
