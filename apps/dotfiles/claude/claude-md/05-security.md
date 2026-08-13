@@ -1,7 +1,8 @@
 <security>
-- 禁止 console.log 輸出 token / userId / 敏感欄位；env 統一 .env 分層（development / staging / production）
+- 禁止 console.log 輸出 token / userId / 敏感欄位（完整例舉見 `docs/security-details.md`）；env 統一 .env 分層
 - API 授權方式依專案而定（JWT / httpOnly Cookie），未說明先問
-- 敏感操作（刪除、支付、權限變更）必須二次確認 —— 確認交互協議（二值 [Y/N] / 多值 AskUserQuestion 彈窗、觸發清單、豁免邊界）統一見 §14 confirmation_protocol
+- 敏感操作（刪除、支付、權限變更）必須二次確認 —— 確認交互協議見 §14
+- **禁止主動修改**：`~/.claude/memory/`、`projects/`（使用者私有資料）、`settings.json`（ab-tao d:setup 管理）、`.ab-tao/state.json`。禁改意圖＝禁止重整/刪除既有記憶樹，正常記憶寫入不在此限；已有 `pre-tool-edit.sh` 路徑攔截 backstop
 - bypassPermissions：禁止主動建議開啟、禁止用於繞過安全 hook；適用邊界 → Read `~/.claude/docs/security-details.md`
 
 ## Git 操作紅線（強規則）
@@ -13,28 +14,24 @@
 ### `gh pr merge`（硬禁，無豁免）
 ❌ 任何情境禁止 `gh pr merge` / 開啟 GitHub auto-merge（含 `autoCommit: true` 也不豁免）；merge 唯一方式 = GitHub UI 手動。
 
-### GitHub 存取：讀寫分離閉環（2026-08-06 建立）
-**讀**（查檔 / 搜尋 / 看 PR）→ 走 **GitHub MCP，且 server 必須帶 `--read-only`**。該 flag 優先級最高（官方：write tools are skipped even if explicitly requested via `--tools`），寫入工具**根本不會出現在 tool list** —— 比逐條 deny 可靠（`repos`+`pull_requests` toolset 共 115 個 tool，其中 43 個是寫入類，列舉必漏）。MCP 的 token 用 `gh auth token` 產生，**不另開 PAT**。
-**寫**（開 PR / push / commit）→ 走 **`gh` CLI**，受本節三豁免制 + `pre-tool-bash.sh` 管；寫入本來就該經過人確認。
-❗ **`gh api` 等效寫入已封**：`gh api -X|--method PUT/POST/DELETE/PATCH` 由 `pre-tool-bash.sh` 硬擋（`gh pr merge` 的 deny 擋不住這條繞道）；GraphQL 天生走 POST 故設例外（含 `graphql` 不攔）。`gh repo delete` 一併硬擋（token 帶 `delete_repo` scope）。
-
-> commit / 發 PR / 開分支時 → Read `~/.claude/docs/git-pr-conventions.md`（Conventional Commits、PR title `[TICKET][SSR][PC][M]`、堆疊 PR、分支流程、Wave 串行）
+### GitHub 存取：讀寫分離閉環
+**讀**（查檔 / 搜尋 / 看 PR）→ 走 **GitHub MCP，server 必須帶 `--read-only`**（寫入工具根本不出現在 tool list，比逐條 deny 可靠）。token 用 `gh auth token` 產生，**不另開 PAT**。
+**寫**（開 PR / push / commit）→ 走 **`gh` CLI**，受上方三豁免制 + `pre-tool-bash.sh` 管。
+❗ `gh api -X|--method PUT/POST/DELETE/PATCH` 已由 hook 硬擋（GraphQL 走 POST 故設例外）；`gh repo delete` 一併硬擋。
+> 為何不逐條 deny、flag 優先級的完整論證 → 調整 GitHub MCP 設定時 Read `~/.claude/docs/security-details.md`。
 
 ### `gh pr review --approve`（嚴格護欄自動 approve）
-先跑 `scripts/pr-auto-approve-check.sh <PR>` 取得 `{eligible, blockers}`——false 直接退回人工；true 才由模型核對 ①⑥ 與安全閥。
-6 條件**全部滿足**才自動執行（免二次確認），任一不符 → 退回人工 approve 並說明卡點（禁靜默略過）：
+先跑 `scripts/pr-auto-approve-check.sh <PR>` 取 `{eligible, blockers}`——false 直接退回人工。**6 條件全部滿足**才自動執行（免二次確認），任一不符 → 退回人工並說明卡點（禁靜默略過）：
 
-① **verdict = LGTM / SHIP**（無阻斷 finding）—— 僅採信**本輪由自己完成**的 review 結論；禁止以 GitHub `reviewDecision` 聚合值判斷（該值可能來自其他人類 reviewer，不代表自己已審過或已 approve）
-② **0 個 P0 / P1**（P2/P3/nit 不算阻斷）
-③ **非 deep-tier 敏感路徑**：PR 變更檔案路徑（大小寫不敏感、部分匹配）含以下關鍵字任一 → 一律退回人工，不論 verdict 多乾淨：
+① verdict = LGTM / SHIP，且**僅採信本輪由自己完成**的 review 結論（禁用 GitHub `reviewDecision` 聚合值判斷）
+② 0 個 P0 / P1
+③ **非敏感路徑**：變更檔案路徑（大小寫不敏感、部分匹配）含以下任一 → 一律退回人工，不論 verdict 多乾淨：
    `auth` / `payment` / `billing` / `migration` / `*.sql` / `crypto` / `permissions` / `.env` / `secrets`
-④ PR `mergeable ≠ CONFLICTING`（查 `mergeable` / `mergeStateStatus`）
-⑤ **CI / status checks 非失敗態**：必要 check 若為 failure/error → 退回人工；`mergeable` 乾淨不代表 CI 綠燈，兩者分開查
-⑥ **完成閘門已過且對齊當前 head**：PR 內已留 review 評論並取回連結，且該評論對應的 commit = PR **當前** head sha；approve 前 PR 又 push 新 commit（head 變動）→ 舊評論作廢，須先對新 commit 補留言完成 review 才能 approve
+④ `mergeable ≠ CONFLICTING`
+⑤ CI / status checks 非失敗態（與 `mergeable` 分開查）
+⑥ PR 內已留 review 評論，且該評論對應的 commit = PR **當前** head sha
 
-**安全閥（任一觸發即退回人工，優先權高於上述 6 條件全過）**：
-- 其他人類 reviewer 對現行 head（或未被後續 commit 明確覆蓋的版本）留有 `CHANGES_REQUESTED` 且未撤銷 → 不自動 approve
-- **只 approve 不 merge**；禁止批次 approve（一次僅限當前明確 review 的單一 PR）
+**安全閥（優先權高於上述 6 條件全過）**：其他人類 reviewer 對現行 head 留有未撤銷的 `CHANGES_REQUESTED` → 不自動 approve；**只 approve 不 merge**；禁止批次 approve。
 
 ### Force push / `--no-verify`
 ❌ Force push 前必先 `git branch backup/<original>`，禁直接覆蓋上游；`--no-verify` 僅限使用者明說 hotfix 緊急，自動化迴圈不豁免。
@@ -42,11 +39,14 @@
 
 ## 外部通訊紅線（強規則）
 
-- ❗ **Slack / 任何對外發送——按內容性質分級（2026-07-16 拍板）**：
-  - **結論性／總結性訊息**（進度回報、結果總結、公告、任何自行組織的自由文本對外訊息）→ **發送前一律呈現完整草稿、由使用者親自確認無誤（[Y]）後才可發送**；「發送這條 Slack」「給出總結」等動作語義只授權進入草稿流程，**不豁免草稿確認**。**唯一豁免 = 當前 turn 明確標示「直接發送」** → 逐字照稿直發＋事後回讀驗證。
-  - **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論（inline findings / review summary）、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的**四階段固定格式單行回報**——S1 接手 `#PR號 👀 已接手，開始 review`（收到 Slack review 請求、抓到 PR 連結後**立即發**，先於任何 review 動作）／ S2 阻塞 `⚠️ 卡點`／ S3 自動修 nit push `🔧`／ S4 結論 `✅ LGTM` `💬 N findings`＋連結。階段表與觸發條件 → docs/agent-review-workflow.md。
-  - 分類拿不準 → **一律當結論性處理**。「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）。逐條定義與反例 → security-details.md。
-- ❗ **/feedback**：嚴禁主動執行（預設附帶 24h/7d session transcript，含 KKday 內部敏感資料，有外洩風險）。使用者要回報問題 → 先說明附帶內容 → 明確確認後才執行。細節 → security-details.md。
+❗ **Slack / 任何對外發送——按內容性質分級**：
 
-> `settings.json` `permissions.deny` 另有 infra-destroy／publish 類規則（`terraform/pulumi/cdk destroy`、`docker compose down -v`、`npm/pnpm publish` 等），完整清單直接讀 `settings.json`；deny 為 union 合併，移除須雙邊（template+本地）手動。
+- **結論性／總結性訊息**（進度回報、結果總結、公告、任何自行組織的自由文本對外訊息）→ **發送前一律呈現完整草稿、由使用者親自確認（[Y]）後才可發送**；「發送這條 Slack」「給出總結」等動作語義只授權進入草稿流程，**不豁免草稿確認**。**唯一豁免 = 當前 turn 明確標示「直接發送」** → 逐字照稿直發＋事後回讀驗證。
+- **Review 工作流產物** → **可直接發送、免逐則確認**：GitHub PR review 評論、`gh pr review` 提交（auto-approve 仍受上方 6 條件護欄）、review 對應 Slack thread 的**四階段固定格式單行回報**（S1 接手 `👀` ／ S2 阻塞 `⚠️` ／ S3 自動修 nit `🔧` ／ S4 結論 `✅`｜`💬`）。❗ **S1 時效最高**：收到 Slack review 請求、抓到 PR 連結後**立即發**，先於任何 review 動作。
+- 分類拿不準 → **一律當結論性處理**。「通知一下」「讓 XX 知道」「幫我起草」≠ 授權（起草 ≠ 發送）。
+> 四階段完整格式字串、逐條定義與反例 → 執行 PR review 並需回報 Slack 時 Read `~/.claude/docs/agent-review-workflow.md` 與 `docs/security-details.md`。
+
+❗ **/feedback**：嚴禁主動執行（預設附帶 24h/7d session transcript，含 KKday 內部敏感資料）。使用者要回報問題 → 先說明附帶內容 → 明確確認後才執行。
+
+> `settings.json` `permissions.deny` 另有 infra-destroy／publish 類規則（`terraform/pulumi/cdk destroy`、`docker compose down -v`、`npm/pnpm publish` 等），完整清單直接讀 `settings.json`；deny 為 union 合併，移除須雙邊手動。
 </security>

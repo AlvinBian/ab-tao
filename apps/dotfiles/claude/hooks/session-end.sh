@@ -218,16 +218,19 @@ mkdir -p "$(dirname "$DECAY_REPORT")" 2>/dev/null
 printf '[session-end] decay report 已更新\n' >&2
 
 # ── Part 4: 清理 30 天以上的 .bak 備份 ──────────────────────────
-BACKUP_SECS=$(( 30 * 86400 ))
-find "$HOME/.claude" -maxdepth 1 -name "*.bak.*" 2>/dev/null | while IFS= read -r bak; do
-	ts=$(printf '%s' "$bak" | grep -o '\.[0-9]\{10,\}$' | tr -d '.' 2>/dev/null)
-	[ -z "$ts" ] && continue
-	age=$(( NOW - ts ))
-	if [ "$age" -gt "$BACKUP_SECS" ]; then
-		rm -f "$bak" 2>/dev/null && \
-			printf '[session-end] 已清理舊備份：%s\n' "$(basename "$bak")" >&2
-	fi
-done
+# 2026-08-13 重寫：原版三重失效，一個 .bak 都清不掉（4 個檔存活 7 天無人發現）——
+#   ① glob 只認 `*.bak.*`（點），但手動備份是 `*.bak-YYYYMMDD-HHMMSS`（連字號）→ 永不匹配
+#   ② -maxdepth 1 只掃頂層，漏掉 hooks/ claude-md/ rules/ docs/
+#   ③ 時間戳擷取假設結尾是 epoch，對 -YYYYMMDD-HHMMSS 拿到空值 → 即使匹配也被 continue 跳過
+# 改用檔案 mtime（-mtime +30）：同時繞開命名格式差異與跨平台 date 解析，且對未來的新命名也有效。
+while IFS= read -r bak; do
+	[ -z "$bak" ] && continue
+	rm -f "$bak" 2>/dev/null && \
+		printf '[session-end] 已清理舊備份：%s\n' "$(basename "$bak")" >&2
+done < <(find "$HOME/.claude" "$HOME/.claude/hooks" "$HOME/.claude/claude-md" \
+	"$HOME/.claude/rules" "$HOME/.claude/docs" \
+	-maxdepth 1 -type f \( -name '*.bak' -o -name '*.bak.*' -o -name '*.bak-*' \) \
+	-mtime +30 2>/dev/null)
 
 # ── Part 4b: security_warnings_state GC（30 天）──────────────────
 # 涵蓋 ~/.claude/security/ 與頂層 ~/.claude/ 兩處，json 與同名 .lock 一併清

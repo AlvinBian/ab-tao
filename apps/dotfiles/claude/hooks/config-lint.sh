@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 # config-lint.sh — SessionStart 配置健檢（agnix-lite）
-# 偵測「文件寫了但不存在/不生效」的靜默失效（10 條規則），warn-only 不阻斷（永遠 exit 0）。
+# 偵測「文件寫了但不存在/不生效」的靜默失效（11 條規則），warn-only 不阻斷（永遠 exit 0）。
 # 7 天節流：marker ~/.claude/.ab-tao/config-lint-last-run 存 epoch，--force 繞過節流。
 # 用法：config-lint.sh [--force] [--target-root <path>]（預設 $HOME/.claude）
 
 TARGET_ROOT="$HOME/.claude"
 FORCE=false
+
+# UTF-8 locale 偵測：R7 的字元數計算必須在 UTF-8 locale 下做。
+# 2026-08-13 修：原用 ${#desc}，但 hook 在 LC_CTYPE=C 環境執行時，bash 對多位元組
+# UTF-8 算的是 bytes 而非字元（實測「產出 / 改動 .xlsx / 試算表」→ C:33 / UTF-8:19），
+# 使「50–200 字元」的門檻對中文 description 實際只剩約 1/1.7。
+UTF8_LOCALE=$(locale -a 2>/dev/null | grep -ixE 'en_US\.UTF-?8|C\.UTF-?8' | head -1)
+: "${UTF8_LOCALE:=en_US.UTF-8}"
+
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--force)
@@ -169,6 +177,22 @@ _r4() {
 		[ -z "$script_path" ] && continue
 		[ -f "$script_path" ] || _add_finding "R4" "死掛載：settings.json 的 command 指向不存在的腳本：$cmd"
 	done < <(jq -r '.hooks // {} | to_entries[] | .value[] | .hooks[]?.command // empty' "$settings" 2>/dev/null | sort -u)
+
+	# 無主掛載：settings.json 掛了 hook，但 defs/ 沒有對應的自我文件化 def 檔。
+	# 2026-08-13 新增：原本 R4 只驗「defs → settings」單向，抓不到這個反向缺口
+	#（實例：pre-tool-pg-prod-guard、session-start-kkday-mcp 兩支活躍 hook 長期缺 def）。
+	local base_name
+	while IFS= read -r cmd; do
+		[ -z "$cmd" ] && continue
+		script_path=$(printf '%s' "$cmd" | sed -E 's/^bash[[:space:]]+//' | awk '{print $1}')
+		base_name=$(basename "$script_path" 2>/dev/null)
+		base_name="${base_name%.sh}"
+		[ -z "$base_name" ] && continue
+		# statusline 不走 hooks 事件機制、plugin 提供的 hook 不歸本地 defs 管
+		case "$script_path" in *"/plugins/"* | *statusline*) continue ;; esac
+		grep -rqlF "$(basename "$script_path")" "$defs_dir"/*.json 2>/dev/null || \
+			_add_finding "R4" "無主掛載：settings.json 掛了 $(basename "$script_path") 但 defs/ 無對應 def 檔"
+	done < <(jq -r '.hooks // {} | to_entries[] | .value[] | .hooks[]?.command // empty' "$settings" 2>/dev/null | sort -u)
 }
 
 # ── R5: settings.json._abTao.* 各鍵有無消費者 ────────────────────
@@ -249,12 +273,24 @@ _r7() {
 			c==2 { exit }
 			END { print buf }
 		' "$smd")
-		desc_len=${#desc}
+		# 必須在 UTF-8 locale 下數字元（見檔頭 UTF8_LOCALE 說明），
+		# 直接用 ${#desc} 或無 locale 的 wc -m 在 C locale 下都會算成 bytes。
+		desc_len=$(printf '%s' "$desc" | LC_ALL="$UTF8_LOCALE" wc -m | tr -d ' ')
 		if [ "$desc_len" -gt 0 ] && { [ "$desc_len" -lt 50 ] || [ "$desc_len" -gt 200 ]; }; then
-			# 觸發密集型 skill（「無感優先」類）刻意超長以保觸發召回，列 allow（上限仍受平台 1024 約束）
+			# 觸發密集型 skill（「無感優先」類）刻意超長以保觸發召回，豁免上限（仍受平台 1024 約束）。
+			# 2026-08-13 改為「句式自動偵測 + 人工白名單」雙軌：純人工白名單已落後過一次
+			# （只收錄 4 個，實際有 9 個同設計動機的 skill 超標，長期製造 9 筆噪音 finding）。
 			local len_allow="${R7_LEN_ALLOW:-agent-orchestration,kk-graph-v2,kkday-design-system,visual-explainer}"
-			printf '%s\n' "$len_allow" | tr ',' '\n' | grep -qxF "$name" || \
-				_add_finding "R7" "skills/$name/SKILL.md description 長度 ${desc_len} 字元，超出 50–200 範圍"
+			local trigger_dense=false
+			# 只有「超過上限」才適用豁免；低於 50 字元代表 description 太薄，一律照報。
+			if [ "$desc_len" -gt 200 ] && printf '%s' "$desc" \
+				| grep -qiE 'use (this )?when|use whenever|when the user (asks|wants|mentions)|觸發時機|觸發條件|關鍵字觸發|時觸發|當使用者|使用者(說|問|要求|提到)'; then
+				trigger_dense=true
+			fi
+			if [ "$trigger_dense" != true ]; then
+				printf '%s\n' "$len_allow" | tr ',' '\n' | grep -qxF "$name" || \
+					_add_finding "R7" "skills/$name/SKILL.md description 長度 ${desc_len} 字元，超出 50–200 範圍"
+			fi
 		fi
 
 		# 本文以 backtick 包住、含連字號的詞視為疑似 skill 名引用
@@ -314,7 +350,12 @@ _r9() {
 	local bak
 	while IFS= read -r bak; do
 		[ -n "$bak" ] && _add_finding "R9" "殘留備份檔：$bak"
-	done < <({ find "$top" -maxdepth 1 -iname '*.bak*' 2>/dev/null; find "$hooks_dir" -maxdepth 1 -iname '*.bak*' 2>/dev/null; })
+	# 2026-08-13 修：原本只掃 $top 與 $hooks_dir，claude-md/ 下的 .bak 永遠抓不到
+	#（實例：05-security.md.bak-20260806-180337 存活 7 天沒被任何機制發現）。
+	done < <({ find "$top" -maxdepth 1 -iname '*.bak*' 2>/dev/null; \
+		find "$hooks_dir" -maxdepth 1 -iname '*.bak*' 2>/dev/null; \
+		find "$TARGET_ROOT/claude-md" "$TARGET_ROOT/rules" "$TARGET_ROOT/docs" \
+			-maxdepth 1 -iname '*.bak*' 2>/dev/null; })
 
 	# "<name> <N>[.ext]" race-condition 殘留（頂層 + hooks/ + .ab-tao/）
 	local resid_dir resid bn
@@ -374,6 +415,26 @@ _r10() {
 	done < <(jq -r '.hooks // {} | keys[]' "$settings" 2>/dev/null)
 }
 
+# ── R11：source ↔ 部署端同步驗證 ────────────────────────────────
+# 2026-08-13 新增。背景：state.json 的 managed 為空物件（這台機器從未跑完整 d:setup），
+# 導致 session-start.sh 的 config drift 偵測迴圈 0 次 = 假保護，雙向 drift 長期無警告累積。
+# d:setup 本身不能用來修（需 TTY，且其「舊配置清理」推薦項會誤刪正確配置），
+# 改以 ab-tao 自帶的 verify-claude-sync.mjs（/check 的 Gate 7）作為 drift 偵測來源。
+_r11() {
+	local repo="$HOME/ab-projects/ab-tao"
+	local verifier="$repo/apps/dotfiles/bin/verify-claude-sync.mjs"
+	[ -f "$verifier" ] || return          # 沒有 source repo 的機器（純部署端）直接跳過
+	command -v node >/dev/null 2>&1 || return
+
+	local out summary
+	out=$(cd "$repo" && node "$verifier" 2>/dev/null)
+	[ $? -eq 0 ] && return                # exit 0 = 全部同步，無 finding
+
+	summary=$(printf '%s' "$out" | grep -m1 '結論' | sed 's/^[[:space:]]*//')
+	[ -z "$summary" ] && summary="verify-claude-sync 回報未同步"
+	_add_finding "R11" "source↔部署端同步：${summary}（詳情跑 node ${verifier#"$HOME"/})"
+}
+
 # ── 主流程 ──────────────────────────────────────────────────────
 _r1
 _r2
@@ -385,6 +446,7 @@ _r7
 _r8
 _r9
 _r10
+_r11
 
 if [ "${#FINDINGS[@]}" -eq 0 ]; then
 	echo "[config-lint] OK：0 項靜默失效"

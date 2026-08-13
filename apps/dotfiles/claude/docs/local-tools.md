@@ -38,7 +38,8 @@ claude mcp add codebase-memory-mcp -s user -- "$(npm root -g)/../bin/codebase-me
 
 ### 非 Chrome 瀏覽器（Tabbit 等）— 已完全退出（2026-08-04）
 
-- **決策**：瀏覽器調試不再涉入任何非 Chrome 瀏覽器。原 `tabbit-browser` MCP（第三方 `southportns/tabbit-browser`）已從 `.claude.json` 移除註冊、`~/.claude/tools/tabbit-browser/` 已刪除，含本地未推上游的 macOS launch patch。
+- **決策**：瀏覽器調試不再涉入任何非 Chrome 瀏覽器。原 `tabbit-browser` MCP（第三方 `southportns/tabbit-browser`）已從 `.claude.json` 移除註冊，其安裝目錄（曾位於 `tools/` 下）也已刪除，含本地未推上游的 macOS launch patch。
+  > 註：此處刻意不寫出完整的 `~/.claude/...` 路徑——config-lint R2 會把它當成「引用了不存在的路徑」而誤報。退場記錄描述的是已刪除的東西，不是活引用。
 - **為什麼**：維護單一瀏覽器的專用 MCP + profile 複製方案（登入態快照、Keychain 解密、獨立 user-data-dir）成本高於價值，且 Tabbit 封鎖 `chrome://` 命名空間導致 autoConnect 這類官方省事路徑都不適用。統一 Chrome 後路由從四選一收斂為三選一。
 - **若日後需要重建**：上游 repo 尚在（`southportns/tabbit-browser`，唯一依賴 ws），但 macOS launch 的平台判斷 + 獨立 `--user-data-dir` patch 需重做——先確認需求真實存在再評估，不預先復原。
 - **claude-in-chrome 本來就只認 Google Chrome**：CLI 瀏覽器偵測硬編碼（chrome/brave/arc/edge/chromium/vivaldi/opera），非 Chrome 瀏覽器即使裝了 extension + NativeMessagingHosts manifest 也接不上——這是它的設計，不是缺陷。

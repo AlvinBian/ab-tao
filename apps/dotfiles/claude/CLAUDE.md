@@ -19,7 +19,6 @@
 ## 狀態與配置
 
 @claude-md/08-state-system.md
-@claude-md/10-config-management.md
 
 ## 邊界與審查
 
@@ -38,3 +37,5 @@
 - 查 ~/.claude 結構 / 來源對照 → Read `~/.claude/docs/config-map.md`
 - 安裝 / 排查本地工具（codebase-memory、browser-harness、agnix…）→ Read `~/.claude/docs/local-tools.md`
 - RTK bash 輸出壓縮說明 → Read `~/.claude/docs/rtk.md`
+- 建立 / 更新 Confluence 頁面 → Read `~/.claude/rules/confluence.md`
+- 產出 / 改動 .xlsx / 試算表 → Read `~/.claude/rules/excel-ooxml.md`

@@ -14,21 +14,11 @@ SOURCE=$(printf '%s' "$INPUT" | jq -r '.source // empty' 2>/dev/null)
 CLAUDE_DIR="$HOME/.claude"
 AB_TAO_DIR="$CLAUDE_DIR/.ab-tao"
 
-# ── Part 1: 專案提醒注入 ──────────────────────────────────────────
-REPO_NAME=$(basename "${CWD%/}")
-if [ -n "$REPO_NAME" ]; then
-	PROMPT_FILE="$CLAUDE_DIR/project-prompts/${REPO_NAME}.md"
-	if [ -f "$PROMPT_FILE" ]; then
-		LOCAL_MD="${CWD}/CLAUDE.local.md"
-		if cp "$PROMPT_FILE" "$LOCAL_MD" 2>/dev/null; then
-			EXCLUDE="${CWD}/.git/info/exclude"
-			if [ -f "$EXCLUDE" ]; then
-				grep -qxF 'CLAUDE.local.md' "$EXCLUDE" 2>/dev/null || \
-					echo 'CLAUDE.local.md' >> "$EXCLUDE"
-			fi
-		fi
-	fi
-fi
+# ── Part 1: 專案提醒注入 ── 已於 2026-08-13 移除 ──────────────────
+# 原機制：cp ~/.claude/project-prompts/<repo>.md → <cwd>/CLAUDE.local.md
+# 移除理由：① project-prompts/ 目錄從未建立，恆為 no-op ② 無任何文件描述如何啟用
+#           ③ 該 cp 會無條件覆蓋使用者手寫的 CLAUDE.local.md，是潛在資料遺失路徑
+# 若日後要復活此功能：須同時補目錄、文件、範例，且 cp 前必須先偵測既有檔案並詢問。
 
 # ── Part 2: 冷啟動 briefing（L1-L2）────────────────────────────────
 # ⚠️ briefing 必須走 stdout（SessionStart 官方特例：stdout 直注入 context）；
@@ -72,8 +62,17 @@ if [ -d "$PROJ_TASKS" ]; then
 fi
 
 # ── Part 3: config drift 偵測 ──────────────────────────────────────
+# ⚠️ 這段只在 state.json 的 managed 有內容時才有意義。若 managed 為空（例如機器從未跑完整
+#    d:setup），下面整個迴圈跑 0 次 —— 那不是「沒有 drift」，是「根本沒檢查」。
+#    2026-08-13 前這裡靜默通過了好幾個月，讓人誤以為有 drift 保護。現在改為明講失效，
+#    真正的偵測已下放給 config-lint 的 R11（呼叫 verify-claude-sync.mjs）。
 STATE_FILE="$AB_TAO_DIR/state.json"
 if [ -f "$STATE_FILE" ]; then
+	managed_n=$(jq -r '.managed | length' "$STATE_FILE" 2>/dev/null || echo 0)
+	[[ "$managed_n" =~ ^[0-9]+$ ]] || managed_n=0
+	if [ "$managed_n" -eq 0 ]; then
+		printf '[冷啟動] ℹ️  managed 追蹤為空 → 本段 drift 偵測不生效；drift 改由 config-lint R11 負責\n'
+	fi
 	drift_count=0
 	ghost_count=0
 	while IFS= read -r rel_path; do

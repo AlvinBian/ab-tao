@@ -21,19 +21,24 @@
 │   ├── 14-confirmation.md       確認機制（二值 [Y/N] / 多值 AskUserQuestion + 授權豁免 + 對外通訊硬例外）尾錨群
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
-├── rules/                       # 條件載入（paths: frontmatter）10 檔
+├── rules/                       # 13 檔（11 個 paths: 自動觸發 + 2 個 CLAUDE.md 指標載入）
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
 │   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
+│   ├── confluence.md            ⚠️ 無 paths:，靠 CLAUDE.md 參考資源指標載入
+│   ├── excel-ooxml.md           ⚠️ 無 paths:，靠 CLAUDE.md 參考資源指標載入
 │   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
 │   ├── html-report.md           paths: **/*.html（HTML 報告輸出規範）
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
 │   ├── php-codeigniter.md       paths: application/**/*.php src/**/*.php
 │   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
 │   ├── sql.md                   paths: *.sql queries/ sql/
+│   ├── testing.md               paths: *.test.* *.spec.* __tests__/ test/
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
+│                                ⚠️ 指標載入的兩檔：config-lint R2 掃描範圍不含頂層 CLAUDE.md，
+│                                   指標行若遺失會靜默斷鏈，改動 CLAUDE.md 後須手動確認
 │
-├── docs/                        # 參考文件（指針載入，非規則）21 檔（2026-07-16 清退 10 個孤兒/過時檔）
+├── docs/                        # 參考文件（指針載入，非規則）18 檔（2026-07-16 清退 10 個孤兒/過時檔）
 │   │
 │   │   # ── CLAUDE.md 指針目標（4）──
 │   ├── rtk.md                   RTK 工具 + token 預算影響
