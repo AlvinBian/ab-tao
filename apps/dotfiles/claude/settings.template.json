@@ -1,6 +1,34 @@
 {
   "model": "opusplan",
   "effortLevel": "high",
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "allowWrite": [
+        "~/.claude",
+        "~/ab-projects",
+        "~/Kkday/projects",
+        "~/.config",
+        "~/.cargo",
+        "~/.rustup",
+        "~/Library/pnpm",
+        "~/.npm",
+        "~/Library/Caches",
+        "~/Library/Developer"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "registry.npmjs.org",
+        "crates.io",
+        "*.crates.io"
+      ]
+    }
+  },
   "permissions": {
     "defaultMode": "bypassPermissions",
     "deny": [

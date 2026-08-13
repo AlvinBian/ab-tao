@@ -21,21 +21,25 @@ export const GUI_EDITOR_PATHS = {
 
 const GUI_EDITOR_LABELS = { cursor: 'Cursor', kiro: 'Kiro', vscode: 'VS Code' }
 
-// ── 13 個預設危險指令模式（ERE 正則）──────────────────────────────
+// ── 預設危險指令模式（ERE 正則，部署到 ~/.claude/hooks/.dangerous-patterns）──
+//
+// ⚠️ 2026-08-12 大幅精簡。原本 13 條當中有 10 條與 pre-tool-bash.sh 的
+//    BUILTIN_PATTERNS 完全重複，另外 3 條（rm -rf / rm -fr / git push --force）
+//    現已由該腳本直接處理（見其「高風險命令」段）。
+//
+// ⚠️ 更重要的是：在此之前這個檔案**從未真正生效過** —— pre-tool-bash.sh 的
+//    pattern 驗證拿空字串去比對，任何正常 regex 都被判成「無效」而略過（同日修正）。
+//    修好之後這裡的每一條都會真的擋人，所以**新增前務必確認不會誤傷日常操作**：
+//    廣義的 'rm[[:space:]]+-[a-zA-Z]*[rR]…' 會擋掉 rm -rf node_modules，
+//    字面的 'rm -rf /' 當成 ERE 則會匹配到 rm -rf /tmp/foo —— 兩種舊寫法都不能用。
+//
+// 只保留 BUILTIN_PATTERNS 沒涵蓋的缺口：
 const DEFAULT_DANGEROUS_PATTERNS = [
-  'sudo[[:space:]]+rm[[:space:]]',
-  'rm[[:space:]]+-[a-zA-Z]*[rR][a-zA-Z]*[fF]',
-  'rm[[:space:]]+-[a-zA-Z]*[fF][a-zA-Z]*[rR]',
-  ':[[:space:]]*\\(\\)[[:space:]]*\\{',
-  'chmod[[:space:]]+0*777',
-  'dd[[:space:]].*if=/dev/(zero|random|urandom)',
-  'mkfs\\.',
-  '(^|[[:space:]])shred[[:space:]]',
-  '(^|[[:space:]])wipefs([[:space:]]|$)',
-  'git[[:space:]].*push[[:space:]].*(--force|-f[[:space:]]|-f$)',
-  'DROP[[:space:]]+TABLE',
-  'curl[[:space:]].*\\|[[:space:]]*(bash|sh)',
-  'eval[[:space:]].*base64',
+  // 寫入 raw disk device（BUILTIN 只擋 > /etc/）
+  '>[[:space:]]*/dev/(sd[a-z]|nvme[0-9]|disk[0-9])',
+  'dd[[:space:]].*of=/dev/(sd[a-z]|nvme[0-9]|disk[0-9])',
+  // eval 直接吃網路內容（BUILTIN 只擋 eval+base64 與 eval $(…)）
+  'eval[[:space:]].*(curl|wget)',
 ]
 
 // ── 偏好預設值 ────────────────────────────────────────────────────
