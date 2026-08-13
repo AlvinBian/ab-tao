@@ -8,7 +8,7 @@ origin: ECC
 
 # Deep Research
 
-Produce thorough, cited research reports from multiple web sources using firecrawl and exa MCP tools.
+Produce thorough, cited research reports from multiple web sources. On this machine the available search MCP is **`anysearch`**; `firecrawl` / `exa` are optional and currently not registered (see MCP Requirements).
 
 ## When to Activate
 
@@ -20,11 +20,14 @@ Produce thorough, cited research reports from multiple web sources using firecra
 
 ## MCP Requirements
 
-At least one of:
-- **firecrawl** — `firecrawl_search`, `firecrawl_scrape`, `firecrawl_crawl`
-- **exa** — `web_search_exa`, `web_search_advanced_exa`, `crawling_exa`
+**Primary (configured on this machine): `anysearch`**
+- `search(query)` / `batch_search(queries)` — general web search; use `batch_search` to fan out sub-questions in one call
+- `extract(url)` — pull full page content for deep reads
+- `get_sub_domains(domains)` — only when the query has structured identifiers (ticker, DOI, CVE, IATA…), to discover the right vertical before searching
 
-Both together give the best coverage. Configure in `~/.claude.json` or `~/.codex/config.toml`.
+**Optional, not configured here** — `firecrawl` (`firecrawl_search` / `firecrawl_scrape` / `firecrawl_crawl`) and `exa` (`web_search_exa` / `crawling_exa`). The examples below still show them for portability, but on this machine **they do not exist** — using them fails. Map to `anysearch`: `*_search` → `search`/`batch_search`, `*_scrape`/`crawling_*` → `extract`.
+
+Before relying on any of the optional tools, confirm it is actually registered; if not, use `anysearch` and say which source the findings came from.
 
 ## Workflow
 

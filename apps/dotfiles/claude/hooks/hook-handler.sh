@@ -78,9 +78,19 @@ _flush_queue() {
 	mv "$QUEUE_FILE" "$flushing" 2>/dev/null || return
 	rm -f "$QUEUE_TIME"
 	n=$(wc -l <"$flushing" | tr -d '[:space:]')
-	items=$(tr '\n' '·' <"$flushing" | sed 's/·$//')
+	# 2026-08-13：格式對齊 session-end.sh / stop.sh 的「前 5 項 + 溢出計數」。
+	# 三個 hook 共用同一個 QUEUE_FILE 與 LOCK_DIR，先前這裡是 `cut -c1-120` 壓成單行，
+	# 導致使用者看到哪種格式取決於「誰先搶到鎖」而非設計決策。
+	# 保留本檔原有的 mv → .flushing.$$ 原子搬移（另兩份是先讀後 rm，
+	# 兩者之間 append 的項目會遺失），此處只換呈現，不動競態處理。
+	if [ "$n" -le 5 ]; then
+		items=$(sed 's/^/• /' "$flushing")
+	else
+		items=$(head -5 "$flushing" | sed 's/^/• /')
+		items="${items}"$'\n'"  …還有 $(( n - 5 )) 項"
+	fi
 	rm -f "$flushing"
-	_notify "$(printf '%s' "$items" | cut -c1-120)" "${n} 項活動"
+	_notify "$items" "${n} 項活動"
 }
 
 # 持鎖版 flush（供 Stop/SessionEnd 直接呼叫）

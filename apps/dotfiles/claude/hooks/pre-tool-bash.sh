@@ -81,8 +81,12 @@ BUILTIN_PATTERNS=(
 	'(^|[[:space:]])shred[[:space:]]'
 	'(^|[[:space:]])wipefs([[:space:]]|$)'
 	'DROP[[:space:]]+TABLE'
-	'curl[[:space:]].*\|[[:space:]]*(bash|sh)'
-	'wget[[:space:]].*\|[[:space:]]*(bash|sh)'
+	# ⚠️ 結尾必須是字界（2026-08-13 實測修正）：原本沒有 `([[:space:]]|$|;|&)`，
+	#    於是 `curl … | sha256sum` 與 `| shasum -a 256` 被當成 `| sh` 擋下 ——
+	#    而「下載後算 checksum」正是最該鼓勵的動作，擋它純屬反效果。
+	#    順手接住 `| sudo bash`（原本漏的真缺口）。
+	'curl[[:space:]].*\|[[:space:]]*(sudo[[:space:]]+)?(bash|sh|zsh)([[:space:]]|$|;|&)'
+	'wget[[:space:]].*\|[[:space:]]*(sudo[[:space:]]+)?(bash|sh|zsh)([[:space:]]|$|;|&)'
 	'eval[[:space:]].*base64'
 	'eval[[:space:]]*\$\('
 	# 破壞性 git 操作（stream-rule §6 的 hook 強制兜底）
@@ -93,9 +97,8 @@ BUILTIN_PATTERNS=(
 	# gstack guard — 高風險操作（網路發布）
 	# 註：--force-with-lease 不再攔截（W3）——上方 rewrite 規則已建議改用它，
 	# 若再硬擋形成「叫你用又擋你用」的自相矛盾；純 --force 攔截仍保留（見上）
-	'npm[[:space:]]+publish([[:space:]]|$)'
-	'yarn[[:space:]]+publish([[:space:]]|$)'
-	'pnpm[[:space:]]+publish([[:space:]]|$)'
+	# npm/yarn/pnpm publish 移到迴圈之後單獨處理 —— 需要 --dry-run 例外，
+	# 而這個陣列是「命中即擋」，表達不了例外。
 	'npx[[:space:]]+.*--yes[[:space:]].*exec'
 	'>[[:space:]]*/etc/'
 	'chmod[[:space:]]+[0-7]*[2367][[:space:]]'
@@ -129,6 +132,17 @@ fi
 if printf '%s' "$COMMAND" | grep -Eiq "${_GH_POS}repo[[:space:]]+delete([[:space:]]|$)"; then
 	_log_rule_hit 'gh-repo-delete'
 	_block
+fi
+
+# 套件發布（網路不可逆）——但 `--dry-run` 只是預演，不該擋。
+# ⚠️ 2026-08-13 實測：原本放在 BUILTIN_PATTERNS 裡（命中即擋、表達不了例外），
+#    於是 `npm publish --dry-run` 這個「發布前該做的檢查」反而被攔下來。
+#    順帶加上命令位置錨定，讓文件裡提到 npm publish 不再誤擋。
+if printf '%s' "$COMMAND" | grep -Eiq '(^|[;&|`])[[:space:]]*(npm|yarn|pnpm)[[:space:]]+publish([[:space:]]|$)'; then
+	if ! printf '%s' "$COMMAND" | grep -Eiq -- '--dry-run'; then
+		_log_rule_hit 'package-publish'
+		_block "套件發布已攔截。確認要發布請在終端直接執行（--dry-run 預演不受限）。"
+	fi
 fi
 
 # 自訂 pattern 檔案（擴充，不取代內建）
