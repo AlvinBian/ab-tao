@@ -79,7 +79,11 @@ _r1() {
 # 抽取 ~/.claude/...、hooks/...、scripts/...、docs/... 形式的路徑引用
 # （charset 限定 [A-Za-z0-9_./-]，天然排除 URL query/@scope 與含 <> {} 的範例佔位）
 _r2() {
-	local files=("$TARGET_ROOT"/claude-md/*.md "$TARGET_ROOT"/docs/*.md)
+	# 2026-08-13 補頂層 CLAUDE.md：`rules/confluence.md` 與 `rules/excel-ooxml.md`
+	# 沒有 paths: frontmatter，**唯一**載入途徑就是 CLAUDE.md「參考資源」段的指標行。
+	# 原本 R2 只掃 claude-md/ 與 docs/，看不到 CLAUDE.md —— 指標行一旦遺失（例如
+	# d:setup 用舊 template 覆蓋），那兩個規則檔會靜默失效，而唯一該抓到的規則掃不到。
+	local files=("$TARGET_ROOT"/CLAUDE.md "$TARGET_ROOT"/claude-md/*.md "$TARGET_ROOT"/docs/*.md)
 	local f raw rel target
 	for f in "${files[@]}"; do
 		[ -f "$f" ] || continue
@@ -102,6 +106,22 @@ _r2() {
 			fi
 		done < <(grep -ohE '~/\.claude/[A-Za-z0-9_./-]+|(hooks|scripts|docs)/[A-Za-z0-9_./-]+' "$f" 2>/dev/null | sort -u)
 	done
+
+	# 反向：無 paths: 的 rules 檔必須被 CLAUDE.md 指標引用，否則永遠不會被載入。
+	# 上面那圈驗的是「引用 → 檔案存在」，抓不到「檔案還在、指標行被刪」——
+	# 而後者正是這類檔案的實際失效路徑（d:setup 用舊 template 覆蓋 CLAUDE.md 即可觸發），
+	# 且失效是靜默的：規則檔好端端躺著，只是再也沒有任何東西會去讀它。
+	local top_md="$TARGET_ROOT/CLAUDE.md"
+	if [ -f "$top_md" ]; then
+		local rf rname
+		for rf in "$TARGET_ROOT"/rules/*.md; do
+			[ -f "$rf" ] || continue
+			grep -qE '^paths:' "$rf" 2>/dev/null && continue   # 有 paths: 者由 harness 自動觸發
+			rname=$(basename "$rf")
+			grep -qF "rules/$rname" "$top_md" 2>/dev/null || \
+				_add_finding "R2" "rules/$rname 無 paths: 且未被 CLAUDE.md 指標引用 → 永遠不會被載入"
+		done
+	fi
 }
 
 # ── R3: 文件內 `q.sh <子指令>` 引用是否存在於 q.sh 的 case 分支 ─────
