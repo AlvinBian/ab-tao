@@ -5,7 +5,8 @@
 │
 ├── CLAUDE.md                    # ≤80 行，純 @import 索引
 │
-├── claude-md/                   # 核心規則模組（always-on，透過 @import 載入）13 檔（00–05, 08, 10–15；09 已併入 08、06→rules/vue-nuxt、07→hooks 已下放）
+├── claude-md/                   # 核心規則模組（always-on，@import 載入）12 檔（00–05, 08, 11–15）
+│                                #   常駐約 27.7 KB ≈ 9.2k tokens；退場史見 claude-md/README.md
 │   ├── README.md
 │   ├── 00-identity.md           首錨定
 │   ├── 01-language.md
@@ -14,20 +15,25 @@
 │   ├── 04-verification.md       查證規則 + Figma MCP + i18n 缺項
 │   ├── 05-security.md           安全規範 + Git 操作紅線 + 外部通訊紅線（對外發送分級制）
 │   ├── 08-state-system.md       Tasks/Plans/Memory 邊界 + 溫層架構 + 冷啟動（09 已併入）
-│   ├── 10-config-management.md  全域 ⇄ 專案 ⇄ ab-tao 分工
+│   │                            （10-config-management 已於 2026-08-13 退場：
+│   │                             禁改清單併入 05、優先級鏈併入 12）
 │   ├── 11-audit-system.md
 │   ├── 12-exceptions.md
 │   ├── 13-agent-orchestration.md  尾錨定（資源速查 + 調度規則核心；PR review/tier/param 已拆 docs/agent-review-workflow.md）
 │   ├── 14-confirmation.md       確認機制（二值 [Y/N] / 多值 AskUserQuestion + 授權豁免 + 對外通訊硬例外）尾錨群
 │   └── 15-self-correction.md    尾錨群（自我糾正 + 數值估算驗算）
 │
-├── rules/                       # 13 檔（11 個 paths: 自動觸發 + 2 個 CLAUDE.md 指標載入）
+├── rules/                       # 13 檔（10 個 paths: 自動觸發 + 3 個 CLAUDE.md 指標載入）
 │   ├── api-and-data.md          paths: src/api/ routes/ *.sql migrations/
 │   ├── barrel-exports.md        paths: *.vue *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   ├── confluence.md            ⚠️ 無 paths:，靠 CLAUDE.md 參考資源指標載入
 │   ├── excel-ooxml.md           ⚠️ 無 paths:，靠 CLAUDE.md 參考資源指標載入
 │   ├── git-and-pr.md            paths: **/.github/** CHANGELOG* COMMIT_EDITMSG
-│   ├── html-report.md           paths: **/*.html（HTML 報告輸出規範）
+│   ├── html-report.md           ⚠️ 無 paths:，靠 CLAUDE.md 參考資源指標載入
+│   │                               （2026-08-13 由 `**/*.html` 改制：本檔 25 KB，
+│   │                                原設定會在讀到 node_modules / build 產物裡的
+│   │                                任何 HTML 時整份注入；且它規範的是「產出報告」
+│   │                                這個意圖性動作，與 paths 的附帶觸發語義不合）
 │   ├── migrations.md            paths: migrations/ *.sql prisma/ drizzle/
 │   ├── php-codeigniter.md       paths: application/**/*.php src/**/*.php
 │   ├── reuse-and-decoupling.md  paths: *.vue *.ts *.tsx *.js *.jsx composables/ stores/
@@ -35,8 +41,9 @@
 │   ├── testing.md               paths: *.test.* *.spec.* __tests__/ test/
 │   ├── typescript.md            paths: *.ts *.tsx *.js *.jsx *.mjs *.cjs
 │   └── vue-nuxt.md              paths: *.vue *.css *.scss *.sass nuxt.config.* composables/
-│                                ⚠️ 指標載入的兩檔：config-lint R2 掃描範圍不含頂層 CLAUDE.md，
-│                                   指標行若遺失會靜默斷鏈，改動 CLAUDE.md 後須手動確認
+│                                ✅ 指標載入的三檔已有安全網：config-lint R2 自 2026-08-13 起
+│                                   雙向檢查（掃描清單含頂層 CLAUDE.md；且無 paths: 的 rules 檔
+│                                   若未被 CLAUDE.md 引用會直接報「永遠不會被載入」）
 │
 ├── docs/                        # 參考文件（指針載入，非規則）18 檔（2026-07-16 清退 10 個孤兒/過時檔）
 │   │
@@ -77,7 +84,7 @@
 │   ├── silent-failure-hunter.md 無聲失敗 / 錯誤吞噬專項
 │   └── type-design-analyzer.md  型別設計分析（不變量 + 封裝）
 │
-├── commands/                    # 13 commands（review-pr 併入 code-review；plan/verify/quality-gate 已移除；chain-* 歸檔 → commands-archive/）
+├── commands/                    # 15 commands（review-pr 併入 code-review；plan/quality-gate 已移除；verify 於 2026-08-13 補回；chain-* 歸檔）
 │   ├── ai.md
 │   ├── audit.md                 四種審查模式入口（原 claude-md/11）
 │   ├── check.md                 Build Fix + Quality Gate + 9-gate --gates
@@ -86,15 +93,17 @@
 │   ├── feature-dev.md
 │   ├── handoff.md               清 context / compact 前交接班（與 /resume 成對）
 │   ├── pr-stack.md
+│   ├── pr-watch.md              PR review 閉環追蹤（30 KB，2026-08-13 才回寫 source）
 │   ├── santa-loop.md
 │   ├── slack.md                 Slack 訊息助手 v4.2.0（雙軌 lint + 分級制授權）
 │   ├── specify.md               需求 → 結構化 spec（AC + non-goals）
 │   ├── test.md
+│   ├── verify.md                spec AC 反向驗證（13-agent-orchestration 資源速查表引用）
 │   └── worklog.md
 │
-├── skills/                      # 22 skills 受 ab-tao 管理（c:skills 盤點；⚠️ skills/README.md 索引已知過時待重建）
+├── skills/                      # 22 skills（c:skills 盤點；README.md 索引已於 2026-08-13 重建為 22/22 精確）
 │
-├── hooks/                       # 9 hook defs（事件驅動，零 context cost）
+├── hooks/                       # 15 hook defs / 17 支 .sh（事件驅動，零 context cost）
 │   ├── defs/                    # Hook 定義（每個 hook 一個 JSON，source of truth）
 │   │   ├── session-start.json        ab-tao:session:start
 │   │   ├── pre-tool-bash.json        ab-tao:pre:bash
@@ -121,7 +130,7 @@
 ├── tasks/                       # 原生 Claude Code tasks（Jan 2025+）
 ├── plans/                       # 原生 plansDirectory（Feb 2026+）
 │
-├── settings.json                # 主配置：hooks（9 條合併）+ mcpServers + model + env
+├── settings.json                # 主配置：hooks（9 類事件）+ model + env（mcpServers 實際在 ~/.claude.json）
 ├── settings.local.json          # 機器獨立（不 sync，gitignored）
 │
 └── .ab-tao/                     # ab-tao 運行時資料夾

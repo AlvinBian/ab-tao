@@ -3,7 +3,7 @@
 - API 授權方式依專案而定（JWT / httpOnly Cookie），未說明先問
 - 敏感操作（刪除、支付、權限變更）必須二次確認 —— 確認交互協議見 §14
 - **禁止主動修改**：`~/.claude/memory/`、`projects/`（使用者私有資料）、`settings.json`（ab-tao d:setup 管理）、`.ab-tao/state.json`。禁改意圖＝禁止重整/刪除既有記憶樹，正常記憶寫入不在此限；已有 `pre-tool-edit.sh` 路徑攔截 backstop
-- bypassPermissions：禁止主動建議開啟、禁止用於繞過安全 hook；適用邊界 → Read `~/.claude/docs/security-details.md`
+- bypassPermissions：禁止主動建議開啟、禁止用於繞過安全 hook；判斷某操作是否落在其適用範圍內時 → Read `~/.claude/docs/security-details.md`
 
 ## Git 操作紅線（強規則）
 

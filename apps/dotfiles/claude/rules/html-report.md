@@ -1,9 +1,18 @@
 ---
 name: html-report
-description: HTML 報告/展示文稿輸出規範 — kebab-case 命名、結論先行、寬版心＋左側導航欄、全標題錨點分享、流程圖原尺寸、自包含單檔、交付檢核。
-paths:
-  - "**/*.html"
+description: HTML 報告/展示文稿輸出規範 — kebab-case 命名、結論先行、寬版心＋左側導航欄、全標題錨點分享、流程圖原尺寸、自包含單檔、交付檢核。產出 HTML 報告時載入。
 ---
+
+<!--
+  2026-08-13：移除 `paths: ["**/*.html"]`，改為 CLAUDE.md 指標載入。
+  原因：本檔 25 KB（rules/ 總量 40%），而 `**/*.html` 無排除 —— 讀到 node_modules、
+  build 產物、測試 fixture 裡的任何 HTML 都會整份注入（本專案 tracked HTML 39 個，
+  node_modules 下 189+）。且本檔規範的是「產出報告」這個**意圖性動作**，不是
+  「碰到 HTML 檔」這個附帶事件，paths 觸發與語義本就不合。
+  指標行在 CLAUDE.md 的「參考資源」段；無 paths: 的 rules 檔由 config-lint R2
+  的反向檢查保護（指標行遺失會在 SessionStart 被報出來）。
+-->
+
 
 <html_report>
 
