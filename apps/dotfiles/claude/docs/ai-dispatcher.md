@@ -42,22 +42,21 @@
 | 狀態快照 / session 狀態 | `status-anchor` skill | Session 狀態快照 |
 | SLO / observability | `observe` skill | 可觀測性設計 |
 | 腦力激盪 / brainstorm | `brainstorming` skill | 創意發想 |
-| **blast radius / 什麼會 break / 改了有什麼影響** | `gitnexus-impact-analysis` skill | GitNexus 符號依賴 blast radius（d=1/2/3）|
-| **trace bug / 為何報錯 / 追蹤錯誤** | `gitnexus-debugging` skill | GitNexus query → context → process trace |
-| **rename / 安全改名 / extract module** | `gitnexus-refactoring` skill | GitNexus 多檔協調 rename + detect_changes 驗證 |
-| **架構探索 / 代碼理解 / how does X work** | `gitnexus-exploring` skill | GitNexus query + context + process resource |
-| **PR 影響範圍 / PR blast radius** | `gitnexus-pr-review` skill | detect_changes → impact per symbol → risk report |
-| **gitnexus index / reindex / 建圖** | `gitnexus-cli` skill | `npx gitnexus analyze / status / clean` |
-| **gitnexus 工具 / gitnexus 怎麼用** | `gitnexus-guide` skill | 工具速查 + MCP resource 導航 |
+| **語義搜尋 / 按意思找代碼** | `codebase-memory-mcp` MCP `search_graph` | 符號級語義檢索 |
+| **blast radius / 什麼會 break / 改了有什麼影響** | `codebase-memory-mcp` MCP `detect_changes` / `query_graph` | git diff→影響符號 + 風險 |
+| **trace bug / 追蹤依賴鏈 / callers** | `codebase-memory-mcp` MCP `trace_path` / `query_graph` | 符號依賴鏈 + callers_of |
+| **架構探索 / 代碼理解 / how does X work** | `codebase-memory-mcp` MCP `get_architecture` | 架構總覽 + hub 熱點 |
+| **建 / 更新索引** | `codebase-memory-mcp cli index_repository` | 初次索引 2s 級 / reindex |
+| **codebase-memory 工具 / 怎麼用** | `codebase-memory-mcp` MCP（14 tools）| 見 13-agent-orchestration 任務→工具映射 |
 
 ## Usage
 
 ```bash
 # 基本意圖觸發（在 Claude Code 中直接使用）
 /ai "PR review"         # → /verify
-/ai "blast radius"      # → gitnexus-impact-analysis skill
-/ai "trace this bug"    # → gitnexus-debugging skill
-/ai "rename safely"     # → gitnexus-refactoring skill
+/ai "blast radius"      # → codebase-memory-mcp detect_changes
+/ai "trace this bug"    # → codebase-memory-mcp trace_path / query_graph
+/ai "語義搜尋 X"        # → codebase-memory-mcp search_graph
 /ai "釐清需求"          # → /specify
 /ai "unit test"         # → /test
 /ai "stack PR 狀態"     # → /pr-stack

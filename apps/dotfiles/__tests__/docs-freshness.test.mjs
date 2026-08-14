@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { it } from 'vitest'
+import { it } from 'node:test'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '../../..')
 
 const FORBIDDEN_PATTERNS = [
   [/pnpm run c:sync(?!\s*-|:select)/, 'c:sync → c:ai-sync'],
-  [/pnpm run d:sync(?!\s*-)/, 'd:sync → d:prefs-sync'],
   [/pnpm run d:migrate-plans/, 'd:migrate-plans 已刪除'],
   [/pnpm run d:flow\b/, 'd:flow 已刪除'],
 ]

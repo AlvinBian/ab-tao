@@ -1,6 +1,6 @@
 ---
 name: memory-search
-description: 語義搜尋 ~/.claude/memory/ 與 projects/*/memory/ 中的過往決策、偏好與 pattern，回傳最相關的記憶條目。
+description: 關鍵字/索引搜尋 ~/.claude/memory/ 與 projects/*/memory/ 過往決策、偏好與 pattern；可選 opt-in 向量語義搜尋（需 d:setup --enable-memory-search）。
 version: 1.0.0
 category: meta
 tags: [memory, search, recall]

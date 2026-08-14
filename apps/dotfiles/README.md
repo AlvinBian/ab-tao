@@ -7,7 +7,7 @@
 從 `@ab-tao/commons` 資源池中按技術棧動態篩選，只安裝匹配的工具與配置，部署到 `~/.claude/` 與 `~/`。
 
 ```
-bin/          — CLI 入口（setup / scan / status / report / restore / hooks / prefs-sync / chrome / uninstall）
+bin/          — CLI 入口（setup / scan / status / report / restore / hooks / chrome / uninstall）
 libs/         — 核心邏輯（分析、配置生成、部署、技術棧偵測）
 claude/       — Claude Code 資源（commands / agents / rules / hooks / skills）
 zsh/          — ZSH 環境（modules/ → ~/.zshrc.d/conf/ symlink，11 個模組 + sheldon 插件管理）
@@ -27,9 +27,9 @@ docs/         — 流程圖（Mermaid）、整合指南
 | `30-aliases` | 通用別名、編輯器偵測、GitHub CLI |
 | `35-chrome` | Chrome 控制工具（kill / relaunch / mem）|
 | `40-git` | git 別名、stacked PR 工具（gh-stack / git-spice）|
-| `50-claude` | Claude Code iCloud symlink 自動修復、`cc` 系列 alias |
+| `50-claude` | Claude Code CLI 二進制解析、`cc` 系列 alias |
 | `50-functions` | 通用 shell 函式 |
-| `60-tools` | 現代 CLI 替代工具（bat / eza / zoxide / fzf / gitnexus…）|
+| `60-tools` | 現代 CLI 替代工具（bat / eza / zoxide / fzf…）|
 | `90-plugins` | sheldon 插件延遲載入 |
 
 本機專屬設定（API key、私有 alias）請寫入 `~/.zshrc.local`，不受 ab-tao 管控。
@@ -55,7 +55,6 @@ pnpm run d:status          # 配置狀態儀表板
 pnpm run cs:open           # Web 後台控制台
 pnpm run d:restore         # 還原備份
 pnpm run d:hooks           # Hook 管理
-pnpm run d:prefs-sync      # iCloud 偏好檔同步
 pnpm run d:chrome          # Chrome 書籤 / 設定同步
 pnpm run d:uninstall       # 移除 ab-tao
 ```

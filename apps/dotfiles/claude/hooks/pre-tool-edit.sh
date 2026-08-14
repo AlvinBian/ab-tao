@@ -49,6 +49,18 @@ if [ -n "$BASENAME" ]; then
 	fi
 fi
 
+# ── Part 2b: ab-tao 管理檔案保護（完整路徑精確比對，§10 禁改清單）────
+# 不用 basename glob（會誤傷專案內同名檔），僅精確比對這兩個完整路徑
+if [ -n "$FILE_PATH" ]; then
+	case "$FILE_PATH" in
+	"$HOME/.claude/settings.json" | "$HOME/.claude/.ab-tao/state.json")
+		[ -x "$NOTIFY" ] && "$NOTIFY" blocked "禁改清單檔案被修改: $FILE_PATH" 2>/dev/null &
+		printf '{"error":"此檔由 ab-tao d:setup 管理（§10 禁改清單）。經使用者明確授權的修改請改 source template 或以 Bash 工具操作。"}\n'
+		exit 2
+		;;
+	esac
+fi
+
 # ── Part 3: Memory/Plans 路徑自動校驗 ───────────────────────────
 [ -z "$FILE_PATH" ] && exit 0
 [[ "$FILE_PATH" =~ \.claude/projects/([^/]+)/(memory|plans)/ ]] || exit 0

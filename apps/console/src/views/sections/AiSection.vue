@@ -476,7 +476,7 @@ const federatedProjects: FederatedProject[] = [
               </el-tag>
             </div>
             <div class="source-meta">
-              <el-text type="secondary" size="small">
+              <el-text type="info" size="small">
                 {{ source.type }}
               </el-text>
             </div>

@@ -11,6 +11,7 @@ import * as p from '@clack/prompts'
 import { isEmpty } from 'lodash-es'
 import { BACK, handleCancel, multiselectWithPrefs } from '../cli/prompts.mjs'
 import { HOME } from '../core/paths.mjs'
+import { getZoxideStatus } from '../external/zoxide.mjs'
 
 const MODULE_DESCRIPTIONS = {
   options: 'Shell 行為選項（AUTO_CD · NO_BEEP · EXTENDED_GLOB · AUTO_PUSHD）',
@@ -56,6 +57,16 @@ export default {
     }
     catch {
       checks.push('sheldon ✗（安裝時會自動安裝）')
+    }
+
+    // zoxide（tools 模組依賴 — 安裝時會自動 brew install）
+    try {
+      const { getZoxideVersion } = await import('../external/zoxide.mjs')
+      const zv = getZoxideVersion()
+      checks.push(zv ? `zoxide ${zv}` : 'zoxide ✗（安裝時會自動安裝）')
+    }
+    catch {
+      /* 不阻塞 envCheck */
     }
 
     return { ok, message: checks.join(' · ') }
@@ -222,6 +233,24 @@ export default {
       },
     })
 
+    // ── tools 模組依賴的 zoxide：未安裝則自動 brew install ──
+    // zoxide init 配置已在 60-tools.zsh，但 guard `_command_exists zoxide`
+    // 需工具實際存在才生效，故在此補上 Node 層自動安裝（對齊 RTK pattern）。
+    if (moduleNames.includes('tools')) {
+      try {
+        const { checkAndInstallZoxide } = await import('../external/zoxide.mjs')
+        const { installed, alreadyInstalled } = checkAndInstallZoxide()
+        if (installed && alreadyInstalled)
+          CLACK_LOGGER.info('zoxide 已安裝')
+        else if (installed)
+          CLACK_LOGGER.info('zoxide 已安裝 → brew install zoxide')
+        else CLACK_LOGGER.warn('zoxide 安裝略過（brew 不可用，可手動 brew install zoxide）')
+      }
+      catch {
+        /* 不阻塞安裝 */
+      }
+    }
+
     // ── 部署個人偏好 ──
     const prefs = ctx.preferences
     if (prefs) {
@@ -349,13 +378,21 @@ export default {
       path.join(HOME, '.config', 'starship.toml'),
     )
     const gitconfigExists = fs.existsSync(path.join(HOME, '.gitconfig'))
-    return [
+    const lines = [
       '🐚 ZSH 模組（~/.zshrc.d/ + sheldon）',
       `  已安裝：${results.modules?.join('、') || '無'}`,
       `  .gitconfig: ${gitconfigExists ? '✔（24 aliases + delta）' : '✗'}`,
       `  Starship: ${starshipExists ? '✔（Go/Rust/PHP/Java/Docker）' : '✗（未安裝 starship）'}`,
-      '  執行 exec zsh 立即套用',
     ]
+    // zoxide：tools 模組選中時才回報（智能 cd，命令 z xxx）
+    if (results.modules?.includes('tools')) {
+      const z = getZoxideStatus()
+      lines.push(
+        `  zoxide: ${z.installed ? `✔ v${z.version || '?'}（z xxx 智能跳目錄）` : '✗（brew install zoxide）'}`,
+      )
+    }
+    lines.push('  執行 exec zsh 立即套用')
+    return lines
   },
 
   /**

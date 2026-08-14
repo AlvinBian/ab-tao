@@ -61,3 +61,8 @@ paths:
 - 為「假設性未來需求」預先抽象 → 刪掉，等真的重複再抽（§2 + 03 Simplicity First）
 
 </reuse_and_decoupling>
+
+## 新增方法位置（自 claude-md/03 下放）
+
+- 在**既有檔案**新增 function / method 時，一律**追加到檔案最後面**（既有 export 之後），不插入中段，降低 diff 噪音與 review 成本。
+- 例外：barrel / `index` re-export 依既有分組擺放；class 內方法依該 class 既有組織慣例。

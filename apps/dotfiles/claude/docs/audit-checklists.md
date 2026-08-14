@@ -13,13 +13,15 @@
 - [ ] `settings.json` 無 phantom plugin（enabled 但未安裝）
 - [ ] `settings.json` hooks 區段所有 script 存在且有執行權限（hooks 由 settings.json 管理，源自 hooks/defs/*.json）
 - [ ] `memory/MEMORY.md` ≤ 200 行 / 25KB
-- [ ] `claude-md/` 14 個 section 檔全部存在（00–08, 10–13, 15；09/14 已合併，16–18 已移 docs/）
-- [ ] `rules/` 8 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / testing / migrations / barrel-exports / git-and-pr / reuse-and-decoupling）
+- [ ] `claude-md/` 13 個 section 檔全部存在（00–05, 08, 10–15；09 已併入 08，06→rules/vue-nuxt、07→hooks 已下放，16–18 已移 docs/）
+- [ ] `rules/` 10 個條件規則檔有正確 `paths:` frontmatter（api-and-data / vue-nuxt / typescript / html-report / migrations / sql / barrel-exports / git-and-pr / reuse-and-decoupling / php-codeigniter）
 - [ ] `rules/barrel-exports.md` 含 7 條 sub-rule（統一導出 3 + 統一引入 2 + 適用範圍 1 + 遷移策略 1）
-- [ ] `docs/` 4 個 CLAUDE.md @import 目標存在（rtk / audit-checklists / config-map / local-tools）；29 個 docs/ 檔完整清單見 config-map.md
+- [ ] CLAUDE.md「參考資源」為指針文字非 @import（@ 是硬載入；2026-07 修正），4 個指針目標存在（rtk / audit-checklists / config-map / local-tools）；21 個 docs/ 檔完整清單見 config-map.md
 - [ ] `~/.claude/.ab-tao/state.json` schema 合法（`c:validate --schema`）
 - [ ] Slack 路由 sanity：`settings.json` `env.SLACK_NOTIFY_CHANNEL` 為 Channel ID（`C`開頭）或 `"dm"`
-- [ ] `slack-principles.md` 含 6 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns）
+- [ ] 對外發送分級制（2026-07-16）：`claude-md/05` 外部通訊紅線含「結論性=草稿+[Y]／review 工作流產物=直發／唯一豁免=直接發送」三級表述；`claude-md/14` 含「對外通訊硬例外」段
+- [ ] `commands/slack.md` A3/A3.5 為雙軌 lint（直發=standard markdown 雙星；手貼=mrkdwn 單星），與「零」節無矛盾；A4.3 無寫死 MCP 工具前綴
+- [ ] `slack-principles.md` 含 8 節（語法紅線 / 結構骨架 / Icon 語義字典 / 強調規則 / Mention & URL & 長度 / Anti-patterns / 視覺節奏 / 場景 Icon 快查）
 - [ ] `slack-principles.md` Icon 語義字典含 3 組（嚴重度 · 動作 · Audience 區塊）
 - [ ] `slack-principles.md` 無殘留 T01~T15 模板（grep `T0[1-9]\|T1[0-5]` 應為 0）
 - [ ] `slack-principles.md` 含 Anti-Patterns section
@@ -28,7 +30,7 @@
 - [ ] `commands/slack.md` Step A2.5 含 multi 模式區塊拼裝邏輯
 - [ ] `commands/slack.md` Step A4.2 為 [d]/[m]/[c:]/[t:] 4 選一，無 [y] 預設
 - [ ] `slack-audience-profiles.md` 含 7 個 profile（rd / pm / mkt / qa / ops / ued / multi），無 `exec`
-- [ ] `slack-audience-profiles.md` 7 個 profile 均含 reader mental model + 決策原則 3 條上限
+- [ ] `slack-audience-profiles.md` 6 個實體 profile（rd/pm/mkt/qa/ops/ued）含 reader mental model + 決策原則 3 條上限；`multi` 為組合器（區塊化拼裝，無獨立 mental model）
 - [ ] `slack-audience-profiles.md` 無「完全保留 / 壓縮為 1 句 / 完全移除」舊表格（grep 應為 0）
 - [ ] 全 repo 無 `exec` audience 殘留（grep 應為 0）
 
@@ -80,8 +82,8 @@
 - [ ] 環境變數不 hardcode
 
 ### API 規範
-- [ ] 回傳格式統一 `{ code, message, data }`
-- [ ] 分頁使用 cursor-based（非 offset）
+- [ ] 回傳格式統一（依專案實際契約；Node / Prisma 範本見 `rules/api-and-data.md`）
+- [ ] 分頁策略一致（cursor 或 offset，依專案契約統一，勿混用）
 - [ ] 無過時 API、無 demo 代碼
 
 ### 代碼品質

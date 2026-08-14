@@ -40,6 +40,9 @@ export const FORBIDDEN_DIRS = [
   '_archive',
   'profiles',
   'memory-templates',
+  // 歸檔目錄：防止整棵被複製到 ~/.claude/（僅 source repo 內部參考用）
+  'skills-archive',
+  'commands-archive',
 ]
 
 /**

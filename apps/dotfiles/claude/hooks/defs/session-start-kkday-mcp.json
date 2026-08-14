@@ -1,0 +1,17 @@
+{
+  "event": "SessionStart",
+  "hooks": [
+    {
+      "id": "ab-tao:session:kkday-mcp",
+      "description": "kkday pg/kibana MCP stack（localhost:18899）狀態偵測；未就緒時注入啟動指引，12 小時節流",
+      "matcher": "startup|resume",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/session-start-kkday-mcp.sh",
+          "timeout": 8
+        }
+      ]
+    }
+  ]
+}

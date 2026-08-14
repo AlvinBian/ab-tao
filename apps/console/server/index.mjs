@@ -24,7 +24,6 @@ import { sseFailurePatternsRouter } from './routes/sse-failure-patterns.mjs'
 import { sseInstallProgressRouter } from './routes/sse-install-progress.mjs'
 import { sseMetricsRouter } from './routes/sse-metrics.mjs'
 import { statusRouter } from './routes/status.mjs'
-import { syncRouter } from './routes/sync.mjs'
 import { worklogRouter } from './routes/worklog.mjs'
 
 const PORT = Number(process.env.PORT) || 5478
@@ -119,13 +118,6 @@ const server = createServer(async (req, res) => {
     // /api/scan/* — d:scan 技術棧掃描
     if (url.pathname.startsWith('/api/scan')) {
       const handled = await scanRouter(req, res, url, json)
-      if (handled)
-        return
-    }
-
-    // /api/sync/* — iCloud 偏好同步
-    if (url.pathname.startsWith('/api/sync')) {
-      const handled = await syncRouter(req, res, url, json)
       if (handled)
         return
     }

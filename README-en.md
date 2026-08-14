@@ -142,7 +142,6 @@ pnpm run help              # view all commands
 | `pnpm run d:status`         | Config status dashboard                          |
 | `pnpm run d:restore`        | Restore backup                                   |
 | `pnpm run d:hooks`          | Hook management                                  |
-| `pnpm run d:prefs-sync`     | Sync preferences to/from iCloud                  |
 | `pnpm run d:chrome`         | Chrome bookmarks / settings sync                 |
 | `pnpm run d:uninstall`      | Remove ab-tao                                    |
 

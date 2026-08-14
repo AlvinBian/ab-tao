@@ -1,0 +1,17 @@
+{
+  "event": "PreToolUse",
+  "hooks": [
+    {
+      "id": "ab-tao:pre:figma-screenshot",
+      "description": "Figma get_screenshot 提醒：截圖僅視覺參考，須與 get_design_context 並用（寬 regex：claude.ai connector 的 server 名為 UUID 不含 figma 字樣，故匹配任意 server 的 get_screenshot）",
+      "matcher": "mcp__.*__get_screenshot",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/pre-tool-figma-screenshot.sh",
+          "timeout": 3
+        }
+      ]
+    }
+  ]
+}

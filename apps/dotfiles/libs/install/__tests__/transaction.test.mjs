@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
+import { after, afterEach, before, describe, it } from 'node:test'
 import {
   _resetForTest,
   beginTransaction,
@@ -31,11 +31,11 @@ function buildTargets(base) {
 
 let TMP
 
-beforeAll(() => {
+before(() => {
   TMP = makeTmpDir()
 })
 afterEach(() => _resetForTest())
-afterAll(() => {
+after(() => {
   try {
     fs.rmSync(TMP, { recursive: true })
   }

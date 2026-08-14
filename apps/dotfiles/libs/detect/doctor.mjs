@@ -39,6 +39,17 @@ export async function ensureEnvironment() {
     /* 略 */
   }
 
+  let isZoxideInstalled = () => false
+  let getZoxideVersion = () => null
+  try {
+    ({ isZoxideInstalled, getZoxideVersion } = await import(
+      '../external/zoxide.mjs',
+    ))
+  }
+  catch {
+    /* 略 */
+  }
+
   const fnmOk = has('fnm')
   const nvmOk = checkNvm()
   const nOk = has('n')
@@ -119,6 +130,15 @@ export async function ensureEnvironment() {
       actionLabel: null,
       optional: true,
     },
+    // optional — zsh tools 模組依賴，d:setup 安裝 tools 時會自動 brew install
+    {
+      name: 'zoxide',
+      ok: isZoxideInstalled(),
+      ver: getZoxideVersion(),
+      failLabel: '未安裝（可選 — 智能 cd，z xxx）',
+      actionLabel: null,
+      optional: true,
+    },
     // optional — 缺失不阻塞安裝流程
     {
       name: 'pr-stack',
@@ -129,65 +149,7 @@ export async function ensureEnvironment() {
       actionLabel: null,
       optional: true,
     },
-    // optional — 本地整合服務（claude-context / browser-harness / AI-Pedia）
-    {
-      name: 'Docker daemon',
-      ok: (() => {
-        try {
-          execSync('docker info', { stdio: 'pipe' })
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: ver('docker', '--version')?.match(/[\d.]+/)?.[0] ?? null,
-      failLabel: '未啟動（Milvus 需要，參考 docs/local-tools.md § A）',
-      actionLabel: null,
-      optional: true,
-    },
-    {
-      name: 'LM Studio',
-      ok: (() => {
-        try {
-          execFileSync(
-            'curl',
-            ['-sf', '--max-time', '2', 'http://127.0.0.1:1234/v1/models'],
-            { stdio: 'pipe' },
-          )
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: null,
-      failLabel:
-        '未啟動（claude-context 語義搜尋，參考 docs/local-tools.md § A）',
-      actionLabel: null,
-      optional: true,
-    },
-    {
-      name: 'Milvus',
-      ok: (() => {
-        try {
-          execFileSync(
-            'curl',
-            ['-sf', '--max-time', '2', 'http://127.0.0.1:19530/healthz'],
-            { stdio: 'pipe' },
-          )
-          return true
-        }
-        catch {
-          return false
-        }
-      })(),
-      ver: null,
-      failLabel:
-        '未啟動（claude-context 向量資料庫，docker compose up milvus-standalone）',
-      actionLabel: null,
-      optional: true,
-    },
+    // optional — 本地整合服務（browser-harness / AI-Pedia）
     {
       name: 'browser-harness',
       ok: (() => {

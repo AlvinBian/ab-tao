@@ -23,7 +23,6 @@
     "d:status": "pnpm -C apps/dotfiles run status",
     "d:hooks": "pnpm -C apps/dotfiles run hooks",
     "d:uninstall": "pnpm -C apps/dotfiles run uninstall",
-    "d:prefs-sync": "pnpm -C apps/dotfiles run prefs-sync",
     "d:restore": "pnpm -C apps/dotfiles run restore",
     "d:scan": "pnpm -C apps/dotfiles run scan",
     "d:chrome": "pnpm -C apps/dotfiles run chrome",
@@ -51,7 +50,7 @@
     "changeset": "changeset add",
     "changeset:status": "changeset status",
     "version": "changeset version",
-    "release": "changeset tag && git push --follow-tags",
+    "release": "changeset tag && git push --follow-tags && node scripts/post-release.mjs",
     "prepare": "lefthook install"
   },
   "devDependencies": {

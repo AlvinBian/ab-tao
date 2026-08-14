@@ -1,0 +1,16 @@
+{
+  "event": "Notification",
+  "hooks": [
+    {
+      "id": "ab-tao:notification",
+      "description": "background agent 事件 (agent_needs_input/agent_completed) + idle/permission → macOS + Slack 雙通道（複用 hook-handler.sh）",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/hook-handler.sh",
+          "timeout": 8
+        }
+      ]
+    }
+  ]
+}

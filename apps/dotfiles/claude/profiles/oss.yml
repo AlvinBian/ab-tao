@@ -12,8 +12,7 @@ plugins_disabled: []
 
 # 記憶範圍（OSS 獨立 pattern）
 memory_scope:
-  - ~/.claude/memory/preferences/
-  - ~/.claude/memory/patterns/
+  - ~/.claude/memory/
 
 # 備註
 notes: |

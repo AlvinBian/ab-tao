@@ -2,6 +2,27 @@
 
 本文件記錄所有重要變更，格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，版本遵循 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
+## [1.10.0] — 2026-06-11 — Claude 配置整合優化（個人規則 v1.8.0）
+
+> 對應 `@ab-tao/dotfiles` v1.10.3 ~ v1.12.0。
+
+### 改善
+
+- **規則歸屬下沉**：DS token / JSDoc / 響應式參數 / 三態從常駐 `claude-md/03-code-standards` 下沉至條件載入 `rules/vue-nuxt`+`typescript`，省每 session 常駐 context（claude-md 淨減 ~40 行）
+- **知識圖譜遷移**：`13-agent-orchestration` 的 GitNexus + Understand-Anything 改寫為 **code-review-graph**（單一 MCP 涵蓋符號依賴 + blast radius + 業務流程）；連帶清除廢棄 hook（def + script）、docs、skills 引用
+- **新增規則**：`rules/php-codeigniter.md`（PHP controller PHPDoc + internal API）、`13-agent` 巢狀 sub-agent 條件式優先編排（2.1.172+）
+- **版本標記統一**：CLAUDE.md / config-map / STRUCTURE 對齊個人規則 v1.8.0
+
+### 修復
+
+- 消除規則矛盾：MEMORY hot index 行數（08 ↔ config-map）、API 格式 / 分頁策略（audit ↔ api-and-data）、03 交叉引用錯誤
+- 去重：Migration 安全段（api-and-data → 引用 migrations）、`gh pr merge` 紅線
+- 文檔同步：config-map / audit-checklists / STRUCTURE 數量（rules 9 / docs 28）與內容；刪過時 `gitnexus-integration.md`
+
+### 工具
+
+- `pnpm run release` 末段自動補 git tag + GitHub Release（`scripts/post-release.mjs`，補償 private package `changeset tag` no-op）
+
 ## [1.9.0] — 2026-05-27 — preferences 持久化系統 + BACK Symbol 全鏈路修補
 
 ### 新增

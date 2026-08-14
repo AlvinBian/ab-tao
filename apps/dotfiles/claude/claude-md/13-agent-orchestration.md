@@ -1,90 +1,34 @@
 <agent_orchestration>
 
-## Harness 設計原則（提煉自 omp）
+## 資源速查（唯一性宣告；完整 intent→command 映射見 `docs/ai-dispatcher.md`）
 
-| 原則 | 含義 |
-|---|---|
-| **Harness > Model** | 工具呼叫格式品質決定 model 能力上限 |
-| **Schema > Prose** | Subagent 回傳結構化資料，禁止依賴散文解析 |
-| **Pattern-trigger > Pre-instruction** | 遇具體 pattern 立即停下，優於通用前置指令 |
-| **Curate > Wait** | 主動記憶勝於等使用者說「記住這個」|
-| **Preview > Apply** | 預覽確認後再執行，不自動 apply 破壞性操作 |
+- **開發任務（Kkday workspace）**：`run-task` + `staff-engineer` 是**唯一主線**；官方 feature-dev plugin 僅供非 Kkday 個人專案
+- **code review**：`/code-review` 是**主入口**（本地 command）
+- **探索/理解代碼、查 caller/影響面**：預設 `codebase-memory-mcp` 的 `search_graph`（語義）/ `query_graph`（依賴、callers）/ `detect_changes`（blast radius），取代 grep+Read 組合；grep 僅用於精確字串比對。`auto_index=true` 已開，無需手動 index。不做安全 rename（用 IDE 的 LSP refactor）。
+- ⚠️ **Mixpanel MCP**：`Get-Business-Context` **僅在埋點 / 實驗 / 數據分析任務**才呼叫；勿因對話提及縮寫、產品名、團隊名而觸發（該 server 自帶指令過度激進，此行為是其反制）。
 
-## 資源速查表
+## kkday 本地 skill：預設先用，不等點名
 
-| 需求 | 使用 |
-|---|---|
-| 架構設計 / 審查 | `architect` agent |
-| 除錯 / 修復 | `debugger` agent |
-| 複雜計畫 | `/plan` mode 或 `Plan` subagent |
-| 程式碼審查 | `/code-review` |
-| 廣域探索 | `Explore` subagent |
-| 需求結構化 / spec | `/specify` command |
-| spec AC 反向驗證 | `/verify` command |
-| 找 skill / 補 skill | `find-skills` skill（auto-trigger + 手動 `pnpm run c:skills --find`）|
-| **GitNexus 知識圖譜** | 見下方「GitNexus 整合」章節 |
-| **Understand-Anything（語義層）** | 見下方「融合工作流」章節 |
+`kk-graph-v2`（跨 repo + 後端 + 資料層爆炸半徑）與 `kkday-design-system`（DS token / 元件規範）遇對應情境**預設先用**，不必使用者點名。兩者的 SKILL.md description 已刻意寫長以保召回，此處不重述適用情境。
 
-## GitNexus 知識圖譜整合
-
-GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook 自動增強 Grep/Glob/Bash 搜尋結果。
-
-### 任務 → Skill 映射
-
-| 任務 | Skill | 典型觸發語 |
-|---|---|---|
-| 架構探索 / 理解代碼 | `gitnexus-exploring` | "How does X work?", "Show me the auth flow" |
-| **Blast radius / 改了什麼會 break** | `gitnexus-impact-analysis` | "Is it safe to change X?", "What depends on this?" |
-| Trace bug / 錯誤根因 | `gitnexus-debugging` | "Why is X failing?", "Trace this error" |
-| Rename / Extract / Split | `gitnexus-refactoring` | "Rename this safely", "Extract to module" |
-| PR 改動影響範圍 | `gitnexus-pr-review` | "Review PR #N", "Blast radius of this PR?" |
-| Index / reindex / CLI | `gitnexus-cli` | "Index this repo", "Reanalyze codebase" |
-| Tool / schema 查閱 | `gitnexus-guide` | "What GitNexus tools are available?" |
-
-> MCP 工具速查 / Hook 行為 / Index 管理 → Read `~/.claude/docs/gitnexus-integration.md`（架構探索、blast radius 任務時）
-
-## GitNexus × Understand-Anything 融合工作流
-
-兩層互補：**技術層**（GitNexus，符號圖 + blast radius，Claude 推理用）+ **語義層**（Understand-Anything，業務流程可視化，人類理解用）。
-
-### 任務 → 雙層工具映射
-
-| 任務 | 語義層（先） | 技術層（後） |
-|---|---|---|
-| 理解新 repo / 陌生模組 | Understand-Anything 生成業務 diagram | `gitnexus-exploring` 確認符號依賴 |
-| 改動安全性確認 | 確認業務流程無斷點 | `gitnexus-impact-analysis` blast radius |
-| Debug 根因追蹤 | 從 diagram 定位業務層失效點 | `gitnexus-debugging` trace 技術符號鏈 |
-| Refactor / Rename | 確認業務邊界不被破壞 | `gitnexus-refactoring` 符號安全重命名 |
-| PR 改動影響 | 確認 user flow 完整性 | `gitnexus-pr-review` 技術依賴影響 |
-
-### 三條使用原則
-
-1. **新 repo / 陌生模組**：先跑 Understand-Anything 建立業務心智模型，再用 GitNexus 深入符號層
-2. **改動後雙層確認**：semantic diagram 確認業務流完整 → impact analysis 確認技術依賴無斷鏈
-3. **Debug 入口**：從語義層定位「哪個業務流失效」→ GitNexus 追蹤「哪個符號鏈斷了」
-
-> Understand-Anything 安裝：Claude Code 內執行 `/plugin marketplace add Lum1104/Understand-Anything`，再執行 `/plugin install understand-anything`。
-
-### 索引新鮮度自動維護
-
-- **GitNexus**：ab-tao `ab-tao:gitnexus:sync` SessionStart hook 自動偵測落後（`lastCommit` ≠ HEAD）→ 背景 `gitnexus analyze --index-only`，三道節流（並發鎖 + 10 min debounce + SHA 比對），**100% 無感**。部署：`pnpm run d:setup`。
-- **Understand-Anything**：每個目標 repo 手動跑一次 `/understand --auto-update`（寫 `config.json {autoUpdate:true}`），之後 plugin 自帶 hook 在 session 內 auto-prompt 更新（**半無感**）。注意：plugin 需先 build（`cd ~/.claude/plugins/cache/understand-anything/understand-anything/<version> && pnpm install && pnpm --filter @understand-anything/core build`）。
-- `/understand --auto-update` 是 Claude Code slash command，**不是 shell 命令**，無法 zsh alias；gitnexus CLI 已有 `gna='gitnexus analyze --index-only'` alias（`30-aliases.zsh`）。
+- **分工**：`codebase-memory-mcp` = 當前單一 repo；`kk-graph-v2` = 跨 repo + 後端（PHP/Java/.NET）+ 資料層，勿混用。
+- ❗ **Absence Protocol**：下「無關聯 / 可安全刪 / 不影響」這類**否定結論**前，先 `./q.sh coverage <repo>`——空結果可能是「未涵蓋」而非「確認沒有」。
 
 ## 調度規則（強制）
 
-**1. 併發優先**：多個獨立任務必須 parallel 同時啟動，禁止串行等待。
-單一 message 可併發多個 Agent tool call；無依賴者必須同一輪送出。
+**1. 併發優先**：多個獨立任務必須 parallel 同時啟動，禁止串行等待；無依賴者必須同一輪送出。（不適用於 run-task 框架內以 stage 定義並行邊界的場景。）
 
-**2. Background 強制使用**：不阻塞主流程的任務（搜索、分析、探索）用 `run_in_background: true`。
-僅結果直接影響下一步決策的 agent 才以 foreground 執行。
+**2. Background 強制使用**：不阻塞主流程的任務（搜索、分析、探索）用 `run_in_background: true`。僅結果直接影響下一步決策的 agent 才 foreground。
 
-**3. 禁止低效模式**：
-- 禁止一個 agent 完成後再啟動下一個（串行等待）
-- 禁止主對話重複 agent 已在做的搜索
-- 禁止只啟動 1 個 agent 處理明顯可拆分的多方向任務
+> **回報義務不隨 background 下放**：`run_in_background: true` 只免除「等待」，不免除 §02 的定期回報。主對話須在 dispatch 當下與收到結果時各回報一次；subagent 內部步驟不直接對使用者回報，其進度由主對話代述。
 
-**4. Subagent 分層**：搜索密集、重 I/O 工作下放 subagent；主對話專注決策與整合。
+**3. 禁止低效模式**：禁止一個 agent 完成後再啟動下一個（串行等待）；禁止主對話重複 agent 已在做的搜索；禁止只啟動 1 個 agent 處理明顯可拆分的多方向任務。
+
+**4. Subagent 分層**：搜索密集、重 I/O 下放 subagent；主對話專注決策與整合。
+
+**5. 巢狀展開（條件式）**：可深度分解 / 可平行的任務優先用 sub-agent 巢狀展開（最深 5 層）。**僅在可分解性明確時展開**；淺任務仍走主對話。巢狀指數放大 token 與協調成本、降低可觀測性，受 simplicity-first 約束，禁止藉此過度編排。
+
+> 多 phase 並行排程（DAG 切分 / Wave gate / 衝突處理）→ 任務含 ≥3 phase 時 Read `~/.claude/docs/agent-dag-parallel.md`。
 
 ## 何時**不要** spawn agent
 
@@ -93,107 +37,37 @@ GitNexus 為 repo 建立符號圖，透過 MCP 暴露工具。PreToolUse hook �
 - 純 yes/no / 概念性問題 → 直接答，不要 research agent
 - 為了「看起來在做事」而 spawn → 禁止
 
-agent 適用情境：搜尋密集、多檔案 cross-reference、結果需獨立第二意見、可平行的多方向探索。
-
-> 多 phase 並行排程（DAG 切分 / Wave gate / 衝突處理）→ Read `~/.claude/docs/agent-dag-parallel.md`（任務含 ≥3 phase 時）。
+適用情境：搜尋密集、多檔案 cross-reference、需獨立第二意見、可平行的多方向探索。
 
 ## Subagent 回傳結構規範（Schema > Prose）
 
-啟動 subagent 時 **prompt 必須明確指定回傳 schema**，禁止接受純 prose 後再自行解析。
+格式驗證交給原生 Workflow `agent({schema})`；本節只定義業務 schema 欄位。
 
-**研究 / 探索類**（Explore / general-purpose research）：
-```
-findings: [{path, line, confidence: ✅|⚠️|❓, summary}]
-conclusion: 一句話結論
-```
+- **研究 / 探索類**：`findings: [{path, line, confidence: ✅|⚠️|❓, summary}]` + `conclusion`
+- **審查類**：`issues: [{severity: P0|P1|P2|P3, confidence, location, fix}]` + `verdict: SHIP|BLOCK|NEEDS-DISCUSSION`
+- **執行類**：`changes: [{file, before, after, verify}]` + `done: boolean` + `verdict: PASS|FAIL|NEEDS-REVIEW`
 
-**審查類**（reviewer / architect / pr-test-analyzer / silent-failure-hunter / type-design-analyzer）：
-```
-issues: [{severity: P0|P1|P2|P3, confidence: high|medium|low, location, fix}]
-verdict: SHIP | BLOCK | NEEDS-DISCUSSION
-```
+**Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL / NEEDS-REVIEW 時：主對話**禁止**標 task complete；**必須** spawn `code-reviewer` 回頭驗（prompt 明確指出 changes 清單與失敗理由）；僅 `verdict: PASS` 才可標完成。
 
-**執行類**（debugger / planner）：
-```
-changes: [{file, before, after, verify}]
-done: boolean
-verdict: PASS | FAIL | NEEDS-REVIEW
-```
+> 完整範例 / prompt 模板 / 與 agents/*.md 對應表 → 設計 subagent 回傳格式時 Read `~/.claude/docs/agent-typed-result.md`。
 
-**Done-gate Critic（強制）**：`done: true` 必須伴隨 `verdict`。收到 FAIL 或 NEEDS-REVIEW 時：
-- 主對話**禁止**標 task complete
-- **必須** spawn `reviewer` agent 回頭驗（prompt 明確指出 changes 清單與失敗理由）
-- 僅 `verdict: PASS` 才可標完成
+## PR / Code Review 工作流
 
-> 完整 schema 範例 / prompt 模板 / 與 agents/*.md 的對應表 → `~/.claude/docs/agent-typed-result.md`
+- **PR 連結** → 僅 PR review，不發 Slack。**Slack 連結** → 需在原 thread 回覆，且**回覆單行極簡**（`#PR號 ✅ LGTM` / `💬 N findings` ＋連結；細節全在 PR，僅 P0/P1 各追加 1 行）。
+- P0/P1 走 inline，P2/P3 併 summary，正確碼不評論。草稿先行。
+- ❗ **本地倉庫優先**：review 任何 PR 前先在 `~/Kkday/projects/` 找對應本地倉庫。找到 → 深度 review（`git fetch` + `git show <sha>:<path>` 讀 PR-head 實際 source，**禁止 checkout 對方分支**）。找不到才退回 API-only 淺 review，並在結論**標明「未做本地深度驗證」**。
 
-## Review 入口決策表
+> 降噪原則、狀態偵測分流、tier 判定與升級訊號、深度 review 完整操作程序 → 執行 PR / code review 時 Read `~/.claude/docs/agent-review-workflow.md`。
 
-| 需求 | 工具 | 備註 |
-|---|---|---|
-| **PR review（預設入口）** | **`/code-review`** | 自動分流 quick/standard/deep；`--effort` flag 覆寫；見下方分流規格 |
-| 第二意見 / quick 單獨呼叫 | `reviewer` agent | quick 模式固定組件；亦可獨立呼叫取第二意見 |
-| PR 測試覆蓋率 | `pr-test-analyzer` agent | 行為覆蓋 + 漏洞防護 |
-| 無聲失敗 / 錯誤吞噬 | `silent-failure-hunter` agent | 專項分析 |
-| 型別設計 | `type-design-analyzer` agent | 不變量 + 封裝 |
-| 架構深度審查 | `architect` agent | 5 維度評分 |
+## 瀏覽器自動化
 
-## Review 深淺分流規格
+**一律走 Google Chrome**（2026-08-04 拍板），不涉入任何非 Chrome 瀏覽器。先套用 `browser-automation-router` skill 做三選一路由（該 skill description 會自動觸發，此處不重述路由表）。
 
-### 自動判定 Tier
+⚠️ **claude-in-chrome 不穩定性**：安全分類器離線時整個 `mcp__claude-in-chrome__*` 命名空間打不開（連 `tabs_context_mcp` 都失敗），屬後端暫時性故障，非本機配置問題——遇到時重試或等恢復，**不要**拿 chrome-devtools 硬做需要真實登入態的任務。
 
-| 層級 | 觸發條件 | 耗時 |
-|---|---|---|
-| **quick** | 行數 ≤ 80（stacked +50%）＆ 檔案 ≤ 3 ＆ 無強制升級訊號 | < 90s |
-| **standard** | 80–300 行 / 4–10 檔 / 命中 standard 升級訊號 | ~5 min |
-| **deep** | > 300 行 / > 10 檔 / 命中 deep 升級訊號 | ~8 min |
+## 其他
 
-**stacked PR**：偵測 git-spice stack（base ≠ main）時，quick 上限 +50%（≤ 120 行）。
-
-### 強制升級訊號
-
-**→ deep**（path allowlist）：
-`**/migrations/**` / `**/schema.prisma` / `**/*.sql` / `**/middleware/auth*` / `**/guards/**` / `**/policies/**` / `**/permissions/**` / `**/payment/**` / `**/billing/**` / `**/charge*` / `**/.env*` / `**/config/secrets*` / `**/crypto*` / `**/hash*`
-
-**→ standard**（path allowlist）：
-`**/cron*` / `**/scheduler*` / `**/queue*` / `**/cors*` / `**/csp*` / `**/cookie*` / `package.json` dependencies|scripts 段
-
-**→ standard**（risk keyword scan）：
-`SECRET` / `SALT` / `PRIVATE_KEY` / `DROP TABLE` / 動態程式碼求值 / React raw HTML 注入屬性 / `child_process` / `bcrypt` / `jwt.sign` / `Math.random`（安全 context）/ diff 含 `^- *if ` 開頭位於 auth 路徑
-
-**→ standard**（diff 形狀）：純刪除 PR `+0/-N` / `.env.example` 改動 / featureFlag default 翻轉
-
-**行數計算排除**：`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock` / `*.snap` / `dist/**` / `*.generated.*` / `*.min.*`
-
-**優先級**：allowlist > keyword > shape > 行數。降級需 4 條全清。
-
-### Quick 模式能力組合
-
-| 能力 | 觸發條件 |
-|---|---|
-| Diff 正確性檢視 | always |
-| typecheck | always |
-| lint | always |
-| `reviewer` agent | always |
-| `silent-failure-hunter` | diff 含 try / catch / `.catch(` / swallow |
-| `type-design-analyzer` | diff 含 `.ts` / `.tsx` / `.d.ts` |
-| `pr-test-analyzer` lite | prod code 改 ＆ test 未改 |
-
-**覆寫**：`--effort=quick|standard|deep`；`--effort=quick --force` 需附 justification。
-
-## 多 session 監看
-
-啟動 `/bg`、`ralph-loop` 或背景 agent 後，主對話可用 `claude agents` 一覽所有 session 狀態 / 耗時 / 退出原因，無需逐一切換。
-
-## 瀏覽器自動化分流
-
-遇到任何瀏覽器操作需求，先套用 `browser-automation-router` skill 決策：
-
-| 場景 | 工具 |
-|---|---|
-| session 內互動 / Lighthouse / 記憶體分析 | chrome-devtools MCP |
-| 長任務 / self-healing / domain helper 沉澱 | browser-harness |
-
-> browser-harness 預設啟用（d:setup 自動安裝）；停用：`c:locals --stop browser-harness`。
+- 啟動 `/bg`、`ralph-loop` 或背景 agent 後，主對話可用 `claude agents` 一覽所有 session 狀態，無需逐一切換。
+- Subagent 成本控制：用 `Tool(param:value)` deny 語法精準封鎖（`Agent(model:opus)` 擋 Opus subagent）。subagent 預設繼承 session model，搜尋密集型由呼叫端顯式帶 `model: "sonnet"`。配 subagent 權限時 Read `~/.claude/docs/agent-review-workflow.md`。
 
 </agent_orchestration>

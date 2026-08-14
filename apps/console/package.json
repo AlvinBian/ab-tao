@@ -1,7 +1,7 @@
 {
   "name": "@ab-tao/console",
   "type": "module",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "ab-tao 後台控制台 — Vue 3 + Element Plus + ECharts",
   "engines": {

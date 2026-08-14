@@ -110,5 +110,5 @@ recipients = [ "age1..." ] # 你的 age public key
 
 - `memory/` 個人記憶由使用者自管，ab-tao **絕不覆蓋**
 - `projects/` 是每機器獨立的 session state，不 sync
-- `.ab-tao/preferences.json` 含 Slack Channel ID + 私有 repo 名稱，**user-private**，禁止納入任何 sync 方案（chezmoi / iCloud / git）；多機需各自跑 `d:setup` 重建
+- `.ab-tao/preferences.json` 含 Slack Channel ID + 私有 repo 名稱，**user-private**，禁止納入任何 sync 方案（chezmoi / git）；多機需各自跑 `d:setup` 重建
 - 切換 sync.tool 後 `d:setup` 會偵測並跳過已由 chezmoi 管理的檔案

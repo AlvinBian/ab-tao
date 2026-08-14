@@ -1,19 +1,22 @@
-rm -rf /
-rm -rf ~
-rm -rf \$HOME
-sudo rm -rf
-sudo rm -f /
-curl.*\|.*sh
-curl.*\|.*bash
-wget.*\|.*sh
-wget.*\|.*bash
-eval.*curl
-eval.*wget
-eval.*\$\(
-chmod 777
-chmod -R 777
-mkfs\.
-dd if=.*of=/dev/
-> /dev/sda
-> /dev/nvme
-:(){ :|:& };:
+# 自訂危險 pattern（ERE，以 grep -Ei 比對整條命令；# 開頭為註解、空行略過）
+#
+# 這個檔案是**擴充**，不取代 pre-tool-bash.sh 裡的 BUILTIN_PATTERNS（24 條）。
+#
+# ⚠️ 2026-08-12 之前這個檔案**從未生效過**：驗證那一行拿空字串去比對 pattern，
+#    任何正常 regex 都回「不匹配」→ 被當成無效 → 13 條全部略過（且無聲）。
+#    修好之後，這裡寫的每一條都會真的擋人 —— 新增前務必確認不會誤傷日常操作。
+#    寫太寬的實例：`rm -rf /` 當成 ERE 會匹配到 `rm -rf /tmp/foo`，等於擋掉所有絕對路徑刪除。
+#
+# 已移除（改由 pre-tool-bash.sh 直接處理，見該檔「高風險命令」段）：
+#   rm -rf / rm -fr 的廣義比對 → 收斂成「只擋災難性目標」
+#   git push --force            → 改用 _block 並附 backup 分支指引
+# 已移除（與 BUILTIN_PATTERNS 完全重複）：
+#   sudo rm / fork bomb / chmod 777 / dd if=/dev/* / mkfs. / shred / wipefs /
+#   DROP TABLE / curl|bash / eval base64
+
+# 寫入 raw disk device（BUILTIN 只擋 > /etc/，沒擋磁碟裝置）
+>[[:space:]]*/dev/(sd[a-z]|nvme[0-9]|disk[0-9])
+dd[[:space:]].*of=/dev/(sd[a-z]|nvme[0-9]|disk[0-9])
+
+# eval 直接吃網路內容（BUILTIN 只擋 eval+base64 與 eval $(…)）
+eval[[:space:]].*(curl|wget)

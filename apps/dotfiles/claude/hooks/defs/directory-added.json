@@ -1,0 +1,17 @@
+{
+  "event": "DirectoryAdded",
+  "hooks": [
+    {
+      "id": "ab-tao:directory-added",
+      "description": "/add-dir 掛入新工作目錄時注入該目錄的記憶 / 計畫 / in-repo 慣例指引",
+      "matcher": "slash_command",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/directory-added.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}

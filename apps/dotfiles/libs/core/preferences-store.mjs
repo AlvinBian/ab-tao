@@ -10,7 +10,7 @@
  *
  * 隱私聲明：
  *   preferences.json 含 Slack Channel ID + 私有 repo 名稱，屬 user-private 資料。
- *   不可 commit 至版本庫、不參與 iCloud prefs-sync（d:prefs-sync 刻意排除）。
+ *   不可 commit 至版本庫（user-private，git 同步見 ab-config-sync）。
  *
  * promptId 清單（17 個，跨 9 個接線檔）：
  *   scan.sources · scan.aiSources · scan.repos

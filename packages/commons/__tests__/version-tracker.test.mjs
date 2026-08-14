@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { afterEach, beforeEach, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, it } from 'vitest'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const VERSIONS_PATH = path.resolve(__dirname, '../.versions.json')

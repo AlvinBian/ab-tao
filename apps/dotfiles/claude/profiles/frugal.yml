@@ -14,7 +14,7 @@ mcp_overrides: {}
 
 # 記憶範圍
 memory_scope:
-  - ~/.claude/memory/preferences/
+  - ~/.claude/memory/
 
 # 備註
 notes: |

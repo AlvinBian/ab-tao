@@ -7,6 +7,7 @@ argument-hint: [pr-number | pr-url | blank for local review]
 # Code Review
 
 > PR review mode adapted from PRPs-agentic-eng by Wirasm. Part of the PRP workflow series.
+> 原 `/review-pr`（specialized agents 綜合審查）已併入本 command：standard/deep tier 自動掛載對應 agents（2026-07 整併）。
 
 **Input**: $ARGUMENTS
 

@@ -1,0 +1,16 @@
+{
+  "event": "UserPromptSubmit",
+  "hooks": [
+    {
+      "id": "ab-tao:prompt:enrich",
+      "description": "UserPromptSubmit：偵測 prompt 關鍵字（Jira ticket / Confluence URL / 破壞性命令）注入相關 context",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/user-prompt-enrich.sh",
+          "timeout": 6
+        }
+      ]
+    }
+  ]
+}

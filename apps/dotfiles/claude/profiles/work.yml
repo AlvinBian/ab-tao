@@ -17,8 +17,7 @@ settings_overrides:
 
 # 記憶範圍（限制在公司相關 patterns）
 memory_scope:
-  - ~/.claude/memory/preferences/
-  - ~/.claude/memory/patterns/
+  - ~/.claude/memory/
 
 # 備註
 notes: |

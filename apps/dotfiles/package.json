@@ -1,7 +1,7 @@
 {
   "name": "@ab-tao/dotfiles",
   "type": "module",
-  "version": "1.10.2",
+  "version": "1.20.1",
   "private": true,
   "description": "Claude Code 智能環境管理 — 配置部署、Slack audience 區塊化輸出、Skills 庫、Hooks 系統、ZSH 模組",
   "license": "MIT",
@@ -12,12 +12,11 @@
   "scripts": {
     "build": "echo 'dotfiles build completed'",
     "lint": "eslint .",
-    "test": "node --test __tests__/*.test.mjs",
+    "test": "node --test __tests__/*.test.mjs libs/*/__tests__/*.test.mjs",
     "setup": "node bin/setup.mjs",
     "status": "node bin/status.mjs",
     "hooks": "node bin/hooks.mjs",
     "uninstall": "node bin/uninstall.mjs",
-    "prefs-sync": "node bin/prefs-sync.mjs",
     "restore": "node bin/restore.mjs",
     "scan": "node bin/scan.mjs",
     "chrome": "node bin/chrome.mjs",

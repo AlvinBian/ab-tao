@@ -2,7 +2,7 @@
 name: verification-before-completion
 version: 1.0.0
 category: workflow
-description: Run before claiming work is complete: execute verification commands, confirm output passes linter/test/build before making success claims.
+description: "Run before claiming work is complete: execute verification commands, confirm output passes linter/test/build before making success claims."
 ---
 
 # Verification Before Completion

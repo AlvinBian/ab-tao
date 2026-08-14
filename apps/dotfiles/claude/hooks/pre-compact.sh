@@ -7,9 +7,10 @@ command -v osascript &>/dev/null && \
     -e '  display notification (item 1 of argv) with title "Claude Code" subtitle "⚠️ 壓縮中"' \
     -e 'end run' -- "Context 即將壓縮，重要資訊保留中" 2>/dev/null &
 
-# 輸出壓縮優先序指令（stdout 注入至壓縮 context）
-cat <<'EOF'
-在壓縮 context 時請遵守以下優先序：
+# 輸出壓縮優先序指令
+# ⚠️ PreCompact 的 context 注入必須走 hookSpecificOutput.additionalContext JSON，
+#    裸 stdout 只進 debug log 不會注入（2026-07 實測修復，勿改回 heredoc 直印）
+INSTRUCTIONS='在壓縮 context 時請遵守以下優先序：
 
 保留（高優先）：
 - 核心需求、硬性約束、API 介面定義
@@ -20,7 +21,11 @@ cat <<'EOF'
 可捨棄（低優先）：
 - 調試輸出、失敗嘗試、已解決的中間問題
 - 超過 3 輪以前的工具輸出摘要
-- 重複說明同一概念的冗餘段落
-EOF
+- 重複說明同一概念的冗餘段落'
+
+if command -v jq &>/dev/null; then
+  jq -nc --arg ctx "$INSTRUCTIONS" \
+    '{hookSpecificOutput:{hookEventName:"PreCompact",additionalContext:$ctx}}'
+fi
 
 exit 0

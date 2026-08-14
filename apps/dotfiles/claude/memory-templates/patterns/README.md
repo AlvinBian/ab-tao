@@ -1,7 +1,7 @@
 # 可重用模式範例
 
 這個資料夾提供 pattern 記憶的範例格式。
-使用者的實際 patterns 存放於 ~/.claude/memory/patterns/（ab-tao 不覆蓋）。
+使用者的實際 patterns 存放於 ~/.claude/memory/（flat 三溫層：可重用 pattern 進 {topic}/ 或 system-patterns.md，ab-tao 不覆蓋）。
 
 ## 範例檔案格式
 

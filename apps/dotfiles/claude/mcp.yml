@@ -10,18 +10,7 @@ version: 1.0.0
 
 servers:
   # ── 版本控制 / 協作 ──────────────────────────────────────────────
-  github:
-    command: npx
-    args:
-      - -y
-      - '@modelcontextprotocol/server-github'
-    env_ref: GITHUB_TOKEN
-    enabled_in_profiles:
-      - personal
-      - oss
-      - work
-    description: GitHub Issues / PR / Search 操作
-
+  # github MCP 已退場（2026-07-17 裁定：統一 gh CLI，消除 PAT 落地；唯讀/write 皆走 gh）
   # ── 專案管理 ─────────────────────────────────────────────────────
   linear:
     command: npx
@@ -64,23 +53,12 @@ servers:
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
     description: 'Slack 訊息發送 + 頻道查詢（commands/slack.md 必需）'
 
-  # ── 語義代碼搜尋 ──────────────────────────────────────────────────
-  claude-context:
-    command: npx
-    args:
-      - -y
-      - '@zilliz/claude-context-mcp@latest'
-    env_ref:
-      EMBEDDING_PROVIDER: CLAUDE_CONTEXT_PROVIDER
-      EMBEDDING_MODEL: CLAUDE_CONTEXT_MODEL
-      OPENAI_API_KEY: CLAUDE_CONTEXT_API_KEY
-      OPENAI_BASE_URL: CLAUDE_CONTEXT_BASE_URL
-      EMBEDDING_DIMENSION: CLAUDE_CONTEXT_EMBEDDING_DIM
-      MILVUS_ADDRESS: CLAUDE_CONTEXT_MILVUS_ADDRESS
-      MILVUS_TOKEN: CLAUDE_CONTEXT_MILVUS_TOKEN
-      CUSTOM_EXTENSIONS: CLAUDE_CONTEXT_CUSTOM_EXTENSIONS
+  # ── 代碼智能（語義 + 結構圖）──────────────────────────────────────
+  codebase-memory-mcp:
+    command: codebase-memory-mcp
+    args: []
     enabled_in_profiles: [] # 空 = 全 profile 均啟用
-    description: '語義代碼搜尋（LM Studio + 本地 Milvus；先跑 claude-context-init skill 建立 index）'
+    description: 'codebase-memory-mcp 代碼智能一把抓（語義+依賴圖+blast-radius,單 binary 零重依賴,取代 CodeRAG+crg+serena）'
 
   # ── 上下文增強 ────────────────────────────────────────────────────
   context7:

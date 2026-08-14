@@ -1,3 +1,8 @@
+---
+description: 需求 → 結構化 Spec：將模糊需求轉為標準 spec 文件，作為 /verify 反查與工程實作的基線
+argument-hint: [需求描述]
+---
+
 # /specify — 需求 → 結構化 Spec
 
 將模糊需求轉為標準 spec 文件，作為 /verify 反查和工程實作的基線。

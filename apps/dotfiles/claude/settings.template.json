@@ -1,25 +1,63 @@
 {
   "model": "opusplan",
   "effortLevel": "high",
-
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "allowWrite": [
+        "~/.claude",
+        "~/ab-projects",
+        "~/Kkday/projects",
+        "~/.config",
+        "~/.cargo",
+        "~/.rustup",
+        "~/Library/pnpm",
+        "~/.npm",
+        "~/Library/Caches",
+        "~/Library/Developer"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "registry.npmjs.org",
+        "crates.io",
+        "*.crates.io"
+      ]
+    }
+  },
   "permissions": {
     "defaultMode": "bypassPermissions",
     "deny": [
       "Bash(git reset --hard *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean *)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
       "Bash(rm -rf /)",
       "Bash(rm -rf ~)",
       "Bash(gh pr merge *)",
-      "Bash(gh pr review --approve *)",
+      "Bash(gh repo delete *)",
       "Bash(git commit --no-verify *)",
       "Bash(git push --no-verify *)",
       "Bash(npm publish *)",
       "Bash(pnpm publish *)",
-      "Bash(claude plugin uninstall *)"
+      "Bash(claude plugin uninstall *)",
+      "Bash(terraform destroy*)",
+      "Bash(pulumi destroy*)",
+      "Bash(cdk destroy*)",
+      "Bash(docker compose down -v*)",
+      "Bash(docker compose down --volumes*)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume rm *)",
+      "Bash(docker volume prune*)",
+      "Agent(model:opus)"
     ]
   },
-
   "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "USE_BUILTIN_RIPGREP": "1",
     "BASH_DEFAULT_TIMEOUT_MS": "60000",
     "CLAUDE_BASH_NO_LOGIN": "1",
@@ -27,7 +65,6 @@
     "CLAUDE_CODE_FAST_MODE": "1",
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1",
     "DISABLE_EXTRA_USAGE_COMMAND": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
@@ -36,43 +73,37 @@
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "OTEL_METRICS_INCLUDE_SESSION_ID": "true"
   },
-
   "autoMemoryEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "askUserQuestionTimeout": "5m",
+  "fallbackModel": [
+    "claude-sonnet-5",
+    "claude-haiku-4-5"
+  ],
   "autoUpdatesChannel": "latest",
   "cleanupPeriodDays": 30,
   "showThinkingSummaries": true,
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "showToolOutputs": true,
   "showProgress": true,
   "includeCoAuthoredBy": false,
   "feedbackSurveyRate": 0,
   "includeGitInstructions": false,
-
+  "attribution": {
+    "sessionUrl": false
+  },
   "enabledPlugins": {
     "code-review@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "hookify@claude-plugins-official": true,
     "ralph-loop@claude-plugins-official": true,
     "session-report@claude-plugins-official": true,
-    "claude-hud@claude-hud": true
+    "claude-hud@claude-hud": true,
+    "warp@claude-code-warp": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "codex@openai-codex": true
   },
-
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena-mcp-server",
-        "--context",
-        "ide-assistant",
-        "--project",
-        "${PWD}"
-      ]
-    }
-  },
-
+  "mcpServers": {},
   "statusLine": {
     "type": "command",
     "command": "$HOME/.claude/hooks/statusline.sh"
@@ -83,15 +114,22 @@
         "source": "github",
         "repo": "jarrodwatts/claude-hud"
       }
+    },
+    "claude-code-warp": {
+      "source": {
+        "source": "github",
+        "repo": "warpdotdev/claude-code-warp"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
     }
   },
   "_abTao": {
     "version": "1.7.1",
-    "voiceTrigger": false,
-    "costRouting": "fixed",
-    "tddStrictMode": false,
-    "contextBudgetFileCount": 12,
-    "skillCreatorEnabled": false,
-    "memoryLintEnabled": true
+    "contextBudgetFileCount": 12
   }
 }

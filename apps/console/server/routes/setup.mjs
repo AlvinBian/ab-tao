@@ -100,7 +100,6 @@ export async function setupRouter(req, res, url, json) {
       flags = [],
       dryRun = false,
       mode = 'quick',
-      fromIcloud = false,
     } = req._body ?? {}
     const extraFlags = Array.isArray(flags) ? [...flags] : []
     // 強制加上 --yes 跳過所有確認
@@ -114,8 +113,6 @@ export async function setupRouter(req, res, url, json) {
     // 進階 flag
     if (dryRun && !extraFlags.includes('--dry-run'))
       extraFlags.push('--dry-run')
-    if (fromIcloud && !extraFlags.includes('--from-icloud'))
-      extraFlags.push('--from-icloud')
 
     spawnSse(
       res,

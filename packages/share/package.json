@@ -1,7 +1,7 @@
 {
   "name": "@ab-tao/share",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "共用工具庫 — paths、log、shell exec、JSON utils",
   "exports": {
     ".": "./index.mjs",
